@@ -50,3 +50,6 @@ POINTS_SHARED = 5
 
 # Extra time accepted after `ends_at` to absorb network latency on submit.
 SUBMIT_GRACE_SECONDS = 2.0
+
+MIN_ROOM_PLAYERS = 2
+MAX_ROOM_PLAYERS = 8

@@ -5,13 +5,14 @@ from pydantic import BaseModel, Field, field_validator
 from app.core.game_rules import DURATION_OPTIONS, ROUND_OPTIONS, Category, Difficulty, Language
 
 
-class SoloGameCreate(BaseModel):
+class GameSettings(BaseModel):
+    """Options shared by every mode."""
+
     language: Language
     difficulty: Difficulty = Difficulty.NORMAL
     categories: list[Category] = Field(default_factory=lambda: list(Category), min_length=1)
     rounds: int = 5
     round_duration: int = 30
-    nickname: str = Field(default="Player", min_length=1, max_length=32)
 
     @field_validator("categories")
     @classmethod
@@ -31,6 +32,10 @@ class SoloGameCreate(BaseModel):
         if value not in DURATION_OPTIONS:
             raise ValueError(f"round_duration must be one of {DURATION_OPTIONS}")
         return value
+
+
+class SoloGameCreate(GameSettings):
+    nickname: str = Field(default="Player", min_length=1, max_length=32)
 
 
 class SubmitAnswers(BaseModel):

@@ -1,0 +1,237 @@
+import asyncio
+from contextlib import contextmanager
+
+import pytest
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
+from starlette.testclient import TestClient
+
+from app.main import app
+from app.services import letter_service
+from app.services.presence_service import MemoryPresence
+from app.services.room_service import RoomManager, Timings
+from tests.conftest import TEST_DATABASE_URL
+
+FAST = Timings(countdown=0.05, results=0.05, quick_start=0.2, reconnect_grace=0.3, presence_interval=0.05)
+SETTINGS = {"language": "fr", "categories": ["city", "country"], "rounds": 5, "round_duration": 30}
+
+
+@pytest.fixture
+def manager(monkeypatch):
+    engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+
+    async def truncate():
+        async with engine.begin() as conn:
+            await conn.execute(text("TRUNCATE games CASCADE"))
+
+    asyncio.run(truncate())
+    letter_service.clear_cache()
+    monkeypatch.setattr(letter_service, "draw_letter", lambda eligible, used: "M")
+
+    manager = RoomManager(
+        session_factory=async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False),
+        presence=MemoryPresence(),
+        timings=FAST,
+    )
+    previous = app.state.room_manager
+    app.state.room_manager = manager
+    yield manager
+    app.state.room_manager = previous
+
+
+@pytest.fixture
+def client(manager):
+    with TestClient(app) as client:
+        yield client
+
+
+@contextmanager
+def player(client, client_id, nickname):
+    with client.websocket_connect(f"/ws?client_id={client_id}&nickname={nickname}") as ws:
+        welcome = ws.receive_json()
+        assert welcome["type"] == "welcome"
+        yield ws
+
+
+def wait_for(ws, predicate, limit=200):
+    """Read messages until one matches; other events (notices, counts) are skipped."""
+    for _ in range(limit):
+        message = ws.receive_json()
+        if predicate(message):
+            return message
+    raise AssertionError("expected message never arrived")
+
+
+def state(ws, phase=None, check=lambda room: True):
+    return wait_for(
+        ws,
+        lambda m: m["type"] == "room_state"
+        and (phase is None or m["room"]["phase"] == phase)
+        and check(m["room"]),
+    )["room"]
+
+
+def error(ws):
+    return wait_for(ws, lambda m: m["type"] == "error")["code"]
+
+
+def create_room(ws, **settings):
+    ws.send_json({"type": "create_room", "settings": {**SETTINGS, **settings}})
+    return state(ws, "waiting")
+
+
+def test_private_room_full_game(client):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice)
+        assert room["host_id"] == "alice-0001"
+        assert len(room["code"]) == 5
+
+        bob.send_json({"type": "join_room", "code": room["code"].lower()})
+        room = state(bob, "waiting")
+        assert [p["nickname"] for p in room["players"]] == ["Alice", "Bob"]
+
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+
+        countdown = state(alice, "countdown")
+        assert countdown["go_at"] is not None
+
+        round_ = state(alice, "round")["round"]
+        assert round_["letter"] == "M" and round_["number"] == 1
+        state(bob, "round")
+
+        alice.send_json({"type": "submit", "round": 1, "answers": {"city": "Marseille"}})
+        bob.send_json({"type": "submit", "round": 1, "answers": {"city": "marseille", "country": "Maroc"}})
+
+        results = state(alice, "results")["results"]
+        scores = {p["nickname"]: p["round_score"] for p in results["players"]}
+        assert scores == {"Alice": 5, "Bob": 15}, "shared answers score 5, unique ones 10"
+
+        for number in range(2, 6):
+            state(alice, "round", lambda r, n=number: r["round"]["number"] == n)
+            alice.send_json({"type": "submit", "round": number, "answers": {}})
+            bob.send_json({"type": "submit", "round": number, "answers": {}})
+
+        final = state(alice, "finished")
+        assert {p["nickname"]: p["score"] for p in final["players"]} == {"Alice": 5, "Bob": 15}
+        assert all(not p["ready"] for p in final["players"])
+
+        # "Play again" brings the room back to the lobby with scores reset.
+        alice.send_json({"type": "set_ready", "ready": True})
+        lobby = state(alice, "waiting")
+        assert all(p["score"] == 0 for p in lobby["players"])
+
+
+def test_game_needs_everyone_ready(client):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice)
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        alice.send_json({"type": "set_ready", "ready": True})
+        room = state(alice, check=lambda r: r["players"][0]["ready"])
+        assert room["phase"] == "waiting"
+
+
+def test_join_errors(client):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        alice.send_json({"type": "join_room", "code": "ZZZZZ"})
+        assert error(alice) == "room_not_found"
+
+        room = create_room(alice, max_players=2)
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob)
+        with player(client, "carol-001", "Carol") as carol:
+            carol.send_json({"type": "join_room", "code": room["code"]})
+            assert error(carol) == "room_full"
+
+
+def test_invalid_messages_are_rejected(client):
+    with player(client, "alice-0001", "Alice") as alice:
+        alice.send_text("not json")
+        assert error(alice) == "invalid_message"
+        alice.send_json({"type": "create_room", "settings": {**SETTINGS, "rounds": 7}})
+        assert error(alice) == "invalid_settings"
+        alice.send_json({"type": "set_ready"})
+        assert error(alice) == "not_in_room"
+
+
+def test_quick_match_groups_players_and_starts_automatically(client):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        alice.send_json({"type": "quick_match", "language": "fr"})
+        first = state(alice, "waiting")
+        assert first["quick"] and first["players"][0]["ready"]
+
+        bob.send_json({"type": "quick_match", "language": "fr"})
+        joined = state(bob, "waiting")
+        assert joined["code"] == first["code"]
+        assert joined["starts_at"] is not None
+
+        assert state(alice, "round")["round"]["letter"] == "M"
+
+
+def test_quick_match_keeps_languages_apart(client):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        alice.send_json({"type": "quick_match", "language": "fr"})
+        bob.send_json({"type": "quick_match", "language": "en"})
+        assert state(alice, "waiting")["code"] != state(bob, "waiting")["code"]
+
+
+def test_public_rooms_are_listed(client):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        bob.send_json({"type": "subscribe_rooms", "language": "fr"})
+        assert wait_for(bob, lambda m: m["type"] == "room_list")["rooms"] == []
+
+        public = create_room(alice, public=True)
+        rooms = wait_for(bob, lambda m: m["type"] == "room_list" and m["rooms"])["rooms"]
+        assert rooms[0]["code"] == public["code"]
+        assert rooms[0]["host"] == "Alice" and rooms[0]["players"] == 1
+
+        create_room(alice)  # private: replaces the public one, which is now empty
+        assert wait_for(bob, lambda m: m["type"] == "room_list")["rooms"] == []
+
+
+def test_reconnect_gets_the_seat_back(client):
+    with player(client, "alice-0001", "Alice") as alice:
+        room = create_room(alice)
+        with player(client, "bob-00001", "Bob") as bob:
+            bob.send_json({"type": "join_room", "code": room["code"]})
+            state(bob)
+        gone = state(alice, check=lambda r: len(r["players"]) == 2 and not r["players"][1]["connected"])
+        assert gone["players"][1]["nickname"] == "Bob"
+
+        with player(client, "bob-00001", "Bob") as bob:
+            back = state(bob)
+            assert back["code"] == room["code"]
+            assert back["players"][1]["connected"]
+
+
+def test_player_who_does_not_come_back_leaves_and_host_moves(client):
+    with player(client, "bob-00001", "Bob") as bob:
+        with player(client, "alice-0001", "Alice") as alice:
+            room = create_room(alice)
+            bob.send_json({"type": "join_room", "code": room["code"]})
+            state(bob, check=lambda r: len(r["players"]) == 2)
+        room = state(bob, check=lambda r: len(r["players"]) == 1)
+        assert room["host_id"] == "bob-00001"
+
+
+def test_disconnected_player_does_not_block_the_round(client):
+    with player(client, "alice-0001", "Alice") as alice:
+        with player(client, "bob-00001", "Bob") as bob:
+            room = create_room(alice)
+            bob.send_json({"type": "join_room", "code": room["code"]})
+            alice.send_json({"type": "set_ready", "ready": True})
+            bob.send_json({"type": "set_ready", "ready": True})
+            state(bob, "round")
+        alice.send_json({"type": "submit", "round": 1, "answers": {"city": "Madrid"}})
+        results = state(alice, "results")["results"]
+        bob_result = next(p for p in results["players"] if p["nickname"] == "Bob")
+        assert bob_result["elapsed_ms"] is None
+        assert {a["status"] for a in bob_result["answers"]} == {"late"}
+
+
+def test_online_count(client):
+    with player(client, "alice-0001", "Alice") as alice:
+        with player(client, "bob-00001", "Bob"):
+            assert wait_for(alice, lambda m: m["type"] == "online_count" and m["count"] == 2)
+        assert wait_for(alice, lambda m: m["type"] == "online_count" and m["count"] == 1)

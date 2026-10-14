@@ -9,18 +9,24 @@ from app.core.config import settings
 from app.core.database import engine
 from app.core.redis import redis_client
 from app.services.game_service import GameError
+from app.services.room_service import room_manager
+from app.websocket.game_ws import router as ws_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.room_manager.start()
     yield
+    await app.state.room_manager.stop()
     await redis_client.aclose()
     await engine.dispose()
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
+app.state.room_manager = room_manager
 app.include_router(health_router)
 app.include_router(games_router)
+app.include_router(ws_router)
 
 
 @app.exception_handler(GameError)
