@@ -1,0 +1,20 @@
+# Décisions de conception
+
+Décisions prises après le cahier des charges ([CAHIER_DES_CHARGES.md](CAHIER_DES_CHARGES.md)).
+
+| # | Sujet | Décision |
+|---|-------|----------|
+| 1 | Base de connaissances | Construite tôt via des scripts d'import : pays (liste ISO), villes (GeoNames filtré par population), animaux et fruits (listes curées + synonymes). |
+| 2 | Mode solo | Passe par le serveur, comme le multijoueur (lettre, chrono, validation et score côté serveur). |
+| 3 | Lettres difficiles | K, Q, W, X, Y, Z réservées au niveau difficile. Pas de lettre répétée dans une même partie. |
+| 4 | Barème de base | 10 pts réponse unique, 5 pts réponse partagée avec un autre joueur, 0 pt invalide. Bonus de rapidité ajouté plus tard. |
+| 5 | Langues du MVP | Français et anglais : interface **et** base de réponses (une réponse est validée dans la langue de la partie). |
+| 6 | Ports locaux | API sur 8010 (8000 déjà occupé sur la machine de dev), PostgreSQL 5432, Redis 6379. |
+| 7 | Villes | Valables quelle que soit la langue de la partie (« London » comme « Londres »). Source : GeoNames, villes de 5 000+ habitants, noms en alphabet latin uniquement. |
+| 8 | Tirage des lettres | Une lettre n'est tirée que si chaque catégorie choisie a assez de réponses connues : 5 en facile (lettres A B C D E F G L M P R S T), 3 en normal, 1 en difficile. |
+| 9 | Tolérance de saisie | Accents, majuscules, tirets et apostrophes ignorés. Article initial (« le », « l' », « the »…) et pluriel acceptés pour animaux et fruits ; article accepté pour les pays. Pour les villes, l'article fait partie du nom : « Le Havre » est valide pour L et pour H. |
+| 10 | Chrono | Le serveur fixe `ends_at`. Une soumission arrivant plus de 2 s après est marquée « temps écoulé » (0 point). Une manche abandonnée est clôturée à 0 au démarrage de la suivante. |
+| 11 | Modèle de données | Partie → joueurs → manches → soumissions → réponses, commun à tous les modes : une partie solo est une partie à un joueur. |
+| 12 | Identité visuelle | Style « cartoon coloré » : fond violet dégradé avec lettres flottantes, boutons « bonbon » en relief, tuiles de lettres façon jeu de plateau, police Fredoka (OFL, embarquée). Palette dans `mobile/lib/core/theme/app_colors.dart`. |
+| 13 | Sons | Bruitages et musique de menu synthétisés par `mobile/tool/generate_sounds.py` (aucun échantillon tiers, libres de droits). Musique uniquement dans les menus. Sons, musique et vibrations désactivables séparément (réglages sauvegardés sur le téléphone). |
+| 14 | Trouver des joueurs (phase 3) | En plus des salles privées avec code : compteur « joueurs en ligne » sur l'accueil, salons publics listés et rejoignables d'un toucher, et partie rapide (file d'attente par langue, lancement dès 2 joueurs ou après ~20 s). Pas de liste nominative des joueurs en ligne avant les comptes et amis (V2). |

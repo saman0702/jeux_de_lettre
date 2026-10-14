@@ -1,0 +1,78 @@
+import asyncio
+
+import asyncpg
+import pytest
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import insert, text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
+
+from app.core.config import settings
+from app.core.database import get_session
+from app.core.game_rules import ANY_LANGUAGE, Category
+from app.data.seed_answers import build_rows, curated_entries
+from app.main import app
+from app.models import Answer, Base
+from app.services import letter_service
+
+TEST_DB = f"{settings.postgres_db}_test"
+TEST_DATABASE_URL = settings.database_url.rsplit("/", 1)[0] + f"/{TEST_DB}"
+
+TEST_CITIES = ["Marseille", "Mbandaka", "Madrid", "Montréal", "Le Havre", "Abidjan", "Paris"]
+
+
+async def _prepare_database() -> None:
+    admin = await asyncpg.connect(
+        user=settings.postgres_user,
+        password=settings.postgres_password,
+        host=settings.postgres_host,
+        port=settings.postgres_port,
+        database=settings.postgres_db,
+    )
+    try:
+        exists = await admin.fetchval("SELECT 1 FROM pg_database WHERE datname = $1", TEST_DB)
+        if not exists:
+            await admin.execute(f'CREATE DATABASE "{TEST_DB}"')
+    finally:
+        await admin.close()
+
+    engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+        cities = ((Category.CITY, ANY_LANGUAGE, city) for city in TEST_CITIES)
+        await conn.execute(insert(Answer), build_rows(curated_entries()) + build_rows(cities))
+    await engine.dispose()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def database():
+    asyncio.run(_prepare_database())
+
+
+@pytest.fixture
+async def session_factory():
+    engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+    async with engine.begin() as conn:
+        await conn.execute(text("TRUNCATE games CASCADE"))
+    letter_service.clear_cache()
+    yield async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    await engine.dispose()
+
+
+@pytest.fixture
+async def session(session_factory):
+    async with session_factory() as session:
+        yield session
+
+
+@pytest.fixture
+async def client(session_factory):
+    async def override_session():
+        async with session_factory() as session:
+            yield session
+
+    app.dependency_overrides[get_session] = override_session
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        yield client
+    app.dependency_overrides.clear()

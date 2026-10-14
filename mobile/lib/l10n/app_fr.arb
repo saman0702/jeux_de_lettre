@@ -1,0 +1,100 @@
+{
+  "@@locale": "fr",
+  "appTitle": "Letter Battle",
+  "tagline": "Une lettre. Quatre catégories. Le plus rapide gagne.",
+  "modeSolo": "Solo",
+  "modeDuel": "Duel",
+  "modeMultiplayer": "Multijoueur",
+  "comingSoon": "Bientôt disponible",
+  "serverOnline": "Serveur connecté",
+  "serverOffline": "Serveur injoignable",
+  "serverChecking": "Connexion au serveur…",
+  "categoryCity": "Ville",
+  "categoryCountry": "Pays",
+  "categoryAnimal": "Animal",
+  "categoryFruit": "Fruit",
+  "soloSetupTitle": "Partie solo",
+  "rounds": "Manches",
+  "roundDuration": "Durée d'une manche",
+  "secondsShort": "{seconds} s",
+  "@secondsShort": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "categories": "Catégories",
+  "selectOneCategory": "Choisis au moins une catégorie",
+  "difficulty": "Difficulté",
+  "difficultyEasy": "Facile",
+  "difficultyNormal": "Normal",
+  "difficultyHard": "Difficile",
+  "startGame": "JOUER",
+  "defaultNickname": "Joueur",
+  "roundProgress": "Manche {current} / {total}",
+  "@roundProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "letterLabel": "LETTRE",
+  "finish": "TERMINER",
+  "go": "GO !",
+  "statusValid": "Valide",
+  "statusEmpty": "Pas de réponse",
+  "statusWrongLetter": "Mauvaise lettre",
+  "statusNotFound": "Réponse inconnue",
+  "statusLate": "Temps écoulé",
+  "pointsShort": "{points} pts",
+  "@pointsShort": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "roundScore": "Score de la manche",
+  "totalScore": "Total",
+  "finishedIn": "Terminé en {seconds} s",
+  "@finishedIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "nextRound": "MANCHE SUIVANTE",
+  "seeResults": "VOIR LE RÉSULTAT",
+  "gameOver": "PARTIE TERMINÉE",
+  "playAgain": "REJOUER",
+  "backHome": "Accueil",
+  "errorNetwork": "Connexion au serveur impossible.",
+  "errorGeneric": "Une erreur est survenue.",
+  "retry": "Réessayer",
+  "quitGameTitle": "Quitter la partie ?",
+  "quitGameMessage": "Ta progression sera perdue.",
+  "quit": "Quitter",
+  "cancel": "Annuler",
+  "comingSoonBadge": "Bientôt",
+  "settingsTitle": "Réglages",
+  "settingsSound": "Effets sonores",
+  "settingsMusic": "Musique",
+  "settingsVibration": "Vibrations",
+  "roundPoints": "+{points}",
+  "gameOverGreat": "Incroyable !",
+  "gameOverGood": "Bien joué !",
+  "gameOverTry": "Tu peux faire mieux !",
+  "@roundPoints": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  }
+}
