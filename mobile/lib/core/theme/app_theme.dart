@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
+/// Emoji font used when a glyph is missing from Fredoka. Phones fall back to
+/// their system emoji font anyway; naming one also lets screenshots render them.
+const emojiFallback = ['NotoColorEmoji'];
+
 /// Fredoka is a variable font: the weight is set through its `wght` axis.
 TextStyle fredoka({
   double size = 16,
@@ -11,6 +15,7 @@ TextStyle fredoka({
   List<Shadow>? shadows,
 }) => TextStyle(
   fontFamily: 'Fredoka',
+  fontFamilyFallback: emojiFallback,
   fontSize: size,
   fontWeight: weight,
   fontVariations: [FontVariation('wght', weight.value.toDouble())],
@@ -41,6 +46,7 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       fontFamily: 'Fredoka',
+      fontFamilyFallback: emojiFallback,
       scaffoldBackgroundColor: AppColors.purple,
       textTheme: TextTheme(
         displayLarge: base(56, FontWeight.w700),
