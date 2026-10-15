@@ -155,29 +155,53 @@ class _RoundViewState extends State<RoundView> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 children: [
-                  if (widget.onQuit != null) ...[
-                    QuitButton(onQuit: widget.onQuit!),
-                    const SizedBox(width: 8),
-                  ],
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      l10n.roundProgress(round.number, widget.totalRounds),
-                      style: fredoka(
-                        size: 16,
-                        weight: FontWeight.w600,
-                        color: AppColors.white,
+                  // Shrinks on narrow phones rather than overflowing.
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        children: [
+                          if (widget.onQuit != null) ...[
+                            QuitButton(onQuit: widget.onQuit!),
+                            const SizedBox(width: 8),
+                          ],
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  l10n.roundLabel,
+                                  style: fredoka(
+                                    size: 10,
+                                    weight: FontWeight.w700,
+                                    color: AppColors.white,
+                                  ),
+                                ),
+                                Text(
+                                  '${round.number}/${widget.totalRounds}',
+                                  style: fredoka(
+                                    size: 18,
+                                    weight: FontWeight.w700,
+                                    color: AppColors.white,
+                                    height: 1.1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   if (compact)
                     Padding(
                       padding: const EdgeInsets.only(right: 12),

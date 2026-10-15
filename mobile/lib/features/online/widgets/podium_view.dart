@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../animations/bounce_in.dart';
@@ -6,6 +8,7 @@ import '../../../core/audio/game_audio.dart';
 import '../../../core/feedback/game_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/voice/announcements.dart';
 import '../../../core/widgets/candy_button.dart';
 import '../../../core/widgets/game_card.dart';
 import '../../../l10n/app_localizations.dart';
@@ -32,6 +35,14 @@ class PodiumView extends StatefulWidget {
 }
 
 class _PodiumViewState extends State<PodiumView> {
+  Timer? _voice;
+
+  @override
+  void dispose() {
+    _voice?.cancel();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +51,17 @@ class _PodiumViewState extends State<PodiumView> {
       final feedback = GameFeedbackScope.of(context);
       feedback.play(Sfx.victory);
       feedback.haptic(Haptic.heavy);
+      final winner = widget.ranking.first;
+      final line = Announcements(AppLocalizations.of(context)).roomGameOver(
+        winnerId: winner.clientId,
+        winnerName: winner.nickname,
+        me: widget.myId,
+      );
+      final language = Localizations.localeOf(context).languageCode;
+      _voice = Timer(
+        const Duration(milliseconds: 1400),
+        () => feedback.announce(line, language),
+      );
     });
   }
 

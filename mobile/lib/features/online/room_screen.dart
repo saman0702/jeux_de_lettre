@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../animations/countdown/countdown_view.dart';
 import '../../core/feedback/game_feedback.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/game_dialog.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/game_background.dart';
 import '../../l10n/app_localizations.dart';
@@ -207,39 +208,15 @@ class _RoomScreenState extends State<RoomScreen> {
     if (!inGame) return _close();
 
     final l10n = AppLocalizations.of(context);
-    final leave = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: Text(
-          l10n.quitGameTitle,
-          style: fredoka(size: 22, weight: FontWeight.w700),
-        ),
-        content: Text(l10n.leaveRoomMessage, style: fredoka(size: 16)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              l10n.cancel,
-              style: fredoka(size: 16, color: AppColors.inkSoft),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              l10n.quit,
-              style: fredoka(
-                size: 16,
-                weight: FontWeight.w700,
-                color: AppColors.red,
-              ),
-            ),
-          ),
-        ],
-      ),
+    final leave = await showGameConfirm(
+      context,
+      emoji: '🚪',
+      title: l10n.quitGameTitle,
+      message: l10n.leaveRoomMessage,
+      confirmLabel: l10n.quit.toUpperCase(),
+      cancelLabel: l10n.dialogStay,
     );
-    if (leave == true && mounted) _close();
+    if (leave && mounted) _close();
   }
 
   void _playAgain() {

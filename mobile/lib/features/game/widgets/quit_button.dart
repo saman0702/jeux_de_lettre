@@ -1,21 +1,84 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/widgets/candy_button.dart';
+import '../../../core/audio/game_audio.dart';
+import '../../../core/feedback/game_feedback.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 
-/// ✕ button to leave a game in progress (asks for confirmation).
-class QuitButton extends StatelessWidget {
+/// "QUIT" candy pill to leave a game in progress (asks for confirmation).
+class QuitButton extends StatefulWidget {
   const QuitButton({super.key, required this.onQuit});
 
   final VoidCallback onQuit;
 
   @override
-  Widget build(BuildContext context) => RoundIconButton(
-    key: const Key('quit_button'),
-    icon: Icons.close_rounded,
-    tooltip: AppLocalizations.of(context).quit,
-    onPressed: onQuit,
-  );
+  State<QuitButton> createState() => _QuitButtonState();
+}
+
+class _QuitButtonState extends State<QuitButton> {
+  static const _depth = 4.0;
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = AppLocalizations.of(context).quit.toUpperCase();
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        key: const Key('quit_button'),
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTap: () {
+          GameFeedbackScope.of(context).play(Sfx.tap);
+          widget.onQuit();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 70),
+          margin: EdgeInsets.only(
+            top: _pressed ? _depth - 1 : 0,
+            bottom: _pressed ? 1 : _depth,
+          ),
+          padding: const EdgeInsets.fromLTRB(10, 7, 14, 7),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.white, width: 2),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color.lerp(AppColors.red, Colors.white, 0.3)!,
+                AppColors.red,
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.depthOf(AppColors.red),
+                offset: Offset(0, _pressed ? 1 : _depth),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.close_rounded, color: AppColors.white, size: 18),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: fredoka(
+                  size: 14,
+                  weight: FontWeight.w700,
+                  color: AppColors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Puts a [QuitButton] above screens that have no header of their own
@@ -30,7 +93,7 @@ class WithQuitButton extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     children: [
       Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
         child: Align(
           alignment: Alignment.centerLeft,
           child: QuitButton(onQuit: onQuit),

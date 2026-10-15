@@ -877,6 +877,120 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'espace'**
   String get keySpace;
+
+  /// No description provided for @settingsVoice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix du présentateur'**
+  String get settingsVoice;
+
+  /// No description provided for @voiceYouWinRound1.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bravo {name}, tu remportes la manche !'**
+  String voiceYouWinRound1(String name);
+
+  /// No description provided for @voiceYouWinRound2.
+  ///
+  /// In fr, this message translates to:
+  /// **'Excellent {name} ! Manche gagnée !'**
+  String voiceYouWinRound2(String name);
+
+  /// No description provided for @voiceOtherWinsRound1.
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} remporte la manche !'**
+  String voiceOtherWinsRound1(String name);
+
+  /// No description provided for @voiceOtherWinsRound2.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette manche est pour {name} !'**
+  String voiceOtherWinsRound2(String name);
+
+  /// No description provided for @voiceEncourage1.
+  ///
+  /// In fr, this message translates to:
+  /// **'Courage, tu vas te rattraper !'**
+  String get voiceEncourage1;
+
+  /// No description provided for @voiceEncourage2.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de panique, la prochaine est pour toi !'**
+  String get voiceEncourage2;
+
+  /// No description provided for @voiceEncourage3.
+  ///
+  /// In fr, this message translates to:
+  /// **'Allez, on lâche rien !'**
+  String get voiceEncourage3;
+
+  /// No description provided for @voiceTie.
+  ///
+  /// In fr, this message translates to:
+  /// **'Égalité sur cette manche ! Tout reste à jouer !'**
+  String get voiceTie;
+
+  /// No description provided for @voiceNobodyScored.
+  ///
+  /// In fr, this message translates to:
+  /// **'Personne n\'a marqué ! Concentrez-vous, ça repart !'**
+  String get voiceNobodyScored;
+
+  /// No description provided for @voiceSoloGreat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Superbe ! {points} points !'**
+  String voiceSoloGreat(int points);
+
+  /// No description provided for @voiceSoloGood.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bien joué, {points} points !'**
+  String voiceSoloGood(int points);
+
+  /// No description provided for @voiceSoloLow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Allez, tu peux faire mieux à la prochaine !'**
+  String get voiceSoloLow;
+
+  /// No description provided for @voiceSoloZero.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aïe, aucun point ! Respire, tu vas y arriver !'**
+  String get voiceSoloZero;
+
+  /// No description provided for @voiceYouWinGame.
+  ///
+  /// In fr, this message translates to:
+  /// **'Victoire ! Bravo {name}, tu gagnes la partie !'**
+  String voiceYouWinGame(String name);
+
+  /// No description provided for @voiceOtherWinsGame.
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} gagne la partie ! Bien joué à tous. Une revanche ?'**
+  String voiceOtherWinsGame(String name);
+
+  /// No description provided for @voiceSoloGameEnd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Partie terminée ! {points} points au total !'**
+  String voiceSoloGameEnd(int points);
+
+  /// No description provided for @dialogStay.
+  ///
+  /// In fr, this message translates to:
+  /// **'RESTER'**
+  String get dialogStay;
+
+  /// No description provided for @roundLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'MANCHE'**
+  String get roundLabel;
 }
 
 class _AppLocalizationsDelegate

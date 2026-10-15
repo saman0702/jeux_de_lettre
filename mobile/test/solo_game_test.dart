@@ -178,7 +178,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('letter')), findsOneWidget);
-    expect(find.text('Round 1 / 1'), findsOneWidget);
+    expect(find.text('1/1'), findsOneWidget);
     expect(
       audio.played,
       containsAllInOrder([
@@ -468,8 +468,8 @@ void main() {
 
     await tester.tap(find.byKey(const Key('quit_button')));
     await tester.pumpAndSettle();
-    expect(find.text('Quit the game?'), findsOneWidget);
-    await tester.tap(find.text('Quit'));
+    expect(find.text('QUIT THE GAME?'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('dialog_confirm')));
     await tester.pumpAndSettle();
 
     expect(find.byType(SoloGameScreen), findsNothing);

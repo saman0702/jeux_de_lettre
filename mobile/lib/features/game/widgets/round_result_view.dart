@@ -4,6 +4,7 @@ import '../../../core/audio/game_audio.dart';
 import '../../../core/feedback/game_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/voice/announcements.dart';
 import '../../../core/widgets/candy_button.dart';
 import '../../../core/widgets/game_card.dart';
 import '../../../core/widgets/letter_tile.dart';
@@ -71,6 +72,13 @@ class _RoundResultViewState extends State<RoundResultView>
     if (!_scoreAnnounced && _controller.value >= _at(_scoreAtMs)) {
       _scoreAnnounced = true;
       if (widget.result.roundScore > 0) feedback.play(Sfx.points);
+      feedback.announce(
+        Announcements(AppLocalizations.of(context)).soloRound(
+          widget.result.roundScore,
+          widget.result.answers.length * 10,
+        ),
+        Localizations.localeOf(context).languageCode,
+      );
     }
   }
 

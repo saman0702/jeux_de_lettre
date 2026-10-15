@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../audio/game_audio.dart';
 import '../settings/app_settings.dart';
+import '../voice/announcer.dart';
 import 'vibrator.dart';
 
 export 'vibrator.dart' show Haptic;
@@ -12,8 +13,10 @@ class GameFeedback {
     required this.audio,
     required this.settings,
     Vibrator? vibrator,
+    Announcer? announcer,
     this.ambientMotion = true,
-  }) : vibrator = vibrator ?? SilentVibrator() {
+  }) : vibrator = vibrator ?? SilentVibrator(),
+       announcer = announcer ?? SilentAnnouncer() {
     settings.addListener(_syncMusic);
   }
 
@@ -27,6 +30,7 @@ class GameFeedback {
   final GameAudio audio;
   final AppSettings settings;
   final Vibrator vibrator;
+  final Announcer announcer;
 
   /// Endless decorative animations (floating letters...). Disabled in tests so
   /// `pumpAndSettle` can settle.
@@ -37,6 +41,10 @@ class GameFeedback {
 
   void play(Sfx sfx) {
     if (settings.sound) audio.play(sfx);
+  }
+
+  void announce(String text, String languageCode) {
+    if (settings.voice && settings.sound) announcer.say(text, languageCode);
   }
 
   void haptic(Haptic kind) {

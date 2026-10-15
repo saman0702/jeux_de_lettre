@@ -431,4 +431,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keySpace => 'space';
+
+  @override
+  String get settingsVoice => 'Announcer voice';
+
+  @override
+  String voiceYouWinRound1(String name) {
+    return 'Well done $name, you win the round!';
+  }
+
+  @override
+  String voiceYouWinRound2(String name) {
+    return 'Excellent $name! Round won!';
+  }
+
+  @override
+  String voiceOtherWinsRound1(String name) {
+    return '$name wins the round!';
+  }
+
+  @override
+  String voiceOtherWinsRound2(String name) {
+    return 'This round goes to $name!';
+  }
+
+  @override
+  String get voiceEncourage1 => 'Hang in there, you\'ll catch up!';
+
+  @override
+  String get voiceEncourage2 => 'Don\'t worry, the next one is yours!';
+
+  @override
+  String get voiceEncourage3 => 'Come on, don\'t give up!';
+
+  @override
+  String get voiceTie => 'It\'s a tie! Everything is still possible!';
+
+  @override
+  String get voiceNobodyScored => 'Nobody scored! Focus, here we go again!';
+
+  @override
+  String voiceSoloGreat(int points) {
+    return 'Superb! $points points!';
+  }
+
+  @override
+  String voiceSoloGood(int points) {
+    return 'Well played, $points points!';
+  }
+
+  @override
+  String get voiceSoloLow => 'Come on, you can do better next time!';
+
+  @override
+  String get voiceSoloZero => 'Ouch, no points! Take a breath, you can do it!';
+
+  @override
+  String voiceYouWinGame(String name) {
+    return 'Victory! Well done $name, you win the game!';
+  }
+
+  @override
+  String voiceOtherWinsGame(String name) {
+    return '$name wins the game! Well played everyone. Rematch?';
+  }
+
+  @override
+  String voiceSoloGameEnd(int points) {
+    return 'Game over! $points points in total!';
+  }
+
+  @override
+  String get dialogStay => 'STAY';
+
+  @override
+  String get roundLabel => 'ROUND';
 }

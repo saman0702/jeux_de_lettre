@@ -509,7 +509,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('quit_button')));
     await pumpFor(tester, const Duration(milliseconds: 500));
-    await tester.tap(find.text('Quit'));
+    await tester.tap(find.byKey(const Key('dialog_confirm')));
     await pumpFor(tester);
 
     expect(h.socket.sent.last, {'type': 'leave_room'});

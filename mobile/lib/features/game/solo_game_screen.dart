@@ -5,6 +5,7 @@ import '../../animations/transitions/pop_route.dart';
 import '../../core/feedback/game_feedback.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/game_dialog.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
 import '../../core/widgets/game_background.dart';
@@ -71,41 +72,16 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
     if (await _confirmQuit()) navigator.pop();
   }
 
-  Future<bool> _confirmQuit() async {
+  Future<bool> _confirmQuit() {
     final l10n = AppLocalizations.of(context);
-    final quit = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: Text(
-          l10n.quitGameTitle,
-          style: fredoka(size: 22, weight: FontWeight.w700),
-        ),
-        content: Text(l10n.quitGameMessage, style: fredoka(size: 16)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              l10n.cancel,
-              style: fredoka(size: 16, color: AppColors.inkSoft),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              l10n.quit,
-              style: fredoka(
-                size: 16,
-                weight: FontWeight.w700,
-                color: AppColors.red,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return showGameConfirm(
+      context,
+      emoji: '🚪',
+      title: l10n.quitGameTitle,
+      message: l10n.quitGameMessage,
+      confirmLabel: l10n.quit.toUpperCase(),
+      cancelLabel: l10n.dialogStay,
     );
-    return quit ?? false;
   }
 
   void _playAgain() {

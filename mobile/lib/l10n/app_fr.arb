@@ -250,5 +250,87 @@
   "offlineModeNotice": "📴 Pas de connexion : partie solo hors ligne",
   "settingsGameKeyboard": "Clavier du jeu",
   "keyNext": "Suivant",
-  "keySpace": "espace"
+  "keySpace": "espace",
+  "settingsVoice": "Voix du présentateur",
+  "voiceYouWinRound1": "Bravo {name}, tu remportes la manche !",
+  "voiceYouWinRound2": "Excellent {name} ! Manche gagnée !",
+  "voiceOtherWinsRound1": "{name} remporte la manche !",
+  "voiceOtherWinsRound2": "Cette manche est pour {name} !",
+  "voiceEncourage1": "Courage, tu vas te rattraper !",
+  "voiceEncourage2": "Pas de panique, la prochaine est pour toi !",
+  "voiceEncourage3": "Allez, on lâche rien !",
+  "voiceTie": "Égalité sur cette manche ! Tout reste à jouer !",
+  "voiceNobodyScored": "Personne n'a marqué ! Concentrez-vous, ça repart !",
+  "voiceSoloGreat": "Superbe ! {points} points !",
+  "voiceSoloGood": "Bien joué, {points} points !",
+  "voiceSoloLow": "Allez, tu peux faire mieux à la prochaine !",
+  "voiceSoloZero": "Aïe, aucun point ! Respire, tu vas y arriver !",
+  "voiceYouWinGame": "Victoire ! Bravo {name}, tu gagnes la partie !",
+  "voiceOtherWinsGame": "{name} gagne la partie ! Bien joué à tous. Une revanche ?",
+  "voiceSoloGameEnd": "Partie terminée ! {points} points au total !",
+  "dialogStay": "RESTER",
+  "@voiceYouWinRound1": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@voiceYouWinRound2": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@voiceOtherWinsRound1": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@voiceOtherWinsRound2": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@voiceSoloGreat": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "@voiceSoloGood": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "@voiceYouWinGame": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@voiceOtherWinsGame": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@voiceSoloGameEnd": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "roundLabel": "MANCHE"
 }

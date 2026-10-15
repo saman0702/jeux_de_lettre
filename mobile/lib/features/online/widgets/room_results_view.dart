@@ -7,6 +7,7 @@ import '../../../core/audio/game_audio.dart';
 import '../../../core/feedback/game_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/voice/announcements.dart';
 import '../../../core/widgets/game_card.dart';
 import '../../../core/widgets/letter_tile.dart';
 import '../../../l10n/app_localizations.dart';
@@ -64,6 +65,19 @@ class _RoomResultsViewState extends State<RoomResultsView> {
         ),
       );
     }
+    final players = widget.room.results!.players;
+    final line = Announcements(AppLocalizations.of(context)).roomRound(
+      roundScores: {for (final p in players) p.clientId: p.roundScore},
+      names: {for (final p in players) p.clientId: p.nickname},
+      me: widget.myId,
+    );
+    final language = Localizations.localeOf(context).languageCode;
+    _timers.add(
+      Timer(
+        Duration(milliseconds: 700 + answers.length * _stepMs),
+        () => feedback.announce(line, language),
+      ),
+    );
   }
 
   @override

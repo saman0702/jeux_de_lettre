@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../animations/bounce_in.dart';
@@ -7,6 +9,7 @@ import '../../../core/audio/game_audio.dart';
 import '../../../core/feedback/game_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/voice/announcements.dart';
 import '../../../core/widgets/candy_button.dart';
 import '../../../core/widgets/game_card.dart';
 import '../../../core/widgets/letter_tile.dart';
@@ -34,6 +37,8 @@ class GameOverView extends StatefulWidget {
 }
 
 class _GameOverViewState extends State<GameOverView> {
+  Timer? _voice;
+
   int get _stars {
     if (widget.maxScore == 0 || widget.totalScore == 0) return 0;
     final ratio = widget.totalScore / widget.maxScore;
@@ -48,7 +53,20 @@ class _GameOverViewState extends State<GameOverView> {
       final feedback = GameFeedbackScope.of(context);
       feedback.play(Sfx.victory);
       feedback.haptic(Haptic.heavy);
+      final line = Announcements(AppLocalizations.of(context))
+          .soloGameOver(widget.totalScore);
+      final language = Localizations.localeOf(context).languageCode;
+      _voice = Timer(
+        const Duration(milliseconds: 1400),
+        () => feedback.announce(line, language),
+      );
     });
+  }
+
+  @override
+  void dispose() {
+    _voice?.cancel();
+    super.dispose();
   }
 
   @override

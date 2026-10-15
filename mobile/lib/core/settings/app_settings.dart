@@ -12,6 +12,7 @@ class AppSettings extends ChangeNotifier {
     this._music = true,
     this._vibration = true,
     this._gameKeyboard = true,
+    this._voice = true,
     this._nickname,
   });
 
@@ -33,6 +34,7 @@ class AppSettings extends ChangeNotifier {
       music: prefs.getBool(_musicKey) ?? true,
       vibration: prefs.getBool(_vibrationKey) ?? true,
       gameKeyboard: prefs.getBool(_gameKeyboardKey) ?? true,
+      voice: prefs.getBool(_voiceKey) ?? true,
       nickname: prefs.getString(_nicknameKey),
     );
   }
@@ -49,6 +51,7 @@ class AppSettings extends ChangeNotifier {
   static const _musicKey = 'settings.music';
   static const _vibrationKey = 'settings.vibration';
   static const _gameKeyboardKey = 'settings.game_keyboard';
+  static const _voiceKey = 'settings.voice';
   static const _nicknameKey = 'player.nickname';
   static const _clientIdKey = 'player.client_id';
 
@@ -61,6 +64,7 @@ class AppSettings extends ChangeNotifier {
   bool _music;
   bool _vibration;
   bool _gameKeyboard;
+  bool _voice;
   String? _nickname;
 
   bool get sound => _sound;
@@ -69,6 +73,9 @@ class AppSettings extends ChangeNotifier {
 
   /// Built-in game keyboard instead of the phone's one.
   bool get gameKeyboard => _gameKeyboard;
+
+  /// Announcer voice at the end of rounds.
+  bool get voice => _voice;
   String? get nickname => _nickname;
 
   set sound(bool value) => _update(_soundKey, value, () => _sound = value);
@@ -77,6 +84,7 @@ class AppSettings extends ChangeNotifier {
       _update(_vibrationKey, value, () => _vibration = value);
   set gameKeyboard(bool value) =>
       _update(_gameKeyboardKey, value, () => _gameKeyboard = value);
+  set voice(bool value) => _update(_voiceKey, value, () => _voice = value);
 
   set nickname(String? value) {
     _nickname = value;
