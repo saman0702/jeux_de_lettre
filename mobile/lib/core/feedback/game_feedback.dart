@@ -1,18 +1,19 @@
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../audio/game_audio.dart';
 import '../settings/app_settings.dart';
+import 'vibrator.dart';
 
-enum Haptic { light, medium, heavy }
+export 'vibrator.dart' show Haptic;
 
 /// Sound, music and vibrations, filtered by the player's settings.
 class GameFeedback {
   GameFeedback({
     required this.audio,
     required this.settings,
+    Vibrator? vibrator,
     this.ambientMotion = true,
-  }) {
+  }) : vibrator = vibrator ?? SilentVibrator() {
     settings.addListener(_syncMusic);
   }
 
@@ -25,6 +26,7 @@ class GameFeedback {
 
   final GameAudio audio;
   final AppSettings settings;
+  final Vibrator vibrator;
 
   /// Endless decorative animations (floating letters...). Disabled in tests so
   /// `pumpAndSettle` can settle.
@@ -38,15 +40,7 @@ class GameFeedback {
   }
 
   void haptic(Haptic kind) {
-    if (!settings.vibration) return;
-    switch (kind) {
-      case Haptic.light:
-        HapticFeedback.lightImpact();
-      case Haptic.medium:
-        HapticFeedback.mediumImpact();
-      case Haptic.heavy:
-        HapticFeedback.heavyImpact();
-    }
+    if (settings.vibration) vibrator.vibrate(kind);
   }
 
   /// Menus want music; the game screen does not.

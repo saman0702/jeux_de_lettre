@@ -16,6 +16,7 @@ import 'solo_game_controller.dart';
 import 'solo_setup_screen.dart';
 import 'widgets/game_over_view.dart';
 import 'widgets/labels.dart';
+import 'widgets/quit_button.dart';
 import 'widgets/round_result_view.dart';
 import 'widgets/round_view.dart';
 
@@ -63,6 +64,11 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
     _feedback?.musicWanted = true;
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _quit() async {
+    final navigator = Navigator.of(context);
+    if (await _confirmQuit()) navigator.pop();
   }
 
   Future<bool> _confirmQuit() async {
@@ -161,7 +167,10 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
 
     switch (c.phase) {
       case SoloPhase.countdown:
-        return CountdownView(value: c.countdown);
+        return WithQuitButton(
+          onQuit: _quit,
+          child: CountdownView(value: c.countdown),
+        );
       case SoloPhase.playing:
       case SoloPhase.submitting:
         if (c.round == null) {
@@ -177,14 +186,18 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
           submitting: c.phase == SoloPhase.submitting,
           onFinish: c.submit,
           hints: c.hints,
+          onQuit: _quit,
         );
       case SoloPhase.roundResult:
-        return RoundResultView(
-          result: c.lastResult!,
-          totalRounds: c.game.totalRounds,
-          totalScore: c.game.totalScore,
-          isLastRound: c.game.isFinished,
-          onContinue: c.nextRound,
+        return WithQuitButton(
+          onQuit: _quit,
+          child: RoundResultView(
+            result: c.lastResult!,
+            totalRounds: c.game.totalRounds,
+            totalScore: c.game.totalScore,
+            isLastRound: c.game.isFinished,
+            onContinue: c.nextRound,
+          ),
         );
       case SoloPhase.finished:
         return GameOverView(

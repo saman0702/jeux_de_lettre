@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/audio/game_audio.dart';
 import 'core/feedback/game_feedback.dart';
+import 'core/feedback/vibrator.dart';
 import 'core/network/realtime_client.dart';
 import 'core/settings/app_settings.dart';
 import 'core/theme/app_theme.dart';
@@ -17,6 +18,7 @@ Future<void> main() async {
   final feedback = GameFeedback(
     audio: await AudioplayersGameAudio.create(),
     settings: settings,
+    vibrator: await DeviceVibrator.create(),
   );
   final online = OnlineController(
     RealtimeClient(

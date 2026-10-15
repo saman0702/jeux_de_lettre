@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:letter_battle/core/audio/game_audio.dart';
 import 'package:letter_battle/core/feedback/game_feedback.dart';
+import 'package:letter_battle/core/feedback/vibrator.dart';
 import 'package:letter_battle/core/network/api_client.dart';
 import 'package:letter_battle/core/settings/app_settings.dart';
 import 'package:letter_battle/features/game/data/models.dart';
@@ -412,5 +413,66 @@ void main() {
     expect(find.text('FINISH'), findsOneWidget);
     final field = tester.widget<TextField>(find.byKey(const Key('field_city')));
     expect(field.keyboardType, TextInputType.text);
+  });
+
+  testWidgets('the game vibrates on GO and on answers, unless turned off', (tester) async {
+    final vibrator = SilentVibrator();
+    final feedback = GameFeedback(
+      audio: SilentGameAudio(),
+      settings: AppSettings.inMemory(),
+      vibrator: vibrator,
+      ambientMotion: false,
+    );
+    await pumpGame(tester, FakeServer(), feedback: feedback);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    await tester.pumpAndSettle();
+    expect(vibrator.vibrations, contains(Haptic.heavy), reason: 'GO!');
+
+    feedback.settings.vibration = false;
+    vibrator.vibrations.clear();
+    await tester.tap(find.byKey(const Key('key_M')));
+    await tester.pumpAndSettle();
+    expect(vibrator.vibrations, isEmpty);
+  });
+
+  testWidgets('a game can be left from the round screen', (tester) async {
+    final server = FakeServer();
+    final api = SoloGameApi(server.api);
+    final game = SoloGame.fromJson(server.game());
+    final controller = SoloGameController(
+      api: api,
+      game: game,
+      countdownStep: const Duration(milliseconds: 10),
+      tick: const Duration(milliseconds: 50),
+    );
+    tester.platformDispatcher.localesTestValue = const [Locale('en')];
+    await tester.pumpWidget(LetterBattleApp(
+      feedback: testFeedback(),
+      home: Builder(
+        builder: (context) => TextButton(
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => SoloGameScreen(api: api, game: game, apiClient: server.api, controller: controller),
+          )),
+          child: const Text('open'),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('open'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('letter')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('quit_button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Quit the game?'), findsOneWidget);
+    await tester.tap(find.text('Quit'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SoloGameScreen), findsNothing);
+    expect(find.text('open'), findsOneWidget);
   });
 }

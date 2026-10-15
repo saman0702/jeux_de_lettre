@@ -498,4 +498,22 @@ void main() {
       reason: 'wrong pick shown in red',
     );
   });
+
+  testWidgets('leaving an online game warns the server', (tester) async {
+    final h = Harness();
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+    await tester.tap(find.text('Quick match'));
+    await pumpFor(tester);
+    h.socket.push(roomEvent('round', round: round1()));
+    await pumpFor(tester);
+
+    await tester.tap(find.byKey(const Key('quit_button')));
+    await pumpFor(tester, const Duration(milliseconds: 500));
+    await tester.tap(find.text('Quit'));
+    await pumpFor(tester);
+
+    expect(h.socket.sent.last, {'type': 'leave_room'});
+    expect(find.byType(RoomScreen), findsNothing);
+    expect(find.text('Quick match'), findsOneWidget);
+  });
 }

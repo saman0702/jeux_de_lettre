@@ -13,6 +13,7 @@ import '../data/models.dart';
 import '../hints/hint_controller.dart';
 import 'answer_slot.dart';
 import 'game_keyboard.dart';
+import 'quit_button.dart';
 
 class RoundView extends StatefulWidget {
   const RoundView({
@@ -24,6 +25,7 @@ class RoundView extends StatefulWidget {
     required this.onFinish,
     this.submitting = false,
     this.hints,
+    this.onQuit,
   });
 
   final GameRound round;
@@ -35,6 +37,9 @@ class RoundView extends StatefulWidget {
 
   /// Jokers for this round; no hint buttons when null.
   final HintController? hints;
+
+  /// Shows a ✕ button to leave the game.
+  final VoidCallback? onQuit;
 
   @override
   State<RoundView> createState() => _RoundViewState();
@@ -150,6 +155,10 @@ class _RoundViewState extends State<RoundView> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 children: [
+                  if (widget.onQuit != null) ...[
+                    QuitButton(onQuit: widget.onQuit!),
+                    const SizedBox(width: 8),
+                  ],
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,

@@ -10,6 +10,7 @@ import '../../core/widgets/game_background.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/data/models.dart';
 import '../game/widgets/labels.dart';
+import '../game/widgets/quit_button.dart';
 import '../game/hints/hint_controller.dart';
 import '../game/widgets/round_view.dart';
 import 'data/room_models.dart';
@@ -331,7 +332,10 @@ class _RoomScreenState extends State<RoomScreen> {
       case RoomPhase.countdown:
         final seconds =
             (room.until(room.goAt, widget.now()).inMilliseconds / 1000).ceil();
-        return CountdownView(value: seconds.clamp(0, 3));
+        return WithQuitButton(
+          onQuit: _confirmLeave,
+          child: CountdownView(value: seconds.clamp(0, 3)),
+        );
       case RoomPhase.round:
         final round = room.round!;
         final me = room.player(_online.clientId);
@@ -343,11 +347,18 @@ class _RoomScreenState extends State<RoomScreen> {
             fields: _fields,
             onFinish: _submit,
             hints: _hints,
+            onQuit: _confirmLeave,
           );
         }
-        return RoundWaitView(room: room, spectating: !(me?.playing ?? false));
+        return WithQuitButton(
+          onQuit: _confirmLeave,
+          child: RoundWaitView(room: room, spectating: !(me?.playing ?? false)),
+        );
       case RoomPhase.results:
-        return RoomResultsView(room: room, myId: _online.clientId);
+        return WithQuitButton(
+          onQuit: _confirmLeave,
+          child: RoomResultsView(room: room, myId: _online.clientId),
+        );
     }
   }
 }
