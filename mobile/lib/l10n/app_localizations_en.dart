@@ -419,4 +419,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hintUnavailable => 'No hint available here.';
+
+  @override
+  String get offlineModeNotice => '📴 No connection: playing solo offline';
 }

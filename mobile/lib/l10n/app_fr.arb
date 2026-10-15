@@ -246,5 +246,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "offlineModeNotice": "📴 Pas de connexion : partie solo hors ligne"
 }

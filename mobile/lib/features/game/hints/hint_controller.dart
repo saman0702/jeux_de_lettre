@@ -5,6 +5,7 @@ import '../../../core/feedback/game_feedback.dart';
 import '../../../core/network/api_client.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
+import '../offline/offline_engine.dart';
 import '../widgets/labels.dart';
 import 'hint_picker.dart';
 
@@ -90,6 +91,10 @@ class HintController extends ChangeNotifier {
       feedback.haptic(result.correct ? Haptic.medium : Haptic.heavy);
       notifyListeners();
     } on ApiException catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(hintErrorMessage(l10n, e.code))),
+      );
+    } on OfflineError catch (e) {
       messenger.showSnackBar(
         SnackBar(content: Text(hintErrorMessage(l10n, e.code))),
       );

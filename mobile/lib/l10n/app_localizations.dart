@@ -853,6 +853,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Pas de joker possible ici.'**
   String get hintUnavailable;
+
+  /// No description provided for @offlineModeNotice.
+  ///
+  /// In fr, this message translates to:
+  /// **'📴 Pas de connexion : partie solo hors ligne'**
+  String get offlineModeNotice;
 }
 
 class _AppLocalizationsDelegate

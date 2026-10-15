@@ -421,4 +421,8 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hintUnavailable => 'Pas de joker possible ici.';
+
+  @override
+  String get offlineModeNotice =>
+      '📴 Pas de connexion : partie solo hors ligne';
 }

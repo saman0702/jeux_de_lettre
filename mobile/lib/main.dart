@@ -6,6 +6,7 @@ import 'core/feedback/game_feedback.dart';
 import 'core/network/realtime_client.dart';
 import 'core/settings/app_settings.dart';
 import 'core/theme/app_theme.dart';
+import 'features/game/offline/offline_dictionary.dart';
 import 'features/home/home_screen.dart';
 import 'features/online/online_controller.dart';
 import 'l10n/app_localizations.dart';
@@ -25,6 +26,8 @@ Future<void> main() async {
   );
   // One connection for the whole app: online count, rooms and games.
   online.client.connect();
+  // Ready for offline solo games without delaying the start.
+  OfflineDictionary.load();
   runApp(LetterBattleApp(feedback: feedback, online: online));
 }
 

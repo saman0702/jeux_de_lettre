@@ -14,6 +14,9 @@ import '../online/nickname_dialog.dart';
 import '../online/online_controller.dart';
 import '../online/room_screen.dart';
 import 'data/models.dart';
+import 'data/solo_backend.dart';
+import 'offline/offline_dictionary.dart';
+import 'offline/offline_engine.dart';
 import 'data/solo_game_api.dart';
 import 'solo_game_screen.dart';
 import 'widgets/labels.dart';
@@ -77,32 +80,42 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     setState(() => _loading = true);
+    final settings = SoloGameSettings(
+      language: Localizations.localeOf(context).languageCode,
+      difficulty: _difficulty,
+      categories: _selectedCategories,
+      rounds: _rounds,
+      roundDuration: _duration,
+      nickname: l10n.defaultNickname,
+    );
+
+    SoloBackend backend = _api;
+    SoloGame game;
     try {
-      final game = await _api.createGame(
-        SoloGameSettings(
-          language: Localizations.localeOf(context).languageCode,
-          difficulty: _difficulty,
-          categories: _selectedCategories,
-          rounds: _rounds,
-          roundDuration: _duration,
-          nickname: l10n.defaultNickname,
-        ),
-      );
-      navigator.pushReplacement(
-        PopRoute(
-          builder: (_) => SoloGameScreen(
-            api: _api,
-            game: game,
-            apiClient: widget.apiClient,
-          ),
-        ),
-      );
+      game = await _api.createGame(settings);
     } on ApiException catch (e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(errorMessage(l10n, e.code))),
-      );
-      if (mounted) setState(() => _loading = false);
+      if (e.code != 'network_error') {
+        messenger.showSnackBar(
+          SnackBar(content: Text(errorMessage(l10n, e.code))),
+        );
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
+      // No server: the whole game runs on the device.
+      backend = OfflineSoloBackend(await OfflineDictionary.load());
+      game = await backend.createGame(settings);
+      messenger.showSnackBar(SnackBar(content: Text(l10n.offlineModeNotice)));
     }
+
+    navigator.pushReplacement(
+      PopRoute(
+        builder: (_) => SoloGameScreen(
+          api: backend,
+          game: game,
+          apiClient: widget.apiClient,
+        ),
+      ),
+    );
   }
 
   void _toggleCategory(Category category) {

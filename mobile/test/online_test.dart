@@ -359,7 +359,9 @@ void main() {
     expect(find.byType(RoomsScreen), findsOneWidget);
   });
 
-  testWidgets('solo against bots starts an online game with computer players', (tester) async {
+  testWidgets('solo against bots starts an online game with computer players', (
+    tester,
+  ) async {
     final h = Harness();
     await h.start(tester, SoloSetupScreen(apiClient: fakeApi(healthy: true)));
 
@@ -369,7 +371,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('🤖 2'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Bot level'), 150, scrollable: list);
+    await tester.scrollUntilVisible(
+      find.text('Bot level'),
+      150,
+      scrollable: list,
+    );
     await tester.drag(list, const Offset(0, -300));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Hard').last);
@@ -392,10 +398,15 @@ void main() {
     await tester.tap(find.text('Join'));
     await pumpFor(tester);
 
-    h.socket.push(roomEvent('waiting', players: [
-      player(me, 'Blaise'),
-      player('bot-1', 'Robo-Léa', ready: true, botLevel: 'easy'),
-    ]));
+    h.socket.push(
+      roomEvent(
+        'waiting',
+        players: [
+          player(me, 'Blaise'),
+          player('bot-1', 'Robo-Léa', ready: true, botLevel: 'easy'),
+        ],
+      ),
+    );
     await pumpFor(tester);
     expect(find.text('Robo-Léa'), findsOneWidget);
 
@@ -416,7 +427,13 @@ void main() {
     await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
     await tester.tap(find.text('Quick match'));
     await pumpFor(tester);
-    h.socket.push(roomEvent('waiting', quick: true, players: [player(me, 'Blaise', ready: true)]));
+    h.socket.push(
+      roomEvent(
+        'waiting',
+        quick: true,
+        players: [player(me, 'Blaise', ready: true)],
+      ),
+    );
     await pumpFor(tester, const Duration(milliseconds: 500));
     h.socket.push({'type': 'notice', 'kind': 'bots_joined', 'nickname': ''});
     await pumpFor(tester, const Duration(milliseconds: 500));
@@ -429,27 +446,56 @@ void main() {
     await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
     await tester.tap(find.text('Quick match'));
     await pumpFor(tester);
-    h.socket.push(roomEvent('round', round: round1(), players: [
-      {...player(me, 'Blaise'), 'hints_left': 3},
-      player('kev', 'Kevin'),
-    ]));
+    h.socket.push(
+      roomEvent(
+        'round',
+        round: round1(),
+        players: [
+          {...player(me, 'Blaise'), 'hints_left': 3},
+          player('kev', 'Kevin'),
+        ],
+      ),
+    );
     await pumpFor(tester);
 
     await tester.tap(find.byKey(const Key('hint_fruit')));
     await tester.pump();
-    expect(h.socket.sent.last, {'type': 'hint', 'round': 1, 'category': 'fruit'});
-    h.socket.push({'type': 'hint', 'round': 1, 'category': 'fruit', 'hints_left': 2,
-      'options': ['Mangue', 'Madrid', 'Maroc', 'Mouton']});
+    expect(h.socket.sent.last, {
+      'type': 'hint',
+      'round': 1,
+      'category': 'fruit',
+    });
+    h.socket.push({
+      'type': 'hint',
+      'round': 1,
+      'category': 'fruit',
+      'hints_left': 2,
+      'options': ['Mangue', 'Madrid', 'Maroc', 'Mouton'],
+    });
     await pumpFor(tester, const Duration(seconds: 1));
 
     await tester.tap(find.text('Maroc'));
     await tester.pump();
-    expect(h.socket.sent.last,
-        {'type': 'hint_pick', 'round': 1, 'category': 'fruit', 'choice': 'Maroc'});
-    h.socket.push({'type': 'hint_result', 'round': 1, 'category': 'fruit', 'correct': false, 'answer': 'Mangue'});
+    expect(h.socket.sent.last, {
+      'type': 'hint_pick',
+      'round': 1,
+      'category': 'fruit',
+      'choice': 'Maroc',
+    });
+    h.socket.push({
+      'type': 'hint_result',
+      'round': 1,
+      'category': 'fruit',
+      'correct': false,
+      'answer': 'Mangue',
+    });
     await pumpFor(tester, const Duration(seconds: 1));
 
     expect(find.byKey(const Key('hint_fruit')), findsNothing);
-    expect(find.byIcon(Icons.cancel_rounded), findsOneWidget, reason: 'wrong pick shown in red');
+    expect(
+      find.byIcon(Icons.cancel_rounded),
+      findsOneWidget,
+      reason: 'wrong pick shown in red',
+    );
   });
 }

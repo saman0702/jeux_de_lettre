@@ -11,7 +11,7 @@ import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_card.dart';
 import '../../l10n/app_localizations.dart';
 import 'data/models.dart';
-import 'data/solo_game_api.dart';
+import 'data/solo_backend.dart';
 import 'solo_game_controller.dart';
 import 'solo_setup_screen.dart';
 import 'widgets/game_over_view.dart';
@@ -28,7 +28,7 @@ class SoloGameScreen extends StatefulWidget {
     this.controller,
   });
 
-  final SoloGameApi api;
+  final SoloBackend api;
   final SoloGame game;
   final ApiClient apiClient;
 

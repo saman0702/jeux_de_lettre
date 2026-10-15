@@ -68,3 +68,6 @@ flutter test
 L'application est disponible en français et en anglais (langue du téléphone).
 
 Sons : `python3 mobile/tool/generate_sounds.py` régénère `mobile/assets/sounds/`.
+
+Solo hors ligne : la base de réponses est embarquée dans l'appli. Après une modification des listes (`backend/app/data/seed/`), régénérer :
+`cd backend && .venv/bin/python -m app.data.export_offline` (met à jour `mobile/assets/data/` et les cas de test).

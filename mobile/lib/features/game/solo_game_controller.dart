@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../core/network/api_client.dart';
 import 'data/models.dart';
-import 'data/solo_game_api.dart';
+import 'data/solo_backend.dart';
 import 'hints/hint_controller.dart';
 
 enum SoloPhase { countdown, playing, submitting, roundResult, finished, error }
@@ -21,7 +21,7 @@ class SoloGameController extends ChangeNotifier {
 
   static const countdownFrom = 3;
 
-  final SoloGameApi _api;
+  final SoloBackend _api;
   final Duration countdownStep;
   final Duration tick;
   final DateTime Function() now;
@@ -169,7 +169,7 @@ class SoloGameController extends ChangeNotifier {
 class _SoloHintSource implements HintSource {
   _SoloHintSource(this._api, this._gameId, this._round);
 
-  final SoloGameApi _api;
+  final SoloBackend _api;
   final String _gameId;
   final int _round;
 

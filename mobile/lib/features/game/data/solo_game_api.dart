@@ -1,20 +1,28 @@
 import '../../../core/network/api_client.dart';
 import 'models.dart';
+import 'solo_backend.dart';
 
-class SoloGameApi {
+/// Solo games played on the server (the default when online).
+class SoloGameApi implements SoloBackend {
   SoloGameApi(this._api);
 
   final ApiClient _api;
 
+  @override
+  bool get offline => false;
+
+  @override
   Future<SoloGame> createGame(SoloGameSettings settings) async =>
       SoloGame.fromJson(
         await _api.postJson('/api/v1/solo/games', settings.toJson()),
       );
 
+  @override
   Future<GameRound> startRound(String gameId) async => GameRound.fromJson(
     await _api.postJson('/api/v1/solo/games/$gameId/rounds'),
   );
 
+  @override
   Future<(RoundResult, SoloGame)> submit(
     String gameId,
     int roundNumber,
@@ -32,6 +40,7 @@ class SoloGameApi {
     );
   }
 
+  @override
   Future<HintOptions> requestHint(
     String gameId,
     int roundNumber,
@@ -42,6 +51,7 @@ class SoloGameApi {
     }),
   );
 
+  @override
   Future<HintPick> pickHint(
     String gameId,
     int roundNumber,

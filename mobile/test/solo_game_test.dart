@@ -320,8 +320,16 @@ void main() {
       {'pick': 'Madrid'},
     ]);
     expect(find.text('Madrid'), findsOneWidget);
-    expect(find.byKey(const Key('hint_city')), findsNothing, reason: 'field is locked');
-    expect(find.text('2'), findsOneWidget, reason: 'two hints left on the fruit button');
+    expect(
+      find.byKey(const Key('hint_city')),
+      findsNothing,
+      reason: 'field is locked',
+    );
+    expect(
+      find.text('2'),
+      findsOneWidget,
+      reason: 'two hints left on the fruit button',
+    );
     expect((feedback.audio as SilentGameAudio).played, contains(Sfx.valid));
 
     await tester.tap(find.text('FINISH'));
@@ -329,7 +337,9 @@ void main() {
     expect(server.submissions.single['city'], 'Madrid');
   });
 
-  testWidgets('typing plays tile sounds and a ding on the right letter', (tester) async {
+  testWidgets('typing plays tile sounds and a ding on the right letter', (
+    tester,
+  ) async {
     final feedback = testFeedback();
     final audio = feedback.audio as SilentGameAudio;
     await pumpGame(tester, FakeServer(), feedback: feedback);
