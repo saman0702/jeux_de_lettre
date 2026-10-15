@@ -236,6 +236,10 @@ class _RoomScreenState extends State<RoomScreen> {
       },
       child: Scaffold(
         body: GameBackground(
+          palette: _palette(room),
+          focusLetter: room?.phase == RoomPhase.round
+              ? room?.round?.letter
+              : null,
           child: SafeArea(
             child: Column(
               children: [
@@ -271,6 +275,18 @@ class _RoomScreenState extends State<RoomScreen> {
         ),
       ),
     );
+  }
+
+  BackgroundPalette _palette(RoomState? room) {
+    if (_podium != null) return BackgroundPalette.victory;
+    if (room == null || room.phase == RoomPhase.waiting) {
+      return BackgroundPalette.menu;
+    }
+    if (room.phase == RoomPhase.finished) return BackgroundPalette.victory;
+    final number = room.phase == RoomPhase.countdown
+        ? room.roundNumber + 1
+        : room.roundNumber;
+    return BackgroundPalette.forRound(number);
   }
 
   String _phaseKey(RoomState? room) {

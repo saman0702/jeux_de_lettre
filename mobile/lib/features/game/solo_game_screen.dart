@@ -105,6 +105,8 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
           },
           child: Scaffold(
             body: GameBackground(
+              palette: _palette,
+              focusLetter: _focusLetter,
               child: SafeArea(
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 350),
@@ -136,6 +138,23 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
     SoloPhase.roundResult => 'result-${_controller.lastResult?.number}',
     final phase => phase.name,
   };
+
+  /// Each round has its own colours; the end of the game turns gold.
+  BackgroundPalette get _palette {
+    final c = _controller;
+    if (c.phase == SoloPhase.finished) return BackgroundPalette.victory;
+    final number = c.phase == SoloPhase.countdown
+        ? (c.round?.number ?? 0) + 1
+        : c.round?.number ?? 1;
+    return BackgroundPalette.forRound(number);
+  }
+
+  String? get _focusLetter {
+    final c = _controller;
+    final playing =
+        c.phase == SoloPhase.playing || c.phase == SoloPhase.submitting;
+    return playing ? c.round?.letter : null;
+  }
 
   Widget _buildPhase(BuildContext context) {
     final c = _controller;
