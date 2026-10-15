@@ -991,6 +991,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'MANCHE'**
   String get roundLabel;
+
+  /// No description provided for @onlineLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'EN LIGNE'**
+  String get onlineLabel;
 }
 
 class _AppLocalizationsDelegate

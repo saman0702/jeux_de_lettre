@@ -506,4 +506,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roundLabel => 'ROUND';
+
+  @override
+  String get onlineLabel => 'ONLINE';
 }

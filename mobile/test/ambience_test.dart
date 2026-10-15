@@ -48,7 +48,8 @@ void main() {
     }
     await tester.pumpAndSettle();
 
-    GameBackground background() => tester.widget<GameBackground>(find.byType(GameBackground));
+    GameBackground background() =>
+        tester.widget<GameBackground>(find.byType(GameBackground));
     expect(background().palette, BackgroundPalette.forRound(1));
     expect(background().focusLetter, 'M');
 

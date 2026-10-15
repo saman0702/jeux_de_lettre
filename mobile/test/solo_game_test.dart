@@ -362,7 +362,9 @@ void main() {
     expect(audio.played, [Sfx.key, Sfx.match, Sfx.key, Sfx.erase]);
   });
 
-  testWidgets('the game keyboard types, erases, moves on and finishes', (tester) async {
+  testWidgets('the game keyboard types, erases, moves on and finishes', (
+    tester,
+  ) async {
     final server = FakeServer();
     final feedback = testFeedback();
     final audio = feedback.audio as SilentGameAudio;
@@ -391,8 +393,14 @@ void main() {
     }
     await tester.pumpAndSettle();
 
-    final city = tester.widget<TextField>(find.byKey(const Key('field_city'))).controller!.text;
-    final fruit = tester.widget<TextField>(find.byKey(const Key('field_fruit'))).controller!.text;
+    final city = tester
+        .widget<TextField>(find.byKey(const Key('field_city')))
+        .controller!
+        .text;
+    final fruit = tester
+        .widget<TextField>(find.byKey(const Key('field_fruit')))
+        .controller!
+        .text;
     expect((city, fruit), ('MADRID', 'MELON'));
     expect(audio.played, containsAllInOrder([Sfx.key, Sfx.match, Sfx.erase]));
 
@@ -415,7 +423,9 @@ void main() {
     expect(field.keyboardType, TextInputType.text);
   });
 
-  testWidgets('the game vibrates on GO and on answers, unless turned off', (tester) async {
+  testWidgets('the game vibrates on GO and on answers, unless turned off', (
+    tester,
+  ) async {
     final vibrator = SilentVibrator();
     final feedback = GameFeedback(
       audio: SilentGameAudio(),
@@ -448,17 +458,26 @@ void main() {
       tick: const Duration(milliseconds: 50),
     );
     tester.platformDispatcher.localesTestValue = const [Locale('en')];
-    await tester.pumpWidget(LetterBattleApp(
-      feedback: testFeedback(),
-      home: Builder(
-        builder: (context) => TextButton(
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => SoloGameScreen(api: api, game: game, apiClient: server.api, controller: controller),
-          )),
-          child: const Text('open'),
+    await tester.pumpWidget(
+      LetterBattleApp(
+        feedback: testFeedback(),
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => SoloGameScreen(
+                  api: api,
+                  game: game,
+                  apiClient: server.api,
+                  controller: controller,
+                ),
+              ),
+            ),
+            child: const Text('open'),
+          ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 50));

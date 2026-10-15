@@ -75,7 +75,9 @@ void main() {
     tester.view.devicePixelRatio = 2.75;
     tester.view.viewInsets = const FakeViewPadding(bottom: 900);
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(LetterBattleApp(home: HomeScreen(apiClient: fakeApi(healthy: true))));
+    await tester.pumpWidget(
+      LetterBattleApp(home: HomeScreen(apiClient: fakeApi(healthy: true))),
+    );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });

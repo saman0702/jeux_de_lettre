@@ -170,10 +170,11 @@ void main() {
     final h = Harness();
     await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
 
-    expect(find.text('7 online'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+    expect(find.text('ONLINE'), findsOneWidget);
     h.socket.push({'type': 'online_count', 'count': 12});
     await tester.pumpAndSettle();
-    expect(find.text('12 online'), findsOneWidget);
+    expect(find.text('12'), findsOneWidget);
     expect(h.uris.single.queryParameters, {
       'client_id': me,
       'nickname': 'Blaise',

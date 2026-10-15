@@ -332,5 +332,6 @@
       }
     }
   },
-  "roundLabel": "MANCHE"
+  "roundLabel": "MANCHE",
+  "onlineLabel": "EN LIGNE"
 }

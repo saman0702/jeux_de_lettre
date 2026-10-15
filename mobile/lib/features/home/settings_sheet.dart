@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 
+import '../../animations/bounce_in.dart';
 import '../../core/feedback/game_feedback.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/candy_button.dart';
+import '../../core/widgets/game_toggle.dart';
 import '../../l10n/app_localizations.dart';
 
+/// Game-menu style settings panel sliding up from the bottom.
 Future<void> showSettingsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     isScrollControlled: true,
     context: context,
-    backgroundColor: AppColors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
+    backgroundColor: Colors.transparent,
+    barrierColor: AppColors.ink.withValues(alpha: 0.6),
     builder: (context) => const _SettingsSheet(),
   );
 }
@@ -25,66 +27,214 @@ class _SettingsSheet extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final settings = GameFeedbackScope.of(context).settings;
 
-    Widget toggle(
-      String emoji,
-      String label,
-      bool value,
-      ValueChanged<bool> onChanged,
-    ) => SwitchListTile(
-      key: Key('setting_$label'),
-      value: value,
-      onChanged: onChanged,
-      secondary: Text(emoji, style: const TextStyle(fontSize: 26)),
-      title: Text(label, style: fredoka(size: 18, weight: FontWeight.w600)),
-    );
+    final options = [
+      (
+        '🔊',
+        AppColors.cyan,
+        l10n.settingsSound,
+        () => settings.sound,
+        (bool v) => settings.sound = v,
+      ),
+      (
+        '🎵',
+        AppColors.pink,
+        l10n.settingsMusic,
+        () => settings.music,
+        (bool v) => settings.music = v,
+      ),
+      (
+        '📳',
+        AppColors.orange,
+        l10n.settingsVibration,
+        () => settings.vibration,
+        (bool v) => settings.vibration = v,
+      ),
+      (
+        '⌨️',
+        AppColors.green,
+        l10n.settingsGameKeyboard,
+        () => settings.gameKeyboard,
+        (bool v) => settings.gameKeyboard = v,
+      ),
+      (
+        '🗣️',
+        AppColors.purpleLight,
+        l10n.settingsVoice,
+        () => settings.voice,
+        (bool v) => settings.voice = v,
+      ),
+    ];
 
-    return SafeArea(
-      child: ListenableBuilder(
-        listenable: settings,
-        builder: (context, _) => SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 20, 8, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  l10n.settingsTitle,
-                  style: fredoka(size: 24, weight: FontWeight.w700),
+    return ListenableBuilder(
+      listenable: settings,
+      builder: (context, _) => Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 26),
+            decoration: const BoxDecoration(
+              color: AppColors.cloud,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              border: Border(
+                top: BorderSide(color: AppColors.yellow, width: 5),
+              ),
+            ),
+            child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 46, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final (i, (emoji, color, label, read, write))
+                        in options.indexed)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: BounceIn(
+                          delay: Duration(milliseconds: 60 * i),
+                          from: 0.85,
+                          slideY: 0.3,
+                          child: _SettingRow(
+                            key: Key('setting_$label'),
+                            emoji: emoji,
+                            color: color,
+                            label: label,
+                            value: read(),
+                            onChanged: write,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                toggle(
-                  '🔊',
-                  l10n.settingsSound,
-                  settings.sound,
-                  (v) => settings.sound = v,
-                ),
-                toggle(
-                  '🎵',
-                  l10n.settingsMusic,
-                  settings.music,
-                  (v) => settings.music = v,
-                ),
-                toggle(
-                  '📳',
-                  l10n.settingsVibration,
-                  settings.vibration,
-                  (v) => settings.vibration = v,
-                ),
-                toggle(
-                  '⌨️',
-                  l10n.settingsGameKeyboard,
-                  settings.gameKeyboard,
-                  (v) => settings.gameKeyboard = v,
-                ),
-                toggle(
-                  '🗣️',
-                  l10n.settingsVoice,
-                  settings.voice,
-                  (v) => settings.voice = v,
-                ),
-              ],
+              ),
             ),
           ),
+          // Ribbon title over the top edge, with a close button.
+          Positioned(
+            top: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.white, width: 3),
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [AppColors.purpleLight, AppColors.purple],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.depthOf(AppColors.purple),
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Text(
+                '⚙️ ${l10n.settingsTitle.toUpperCase()}',
+                style: fredoka(
+                  size: 20,
+                  weight: FontWeight.w700,
+                  color: AppColors.white,
+                  shadows: textShadow,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 34,
+            right: 14,
+            child: RoundIconButton(
+              key: const Key('settings_close'),
+              icon: Icons.close_rounded,
+              size: 40,
+              color: AppColors.red,
+              iconColor: AppColors.white,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingRow extends StatelessWidget {
+  const _SettingRow({
+    super.key,
+    required this.emoji,
+    required this.color,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String emoji;
+  final Color color;
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: value ? color : const Color(0xFFDCD3F2),
+            width: 3,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.depthOf(value ? color : AppColors.grey),
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: value
+                      ? [Color.lerp(color, Colors.white, 0.35)!, color]
+                      : [AppColors.cloud, AppColors.grey],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.depthOf(value ? color : AppColors.grey),
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Opacity(
+                opacity: value ? 1 : 0.5,
+                child: Text(emoji, style: const TextStyle(fontSize: 24)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: fredoka(
+                  size: 18,
+                  weight: FontWeight.w700,
+                  color: value ? AppColors.ink : AppColors.inkSoft,
+                ),
+              ),
+            ),
+            GameToggle(value: value, onChanged: onChanged),
+          ],
         ),
       ),
     );

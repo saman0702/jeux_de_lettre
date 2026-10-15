@@ -148,5 +148,6 @@
   "voiceOtherWinsGame": "{name} wins the game! Well played everyone. Rematch?",
   "voiceSoloGameEnd": "Game over! {points} points in total!",
   "dialogStay": "STAY",
-  "roundLabel": "ROUND"
+  "roundLabel": "ROUND",
+  "onlineLabel": "ONLINE"
 }

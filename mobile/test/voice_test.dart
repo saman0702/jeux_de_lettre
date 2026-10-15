@@ -16,22 +16,46 @@ void main() {
   const names = {'me': 'Blaise', 'flo': 'Flore', 'arn': 'Arnaud'};
 
   test('the round winner is congratulated', () {
-    final line = say.roomRound(roundScores: {'me': 20, 'flo': 5}, names: names, me: 'me');
-    expect(line, anyOf('Bravo Blaise, tu remportes la manche !', 'Excellent Blaise ! Manche gagnée !'));
+    final line = say.roomRound(
+      roundScores: {'me': 20, 'flo': 5},
+      names: names,
+      me: 'me',
+    );
+    expect(
+      line,
+      anyOf(
+        'Bravo Blaise, tu remportes la manche !',
+        'Excellent Blaise ! Manche gagnée !',
+      ),
+    );
   });
 
   test('when someone else wins, the player is encouraged', () {
-    final line = say.roomRound(roundScores: {'me': 5, 'flo': 20}, names: names, me: 'me');
+    final line = say.roomRound(
+      roundScores: {'me': 5, 'flo': 20},
+      names: names,
+      me: 'me',
+    );
     expect(line, contains('Flore'));
     expect(
       line,
-      anyOf(contains('Courage'), contains('Pas de panique'), contains('on lâche rien')),
+      anyOf(
+        contains('Courage'),
+        contains('Pas de panique'),
+        contains('on lâche rien'),
+      ),
     );
   });
 
   test('ties and empty rounds have their own lines', () {
-    expect(say.roomRound(roundScores: {'me': 10, 'flo': 10}, names: names, me: 'me'), contains('Égalité'));
-    expect(say.roomRound(roundScores: {'me': 0, 'flo': 0}, names: names, me: 'me'), contains('Personne'));
+    expect(
+      say.roomRound(roundScores: {'me': 10, 'flo': 10}, names: names, me: 'me'),
+      contains('Égalité'),
+    );
+    expect(
+      say.roomRound(roundScores: {'me': 0, 'flo': 0}, names: names, me: 'me'),
+      contains('Personne'),
+    );
   });
 
   test('solo lines follow the score', () {
@@ -42,11 +66,19 @@ void main() {
   });
 
   test('final announcement names the winner', () {
-    expect(say.roomGameOver(winnerId: 'flo', winnerName: 'Flore', me: 'me'), startsWith('Flore gagne la partie'));
-    expect(say.roomGameOver(winnerId: 'me', winnerName: 'Blaise', me: 'me'), contains('tu gagnes'));
+    expect(
+      say.roomGameOver(winnerId: 'flo', winnerName: 'Flore', me: 'me'),
+      startsWith('Flore gagne la partie'),
+    );
+    expect(
+      say.roomGameOver(winnerId: 'me', winnerName: 'Blaise', me: 'me'),
+      contains('tu gagnes'),
+    );
   });
 
-  testWidgets('the announcer speaks after a round, unless the voice is off', (tester) async {
+  testWidgets('the announcer speaks after a round, unless the voice is off', (
+    tester,
+  ) async {
     for (final voice in [true, false]) {
       final announcer = SilentAnnouncer();
       final feedback = GameFeedback(

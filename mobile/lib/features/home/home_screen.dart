@@ -99,8 +99,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     const OnlineCounter(),
                     const Spacer(),
                     RoundIconButton(
+                      key: const Key('settings_button'),
                       icon: Icons.settings_rounded,
                       tooltip: l10n.settingsTitle,
+                      color: AppColors.yellow,
+                      iconColor: AppColors.ink,
+                      spinOnTap: true,
                       onPressed: () => showSettingsSheet(context),
                     ),
                   ],

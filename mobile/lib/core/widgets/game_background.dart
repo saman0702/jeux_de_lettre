@@ -61,11 +61,14 @@ class BackgroundPalette {
       rounds[(max(number, 1) - 1) % rounds.length];
 }
 
-/// Gradient with big translucent letters drifting slowly upwards.
+/// Layered, parallax background:
+/// - soft light blobs drifting like an aurora,
+/// - far letter tiles (small, faint, slow) and near ones (big, bright,
+///   faster) that bob, sway and now and then spin like coins,
+/// - twinkling sparkles and the occasional shooting star.
 ///
-/// The drift follows one clock shared by every screen, so letters never jump
-/// back to a starting position: not when a loop would restart, nor when the
-/// player moves to another screen. Palette and letters blend smoothly.
+/// Every layer is a continuous function of one clock shared by all screens,
+/// so nothing ever jumps, neither on a loop nor when the screen changes.
 class GameBackground extends StatefulWidget {
   const GameBackground({
     super.key,
@@ -77,8 +80,12 @@ class GameBackground extends StatefulWidget {
   final Widget child;
   final BackgroundPalette palette;
 
-  /// During a round, most floating letters show the round letter.
+  /// During a round, most tiles show the round letter.
   final String? focusLetter;
+
+  /// Frozen time used when ambient motion is off (tests, screenshots).
+  @visibleForTesting
+  static double debugTime = 0;
 
   @override
   State<GameBackground> createState() => _GameBackgroundState();
@@ -88,11 +95,8 @@ class _GameBackgroundState extends State<GameBackground>
     with TickerProviderStateMixin {
   /// Shared by all backgrounds so motion continues across screens.
   static final Stopwatch _clock = Stopwatch()..start();
-  static final List<_FloatingLetter> _letters = _FloatingLetter.generate(
-    floatingLetterCount,
-  );
 
-  final ValueNotifier<double> _time = ValueNotifier(0);
+  final ValueNotifier<double> _time = ValueNotifier(GameBackground.debugTime);
   Ticker? _ticker;
   late final AnimationController _swap = AnimationController(
     vsync: this,
@@ -103,8 +107,8 @@ class _GameBackgroundState extends State<GameBackground>
   late List<String> _previousChars = _chars;
 
   List<String> _charsFor(String? focus) => [
-    for (final (i, letter) in _letters.indexed)
-      focus != null && i % 3 != 2 ? focus : letter.char,
+    for (final (i, tile) in _tiles.indexed)
+      focus != null && i % 3 != 2 ? focus : tile.char,
   ];
 
   @override
@@ -150,8 +154,7 @@ class _GameBackgroundState extends State<GameBackground>
           Positioned.fill(
             child: RepaintBoundary(
               child: CustomPaint(
-                painter: _LettersPainter(
-                  letters: _letters,
+                painter: _BackgroundPainter(
                   chars: _chars,
                   previousChars: _previousChars,
                   time: _time,
@@ -167,93 +170,175 @@ class _GameBackgroundState extends State<GameBackground>
   }
 }
 
-/// Where floating letter [index] is at [seconds] on the shared clock:
-/// a continuous function of time, so the drift never jumps.
+// ------------------------------------------------------------------- scenery
+
+class _Tile {
+  _Tile(
+    this.char,
+    this.x,
+    this.y,
+    this.depth,
+    this.speed,
+    this.phase,
+    this.color,
+  );
+
+  final String char;
+  final double x, y, phase;
+
+  /// 0 = far away (small, faint, slow), 1 = close (big, bright, fast).
+  final double depth;
+  final double speed;
+  final Color color;
+
+  double get size => 30 + depth * 46;
+  double get opacity => 0.13 + depth * 0.25;
+}
+
+class _Blob {
+  const _Blob(this.radius, this.fx, this.fy, this.phase, this.color);
+
+  final double radius, fx, fy, phase;
+  final Color color;
+}
+
+class _Sparkle {
+  const _Sparkle(this.x, this.y, this.size, this.speed, this.phase);
+
+  final double x, y, size, speed, phase;
+}
+
+const _tileColors = [
+  AppColors.yellow,
+  AppColors.pink,
+  AppColors.cyan,
+  AppColors.green,
+  AppColors.orange,
+  AppColors.white,
+];
+
+/// Number of floating letter tiles.
+const floatingLetterCount = 14;
+
+final List<_Tile> _tiles = () {
+  final random = Random(42);
+  const alphabet = 'ABCDEFGHIJKLMNOPRSTUVWXYZ';
+  return List.generate(floatingLetterCount, (i) {
+    // Alternate far and near layers for a parallax effect.
+    final depth = i.isEven
+        ? 0.15 + random.nextDouble() * 0.25
+        : 0.65 + random.nextDouble() * 0.35;
+    return _Tile(
+      alphabet[random.nextInt(alphabet.length)],
+      random.nextDouble(),
+      random.nextDouble(),
+      depth,
+      0.6 + random.nextDouble() * 0.8,
+      random.nextDouble() * 2 * pi,
+      _tileColors[i % _tileColors.length],
+    );
+  });
+}();
+
+final List<_Blob> _blobs = () {
+  final random = Random(7);
+  const colors = [
+    Colors.white,
+    AppColors.yellow,
+    AppColors.cyan,
+    AppColors.pink,
+    Colors.white,
+  ];
+  return [
+    for (final color in colors)
+      _Blob(
+        0.45 + random.nextDouble() * 0.35,
+        0.04 + random.nextDouble() * 0.05,
+        0.03 + random.nextDouble() * 0.05,
+        random.nextDouble() * 2 * pi,
+        color,
+      ),
+  ];
+}();
+
+final List<_Sparkle> _sparkles = () {
+  final random = Random(11);
+  return List.generate(
+    26,
+    (_) => _Sparkle(
+      random.nextDouble(),
+      random.nextDouble(),
+      1.5 + random.nextDouble() * 3.5,
+      0.6 + random.nextDouble() * 1.4,
+      random.nextDouble() * 2 * pi,
+    ),
+  );
+}();
+
+/// Where tile [index] is at [seconds] on the shared clock: position and sway
+/// angle. Continuous in time, so the drift never jumps.
 @visibleForTesting
 (double x, double y, double angle) floatingLetterPose(
   int index,
   double seconds,
   Size size,
 ) {
-  final letter = _GameBackgroundState._letters[index];
-  final travel = size.height + 160;
-  // Pixels per second; letters only wrap around while off-screen.
-  final y =
-      (letter.y * travel - seconds * (10 + 14 * letter.speed)) % travel - 80;
+  final pose = _tilePose(_tiles[index], seconds, size);
+  return (pose.x, pose.y, pose.angle);
+}
+
+({double x, double y, double angle, double flip}) _tilePose(
+  _Tile tile,
+  double t,
+  Size size,
+) {
+  final travel = size.height + tile.size * 2 + 40;
+  // Near tiles rise faster than far ones (parallax).
+  final rise = (8 + 26 * tile.depth) * tile.speed;
+  final y = (tile.y * travel - t * rise) % travel - tile.size - 20;
   final x =
-      letter.x * size.width +
-      sin(seconds * 0.35 * letter.speed + letter.phase) * 16;
-  final angle =
-      letter.spin * 0.4 +
-      sin(seconds * 0.25 + letter.phase) * 0.12 * letter.spin;
-  return (x, y, angle);
+      tile.x * size.width +
+      sin(t * 0.3 * tile.speed + tile.phase) * (10 + 18 * tile.depth);
+  final angle = sin(t * 0.45 + tile.phase) * 0.22;
+
+  // Every 9-15 s a tile spins once like a coin (scaleX goes 1 -> -1 -> 1).
+  final period = 9 + 6 * (tile.phase / (2 * pi));
+  final progress = ((t + tile.phase * 3) % period) / period;
+  const spinShare = 0.09;
+  final flip = progress < spinShare ? cos(progress / spinShare * 2 * pi) : 1.0;
+  return (x: x, y: y, angle: angle, flip: flip);
 }
 
-/// Number of floating letters.
-const floatingLetterCount = 14;
-
-class _FloatingLetter {
-  _FloatingLetter(
-    this.char,
-    this.x,
-    this.y,
-    this.size,
-    this.speed,
-    this.spin,
-    this.opacity,
-    this.phase,
-  );
-
-  final String char;
-  final double x, y, size, speed, spin, opacity, phase;
-
-  static List<_FloatingLetter> generate(int count) {
-    final random = Random(42);
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    return List.generate(
-      count,
-      (_) => _FloatingLetter(
-        alphabet[random.nextInt(alphabet.length)],
-        random.nextDouble(),
-        random.nextDouble(),
-        40 + random.nextDouble() * 70,
-        0.5 + random.nextDouble(),
-        (random.nextDouble() - 0.5) * 2,
-        0.06 + random.nextDouble() * 0.08,
-        random.nextDouble() * 2 * pi,
-      ),
-    );
-  }
-}
-
-class _LettersPainter extends CustomPainter {
-  _LettersPainter({
-    required this.letters,
+class _BackgroundPainter extends CustomPainter {
+  _BackgroundPainter({
     required this.chars,
     required this.previousChars,
     required this.time,
     required this.swap,
   }) : super(repaint: Listenable.merge([time, swap]));
 
-  final List<_FloatingLetter> letters;
   final List<String> chars;
   final List<String> previousChars;
   final ValueNotifier<double> time;
   final Animation<double> swap;
 
-  static final Map<(String, double, double), TextPainter> _cache = {};
+  static final Map<(String, double, double), TextPainter> _text = {};
+  static final List<int> _drawOrder = [
+    for (var i = 0; i < _tiles.length; i++) i,
+  ]..sort((a, b) => _tiles[a].depth.compareTo(_tiles[b].depth));
 
-  static TextPainter _painter(String char, double size, double opacity) =>
-      _cache.putIfAbsent((char, size, opacity), () {
+  static TextPainter _letter(String char, double size, double opacity) =>
+      _text.putIfAbsent((char, size, opacity), () {
         return TextPainter(
           text: TextSpan(
             text: char,
             style: TextStyle(
               fontFamily: 'Fredoka',
-              fontSize: size,
+              fontSize: size * 0.62,
               fontWeight: FontWeight.w700,
               fontVariations: const [FontVariation('wght', 700)],
-              color: Colors.white.withValues(alpha: opacity),
+              color: AppColors.ink.withValues(alpha: opacity),
+              height: 1,
             ),
           ),
           textDirection: TextDirection.ltr,
@@ -263,38 +348,162 @@ class _LettersPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final t = time.value;
-    final mix = swap.value;
-    for (var i = 0; i < letters.length; i++) {
-      final letter = letters[i];
-      final (x, y, angle) = floatingLetterPose(i, t, size);
-      canvas.save();
-      canvas.translate(x, y);
-      canvas.rotate(angle);
-      void draw(String char, double alpha) {
-        if (alpha <= 0.01) return;
-        final p = _painter(char, letter.size, letter.opacity);
-        final offset = Offset(-p.width / 2, -p.height / 2);
-        if (alpha >= 0.99) {
-          p.paint(canvas, offset);
+    _paintBlobs(canvas, size, t);
+    // Far tiles first, near tiles on top.
+    for (final i in _drawOrder) {
+      _paintTile(canvas, size, t, i);
+    }
+    _paintSparkles(canvas, size, t);
+    _paintShootingStar(canvas, size, t);
+  }
+
+  void _paintBlobs(Canvas canvas, Size size, double t) {
+    for (final blob in _blobs) {
+      final center = Offset(
+        size.width * (0.5 + 0.48 * sin(t * blob.fx * 2 * pi / 3 + blob.phase)),
+        size.height *
+            (0.5 + 0.45 * cos(t * blob.fy * 2 * pi / 3 + blob.phase * 1.7)),
+      );
+      final radius = size.width * blob.radius;
+      final paint = Paint()
+        ..shader = RadialGradient(
+          colors: [
+            blob.color.withValues(alpha: 0.16),
+            blob.color.withValues(alpha: 0),
+          ],
+        ).createShader(Rect.fromCircle(center: center, radius: radius));
+      canvas.drawCircle(center, radius, paint);
+    }
+  }
+
+  void _paintTile(Canvas canvas, Size size, double t, int i) {
+    final tile = _tiles[i];
+    final pose = _tilePose(tile, t, size);
+    final s = tile.size;
+    final alpha = tile.opacity;
+
+    canvas.save();
+    canvas.translate(pose.x, pose.y);
+    canvas.rotate(pose.angle);
+    canvas.scale(pose.flip.abs().clamp(0.05, 1.0), 1);
+
+    final face = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset.zero, width: s, height: s),
+      Radius.circular(s * 0.22),
+    );
+    canvas.drawRRect(
+      face.shift(Offset(0, s * 0.1)),
+      Paint()..color = AppColors.depthOf(tile.color).withValues(alpha: alpha),
+    );
+    canvas.drawRRect(
+      face,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color.lerp(
+              tile.color,
+              Colors.white,
+              0.35,
+            )!.withValues(alpha: alpha),
+            tile.color.withValues(alpha: alpha),
+          ],
+        ).createShader(face.outerRect),
+    );
+
+    // The letter is hidden while the tile shows its edge or back.
+    if (pose.flip > 0.25) {
+      final mix = swap.value;
+      void letter(String char, double weight) {
+        if (weight <= 0.02) return;
+        final painter = _letter(char, s, (alpha + 0.25).clamp(0.0, 1.0));
+        final offset = Offset(-painter.width / 2, -painter.height / 2);
+        if (weight >= 0.98) {
+          painter.paint(canvas, offset);
           return;
         }
         // Only while letters cross-fade (a fraction of a second).
-        canvas.saveLayer(null, Paint()..color = Color.fromRGBO(0, 0, 0, alpha));
-        p.paint(canvas, offset);
+        canvas.saveLayer(
+          null,
+          Paint()..color = Color.fromRGBO(0, 0, 0, weight),
+        );
+        painter.paint(canvas, offset);
         canvas.restore();
       }
 
       if (previousChars[i] == chars[i] || mix >= 1) {
-        draw(chars[i], 1);
+        letter(chars[i], 1);
       } else {
-        draw(previousChars[i], 1 - mix);
-        draw(chars[i], mix);
+        letter(previousChars[i], 1 - mix);
+        letter(chars[i], mix);
       }
-      canvas.restore();
+    }
+    canvas.restore();
+  }
+
+  void _paintSparkles(Canvas canvas, Size size, double t) {
+    final paint = Paint();
+    for (final sparkle in _sparkles) {
+      final twinkle = pow(
+        max(0.0, sin(t * sparkle.speed + sparkle.phase)),
+        6,
+      ).toDouble();
+      if (twinkle < 0.02) continue;
+      final center = Offset(
+        sparkle.x * size.width,
+        (sparkle.y * size.height - t * 4) % size.height,
+      );
+      final r = sparkle.size * (0.6 + 0.6 * twinkle);
+      paint.color = Colors.white.withValues(alpha: 0.85 * twinkle);
+      // Four-pointed star.
+      final path = Path()
+        ..moveTo(center.dx, center.dy - r * 2)
+        ..quadraticBezierTo(center.dx, center.dy, center.dx + r * 2, center.dy)
+        ..quadraticBezierTo(center.dx, center.dy, center.dx, center.dy + r * 2)
+        ..quadraticBezierTo(center.dx, center.dy, center.dx - r * 2, center.dy)
+        ..quadraticBezierTo(center.dx, center.dy, center.dx, center.dy - r * 2);
+      canvas.drawPath(path, paint);
     }
   }
 
+  void _paintShootingStar(Canvas canvas, Size size, double t) {
+    const period = 7.0;
+    const flight = 1.1;
+    final cycle = (t / period).floor();
+    final local = t - cycle * period;
+    if (t <= 0 || local > flight) return;
+    final p = Curves.easeOut.transform(local / flight);
+    final random = Random(cycle);
+    final start = Offset(
+      size.width * (0.1 + random.nextDouble() * 0.5),
+      size.height * (0.05 + random.nextDouble() * 0.25),
+    );
+    final direction = Offset(size.width * 0.55, size.height * 0.18);
+    final head = start + direction * p;
+    final tail = start + direction * max(0.0, p - 0.25);
+    final fade = 1 - p;
+    canvas.drawLine(
+      tail,
+      head,
+      Paint()
+        ..strokeWidth = 2.5
+        ..strokeCap = StrokeCap.round
+        ..shader = LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0),
+            Colors.white.withValues(alpha: 0.9 * fade),
+          ],
+        ).createShader(Rect.fromPoints(tail, head)),
+    );
+    canvas.drawCircle(
+      head,
+      3,
+      Paint()..color = Colors.white.withValues(alpha: fade),
+    );
+  }
+
   @override
-  bool shouldRepaint(_LettersPainter oldDelegate) =>
+  bool shouldRepaint(_BackgroundPainter oldDelegate) =>
       oldDelegate.chars != chars || oldDelegate.previousChars != previousChars;
 }

@@ -510,4 +510,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get roundLabel => 'MANCHE';
+
+  @override
+  String get onlineLabel => 'EN LIGNE';
 }

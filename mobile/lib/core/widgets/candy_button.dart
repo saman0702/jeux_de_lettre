@@ -165,35 +165,122 @@ class _CandyButtonState extends State<CandyButton> {
   }
 }
 
-/// Round white icon button used for back / settings.
-class RoundIconButton extends StatelessWidget {
+/// Round candy button (back, settings...): it sinks when pressed and its
+/// icon can spin, like a game menu button.
+class RoundIconButton extends StatefulWidget {
   const RoundIconButton({
     super.key,
     required this.icon,
     required this.onPressed,
     this.tooltip,
+    this.color = AppColors.white,
+    this.iconColor = AppColors.purple,
+    this.spinOnTap = false,
+    this.size = 48,
   });
 
   final IconData icon;
   final VoidCallback onPressed;
   final String? tooltip;
+  final Color color;
+  final Color iconColor;
+
+  /// Gives the icon a full turn on tap (settings gear).
+  final bool spinOnTap;
+  final double size;
+
+  @override
+  State<RoundIconButton> createState() => _RoundIconButtonState();
+}
+
+class _RoundIconButtonState extends State<RoundIconButton>
+    with SingleTickerProviderStateMixin {
+  static const _depth = 5.0;
+  bool _pressed = false;
+  late final AnimationController _spin = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 600),
+  );
+
+  @override
+  void dispose() {
+    _spin.dispose();
+    super.dispose();
+  }
+
+  void _tap() {
+    final feedback = GameFeedbackScope.of(context);
+    feedback.play(Sfx.tap);
+    feedback.haptic(Haptic.light);
+    if (widget.spinOnTap) _spin.forward(from: 0);
+    widget.onPressed();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final size = widget.size;
+    final color = widget.color;
+    final offset = _pressed ? _depth - 1 : 0.0;
     return Tooltip(
-      message: tooltip ?? '',
-      child: Material(
-        color: AppColors.white.withValues(alpha: 0.2),
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: () {
-            GameFeedbackScope.of(context).play(Sfx.tap);
-            onPressed();
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Icon(icon, color: AppColors.white, size: 26),
+      message: widget.tooltip ?? '',
+      child: Semantics(
+        button: true,
+        label: widget.tooltip,
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _pressed = true),
+          onTapUp: (_) => setState(() => _pressed = false),
+          onTapCancel: () => setState(() => _pressed = false),
+          onTap: _tap,
+          child: SizedBox(
+            width: size,
+            height: size + _depth,
+            child: Stack(
+              children: [
+                Positioned(
+                  top: _depth,
+                  left: 0,
+                  right: 0,
+                  height: size,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: AppColors.depthOf(color),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 70),
+                  top: offset,
+                  left: 0,
+                  right: 0,
+                  height: size,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.white, width: 2.5),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color.lerp(color, Colors.white, 0.35)!, color],
+                      ),
+                    ),
+                    child: Center(
+                      child: RotationTransition(
+                        turns: CurvedAnimation(
+                          parent: _spin,
+                          curve: Curves.easeOutBack,
+                        ),
+                        child: Icon(
+                          widget.icon,
+                          color: widget.iconColor,
+                          size: size * 0.55,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
