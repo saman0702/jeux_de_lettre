@@ -129,7 +129,7 @@ async def _hint_for(session: AsyncSession, game_round: GameRound, player_id: str
 
 async def request_hint(
     session: AsyncSession, game: Game, round_number: int, category: Category
-) -> tuple[HintRequest, int]:
+    ) -> tuple[HintRequest, int]:
     """Four options for a category; asking again returns the same ones."""
     game_round = _playable_round(game, round_number)
     if category.value not in game.categories:
@@ -160,7 +160,7 @@ async def request_hint(
 
 async def pick_hint(
     session: AsyncSession, game: Game, round_number: int, category: Category, choice: str
-) -> HintRequest:
+    ) -> HintRequest:
     game_round = _playable_round(game, round_number)
     request = await _hint_for(session, game_round, game.players[0].id, category.value)
     if request is None:
@@ -176,7 +176,7 @@ async def pick_hint(
 
 async def submit_answers(
     session: AsyncSession, game: Game, round_number: int, answers: dict[Category, str]
-) -> Submission:
+    ) -> Submission:
     game_round = game.current_round
     if game_round is None or game_round.number != round_number:
         raise GameError("round_not_current")

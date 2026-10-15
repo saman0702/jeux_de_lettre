@@ -7,6 +7,7 @@ import '../../../core/widgets/candy_button.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
 import '../widgets/labels.dart';
+import '../../../core/widgets/game_icon.dart';
 
 const _optionColors = [
   AppColors.yellow,
@@ -37,11 +38,21 @@ Future<String?> showHintPicker(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const GameIconBadge(
+                  GameIconKind.hint,
+                  color: AppColors.yellow,
+                  size: 52,
+                ),
+                const SizedBox(width: 10),
+                GameIconBadge(category.icon, color: category.color, size: 52),
+              ],
+            ),
+            const SizedBox(height: 10),
             Text(
-              l10n.hintTitle(
-                '${category.emoji} ${category.label(l10n)}',
-                letter,
-              ),
+              l10n.hintTitle(category.label(l10n), letter),
               textAlign: TextAlign.center,
               style: fredoka(size: 22, weight: FontWeight.w700),
             ),

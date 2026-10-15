@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_card.dart';
+import '../../core/widgets/game_icon.dart';
 import '../../l10n/app_localizations.dart';
 import '../online/data/room_models.dart';
 import '../online/nickname_dialog.dart';
@@ -213,7 +214,9 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
                       PillSelector<Category>(
                         options: Category.values,
                         isSelected: _categories.contains,
-                        label: (c) => '${c.emoji} ${c.label(l10n)}',
+                        label: (c) => c.label(l10n),
+                        icon: (c) => c.icon,
+                        iconColor: (c) => c.color,
                         onTap: _toggleCategory,
                       ),
                     ),
@@ -236,7 +239,8 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
                           PillSelector<int>(
                             options: const [0, 1, 2, 3],
                             isSelected: (n) => n == _bots,
-                            label: (n) => n == 0 ? l10n.opponentsNone : '🤖 $n',
+                            label: (n) => n == 0 ? l10n.opponentsNone : '$n',
+                            icon: (n) => n == 0 ? null : GameIconKind.bot,
                             onTap: (n) => setState(() => _bots = n),
                           ),
                           AnimatedSize(

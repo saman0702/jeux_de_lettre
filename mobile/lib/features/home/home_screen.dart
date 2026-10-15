@@ -30,20 +30,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final ApiClient _api = widget.apiClient ?? ApiClient();
-  bool? _serverOnline;
 
   @override
   void initState() {
     super.initState();
-    _checkServer();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) GameFeedbackScope.of(context).musicWanted = true;
     });
-  }
-
-  Future<void> _checkServer() async {
-    final online = await _api.checkHealth();
-    if (mounted) setState(() => _serverOnline = online);
   }
 
   void _openSolo() {
@@ -162,7 +155,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 14),
                 ],
                 const Spacer(),
-                _ServerStatus(online: _serverOnline, onRetry: _checkServer),
               ],
             ),
           ),
@@ -215,36 +207,6 @@ class _Logo extends StatelessWidget {
           const SizedBox(height: 8),
           row('BATTLE', 6),
         ],
-      ),
-    );
-  }
-}
-
-class _ServerStatus extends StatelessWidget {
-  const _ServerStatus({required this.online, required this.onRetry});
-
-  final bool? online;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final (color, label) = switch (online) {
-      null => (AppColors.grey, l10n.serverChecking),
-      true => (AppColors.green, l10n.serverOnline),
-      false => (AppColors.red, l10n.serverOffline),
-    };
-
-    return Center(
-      child: TextButton.icon(
-        onPressed: onRetry,
-        style: TextButton.styleFrom(
-          backgroundColor: AppColors.white.withValues(alpha: 0.15),
-          shape: const StadiumBorder(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-        ),
-        icon: Icon(Icons.circle, size: 12, color: color),
-        label: Text(label, style: fredoka(size: 14, color: AppColors.white)),
       ),
     );
   }

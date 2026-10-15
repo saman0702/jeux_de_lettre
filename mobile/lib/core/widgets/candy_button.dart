@@ -4,6 +4,7 @@ import '../audio/game_audio.dart';
 import '../feedback/game_feedback.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
+import 'game_icon.dart';
 
 /// Chunky 3D button that sinks when pressed, with a click sound and a tap haptic.
 class CandyButton extends StatefulWidget {
@@ -14,6 +15,7 @@ class CandyButton extends StatefulWidget {
     this.color = AppColors.yellow,
     this.textColor = AppColors.ink,
     this.icon,
+    this.gameIcon,
     this.badge,
     this.loading = false,
     this.fontSize = 22,
@@ -25,6 +27,9 @@ class CandyButton extends StatefulWidget {
   final Color color;
   final Color textColor;
   final IconData? icon;
+
+  /// Animated game icon shown instead of [icon].
+  final GameIconKind? gameIcon;
 
   /// Small sticker in the corner, e.g. "Bientôt".
   final String? badge;
@@ -153,11 +158,15 @@ class _CandyButtonState extends State<CandyButton> {
         color: widget.textColor,
       ),
     );
-    if (widget.icon == null) return text;
+    final gameIcon = widget.gameIcon;
+    if (widget.icon == null && gameIcon == null) return text;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(widget.icon, color: widget.textColor, size: widget.fontSize + 4),
+        if (gameIcon != null)
+          GameIcon(gameIcon, color: widget.textColor, size: widget.fontSize + 6)
+        else
+          Icon(widget.icon, color: widget.textColor, size: widget.fontSize + 4),
         const SizedBox(width: 10),
         text,
       ],

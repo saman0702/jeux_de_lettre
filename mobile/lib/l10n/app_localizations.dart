@@ -569,13 +569,13 @@ abstract class AppLocalizations {
   /// No description provided for @roomTypeDuel.
   ///
   /// In fr, this message translates to:
-  /// **'⚔️ Duel'**
+  /// **'Duel'**
   String get roomTypeDuel;
 
   /// No description provided for @roomTypeGroup.
   ///
   /// In fr, this message translates to:
-  /// **'👥 Groupe (8 max)'**
+  /// **'Groupe (8 max)'**
   String get roomTypeGroup;
 
   /// No description provided for @visibility.
@@ -587,13 +587,13 @@ abstract class AppLocalizations {
   /// No description provided for @visibilityPublic.
   ///
   /// In fr, this message translates to:
-  /// **'🌐 Publique'**
+  /// **'Publique'**
   String get visibilityPublic;
 
   /// No description provided for @visibilityPrivate.
   ///
   /// In fr, this message translates to:
-  /// **'🔒 Privée'**
+  /// **'Privée'**
   String get visibilityPrivate;
 
   /// No description provided for @create.
@@ -743,7 +743,7 @@ abstract class AppLocalizations {
   /// No description provided for @noticeDisconnected.
   ///
   /// In fr, this message translates to:
-  /// **'⚠️ {name} s\'est déconnecté'**
+  /// **'{name} s\'est déconnecté'**
   String noticeDisconnected(String name);
 
   /// No description provided for @noticeReconnected.
@@ -803,7 +803,7 @@ abstract class AppLocalizations {
   /// No description provided for @noticeBotsJoined.
   ///
   /// In fr, this message translates to:
-  /// **'Personne en ligne : des bots te rejoignent 🤖'**
+  /// **'Personne en ligne : des bots te rejoignent !'**
   String get noticeBotsJoined;
 
   /// No description provided for @errorNotHost.
@@ -821,7 +821,7 @@ abstract class AppLocalizations {
   /// No description provided for @hintTitle.
   ///
   /// In fr, this message translates to:
-  /// **'💡 Joker : {category} en {letter}'**
+  /// **'Joker : {category} en {letter}'**
   String hintTitle(String category, String letter);
 
   /// No description provided for @hintSubtitle.
@@ -857,7 +857,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineModeNotice.
   ///
   /// In fr, this message translates to:
-  /// **'📴 Pas de connexion : partie solo hors ligne'**
+  /// **'Pas de connexion : partie solo hors ligne'**
   String get offlineModeNotice;
 
   /// No description provided for @settingsGameKeyboard.

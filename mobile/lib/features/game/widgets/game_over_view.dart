@@ -15,6 +15,7 @@ import '../../../core/widgets/game_card.dart';
 import '../../../core/widgets/letter_tile.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
+import '../../../core/widgets/game_icon.dart';
 
 class GameOverView extends StatefulWidget {
   const GameOverView({
@@ -86,10 +87,12 @@ class _GameOverViewState extends State<GameOverView> {
           children: [
             const BounceIn(
               from: 0,
-              child: Text(
-                '🏆',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 80),
+              child: Center(
+                child: GameIcon(
+                  GameIconKind.trophy,
+                  size: 90,
+                  color: AppColors.yellow,
+                ),
               ),
             ),
             Row(

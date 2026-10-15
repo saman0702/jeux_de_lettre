@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_card.dart';
+import '../../core/widgets/game_icon.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/data/models.dart';
 import '../game/widgets/labels.dart';
@@ -102,6 +103,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                         isSelected: (n) => n == _maxPlayers,
                         label: (n) =>
                             n == 2 ? l10n.roomTypeDuel : l10n.roomTypeGroup,
+                        icon: (n) =>
+                            n == 2 ? GameIconKind.duel : GameIconKind.group,
                         onTap: (n) => setState(() => _maxPlayers = n),
                       ),
                     ),
@@ -113,6 +116,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                         isSelected: (p) => p == _public,
                         label: (p) =>
                             p ? l10n.visibilityPublic : l10n.visibilityPrivate,
+                        icon: (p) =>
+                            p ? GameIconKind.public : GameIconKind.private,
                         onTap: (p) => setState(() => _public = p),
                       ),
                     ),
@@ -142,7 +147,9 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                       PillSelector<Category>(
                         options: Category.values,
                         isSelected: _categories.contains,
-                        label: (c) => '${c.emoji} ${c.label(l10n)}',
+                        label: (c) => c.label(l10n),
+                        icon: (c) => c.icon,
+                        iconColor: (c) => c.color,
                         onTap: _toggleCategory,
                       ),
                     ),

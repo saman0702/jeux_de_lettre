@@ -8,6 +8,7 @@ import '../../../core/audio/game_audio.dart';
 import '../../../core/feedback/game_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/game_icon.dart';
 import '../../../core/widgets/letter_tile.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
@@ -297,27 +298,7 @@ class _CategoryBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = category.color;
-    return Container(
-      width: 46,
-      height: 46,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color.lerp(color, Colors.white, 0.35)!, color],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.depthOf(color),
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Text(category.emoji, style: const TextStyle(fontSize: 24)),
-    );
+    return GameIconBadge(category.icon, color: category.color);
   }
 }
 
@@ -449,7 +430,11 @@ class _Trailing extends StatelessWidget {
         padding: const EdgeInsets.only(right: 12),
         child: Row(
           children: [
-            const Text('💡', style: TextStyle(fontSize: 20)),
+            const GameIcon(
+              GameIconKind.hint,
+              size: 22,
+              color: AppColors.yellow,
+            ),
             Icon(
               correct! ? Icons.check_circle_rounded : Icons.cancel_rounded,
               color: correct! ? AppColors.green : AppColors.red,
@@ -501,7 +486,7 @@ class _Trailing extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Text('💡', style: TextStyle(fontSize: 20)),
+              child: const GameIcon(GameIconKind.hint, size: 24),
             ),
             Positioned(
               top: -4,

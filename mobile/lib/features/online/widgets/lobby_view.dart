@@ -12,6 +12,7 @@ import '../../game/data/models.dart';
 import '../../game/widgets/labels.dart';
 import '../data/room_models.dart';
 import 'player_avatar.dart';
+import '../../../core/widgets/game_icon.dart';
 
 /// Waiting room: code to share, players, ready button (or quick match timer).
 class LobbyView extends StatelessWidget {
@@ -46,9 +47,19 @@ class LobbyView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '🤖 ${l10n.botLevel}',
-                style: fredoka(size: 22, weight: FontWeight.w700),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const GameIconBadge(
+                    GameIconKind.bot,
+                    color: AppColors.purpleLight,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    l10n.botLevel,
+                    style: fredoka(size: 22, weight: FontWeight.w700),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               for (final (level, color) in [
@@ -110,7 +121,18 @@ class LobbyView extends StatelessWidget {
               chip(l10n.roundsCount(settings.rounds)),
               chip(l10n.secondsShort(settings.roundDuration)),
               chip(settings.difficulty.label(l10n)),
-              for (final c in settings.categories) chip(c.emoji),
+              for (final c in settings.categories)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: GameIcon(c.icon, size: 20),
+                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -167,7 +189,8 @@ class LobbyView extends StatelessWidget {
                 room.players.length < settings.maxPlayers) ...[
               CandyButton(
                 key: const Key('add_bot_button'),
-                label: '🤖 ${l10n.addBot}',
+                label: l10n.addBot,
+                gameIcon: GameIconKind.bot,
                 color: AppColors.white,
                 height: 48,
                 fontSize: 17,
@@ -272,7 +295,7 @@ class _PlayerSeat extends StatelessWidget {
               const Positioned(
                 top: -12,
                 left: 14,
-                child: Text('👑', style: TextStyle(fontSize: 18)),
+                child: GameIcon(GameIconKind.crown, size: 22),
               ),
             if (showReady && player.ready)
               const Positioned(
@@ -292,7 +315,11 @@ class _PlayerSeat extends StatelessWidget {
               const Positioned(
                 bottom: -4,
                 right: -6,
-                child: Text('📡', style: TextStyle(fontSize: 18)),
+                child: GameIcon(
+                  GameIconKind.offline,
+                  size: 18,
+                  color: AppColors.red,
+                ),
               ),
             if (onRemove != null)
               Positioned(
@@ -368,15 +395,21 @@ class _QuickStatus extends StatelessWidget {
         : l10n.quickStartsIn(startsIn);
     return GameCard(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Text(
-        '⚡ $text',
-        key: const Key('quick_status'),
-        textAlign: TextAlign.center,
-        style: fredoka(
-          size: 20,
-          weight: FontWeight.w700,
-          color: AppColors.purple,
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const GameIcon(GameIconKind.bolt, size: 26, color: AppColors.orange),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            key: const Key('quick_status'),
+            style: fredoka(
+              size: 20,
+              weight: FontWeight.w700,
+              color: AppColors.purple,
+            ),
+          ),
+        ],
       ),
     );
   }

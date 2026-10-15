@@ -221,7 +221,7 @@ void main() {
       ),
     );
     await pumpFor(tester);
-    expect(find.text('✅\nAnswers sent!'), findsOneWidget);
+    expect(find.text('Answers sent!'), findsOneWidget);
 
     Map<String, dynamic> result(
       String id,
@@ -278,7 +278,7 @@ void main() {
       ),
     );
     await pumpFor(tester, const Duration(seconds: 4));
-    expect(find.text('🏆 PODIUM'), findsOneWidget);
+    expect(find.text('PODIUM'), findsOneWidget);
     expect(find.text('42 pts'), findsOneWidget);
 
     await tester.tap(find.text('PLAY AGAIN'));
@@ -327,7 +327,7 @@ void main() {
     });
     await tester.pumpAndSettle();
     expect(find.text("Serge's room"), findsOneWidget);
-    expect(find.text('👤 3/8'), findsOneWidget);
+    expect(find.text('3/8'), findsOneWidget);
 
     await tester.tap(find.text("Serge's room"));
     await tester.pump();
@@ -367,10 +367,10 @@ void main() {
     await h.start(tester, SoloSetupScreen(apiClient: fakeApi(healthy: true)));
 
     final list = find.byType(Scrollable).first;
-    await tester.scrollUntilVisible(find.text('🤖 2'), 150, scrollable: list);
+    await tester.scrollUntilVisible(find.text('2'), 150, scrollable: list);
     await tester.drag(list, const Offset(0, -300));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('🤖 2'));
+    await tester.tap(find.text('2'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.text('Bot level'),
@@ -438,7 +438,7 @@ void main() {
     await pumpFor(tester, const Duration(milliseconds: 500));
     h.socket.push({'type': 'notice', 'kind': 'bots_joined', 'nickname': ''});
     await pumpFor(tester, const Duration(milliseconds: 500));
-    expect(find.text('Nobody online: bots are joining you 🤖'), findsOneWidget);
+    expect(find.text('Nobody online: bots are joining you!'), findsOneWidget);
     await pumpFor(tester, const Duration(seconds: 3));
   });
 

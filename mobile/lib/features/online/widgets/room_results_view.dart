@@ -15,6 +15,7 @@ import '../../game/data/models.dart';
 import '../../game/widgets/round_result_view.dart';
 import '../data/room_models.dart';
 import 'player_avatar.dart';
+import '../../../core/widgets/game_icon.dart';
 
 /// Round results: your answers pop in one by one, then the leaderboard.
 class RoomResultsView extends StatefulWidget {
@@ -210,12 +211,6 @@ class _LeaderboardRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final medal = switch (rank) {
-      1 => '🥇',
-      2 => '🥈',
-      3 => '🥉',
-      _ => '$rank',
-    };
     return Container(
       color: isMe ? AppColors.yellow.withValues(alpha: 0.25) : null,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -223,10 +218,12 @@ class _LeaderboardRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 30,
-            child: Text(
-              medal,
-              style: fredoka(size: 20, weight: FontWeight.w700),
-            ),
+            child: rank <= 3
+                ? GameIcon(GameIconKind.medal(rank), size: 26)
+                : Text(
+                    '$rank',
+                    style: fredoka(size: 20, weight: FontWeight.w700),
+                  ),
           ),
           PlayerAvatar(
             nickname: player.nickname,

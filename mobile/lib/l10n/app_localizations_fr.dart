@@ -263,19 +263,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get roomType => 'Type de partie';
 
   @override
-  String get roomTypeDuel => '⚔️ Duel';
+  String get roomTypeDuel => 'Duel';
 
   @override
-  String get roomTypeGroup => '👥 Groupe (8 max)';
+  String get roomTypeGroup => 'Groupe (8 max)';
 
   @override
   String get visibility => 'Visibilité';
 
   @override
-  String get visibilityPublic => '🌐 Publique';
+  String get visibilityPublic => 'Publique';
 
   @override
-  String get visibilityPrivate => '🔒 Privée';
+  String get visibilityPrivate => 'Privée';
 
   @override
   String get create => 'CRÉER';
@@ -360,7 +360,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String noticeDisconnected(String name) {
-    return '⚠️ $name s\'est déconnecté';
+    return '$name s\'est déconnecté';
   }
 
   @override
@@ -393,8 +393,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addBot => 'Ajouter un bot';
 
   @override
-  String get noticeBotsJoined =>
-      'Personne en ligne : des bots te rejoignent 🤖';
+  String get noticeBotsJoined => 'Personne en ligne : des bots te rejoignent !';
 
   @override
   String get errorNotHost => 'Seul l\'hôte peut faire ça.';
@@ -404,7 +403,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String hintTitle(String category, String letter) {
-    return '💡 Joker : $category en $letter';
+    return 'Joker : $category en $letter';
   }
 
   @override
@@ -423,8 +422,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hintUnavailable => 'Pas de joker possible ici.';
 
   @override
-  String get offlineModeNotice =>
-      '📴 Pas de connexion : partie solo hors ligne';
+  String get offlineModeNotice => 'Pas de connexion : partie solo hors ligne';
 
   @override
   String get settingsGameKeyboard => 'Clavier du jeu';

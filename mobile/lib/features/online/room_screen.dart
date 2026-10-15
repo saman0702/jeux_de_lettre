@@ -22,6 +22,7 @@ import 'widgets/podium_view.dart';
 import 'widgets/room_results_view.dart';
 import 'widgets/round_wait_view.dart';
 import 'widgets/searching_view.dart';
+import '../../core/widgets/game_icon.dart';
 
 /// The room the player is in, whatever its phase. Pushed right after asking
 /// the server for a room (quick match, create, join).
@@ -210,7 +211,7 @@ class _RoomScreenState extends State<RoomScreen> {
     final l10n = AppLocalizations.of(context);
     final leave = await showGameConfirm(
       context,
-      emoji: '🚪',
+      icon: GameIconKind.door,
       title: l10n.quitGameTitle,
       message: l10n.leaveRoomMessage,
       confirmLabel: l10n.quit.toUpperCase(),
@@ -248,7 +249,7 @@ class _RoomScreenState extends State<RoomScreen> {
                     title: room == null
                         ? l10n.modeQuickMatch
                         : room.quick
-                        ? '⚡ ${l10n.modeQuickMatch}'
+                        ? l10n.modeQuickMatch
                         : l10n.roomOf(room.player(room.hostId)?.nickname ?? ''),
                     onBack: _confirmLeave,
                   ),
@@ -369,14 +370,22 @@ class _ConnectionBanner extends StatelessWidget {
         color: AppColors.red,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Text(
-        '📡 ${AppLocalizations.of(context).connectionLost}',
-        textAlign: TextAlign.center,
-        style: fredoka(
-          size: 15,
-          weight: FontWeight.w600,
-          color: AppColors.white,
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const GameIcon(GameIconKind.offline, size: 20),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              AppLocalizations.of(context).connectionLost,
+              style: fredoka(
+                size: 15,
+                weight: FontWeight.w600,
+                color: AppColors.white,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

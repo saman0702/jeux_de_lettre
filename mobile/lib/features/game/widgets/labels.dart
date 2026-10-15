@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/game_icon.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
 
 extension CategoryLabel on Category {
-  String get emoji => switch (this) {
-    Category.city => '🏙️',
-    Category.country => '🌍',
-    Category.animal => '🐘',
-    Category.fruit => '🍎',
+  GameIconKind get icon => switch (this) {
+    Category.city => GameIconKind.city,
+    Category.country => GameIconKind.country,
+    Category.animal => GameIconKind.animal,
+    Category.fruit => GameIconKind.fruit,
   };
 
   /// Each category has its own colour in the game.

@@ -262,19 +262,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roomType => 'Game type';
 
   @override
-  String get roomTypeDuel => '⚔️ Duel';
+  String get roomTypeDuel => 'Duel';
 
   @override
-  String get roomTypeGroup => '👥 Group (up to 8)';
+  String get roomTypeGroup => 'Group (up to 8)';
 
   @override
   String get visibility => 'Visibility';
 
   @override
-  String get visibilityPublic => '🌐 Public';
+  String get visibilityPublic => 'Public';
 
   @override
-  String get visibilityPrivate => '🔒 Private';
+  String get visibilityPrivate => 'Private';
 
   @override
   String get create => 'CREATE';
@@ -359,7 +359,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String noticeDisconnected(String name) {
-    return '⚠️ $name disconnected';
+    return '$name disconnected';
   }
 
   @override
@@ -392,7 +392,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addBot => 'Add a bot';
 
   @override
-  String get noticeBotsJoined => 'Nobody online: bots are joining you 🤖';
+  String get noticeBotsJoined => 'Nobody online: bots are joining you!';
 
   @override
   String get errorNotHost => 'Only the host can do that.';
@@ -402,7 +402,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String hintTitle(String category, String letter) {
-    return '💡 Hint: $category starting with $letter';
+    return 'Hint: $category starting with $letter';
   }
 
   @override
@@ -421,7 +421,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hintUnavailable => 'No hint available here.';
 
   @override
-  String get offlineModeNotice => '📴 No connection: playing solo offline';
+  String get offlineModeNotice => 'No connection: playing solo offline';
 
   @override
   String get settingsGameKeyboard => 'Game keyboard';

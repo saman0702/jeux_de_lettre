@@ -20,6 +20,7 @@ import 'widgets/labels.dart';
 import 'widgets/quit_button.dart';
 import 'widgets/round_result_view.dart';
 import 'widgets/round_view.dart';
+import '../../core/widgets/game_icon.dart';
 
 class SoloGameScreen extends StatefulWidget {
   const SoloGameScreen({
@@ -76,7 +77,7 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
     final l10n = AppLocalizations.of(context);
     return showGameConfirm(
       context,
-      emoji: '🚪',
+      icon: GameIconKind.door,
       title: l10n.quitGameTitle,
       message: l10n.quitGameMessage,
       confirmLabel: l10n.quit.toUpperCase(),
@@ -211,7 +212,11 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('📡', style: TextStyle(fontSize: 56)),
+                  const GameIconBadge(
+                    GameIconKind.offline,
+                    color: AppColors.red,
+                    size: 72,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     errorMessage(l10n, c.errorCode),

@@ -28,7 +28,11 @@ void main() {
 
     expect(find.text('Solo'), findsOneWidget);
     expect(find.text('Partie rapide'), findsOneWidget);
-    expect(find.text('Serveur connecté'), findsOneWidget);
+    expect(
+      find.text('Serveur connecté'),
+      findsNothing,
+      reason: 'technical info stays hidden',
+    );
   });
 
   testWidgets('menu music plays on the home screen and can be turned off', (
@@ -67,7 +71,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Quick match'), findsOneWidget);
-    expect(find.text('Server unreachable'), findsOneWidget);
+    expect(find.text('Server unreachable'), findsNothing);
   });
 
   testWidgets('home does not overflow when the keyboard opens', (tester) async {

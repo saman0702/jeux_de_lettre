@@ -6,12 +6,13 @@ import '../feedback/game_feedback.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'candy_button.dart';
+import 'game_icon.dart';
 
 /// Game-style yes/no box: it pops in with a bounce, has a ribbon title, a
-/// big emoji and candy buttons. Returns true when the player confirms.
+/// big animated icon and candy buttons. Returns true when the player confirms.
 Future<bool> showGameConfirm(
   BuildContext context, {
-  required String emoji,
+  required GameIconKind icon,
   required String title,
   required String message,
   required String confirmLabel,
@@ -28,7 +29,7 @@ Future<bool> showGameConfirm(
     barrierColor: AppColors.ink.withValues(alpha: 0.65),
     transitionDuration: const Duration(milliseconds: 420),
     pageBuilder: (context, _, _) => _GameConfirm(
-      emoji: emoji,
+      icon: icon,
       title: title,
       message: message,
       confirmLabel: confirmLabel,
@@ -52,7 +53,7 @@ Future<bool> showGameConfirm(
 
 class _GameConfirm extends StatelessWidget {
   const _GameConfirm({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.message,
     required this.confirmLabel,
@@ -60,7 +61,7 @@ class _GameConfirm extends StatelessWidget {
     required this.accent,
   });
 
-  final String emoji;
+  final GameIconKind icon;
   final String title;
   final String message;
   final String confirmLabel;
@@ -178,7 +179,7 @@ class _GameConfirm extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Big emoji badge.
+                // Big icon badge.
                 Positioned(
                   top: -6,
                   child: BounceIn(
@@ -199,7 +200,7 @@ class _GameConfirm extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: Text(emoji, style: const TextStyle(fontSize: 30)),
+                      child: GameIcon(icon, size: 34, color: AppColors.ink),
                     ),
                   ),
                 ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/game_icon.dart';
 
 const _avatarColors = [
   AppColors.yellow,
@@ -58,7 +59,7 @@ class PlayerAvatar extends StatelessWidget {
         ],
       ),
       child: bot
-          ? Text('🤖', style: TextStyle(fontSize: size * 0.5, height: 1))
+          ? GameIcon(GameIconKind.bot, size: size * 0.58, color: AppColors.ink)
           : Text(
               nickname.isEmpty ? '?' : nickname.characters.first.toUpperCase(),
               style: fredoka(

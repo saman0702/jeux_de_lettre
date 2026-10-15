@@ -19,6 +19,7 @@ import 'room_screen.dart';
 import 'widgets/online_counter.dart';
 import 'widgets/online_header.dart';
 import 'widgets/player_avatar.dart';
+import '../../core/widgets/game_icon.dart';
 
 /// Open public rooms, plus creating a room or joining one with a code.
 class RoomsScreen extends StatefulWidget {
@@ -147,13 +148,26 @@ class _RoomsScreenState extends State<RoomsScreen> {
                       ? Center(
                           child: Padding(
                             padding: const EdgeInsets.all(32),
-                            child: Text(
-                              '🛋️\n${l10n.noPublicRooms}',
-                              textAlign: TextAlign.center,
-                              style: fredoka(
-                                size: 17,
-                                color: AppColors.white.withValues(alpha: 0.85),
-                              ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const GameIconBadge(
+                                  GameIconKind.empty,
+                                  color: AppColors.purpleLight,
+                                  size: 72,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  l10n.noPublicRooms,
+                                  textAlign: TextAlign.center,
+                                  style: fredoka(
+                                    size: 17,
+                                    color: AppColors.white.withValues(
+                                      alpha: 0.85,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         )
@@ -190,9 +204,7 @@ class _RoomTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final name = room.quick
-        ? '⚡ ${l10n.modeQuickMatch}'
-        : l10n.roomOf(room.host);
+    final name = room.quick ? l10n.modeQuickMatch : l10n.roomOf(room.host);
 
     Widget chip(String text) => Container(
       margin: const EdgeInsets.only(right: 6, top: 6),
@@ -217,7 +229,14 @@ class _RoomTile extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            PlayerAvatar(nickname: room.host, seed: room.code, size: 48),
+            if (room.quick)
+              const GameIconBadge(
+                GameIconKind.bolt,
+                color: AppColors.orange,
+                size: 48,
+              )
+            else
+              PlayerAvatar(nickname: room.host, seed: room.code, size: 48),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -245,13 +264,20 @@ class _RoomTile extends StatelessWidget {
                 color: AppColors.green,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Text(
-                '👤 ${l10n.playersCount(room.players, room.maxPlayers)}',
-                style: fredoka(
-                  size: 15,
-                  weight: FontWeight.w700,
-                  color: AppColors.white,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const GameIcon(GameIconKind.person, size: 18),
+                  const SizedBox(width: 3),
+                  Text(
+                    l10n.playersCount(room.players, room.maxPlayers),
+                    style: fredoka(
+                      size: 15,
+                      weight: FontWeight.w700,
+                      color: AppColors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -293,7 +319,12 @@ class _JoinCodeDialogState extends State<_JoinCodeDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('🔑', style: TextStyle(fontSize: 44)),
+            const GameIconBadge(
+              GameIconKind.key,
+              color: AppColors.yellow,
+              size: 60,
+            ),
+            const SizedBox(height: 8),
             Text(
               l10n.joinCodeTitle,
               style: fredoka(size: 22, weight: FontWeight.w700),

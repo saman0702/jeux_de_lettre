@@ -11,6 +11,7 @@ import '../../../core/widgets/letter_tile.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
 import 'labels.dart';
+import '../../../core/widgets/game_icon.dart';
 
 /// Answers are revealed one by one (✅ ding / ❌ buzz), then the round score
 /// counts up.
@@ -138,12 +139,18 @@ class _RoundResultViewState extends State<RoundResultView>
                             color: AppColors.white,
                           ),
                         ),
-                        Text(
-                          '⏱ ${l10n.finishedIn(seconds)}',
-                          style: fredoka(
-                            size: 15,
-                            color: AppColors.white.withValues(alpha: 0.85),
-                          ),
+                        Row(
+                          children: [
+                            const GameIcon(GameIconKind.timer, size: 18),
+                            const SizedBox(width: 4),
+                            Text(
+                              l10n.finishedIn(seconds),
+                              style: fredoka(
+                                size: 15,
+                                color: AppColors.white.withValues(alpha: 0.85),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -263,9 +270,10 @@ class AnswerCard extends StatelessWidget {
               color: color.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: Text(
-              answer.category.emoji,
-              style: const TextStyle(fontSize: 24),
+            child: GameIcon(
+              answer.category.icon,
+              size: 26,
+              color: answer.category.color,
             ),
           ),
           const SizedBox(width: 12),
@@ -306,9 +314,20 @@ class AnswerCard extends StatelessWidget {
                           color: AppColors.yellow.withValues(alpha: 0.35),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(
-                          '💡 ${l10n.hintedBadge}',
-                          style: fredoka(size: 12, weight: FontWeight.w600),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const GameIcon(
+                              GameIconKind.hint,
+                              size: 14,
+                              color: Color(0xFFB08900),
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              l10n.hintedBadge,
+                              style: fredoka(size: 12, weight: FontWeight.w600),
+                            ),
+                          ],
                         ),
                       ),
                     ],

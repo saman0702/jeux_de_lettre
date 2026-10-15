@@ -198,7 +198,7 @@ void main() {
     expect(server.submissions.single, {'city': 'Madrid', 'fruit': ''});
     expect(find.text('Valid'), findsOneWidget);
     expect(find.text('+10'), findsWidgets);
-    expect(find.text('⏱ Finished in 4.2s'), findsOneWidget);
+    expect(find.text('Finished in 4.2s'), findsOneWidget);
     expect(
       audio.played,
       containsAllInOrder([Sfx.valid, Sfx.invalid, Sfx.points]),
@@ -281,7 +281,7 @@ void main() {
 
     await tester.tap(find.text('10'));
     await tester.tap(find.text('45s'));
-    await tester.tap(find.text('🐘 Animal'));
+    await tester.tap(find.text('Animal'));
     await tester.ensureVisible(find.text('Hard'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Hard'));

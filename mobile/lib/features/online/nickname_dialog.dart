@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
 import '../../l10n/app_localizations.dart';
 import 'online_controller.dart';
+import '../../core/widgets/game_icon.dart';
 
 /// Makes sure the player has a nickname before going online.
 /// Returns false if they dismissed the dialog.
@@ -56,7 +57,11 @@ class _NicknameDialogState extends State<_NicknameDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('🙂', style: TextStyle(fontSize: 48)),
+            const GameIconBadge(
+              GameIconKind.smile,
+              color: AppColors.yellow,
+              size: 64,
+            ),
             const SizedBox(height: 8),
             Text(
               l10n.nicknameTitle,

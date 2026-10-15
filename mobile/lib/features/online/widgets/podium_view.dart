@@ -14,6 +14,7 @@ import '../../../core/widgets/game_card.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/room_models.dart';
 import 'player_avatar.dart';
+import '../../../core/widgets/game_icon.dart';
 
 /// End of game: 🥇🥈🥉 podium, confetti, then play again or leave.
 class PodiumView extends StatefulWidget {
@@ -84,15 +85,25 @@ class _PodiumViewState extends State<PodiumView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              '🏆 ${l10n.podiumTitle}',
-              textAlign: TextAlign.center,
-              style: fredoka(
-                size: 30,
-                weight: FontWeight.w700,
-                color: AppColors.white,
-                shadows: textShadow,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const GameIcon(
+                  GameIconKind.trophy,
+                  size: 40,
+                  color: AppColors.yellow,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.podiumTitle,
+                  style: fredoka(
+                    size: 30,
+                    weight: FontWeight.w700,
+                    color: AppColors.white,
+                    shadows: textShadow,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             Row(
@@ -196,7 +207,6 @@ class _PodiumStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final medal = ['🥇', '🥈', '🥉'][place - 1];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Column(
@@ -243,7 +253,7 @@ class _PodiumStep extends StatelessWidget {
                 ),
               ],
             ),
-            child: Text(medal, style: const TextStyle(fontSize: 34)),
+            child: GameIcon(GameIconKind.medal(place), size: 42),
           ),
         ],
       ),

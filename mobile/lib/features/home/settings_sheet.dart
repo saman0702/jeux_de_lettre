@@ -5,6 +5,7 @@ import '../../core/feedback/game_feedback.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
+import '../../core/widgets/game_icon.dart';
 import '../../core/widgets/game_toggle.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -29,35 +30,35 @@ class _SettingsSheet extends StatelessWidget {
 
     final options = [
       (
-        '🔊',
+        GameIconKind.sound,
         AppColors.cyan,
         l10n.settingsSound,
         () => settings.sound,
         (bool v) => settings.sound = v,
       ),
       (
-        '🎵',
+        GameIconKind.music,
         AppColors.pink,
         l10n.settingsMusic,
         () => settings.music,
         (bool v) => settings.music = v,
       ),
       (
-        '📳',
+        GameIconKind.vibration,
         AppColors.orange,
         l10n.settingsVibration,
         () => settings.vibration,
         (bool v) => settings.vibration = v,
       ),
       (
-        '⌨️',
+        GameIconKind.keyboard,
         AppColors.green,
         l10n.settingsGameKeyboard,
         () => settings.gameKeyboard,
         (bool v) => settings.gameKeyboard = v,
       ),
       (
-        '🗣️',
+        GameIconKind.voice,
         AppColors.purpleLight,
         l10n.settingsVoice,
         () => settings.voice,
@@ -87,7 +88,7 @@ class _SettingsSheet extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    for (final (i, (emoji, color, label, read, write))
+                    for (final (i, (icon, color, label, read, write))
                         in options.indexed)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 10),
@@ -97,7 +98,7 @@ class _SettingsSheet extends StatelessWidget {
                           slideY: 0.3,
                           child: _SettingRow(
                             key: Key('setting_$label'),
-                            emoji: emoji,
+                            icon: icon,
                             color: color,
                             label: label,
                             value: read(),
@@ -130,14 +131,21 @@ class _SettingsSheet extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Text(
-                '⚙️ ${l10n.settingsTitle.toUpperCase()}',
-                style: fredoka(
-                  size: 20,
-                  weight: FontWeight.w700,
-                  color: AppColors.white,
-                  shadows: textShadow,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const GameIcon(GameIconKind.settings, size: 24),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.settingsTitle.toUpperCase(),
+                    style: fredoka(
+                      size: 20,
+                      weight: FontWeight.w700,
+                      color: AppColors.white,
+                      shadows: textShadow,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -162,14 +170,14 @@ class _SettingsSheet extends StatelessWidget {
 class _SettingRow extends StatelessWidget {
   const _SettingRow({
     super.key,
-    required this.emoji,
+    required this.icon,
     required this.color,
     required this.label,
     required this.value,
     required this.onChanged,
   });
 
-  final String emoji;
+  final GameIconKind icon;
   final Color color;
   final String label;
   final bool value;
@@ -197,31 +205,7 @@ class _SettingRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: value
-                      ? [Color.lerp(color, Colors.white, 0.35)!, color]
-                      : [AppColors.cloud, AppColors.grey],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.depthOf(value ? color : AppColors.grey),
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Opacity(
-                opacity: value ? 1 : 0.5,
-                child: Text(emoji, style: const TextStyle(fontSize: 24)),
-              ),
-            ),
+            GameIconBadge(icon, color: color, size: 48, dimmed: !value),
             const SizedBox(width: 12),
             Expanded(
               child: Text(

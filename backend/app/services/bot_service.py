@@ -71,7 +71,7 @@ def _typo(word: str, rng: random.Random) -> str:
 
 def choose_answers(
     profile: BotProfile, options: dict[str, list[str]], rng: random.Random | None = None
-) -> dict[Category, str]:
+    ) -> dict[Category, str]:
     rng = rng or random.Random()
     answers: dict[Category, str] = {}
     for category, values in options.items():

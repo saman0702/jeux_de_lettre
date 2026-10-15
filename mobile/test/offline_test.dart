@@ -167,7 +167,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('📴 No connection: playing solo offline'), findsOneWidget);
+    expect(find.text('No connection: playing solo offline'), findsOneWidget);
     expect(find.byType(SoloGameScreen), findsOneWidget);
   });
 }

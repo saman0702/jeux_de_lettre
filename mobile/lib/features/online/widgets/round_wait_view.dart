@@ -9,6 +9,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../game/widgets/round_view.dart';
 import '../data/room_models.dart';
 import 'player_avatar.dart';
+import '../../../core/widgets/game_icon.dart';
 
 /// Shown after sending your answers (or when joining mid-round): who is
 /// still writing, and the round timer.
@@ -46,15 +47,26 @@ class RoundWaitView extends StatelessWidget {
           const SizedBox(height: 24),
           BounceIn(
             from: 0.3,
-            child: Text(
-              spectating ? '👀\n${l10n.spectating}' : '✅\n${l10n.answersSent}',
-              textAlign: TextAlign.center,
-              style: fredoka(
-                size: 24,
-                weight: FontWeight.w700,
-                color: AppColors.white,
-                shadows: textShadow,
-              ),
+            child: Column(
+              children: [
+                GameIconBadge(
+                  spectating ? GameIconKind.eyes : GameIconKind.check,
+                  color: spectating ? AppColors.cyan : AppColors.green,
+                  size: 72,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  spectating ? l10n.spectating : l10n.answersSent,
+                  key: const Key('wait_message'),
+                  textAlign: TextAlign.center,
+                  style: fredoka(
+                    size: 24,
+                    weight: FontWeight.w700,
+                    color: AppColors.white,
+                    shadows: textShadow,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -96,10 +108,11 @@ class RoundWaitView extends StatelessWidget {
                                 color: AppColors.green,
                                 size: 30,
                               )
-                            : const Text(
-                                '✍️',
+                            : const GameIcon(
+                                GameIconKind.writing,
                                 key: ValueKey('writing'),
-                                style: TextStyle(fontSize: 24),
+                                size: 26,
+                                color: AppColors.purple,
                               ),
                       ),
                     ),
