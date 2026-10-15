@@ -423,4 +423,33 @@ void main() {
     expect(find.text('Nobody online: bots are joining you 🤖'), findsOneWidget);
     await pumpFor(tester, const Duration(seconds: 3));
   });
+
+  testWidgets('hints in a room go through the socket', (tester) async {
+    final h = Harness();
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+    await tester.tap(find.text('Quick match'));
+    await pumpFor(tester);
+    h.socket.push(roomEvent('round', round: round1(), players: [
+      {...player(me, 'Blaise'), 'hints_left': 3},
+      player('kev', 'Kevin'),
+    ]));
+    await pumpFor(tester);
+
+    await tester.tap(find.byKey(const Key('hint_fruit')));
+    await tester.pump();
+    expect(h.socket.sent.last, {'type': 'hint', 'round': 1, 'category': 'fruit'});
+    h.socket.push({'type': 'hint', 'round': 1, 'category': 'fruit', 'hints_left': 2,
+      'options': ['Mangue', 'Madrid', 'Maroc', 'Mouton']});
+    await pumpFor(tester, const Duration(seconds: 1));
+
+    await tester.tap(find.text('Maroc'));
+    await tester.pump();
+    expect(h.socket.sent.last,
+        {'type': 'hint_pick', 'round': 1, 'category': 'fruit', 'choice': 'Maroc'});
+    h.socket.push({'type': 'hint_result', 'round': 1, 'category': 'fruit', 'correct': false, 'answer': 'Mangue'});
+    await pumpFor(tester, const Duration(seconds: 1));
+
+    expect(find.byKey(const Key('hint_fruit')), findsNothing);
+    expect(find.byIcon(Icons.cancel_rounded), findsOneWidget, reason: 'wrong pick shown in red');
+  });
 }

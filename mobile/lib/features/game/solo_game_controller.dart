@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import '../../core/network/api_client.dart';
 import 'data/models.dart';
 import 'data/solo_game_api.dart';
+import 'hints/hint_controller.dart';
 
 enum SoloPhase { countdown, playing, submitting, roundResult, finished, error }
 
@@ -28,6 +29,7 @@ class SoloGameController extends ChangeNotifier {
 
   SoloGame _game;
   GameRound? _round;
+  HintController? _hints;
   final List<RoundResult> _results = [];
   SoloPhase _phase = SoloPhase.countdown;
   int _countdown = countdownFrom;
@@ -38,6 +40,9 @@ class SoloGameController extends ChangeNotifier {
   bool _disposed = false;
 
   SoloGame get game => _game;
+
+  /// Jokers for the current round.
+  HintController? get hints => _hints;
   GameRound? get round => _round;
   List<RoundResult> get results => List.unmodifiable(_results);
   RoundResult? get lastResult => _results.isEmpty ? null : _results.last;
@@ -86,6 +91,12 @@ class SoloGameController extends ChangeNotifier {
     for (final field in fields.values) {
       field.clear();
     }
+    _hints?.dispose();
+    _hints = HintController(
+      source: _SoloHintSource(_api, _game.id, _round!.number),
+      hintsLeft: _game.hintsLeft,
+      letter: _round!.letter,
+    );
     _remaining = _round!.remaining(now());
     _setPhase(SoloPhase.playing);
     _timer = Timer.periodic(tick, (_) {
@@ -146,10 +157,27 @@ class SoloGameController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _hints?.dispose();
     _timer?.cancel();
     for (final field in fields.values) {
       field.dispose();
     }
     super.dispose();
   }
+}
+
+class _SoloHintSource implements HintSource {
+  _SoloHintSource(this._api, this._gameId, this._round);
+
+  final SoloGameApi _api;
+  final String _gameId;
+  final int _round;
+
+  @override
+  Future<HintOptions> request(Category category) =>
+      _api.requestHint(_gameId, _round, category);
+
+  @override
+  Future<HintPick> pick(Category category, String choice) =>
+      _api.pickHint(_gameId, _round, category, choice);
 }

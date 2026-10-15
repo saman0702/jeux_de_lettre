@@ -401,4 +401,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get botTag => 'Bot';
+
+  @override
+  String hintTitle(String category, String letter) {
+    return '💡 Joker : $category en $letter';
+  }
+
+  @override
+  String get hintSubtitle => 'Un seul de ces mots est juste !';
+
+  @override
+  String get statusHintWrong => 'Mauvais choix';
+
+  @override
+  String get hintedBadge => 'Joker';
+
+  @override
+  String get hintNoneLeft => 'Plus de joker pour cette partie.';
+
+  @override
+  String get hintUnavailable => 'Pas de joker possible ici.';
 }

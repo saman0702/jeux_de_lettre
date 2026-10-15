@@ -176,6 +176,7 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
           fields: c.fields,
           submitting: c.phase == SoloPhase.submitting,
           onFinish: c.submit,
+          hints: c.hints,
         );
       case SoloPhase.roundResult:
         return RoundResultView(

@@ -10,6 +10,7 @@ import '../../core/widgets/game_background.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/data/models.dart';
 import '../game/widgets/labels.dart';
+import '../game/hints/hint_controller.dart';
 import '../game/widgets/round_view.dart';
 import 'data/room_models.dart';
 import 'online_controller.dart';
@@ -45,6 +46,7 @@ class _RoomScreenState extends State<RoomScreen> {
 
   final Map<Category, TextEditingController> _fields = {};
   int? _fieldsRound;
+  HintController? _hints;
   int? _submittedRound;
 
   /// The final podium stays on screen until the player chooses, even if
@@ -80,6 +82,7 @@ class _RoomScreenState extends State<RoomScreen> {
     for (final f in _fields.values) {
       f.dispose();
     }
+    _hints?.dispose();
     _feedback.musicWanted = true;
     if (!_left && _online.room != null) {
       // Not during the tree teardown: leaving notifies other screens.
@@ -119,6 +122,12 @@ class _RoomScreenState extends State<RoomScreen> {
     }
     _fields.removeWhere((c, f) => !categories.contains(c));
     _fieldsRound = round;
+    _hints?.dispose();
+    _hints = HintController(
+      source: _OnlineHintSource(_online, round),
+      hintsLeft: _online.me?.hintsLeft ?? 0,
+      letter: _room?.round?.letter ?? '',
+    );
   }
 
   void _onTick() {
@@ -333,6 +342,7 @@ class _RoomScreenState extends State<RoomScreen> {
             remaining: round.remaining(widget.now()),
             fields: _fields,
             onFinish: _submit,
+            hints: _hints,
           );
         }
         return RoundWaitView(room: room, spectating: !(me?.playing ?? false));
@@ -366,4 +376,19 @@ class _ConnectionBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+class _OnlineHintSource implements HintSource {
+  _OnlineHintSource(this._online, this._round);
+
+  final OnlineController _online;
+  final int _round;
+
+  @override
+  Future<HintOptions> request(Category category) =>
+      _online.requestHint(_round, category);
+
+  @override
+  Future<HintPick> pick(Category category, String choice) =>
+      _online.pickHint(_round, category, choice);
 }

@@ -119,5 +119,11 @@
   "addBot": "Add a bot",
   "noticeBotsJoined": "Nobody online: bots are joining you 🤖",
   "errorNotHost": "Only the host can do that.",
-  "botTag": "Bot"
+  "botTag": "Bot",
+  "hintTitle": "💡 Hint: {category} starting with {letter}",
+  "hintSubtitle": "Only one of these words is right!",
+  "statusHintWrong": "Wrong pick",
+  "hintedBadge": "Hint",
+  "hintNoneLeft": "No hints left this game.",
+  "hintUnavailable": "No hint available here."
 }

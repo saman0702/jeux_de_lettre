@@ -817,6 +817,42 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Bot'**
   String get botTag;
+
+  /// No description provided for @hintTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'💡 Joker : {category} en {letter}'**
+  String hintTitle(String category, String letter);
+
+  /// No description provided for @hintSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un seul de ces mots est juste !'**
+  String get hintSubtitle;
+
+  /// No description provided for @statusHintWrong.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mauvais choix'**
+  String get statusHintWrong;
+
+  /// No description provided for @hintedBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joker'**
+  String get hintedBadge;
+
+  /// No description provided for @hintNoneLeft.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus de joker pour cette partie.'**
+  String get hintNoneLeft;
+
+  /// No description provided for @hintUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de joker possible ici.'**
+  String get hintUnavailable;
 }
 
 class _AppLocalizationsDelegate

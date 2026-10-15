@@ -61,6 +61,7 @@ class RoomPlayer {
     required this.finished,
     required this.playing,
     this.botLevel,
+    this.hintsLeft = 0,
   });
 
   factory RoomPlayer.fromJson(Map<String, dynamic> json) => RoomPlayer(
@@ -74,6 +75,7 @@ class RoomPlayer {
     botLevel: json['bot_level'] == null
         ? null
         : Difficulty.values.byName(json['bot_level'] as String),
+    hintsLeft: json['hints_left'] as int? ?? 0,
   );
 
   final String clientId;
@@ -92,6 +94,9 @@ class RoomPlayer {
   final Difficulty? botLevel;
 
   bool get bot => botLevel != null;
+
+  /// Jokers left in this game.
+  final int hintsLeft;
 }
 
 class PlayerRoundResult {

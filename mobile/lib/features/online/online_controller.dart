@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
+import '../../core/network/api_client.dart';
 import '../../core/network/realtime_client.dart';
 import '../game/data/models.dart';
 import 'data/room_models.dart';
@@ -37,6 +38,9 @@ class OnlineController extends ChangeNotifier {
   late final StreamSubscription<Map<String, dynamic>> _subscription;
   final _notices = StreamController<RoomNotice>.broadcast();
   final _errors = StreamController<String>.broadcast();
+
+  final Map<Category, Completer<HintOptions>> _hintRequests = {};
+  final Map<Category, Completer<HintPick>> _hintPicks = {};
 
   int _onlineCount = 0;
   List<RoomSummary> _rooms = const [];
@@ -101,6 +105,37 @@ class OnlineController extends ChangeNotifier {
 
   void unwatchRooms() => client.send({'type': 'unsubscribe_rooms'});
 
+  /// Asks the server for the four options of a category (uses a joker).
+  Future<HintOptions> requestHint(int round, Category category) {
+    final completer = _hintRequests[category] = Completer<HintOptions>();
+    client.send({'type': 'hint', 'round': round, 'category': category.name});
+    return _withTimeout(completer.future);
+  }
+
+  Future<HintPick> pickHint(int round, Category category, String choice) {
+    final completer = _hintPicks[category] = Completer<HintPick>();
+    client.send({
+      'type': 'hint_pick',
+      'round': round,
+      'category': category.name,
+      'choice': choice,
+    });
+    return _withTimeout(completer.future);
+  }
+
+  Future<T> _withTimeout<T>(Future<T> future) => future.timeout(
+    const Duration(seconds: 8),
+    onTimeout: () => throw ApiException('network_error'),
+  );
+
+  void _failPendingHints(String code) {
+    for (final c in [..._hintRequests.values, ..._hintPicks.values]) {
+      if (!c.isCompleted) c.completeError(ApiException(code));
+    }
+    _hintRequests.clear();
+    _hintPicks.clear();
+  }
+
   void _request(Map<String, dynamic> message) {
     _searching = true;
     notifyListeners();
@@ -130,9 +165,23 @@ class OnlineController extends ChangeNotifier {
           _notices.add(RoomNotice(kind, event['nickname'] as String? ?? ''));
         }
         return;
+      case 'hint':
+        final options = HintOptions.fromJson(event);
+        _hintRequests.remove(options.category)?.complete(options);
+        return;
+      case 'hint_result':
+        final pick = HintPick.fromJson(event);
+        _hintPicks.remove(pick.category)?.complete(pick);
+        return;
       case 'error':
+        final code = event['code'] as String? ?? 'error';
+        if (_hintRequests.isNotEmpty || _hintPicks.isNotEmpty) {
+          // Hint errors are shown by the hint button, not as room errors.
+          _failPendingHints(code);
+          return;
+        }
         _searching = false;
-        _errors.add(event['code'] as String? ?? 'error');
+        _errors.add(code);
       default:
         return;
     }

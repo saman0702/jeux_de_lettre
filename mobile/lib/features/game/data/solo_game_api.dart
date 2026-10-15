@@ -31,4 +31,26 @@ class SoloGameApi {
       SoloGame.fromJson(body['game'] as Map<String, dynamic>),
     );
   }
+
+  Future<HintOptions> requestHint(
+    String gameId,
+    int roundNumber,
+    Category category,
+  ) async => HintOptions.fromJson(
+    await _api.postJson('/api/v1/solo/games/$gameId/rounds/$roundNumber/hint', {
+      'category': category.name,
+    }),
+  );
+
+  Future<HintPick> pickHint(
+    String gameId,
+    int roundNumber,
+    Category category,
+    String choice,
+  ) async => HintPick.fromJson(
+    await _api.postJson(
+      '/api/v1/solo/games/$gameId/rounds/$roundNumber/hint/pick',
+      {'category': category.name, 'choice': choice},
+    ),
+  );
 }

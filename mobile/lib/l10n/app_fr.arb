@@ -230,5 +230,21 @@
   "addBot": "Ajouter un bot",
   "noticeBotsJoined": "Personne en ligne : des bots te rejoignent 🤖",
   "errorNotHost": "Seul l'hôte peut faire ça.",
-  "botTag": "Bot"
+  "botTag": "Bot",
+  "hintTitle": "💡 Joker : {category} en {letter}",
+  "hintSubtitle": "Un seul de ces mots est juste !",
+  "statusHintWrong": "Mauvais choix",
+  "hintedBadge": "Joker",
+  "hintNoneLeft": "Plus de joker pour cette partie.",
+  "hintUnavailable": "Pas de joker possible ici.",
+  "@hintTitle": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "letter": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -287,6 +287,23 @@ class AnswerCard extends StatelessWidget {
                         color: color,
                       ),
                     ),
+                    if (answer.hinted) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.yellow.withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '💡 ${l10n.hintedBadge}',
+                          style: fredoka(size: 12, weight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],

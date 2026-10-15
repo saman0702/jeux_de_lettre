@@ -35,6 +35,7 @@ extension AnswerStatusLabel on AnswerStatus {
     AnswerStatus.wrongLetter => l10n.statusWrongLetter,
     AnswerStatus.notFound => l10n.statusNotFound,
     AnswerStatus.late => l10n.statusLate,
+    AnswerStatus.hintWrong => l10n.statusHintWrong,
   };
 
   Color get color =>
@@ -43,6 +44,12 @@ extension AnswerStatusLabel on AnswerStatus {
   IconData get icon =>
       this == AnswerStatus.valid ? Icons.check_circle : Icons.cancel;
 }
+
+String hintErrorMessage(AppLocalizations l10n, String code) => switch (code) {
+  'no_hints_left' => l10n.hintNoneLeft,
+  'no_hint_available' => l10n.hintUnavailable,
+  _ => errorMessage(l10n, code),
+};
 
 String errorMessage(AppLocalizations l10n, String? code) => switch (code) {
   'network_error' => l10n.errorNetwork,

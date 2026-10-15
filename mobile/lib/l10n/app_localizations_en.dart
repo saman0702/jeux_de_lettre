@@ -399,4 +399,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get botTag => 'Bot';
+
+  @override
+  String hintTitle(String category, String letter) {
+    return '💡 Hint: $category starting with $letter';
+  }
+
+  @override
+  String get hintSubtitle => 'Only one of these words is right!';
+
+  @override
+  String get statusHintWrong => 'Wrong pick';
+
+  @override
+  String get hintedBadge => 'Hint';
+
+  @override
+  String get hintNoneLeft => 'No hints left this game.';
+
+  @override
+  String get hintUnavailable => 'No hint available here.';
 }

@@ -25,6 +25,8 @@ class FakeServer {
   int totalScore = 0;
   Map<String, dynamic>? createdWith;
   final List<Map<String, dynamic>> submissions = [];
+  final List<Map<String, dynamic>> hintCalls = [];
+  int hintsLeft = 3;
 
   Map<String, dynamic> game() => {
     'id': 'g1',
@@ -38,6 +40,7 @@ class FakeServer {
     'nickname': 'Player',
     'total_score': totalScore,
     'rounds_played': roundsPlayed,
+    'hints_left': hintsLeft,
   };
 
   late final client = MockClient((request) async {
@@ -45,6 +48,25 @@ class FakeServer {
     if (path == '/api/v1/solo/games') {
       createdWith = jsonDecode(request.body) as Map<String, dynamic>;
       return _json(game(), 201);
+    }
+    if (path.endsWith('/hint/pick')) {
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      hintCalls.add({'pick': body['choice']});
+      return _json({
+        'category': body['category'],
+        'correct': body['choice'] == 'Madrid',
+        'answer': 'Madrid',
+      });
+    }
+    if (path.endsWith('/hint')) {
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      hintCalls.add({'request': body['category']});
+      hintsLeft--;
+      return _json({
+        'category': body['category'],
+        'options': ['Mangue', 'Madrid', 'Maroc', 'Mouton'],
+        'hints_left': hintsLeft,
+      });
     }
     if (path.endsWith('/rounds')) {
       final now = DateTime.now().toUtc();
@@ -274,5 +296,35 @@ void main() {
       'nickname': 'Player',
     });
     expect(find.byType(SoloGameScreen), findsOneWidget);
+  });
+
+  testWidgets('a hint shows four options and locks the field', (tester) async {
+    final server = FakeServer();
+    final feedback = testFeedback();
+    await pumpGame(tester, server, feedback: feedback);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('hint_city')));
+    await tester.pumpAndSettle();
+    expect(find.text('Only one of these words is right!'), findsOneWidget);
+    expect(find.text('Maroc'), findsOneWidget);
+
+    await tester.tap(find.text('Madrid'));
+    await tester.pumpAndSettle();
+    expect(server.hintCalls, [
+      {'request': 'city'},
+      {'pick': 'Madrid'},
+    ]);
+    expect(find.text('Madrid'), findsOneWidget);
+    expect(find.byKey(const Key('hint_city')), findsNothing, reason: 'field is locked');
+    expect(find.text('2'), findsOneWidget, reason: 'two hints left on the fruit button');
+    expect((feedback.audio as SilentGameAudio).played, contains(Sfx.valid));
+
+    await tester.tap(find.text('FINISH'));
+    await tester.pumpAndSettle();
+    expect(server.submissions.single['city'], 'Madrid');
   });
 }

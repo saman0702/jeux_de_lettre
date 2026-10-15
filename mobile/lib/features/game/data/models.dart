@@ -2,13 +2,14 @@ enum Category { city, country, animal, fruit }
 
 enum Difficulty { easy, normal, hard }
 
-enum AnswerStatus { valid, empty, wrongLetter, notFound, late }
+enum AnswerStatus { valid, empty, wrongLetter, notFound, late, hintWrong }
 
 AnswerStatus _parseStatus(String value) => switch (value) {
   'valid' => AnswerStatus.valid,
   'empty' => AnswerStatus.empty,
   'wrong_letter' => AnswerStatus.wrongLetter,
   'not_found' => AnswerStatus.notFound,
+  'hint_wrong' => AnswerStatus.hintWrong,
   _ => AnswerStatus.late,
 };
 
@@ -51,6 +52,7 @@ class SoloGame {
     required this.status,
     required this.totalScore,
     required this.roundsPlayed,
+    this.hintsLeft = 0,
   });
 
   factory SoloGame.fromJson(Map<String, dynamic> json) => SoloGame(
@@ -64,6 +66,7 @@ class SoloGame {
     status: json['status'] as String,
     totalScore: json['total_score'] as int,
     roundsPlayed: json['rounds_played'] as int,
+    hintsLeft: json['hints_left'] as int? ?? 0,
   );
 
   final String id;
@@ -73,6 +76,7 @@ class SoloGame {
   final String status;
   final int totalScore;
   final int roundsPlayed;
+  final int hintsLeft;
 
   bool get isFinished => status == 'finished';
 }
@@ -121,6 +125,7 @@ class AnswerResult {
     required this.status,
     required this.points,
     this.matchedValue,
+    this.hinted = false,
   });
 
   factory AnswerResult.fromJson(Map<String, dynamic> json) => AnswerResult(
@@ -129,6 +134,7 @@ class AnswerResult {
     status: _parseStatus(json['status'] as String),
     points: json['points'] as int,
     matchedValue: json['matched_value'] as String?,
+    hinted: json['hinted'] as bool? ?? false,
   );
 
   final Category category;
@@ -136,6 +142,46 @@ class AnswerResult {
   final AnswerStatus status;
   final int points;
   final String? matchedValue;
+
+  /// Answered with a hint (half points).
+  final bool hinted;
+}
+
+/// The four options of a hint; the right one stays on the server.
+class HintOptions {
+  const HintOptions({
+    required this.category,
+    required this.options,
+    required this.hintsLeft,
+  });
+
+  factory HintOptions.fromJson(Map<String, dynamic> json) => HintOptions(
+    category: Category.values.byName(json['category'] as String),
+    options: [for (final o in json['options'] as List) o as String],
+    hintsLeft: json['hints_left'] as int,
+  );
+
+  final Category category;
+  final List<String> options;
+  final int hintsLeft;
+}
+
+class HintPick {
+  const HintPick({
+    required this.category,
+    required this.correct,
+    required this.answer,
+  });
+
+  factory HintPick.fromJson(Map<String, dynamic> json) => HintPick(
+    category: Category.values.byName(json['category'] as String),
+    correct: json['correct'] as bool,
+    answer: json['answer'] as String,
+  );
+
+  final Category category;
+  final bool correct;
+  final String answer;
 }
 
 class RoundResult {
