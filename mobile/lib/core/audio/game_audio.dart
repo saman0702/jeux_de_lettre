@@ -1,7 +1,26 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 
-enum Sfx { tap, countdown, go, tick, reveal, valid, invalid, points, victory }
+enum Sfx {
+  tap,
+  countdown,
+  go,
+  tick,
+  reveal,
+  valid,
+  invalid,
+  points,
+  victory,
+  key,
+  erase,
+  match,
+  finish,
+  hintOpen,
+}
+
+/// Asset base name; some effects have variants (key_1, key_2...) played in turn.
+const _sfxFiles = {Sfx.hintOpen: 'hint_open'};
+const _sfxVariants = {Sfx.key: 3};
 
 /// Plays sound effects and the menu music.
 abstract class GameAudio {
@@ -36,7 +55,8 @@ class AudioplayersGameAudio implements GameAudio {
     focus: AudioContextConfigFocus.mixWithOthers,
   ).build();
 
-  final Map<Sfx, AudioPool> _pools = {};
+  final Map<Sfx, List<AudioPool>> _pools = {};
+  int _variant = 0;
   final AudioPlayer _music = AudioPlayer();
   bool _musicWanted = false;
 
@@ -45,11 +65,19 @@ class AudioplayersGameAudio implements GameAudio {
     try {
       await AudioPlayer.global.setAudioContext(_context);
       for (final sfx in Sfx.values) {
-        audio._pools[sfx] = await AudioPool.create(
-          source: AssetSource('sounds/${sfx.name}.wav'),
-          maxPlayers: 3,
-          audioContext: _context,
-        );
+        final base = _sfxFiles[sfx] ?? sfx.name;
+        final variants = _sfxVariants[sfx];
+        final files = variants == null
+            ? ['$base.wav']
+            : [for (var i = 1; i <= variants; i++) '${base}_$i.wav'];
+        audio._pools[sfx] = [
+          for (final file in files)
+            await AudioPool.create(
+              source: AssetSource('sounds/$file'),
+              maxPlayers: 3,
+              audioContext: _context,
+            ),
+        ];
       }
       await audio._music.setAudioContext(_context);
       await audio._music.setReleaseMode(ReleaseMode.loop);
@@ -63,7 +91,11 @@ class AudioplayersGameAudio implements GameAudio {
   }
 
   @override
-  void play(Sfx sfx) => _pools[sfx]?.start();
+  void play(Sfx sfx) {
+    final pools = _pools[sfx];
+    if (pools == null || pools.isEmpty) return;
+    pools[_variant++ % pools.length].start();
+  }
 
   @override
   void startMusic() {

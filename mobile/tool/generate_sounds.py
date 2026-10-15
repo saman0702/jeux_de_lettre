@@ -131,6 +131,29 @@ def sound_effects() -> None:
     )
 
 
+def typing_sounds() -> None:
+    """Soft wooden "tock" when a letter tile lands, in three pitches so fast
+    typing does not sound mechanical."""
+    for i, pitch in enumerate([880, 990, 1110], start=1):
+        write(
+            f"key_{i}",
+            mix(
+                (0, tone(pitch, 0.06, "triangle", f1=pitch * 0.8, decay=55)),
+                (0, noise(0.012, decay=400, volume=0.25)),
+            ),
+            peak=0.35,
+        )
+    write("erase", tone(620, 0.08, "triangle", f1=380, decay=35), peak=0.3)
+    write("match", mix((0, tone(freq("G6"), 0.18, "bell", decay=16)),
+                       (0.05, tone(freq("D7"), 0.22, "bell", decay=14, volume=0.7))), peak=0.4)
+    write("finish", mix(
+        (0, tone(300, 0.28, "sine", f1=1400, decay=6, volume=0.6)),
+        (0.18, tone(freq("C6"), 0.25, "bell", decay=10)),
+    ), peak=0.5)
+    write("hint_open", seq(*[tone(freq(n), 0.06, "bell", decay=22)
+                             for n in ["E6", "G6", "B6", "E7"]]), peak=0.4)
+
+
 def menu_music() -> None:
     """A short, cheerful loop: 8 bars at 112 BPM, loops seamlessly."""
     beat = 60 / 112
@@ -172,4 +195,5 @@ def menu_music() -> None:
 
 if __name__ == "__main__":
     sound_effects()
+    typing_sounds()
     menu_music()

@@ -27,13 +27,14 @@ class FakeServer {
   final List<Map<String, dynamic>> submissions = [];
   final List<Map<String, dynamic>> hintCalls = [];
   int hintsLeft = 3;
+  List<String> categories = ['city', 'fruit'];
 
   Map<String, dynamic> game() => {
     'id': 'g1',
     'mode': 'solo',
     'language': 'en',
     'difficulty': 'normal',
-    'categories': ['city', 'fruit'],
+    'categories': categories,
     'total_rounds': totalRounds,
     'round_duration': roundSeconds,
     'status': roundsPlayed >= totalRounds ? 'finished' : 'playing',
@@ -326,5 +327,27 @@ void main() {
     await tester.tap(find.text('FINISH'));
     await tester.pumpAndSettle();
     expect(server.submissions.single['city'], 'Madrid');
+  });
+
+  testWidgets('typing plays tile sounds and a ding on the right letter', (tester) async {
+    final feedback = testFeedback();
+    final audio = feedback.audio as SilentGameAudio;
+    await pumpGame(tester, FakeServer(), feedback: feedback);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    await tester.pumpAndSettle();
+    audio.played.clear();
+
+    final field = find.byKey(const Key('field_city'));
+    await tester.showKeyboard(field);
+    await tester.enterText(field, 'M');
+    await tester.pumpAndSettle();
+    await tester.enterText(field, 'Ma');
+    await tester.pumpAndSettle();
+    await tester.enterText(field, 'M');
+    await tester.pumpAndSettle();
+
+    expect(audio.played, [Sfx.key, Sfx.match, Sfx.key, Sfx.erase]);
   });
 }

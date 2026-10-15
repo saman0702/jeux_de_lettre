@@ -11,7 +11,7 @@ import '../../../core/widgets/candy_button.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
 import '../hints/hint_controller.dart';
-import 'labels.dart';
+import 'answer_slot.dart';
 
 class RoundView extends StatelessWidget {
   const RoundView({
@@ -89,7 +89,7 @@ class RoundView extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
             itemCount: categories.length,
             separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) => _AnswerField(
+            itemBuilder: (context, index) => AnswerSlot(
               category: categories[index],
               controller: fields[categories[index]]!,
               letter: round.letter,
@@ -109,146 +109,13 @@ class RoundView extends StatelessWidget {
             color: AppColors.green,
             textColor: AppColors.white,
             loading: submitting,
-            onPressed: onFinish,
+            onPressed: () {
+              GameFeedbackScope.of(context).play(Sfx.finish);
+              onFinish();
+            },
           ),
         ),
       ],
-    );
-  }
-}
-
-class _AnswerField extends StatelessWidget {
-  const _AnswerField({
-    required this.category,
-    required this.controller,
-    required this.letter,
-    required this.enabled,
-    required this.autofocus,
-    required this.isLast,
-    required this.onDone,
-    this.hints,
-  });
-
-  final Category category;
-  final TextEditingController controller;
-  final String letter;
-  final bool enabled;
-  final bool autofocus;
-  final bool isLast;
-  final VoidCallback onDone;
-  final HintController? hints;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    return ListenableBuilder(
-      listenable: Listenable.merge([controller, ?hints]),
-      builder: (context, _) {
-        final value = controller.value;
-        final hint = hints?.field(category);
-        final locked = hint?.locked ?? false;
-        final matches = !locked && firstLetterOf(value.text) == letter;
-        final borderColor = locked
-            ? (hint!.correct! ? AppColors.green : AppColors.red)
-            : (matches ? AppColors.green : AppColors.white);
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: borderColor, width: 3),
-            boxShadow: const [
-              BoxShadow(color: Color(0x40250E6B), offset: Offset(0, 5)),
-            ],
-          ),
-          child: Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 12),
-                child: Text(
-                  category.emoji,
-                  style: const TextStyle(fontSize: 28),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 8, 6),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        category.label(l10n),
-                        style: fredoka(
-                          size: 13,
-                          weight: FontWeight.w600,
-                          color: AppColors.inkSoft,
-                        ),
-                      ),
-                      TextField(
-                        key: Key('field_${category.name}'),
-                        controller: controller,
-                        enabled: enabled && !locked,
-                        autofocus: autofocus,
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        textCapitalization: TextCapitalization.words,
-                        textInputAction: isLast
-                            ? TextInputAction.done
-                            : TextInputAction.next,
-                        onSubmitted: isLast ? (_) => onDone() : null,
-                        style: fredoka(size: 20, weight: FontWeight.w600),
-                        cursorColor: AppColors.purple,
-                        decoration: InputDecoration(
-                          isDense: true,
-                          filled: false,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 4,
-                          ),
-                          hintText: '$letter…',
-                          hintStyle: fredoka(size: 20, color: AppColors.grey),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (locked)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Row(
-                    children: [
-                      const Text('💡', style: TextStyle(fontSize: 20)),
-                      Icon(
-                        hint!.correct!
-                            ? Icons.check_circle_rounded
-                            : Icons.cancel_rounded,
-                        color: hint.correct! ? AppColors.green : AppColors.red,
-                        size: 26,
-                      ),
-                    ],
-                  ),
-                )
-              else if (matches)
-                const Padding(
-                  padding: EdgeInsets.only(right: 12),
-                  child: Icon(
-                    Icons.check_circle_rounded,
-                    color: AppColors.green,
-                    size: 26,
-                  ),
-                )
-              else if (hints != null && enabled && hints!.canHint(category))
-                _HintButton(
-                  key: Key('hint_${category.name}'),
-                  left: hints!.hintsLeft,
-                  onTap: () => hints!.use(context, category, controller),
-                ),
-            ],
-          ),
-        );
-      },
     );
   }
 }
@@ -362,58 +229,4 @@ class _RingPainter extends CustomPainter {
   @override
   bool shouldRepaint(_RingPainter oldDelegate) =>
       oldDelegate.fraction != fraction || oldDelegate.color != color;
-}
-
-class _HintButton extends StatelessWidget {
-  const _HintButton({super.key, required this.left, required this.onTap});
-
-  final int left;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 10),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.yellow,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.depthOf(AppColors.yellow),
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: const Text('💡', style: TextStyle(fontSize: 20)),
-            ),
-            Positioned(
-              top: -4,
-              right: -4,
-              child: CircleAvatar(
-                radius: 9,
-                backgroundColor: AppColors.purple,
-                child: Text(
-                  '$left',
-                  style: fredoka(
-                    size: 11,
-                    weight: FontWeight.w700,
-                    color: AppColors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

@@ -70,7 +70,7 @@ class HintController extends ChangeNotifier {
         notifyListeners();
       }
       if (!context.mounted) return;
-      feedback.play(Sfx.reveal);
+      feedback.play(Sfx.hintOpen);
       final choice = await showHintPicker(
         context,
         category: category,

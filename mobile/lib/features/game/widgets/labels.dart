@@ -12,6 +12,14 @@ extension CategoryLabel on Category {
     Category.fruit => '🍎',
   };
 
+  /// Each category has its own colour in the game.
+  Color get color => switch (this) {
+    Category.city => AppColors.cyan,
+    Category.country => AppColors.green,
+    Category.animal => AppColors.orange,
+    Category.fruit => AppColors.pink,
+  };
+
   String label(AppLocalizations l10n) => switch (this) {
     Category.city => l10n.categoryCity,
     Category.country => l10n.categoryCountry,
