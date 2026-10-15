@@ -153,7 +153,7 @@ class _RoundResultViewState extends State<RoundResultView>
                       opacity: t.clamp(0.0, 1.0),
                       child: Transform.translate(
                         offset: Offset(60 * (1 - t), 0),
-                        child: _AnswerCard(
+                        child: AnswerCard(
                           answer: result.answers[i],
                           popScale: t,
                         ),
@@ -229,8 +229,8 @@ class _RoundResultViewState extends State<RoundResultView>
   }
 }
 
-class _AnswerCard extends StatelessWidget {
-  const _AnswerCard({required this.answer, required this.popScale});
+class AnswerCard extends StatelessWidget {
+  const AnswerCard({super.key, required this.answer, this.popScale = 1});
 
   final AnswerResult answer;
   final double popScale;

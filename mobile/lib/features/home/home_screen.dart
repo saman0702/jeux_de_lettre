@@ -11,6 +11,12 @@ import '../../core/widgets/game_background.dart';
 import '../../core/widgets/letter_tile.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/solo_setup_screen.dart';
+import '../game/widgets/labels.dart';
+import '../online/nickname_dialog.dart';
+import '../online/online_controller.dart';
+import '../online/room_screen.dart';
+import '../online/rooms_screen.dart';
+import '../online/widgets/online_counter.dart';
 import 'settings_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -45,10 +51,33 @@ class _HomeScreenState extends State<HomeScreen> {
         .push(PopRoute(builder: (_) => SoloSetupScreen(apiClient: _api)));
   }
 
-  void _showComingSoon() {
-    final l10n = AppLocalizations.of(context);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(l10n.comingSoon)));
+  /// Online modes need a connection and a nickname.
+  Future<bool> _readyForOnline() async {
+    final online = OnlineScope.of(context);
+    if (!online.isOnline) {
+      online.client.connect();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            errorMessage(AppLocalizations.of(context), 'network_error'),
+          ),
+        ),
+      );
+      return false;
+    }
+    return ensureNickname(context);
+  }
+
+  Future<void> _quickMatch() async {
+    if (!await _readyForOnline() || !mounted) return;
+    OnlineScope.of(context)
+        .quickMatch(Localizations.localeOf(context).languageCode);
+    Navigator.of(context).push(PopRoute(builder: (_) => const RoomScreen()));
+  }
+
+  Future<void> _openRooms() async {
+    if (!await _readyForOnline() || !mounted) return;
+    Navigator.of(context).push(PopRoute(builder: (_) => const RoomsScreen()));
   }
 
   @override
@@ -63,13 +92,16 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: RoundIconButton(
-                    icon: Icons.settings_rounded,
-                    tooltip: l10n.settingsTitle,
-                    onPressed: () => showSettingsSheet(context),
-                  ),
+                Row(
+                  children: [
+                    const OnlineCounter(),
+                    const Spacer(),
+                    RoundIconButton(
+                      icon: Icons.settings_rounded,
+                      tooltip: l10n.settingsTitle,
+                      onPressed: () => showSettingsSheet(context),
+                    ),
+                  ],
                 ),
                 const Spacer(),
                 const _Logo(),
@@ -96,18 +128,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     null,
                   ),
                   (
-                    l10n.modeDuel,
-                    Icons.sports_kabaddi_rounded,
+                    l10n.modeQuickMatch,
+                    Icons.bolt_rounded,
                     AppColors.orange,
-                    _showComingSoon,
-                    l10n.comingSoonBadge,
+                    _quickMatch,
+                    null,
                   ),
                   (
-                    l10n.modeMultiplayer,
+                    l10n.modeRooms,
                     Icons.groups_rounded,
                     AppColors.cyan,
-                    _showComingSoon,
-                    l10n.comingSoonBadge,
+                    _openRooms,
+                    null,
                   ),
                 ].indexed) ...[
                   BounceIn(

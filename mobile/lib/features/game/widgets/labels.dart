@@ -44,8 +44,13 @@ extension AnswerStatusLabel on AnswerStatus {
       this == AnswerStatus.valid ? Icons.check_circle : Icons.cancel;
 }
 
-String errorMessage(AppLocalizations l10n, String? code) =>
-    code == 'network_error' ? l10n.errorNetwork : l10n.errorGeneric;
+String errorMessage(AppLocalizations l10n, String? code) => switch (code) {
+  'network_error' => l10n.errorNetwork,
+  'room_not_found' => l10n.errorRoomNotFound,
+  'room_full' => l10n.errorRoomFull,
+  'game_in_progress' => l10n.errorGameInProgress,
+  _ => l10n.errorGeneric,
+};
 
 const _accents = 'ÀÁÂÃÄÅàáâãäåÇçÈÉÊËèéêëÌÍÎÏìíîïÑñÒÓÔÕÖòóôõöÙÚÛÜùúûüÝýÿ';
 const _plain = 'AAAAAAaaaaaaCcEEEEeeeeIIIIiiiiNnOOOOOoooooUUUUuuuuYyy';

@@ -195,4 +195,188 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get gameOverTry => 'Tu peux faire mieux !';
+
+  @override
+  String get modeQuickMatch => 'Partie rapide';
+
+  @override
+  String get modeRooms => 'Salons';
+
+  @override
+  String onlineCount(int count) {
+    return '$count en ligne';
+  }
+
+  @override
+  String get offlineShort => 'Hors ligne';
+
+  @override
+  String get nicknameTitle => 'Choisis ton pseudo';
+
+  @override
+  String get nicknameHint => 'Ton pseudo';
+
+  @override
+  String get nicknameConfirm => 'C\'EST PARTI !';
+
+  @override
+  String get roomsTitle => 'Salons';
+
+  @override
+  String get createRoom => 'CRÉER UNE SALLE';
+
+  @override
+  String get joinWithCode => 'Rejoindre avec un code';
+
+  @override
+  String get joinCodeTitle => 'Code de la salle';
+
+  @override
+  String get join => 'Rejoindre';
+
+  @override
+  String get publicRoomsTitle => 'Salons ouverts';
+
+  @override
+  String get noPublicRooms =>
+      'Aucun salon ouvert pour l\'instant. Crée le tien !';
+
+  @override
+  String roomOf(String name) {
+    return 'Salle de $name';
+  }
+
+  @override
+  String roundsCount(int count) {
+    return '$count manches';
+  }
+
+  @override
+  String playersCount(int count, int max) {
+    return '$count/$max';
+  }
+
+  @override
+  String get createRoomTitle => 'Nouvelle salle';
+
+  @override
+  String get roomType => 'Type de partie';
+
+  @override
+  String get roomTypeDuel => '⚔️ Duel';
+
+  @override
+  String get roomTypeGroup => '👥 Groupe (8 max)';
+
+  @override
+  String get visibility => 'Visibilité';
+
+  @override
+  String get visibilityPublic => '🌐 Publique';
+
+  @override
+  String get visibilityPrivate => '🔒 Privée';
+
+  @override
+  String get create => 'CRÉER';
+
+  @override
+  String get roomCode => 'Code de la salle';
+
+  @override
+  String get copyCode => 'Copier';
+
+  @override
+  String get codeCopied => 'Code copié !';
+
+  @override
+  String get waitingForPlayers => 'En attente de joueurs…';
+
+  @override
+  String get readyButton => 'JE SUIS PRÊT !';
+
+  @override
+  String get notReadyButton => 'PAS ENCORE';
+
+  @override
+  String get readyHint =>
+      'La partie démarre quand tout le monde est prêt (2 joueurs minimum).';
+
+  @override
+  String quickStartsIn(int seconds) {
+    return 'Début dans $seconds s';
+  }
+
+  @override
+  String get searchingPlayers => 'Recherche de joueurs…';
+
+  @override
+  String get hostBadge => 'Hôte';
+
+  @override
+  String get readyBadge => 'Prêt';
+
+  @override
+  String get youBadge => 'Toi';
+
+  @override
+  String get answersSent => 'Réponses envoyées !';
+
+  @override
+  String get waitingOthers => 'En attente des autres joueurs…';
+
+  @override
+  String get spectating => 'Tu joueras dès la prochaine manche.';
+
+  @override
+  String get yourAnswers => 'Tes réponses';
+
+  @override
+  String get leaderboard => 'Classement';
+
+  @override
+  String nextRoundIn(int seconds) {
+    return 'Manche suivante dans $seconds s';
+  }
+
+  @override
+  String get podiumTitle => 'PODIUM';
+
+  @override
+  String get leaveRoom => 'QUITTER';
+
+  @override
+  String get leaveRoomMessage => 'Tu vas quitter la salle.';
+
+  @override
+  String noticeJoined(String name) {
+    return '$name a rejoint la salle';
+  }
+
+  @override
+  String noticeLeft(String name) {
+    return '$name a quitté la salle';
+  }
+
+  @override
+  String noticeDisconnected(String name) {
+    return '⚠️ $name s\'est déconnecté';
+  }
+
+  @override
+  String noticeReconnected(String name) {
+    return '$name est de retour';
+  }
+
+  @override
+  String get connectionLost => 'Connexion perdue… reconnexion';
+
+  @override
+  String get errorRoomNotFound => 'Salle introuvable.';
+
+  @override
+  String get errorRoomFull => 'Cette salle est complète.';
+
+  @override
+  String get errorGameInProgress => 'La partie est déjà en cours.';
 }

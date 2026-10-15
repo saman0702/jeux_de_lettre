@@ -96,5 +96,132 @@
         "type": "int"
       }
     }
+  },
+  "modeQuickMatch": "Partie rapide",
+  "modeRooms": "Salons",
+  "onlineCount": "{count} en ligne",
+  "offlineShort": "Hors ligne",
+  "nicknameTitle": "Choisis ton pseudo",
+  "nicknameHint": "Ton pseudo",
+  "nicknameConfirm": "C'EST PARTI !",
+  "roomsTitle": "Salons",
+  "createRoom": "CRÉER UNE SALLE",
+  "joinWithCode": "Rejoindre avec un code",
+  "joinCodeTitle": "Code de la salle",
+  "join": "Rejoindre",
+  "publicRoomsTitle": "Salons ouverts",
+  "noPublicRooms": "Aucun salon ouvert pour l'instant. Crée le tien !",
+  "roomOf": "Salle de {name}",
+  "roundsCount": "{count} manches",
+  "playersCount": "{count}/{max}",
+  "createRoomTitle": "Nouvelle salle",
+  "roomType": "Type de partie",
+  "roomTypeDuel": "⚔️ Duel",
+  "roomTypeGroup": "👥 Groupe (8 max)",
+  "visibility": "Visibilité",
+  "visibilityPublic": "🌐 Publique",
+  "visibilityPrivate": "🔒 Privée",
+  "create": "CRÉER",
+  "roomCode": "Code de la salle",
+  "copyCode": "Copier",
+  "codeCopied": "Code copié !",
+  "waitingForPlayers": "En attente de joueurs…",
+  "readyButton": "JE SUIS PRÊT !",
+  "notReadyButton": "PAS ENCORE",
+  "readyHint": "La partie démarre quand tout le monde est prêt (2 joueurs minimum).",
+  "quickStartsIn": "Début dans {seconds} s",
+  "searchingPlayers": "Recherche de joueurs…",
+  "hostBadge": "Hôte",
+  "readyBadge": "Prêt",
+  "youBadge": "Toi",
+  "answersSent": "Réponses envoyées !",
+  "waitingOthers": "En attente des autres joueurs…",
+  "spectating": "Tu joueras dès la prochaine manche.",
+  "yourAnswers": "Tes réponses",
+  "leaderboard": "Classement",
+  "nextRoundIn": "Manche suivante dans {seconds} s",
+  "podiumTitle": "PODIUM",
+  "leaveRoom": "QUITTER",
+  "leaveRoomMessage": "Tu vas quitter la salle.",
+  "noticeJoined": "{name} a rejoint la salle",
+  "noticeLeft": "{name} a quitté la salle",
+  "noticeDisconnected": "⚠️ {name} s'est déconnecté",
+  "noticeReconnected": "{name} est de retour",
+  "connectionLost": "Connexion perdue… reconnexion",
+  "errorRoomNotFound": "Salle introuvable.",
+  "errorRoomFull": "Cette salle est complète.",
+  "errorGameInProgress": "La partie est déjà en cours.",
+  "@onlineCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@roomOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@roundsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@quickStartsIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "@nextRoundIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "@noticeJoined": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@noticeLeft": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@noticeDisconnected": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@noticeReconnected": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@playersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
   }
 }

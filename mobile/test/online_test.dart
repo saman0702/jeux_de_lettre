@@ -1,0 +1,356 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:letter_battle/core/audio/game_audio.dart';
+import 'package:letter_battle/core/feedback/game_feedback.dart';
+import 'package:letter_battle/core/network/realtime_client.dart';
+import 'package:letter_battle/core/settings/app_settings.dart';
+import 'package:letter_battle/features/home/home_screen.dart';
+import 'package:letter_battle/features/online/online_controller.dart';
+import 'package:letter_battle/features/online/rooms_screen.dart';
+import 'package:letter_battle/main.dart';
+
+import 'widget_test.dart' show fakeApi;
+
+const me = 'me-client-id';
+
+/// Fake WebSocket server: records what the app sends, pushes server events.
+class FakeSocket implements RealtimeConnection {
+  final _incoming = StreamController<String>();
+  final List<Map<String, dynamic>> sent = [];
+
+  @override
+  Stream<String> get messages => _incoming.stream;
+
+  @override
+  void send(String message) =>
+      sent.add(jsonDecode(message) as Map<String, dynamic>);
+
+  @override
+  Future<void> close() async {
+    // Not awaited: the app already cancelled its subscription.
+    _incoming.close();
+  }
+
+  void push(Map<String, dynamic> event) => _incoming.add(jsonEncode(event));
+
+  List<String> get sentTypes => [for (final m in sent) m['type'] as String];
+}
+
+class Harness {
+  Harness({String? nickname = 'Blaise'}) {
+    settings = AppSettings.inMemory(nickname: nickname, clientId: me);
+    feedback = GameFeedback(
+      audio: SilentGameAudio(),
+      settings: settings,
+      ambientMotion: false,
+    );
+    client = RealtimeClient(
+      clientId: me,
+      nickname: nickname ?? 'Joueur',
+      pingInterval: null,
+      connector: (uri) async {
+        uris.add(uri);
+        socket = FakeSocket();
+        return socket;
+      },
+    );
+    online = OnlineController(client);
+  }
+
+  late final AppSettings settings;
+  late final GameFeedback feedback;
+  late final RealtimeClient client;
+  late final OnlineController online;
+  late FakeSocket socket;
+  final List<Uri> uris = [];
+
+  Future<void> start(WidgetTester tester, Widget home) async {
+    tester.platformDispatcher.localesTestValue = const [Locale('en')];
+    await tester.pumpWidget(
+      LetterBattleApp(feedback: feedback, online: online, home: home),
+    );
+    await client.connect();
+    socket.push({'type': 'welcome', 'online_count': 7});
+    await tester.pumpAndSettle();
+  }
+}
+
+/// The room screen refreshes its countdowns continuously, so it never
+/// "settles": advance time explicitly instead of pumpAndSettle.
+Future<void> pumpFor(
+  WidgetTester tester, [
+  Duration duration = const Duration(seconds: 2),
+]) async {
+  for (
+    var t = Duration.zero;
+    t < duration;
+    t += const Duration(milliseconds: 100)
+  ) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
+Map<String, dynamic> player(
+  String id,
+  String name, {
+  bool ready = false,
+  int score = 0,
+  bool finished = false,
+  bool connected = true,
+}) => {
+  'client_id': id,
+  'nickname': name,
+  'ready': ready,
+  'connected': connected,
+  'score': score,
+  'finished': finished,
+  'playing': true,
+};
+
+Map<String, dynamic> roomEvent(
+  String phase, {
+  bool quick = false,
+  List<Map<String, dynamic>>? players,
+  Map<String, dynamic>? round,
+  Map<String, dynamic>? results,
+  DateTime? startsAt,
+  DateTime? goAt,
+  DateTime? nextRoundAt,
+}) {
+  final now = DateTime.now().toUtc();
+  return {
+    'type': 'room_state',
+    'room': {
+      'code': 'X7K92',
+      'public': true,
+      'quick': quick,
+      'host_id': me,
+      'phase': phase,
+      'settings': {
+        'language': 'en',
+        'difficulty': 'normal',
+        'categories': ['city', 'fruit'],
+        'rounds': 5,
+        'round_duration': 30,
+        'max_players': 8,
+      },
+      'players': players ?? [player(me, 'Blaise'), player('kev', 'Kevin')],
+      'round_number': round == null ? 0 : round['number'],
+      'round': round,
+      'results': results,
+      'starts_at': startsAt?.toIso8601String(),
+      'go_at': goAt?.toIso8601String(),
+      'next_round_at': nextRoundAt?.toIso8601String(),
+      'server_time': now.toIso8601String(),
+    },
+  };
+}
+
+Map<String, dynamic> round1() {
+  final now = DateTime.now().toUtc();
+  return {
+    'number': 1,
+    'letter': 'M',
+    'duration': 30,
+    'started_at': now.toIso8601String(),
+    'ends_at': now.add(const Duration(seconds: 30)).toIso8601String(),
+  };
+}
+
+void main() {
+  testWidgets('home shows how many players are online', (tester) async {
+    final h = Harness();
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+
+    expect(find.text('7 online'), findsOneWidget);
+    h.socket.push({'type': 'online_count', 'count': 12});
+    await tester.pumpAndSettle();
+    expect(find.text('12 online'), findsOneWidget);
+    expect(h.uris.single.queryParameters, {
+      'client_id': me,
+      'nickname': 'Blaise',
+    });
+  });
+
+  testWidgets('quick match: search, play a round, results and podium', (
+    tester,
+  ) async {
+    final h = Harness();
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+
+    await tester.tap(find.text('Quick match'));
+    await pumpFor(tester);
+    expect(h.socket.sent.last, {'type': 'quick_match', 'language': 'en'});
+    expect(find.text('Looking for players…'), findsOneWidget);
+
+    final starts = DateTime.now().toUtc().add(const Duration(seconds: 12));
+    h.socket.push(roomEvent('waiting', quick: true, startsAt: starts));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.textContaining('Starting in'), findsOneWidget);
+    expect(find.text('You'), findsOneWidget);
+    expect(find.text('Kevin'), findsOneWidget);
+
+    h.socket.push(roomEvent('round', round: round1()));
+    await pumpFor(tester);
+    expect(find.byKey(const Key('letter')), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('field_city')), 'Madrid');
+    await tester.tap(find.text('FINISH'));
+    await tester.pump();
+    expect(h.socket.sent.last, {
+      'type': 'submit',
+      'round': 1,
+      'answers': {'city': 'Madrid', 'fruit': ''},
+    });
+
+    h.socket.push(
+      roomEvent(
+        'round',
+        round: round1(),
+        players: [player(me, 'Blaise', finished: true), player('kev', 'Kevin')],
+      ),
+    );
+    await pumpFor(tester);
+    expect(find.text('✅\nAnswers sent!'), findsOneWidget);
+
+    Map<String, dynamic> result(
+      String id,
+      String name,
+      int points,
+      String city,
+    ) => {
+      'client_id': id,
+      'nickname': name,
+      'round_score': points,
+      'elapsed_ms': 4000,
+      'answers': [
+        {
+          'category': 'city',
+          'value': city,
+          'status': points > 0 ? 'valid' : 'not_found',
+          'points': points,
+          'matched_value': points > 0 ? city : null,
+        },
+      ],
+    };
+    h.socket.push(
+      roomEvent(
+        'results',
+        players: [player(me, 'Blaise', score: 10), player('kev', 'Kevin')],
+        results: {
+          'number': 1,
+          'letter': 'M',
+          'players': [
+            result(me, 'Blaise', 10, 'Madrid'),
+            result('kev', 'Kevin', 0, 'Mxx'),
+          ],
+        },
+        nextRoundAt: DateTime.now().toUtc().add(const Duration(seconds: 8)),
+      ),
+    );
+    await pumpFor(tester, const Duration(seconds: 3));
+    expect(find.text('Your answers'), findsOneWidget);
+    expect(find.text('Leaderboard'), findsOneWidget);
+    expect(find.textContaining('Next round in'), findsOneWidget);
+    expect(h.feedback.audio, isA<SilentGameAudio>());
+    expect(
+      (h.feedback.audio as SilentGameAudio).played,
+      containsAllInOrder([Sfx.valid, Sfx.points]),
+    );
+
+    h.socket.push(
+      roomEvent(
+        'finished',
+        players: [
+          player(me, 'Blaise', score: 42),
+          player('kev', 'Kevin', score: 30),
+        ],
+      ),
+    );
+    await pumpFor(tester, const Duration(seconds: 4));
+    expect(find.text('🏆 PODIUM'), findsOneWidget);
+    expect(find.text('42 pts'), findsOneWidget);
+
+    await tester.tap(find.text('PLAY AGAIN'));
+    await tester.pump();
+    expect(h.socket.sent.last, {'type': 'set_ready', 'ready': true});
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('first online game asks for a nickname and reconnects with it', (
+    tester,
+  ) async {
+    final h = Harness(nickname: null);
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+
+    await tester.tap(find.text('Rooms'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('nickname_field')), 'Arnaud');
+    await tester.tap(find.text("LET'S GO!"));
+    await tester.pumpAndSettle();
+
+    expect(h.settings.nickname, 'Arnaud');
+    expect(h.uris.last.queryParameters['nickname'], 'Arnaud');
+    expect(find.byType(RoomsScreen), findsOneWidget);
+  });
+
+  testWidgets('rooms screen lists public rooms and joins one', (tester) async {
+    final h = Harness();
+    await h.start(tester, const RoomsScreen());
+    expect(h.socket.sent.first, {'type': 'subscribe_rooms', 'language': 'en'});
+
+    h.socket.push({
+      'type': 'room_list',
+      'rooms': [
+        {
+          'code': 'AB234',
+          'quick': false,
+          'host': 'Serge',
+          'players': 3,
+          'max_players': 8,
+          'language': 'en',
+          'difficulty': 'normal',
+          'rounds': 10,
+          'round_duration': 45,
+        },
+      ],
+    });
+    await tester.pumpAndSettle();
+    expect(find.text("Serge's room"), findsOneWidget);
+    expect(find.text('👤 3/8'), findsOneWidget);
+
+    await tester.tap(find.text("Serge's room"));
+    await tester.pump();
+    expect(h.socket.sent.last, {'type': 'join_room', 'code': 'AB234'});
+
+    h.socket.push(roomEvent('waiting'));
+    await pumpFor(tester);
+    await tester.tap(find.byKey(const Key('ready_button')));
+    await tester.pump();
+    expect(h.socket.sent.last, {'type': 'set_ready', 'ready': true});
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('room errors are shown and bring the player back', (
+    tester,
+  ) async {
+    final h = Harness();
+    await h.start(tester, const RoomsScreen());
+
+    await tester.tap(find.text('Join with a code'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('code_field')), 'zzzzz');
+    await tester.tap(find.text('Join'));
+    await pumpFor(tester);
+    expect(h.socket.sent.last, {'type': 'join_room', 'code': 'ZZZZZ'});
+
+    h.socket.push({'type': 'error', 'code': 'room_not_found'});
+    await pumpFor(tester);
+    expect(find.text('Room not found.'), findsOneWidget);
+    expect(find.byType(RoomsScreen), findsOneWidget);
+  });
+}

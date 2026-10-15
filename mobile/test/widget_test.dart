@@ -9,7 +9,7 @@ import 'package:letter_battle/core/settings/app_settings.dart';
 import 'package:letter_battle/features/home/home_screen.dart';
 import 'package:letter_battle/main.dart';
 
-ApiClient _fakeApi({required bool healthy}) => ApiClient(
+ApiClient fakeApi({required bool healthy}) => ApiClient(
   client: MockClient(
     (_) async => http.Response(
       healthy ? '{"status":"ok"}' : '{"status":"degraded"}',
@@ -22,12 +22,12 @@ void main() {
   testWidgets('home shows modes and online status in French', (tester) async {
     tester.platformDispatcher.localesTestValue = const [Locale('fr')];
     await tester.pumpWidget(
-      LetterBattleApp(home: HomeScreen(apiClient: _fakeApi(healthy: true))),
+      LetterBattleApp(home: HomeScreen(apiClient: fakeApi(healthy: true))),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('Solo'), findsOneWidget);
-    expect(find.text('Multijoueur'), findsOneWidget);
+    expect(find.text('Partie rapide'), findsOneWidget);
     expect(find.text('Serveur connecté'), findsOneWidget);
   });
 
@@ -44,7 +44,7 @@ void main() {
     await tester.pumpWidget(
       LetterBattleApp(
         feedback: feedback,
-        home: HomeScreen(apiClient: _fakeApi(healthy: true)),
+        home: HomeScreen(apiClient: fakeApi(healthy: true)),
       ),
     );
     await tester.pumpAndSettle();
@@ -62,11 +62,11 @@ void main() {
   testWidgets('home is translated to English', (tester) async {
     tester.platformDispatcher.localesTestValue = const [Locale('en')];
     await tester.pumpWidget(
-      LetterBattleApp(home: HomeScreen(apiClient: _fakeApi(healthy: false))),
+      LetterBattleApp(home: HomeScreen(apiClient: fakeApi(healthy: false))),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Multiplayer'), findsOneWidget);
+    expect(find.text('Quick match'), findsOneWidget);
     expect(find.text('Server unreachable'), findsOneWidget);
   });
 }

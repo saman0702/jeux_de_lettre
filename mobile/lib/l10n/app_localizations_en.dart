@@ -195,4 +195,187 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameOverTry => 'You can do better!';
+
+  @override
+  String get modeQuickMatch => 'Quick match';
+
+  @override
+  String get modeRooms => 'Rooms';
+
+  @override
+  String onlineCount(int count) {
+    return '$count online';
+  }
+
+  @override
+  String get offlineShort => 'Offline';
+
+  @override
+  String get nicknameTitle => 'Pick a nickname';
+
+  @override
+  String get nicknameHint => 'Your nickname';
+
+  @override
+  String get nicknameConfirm => 'LET\'S GO!';
+
+  @override
+  String get roomsTitle => 'Rooms';
+
+  @override
+  String get createRoom => 'CREATE A ROOM';
+
+  @override
+  String get joinWithCode => 'Join with a code';
+
+  @override
+  String get joinCodeTitle => 'Room code';
+
+  @override
+  String get join => 'Join';
+
+  @override
+  String get publicRoomsTitle => 'Open rooms';
+
+  @override
+  String get noPublicRooms => 'No open rooms right now. Create yours!';
+
+  @override
+  String roomOf(String name) {
+    return '$name\'s room';
+  }
+
+  @override
+  String roundsCount(int count) {
+    return '$count rounds';
+  }
+
+  @override
+  String playersCount(int count, int max) {
+    return '$count/$max';
+  }
+
+  @override
+  String get createRoomTitle => 'New room';
+
+  @override
+  String get roomType => 'Game type';
+
+  @override
+  String get roomTypeDuel => '⚔️ Duel';
+
+  @override
+  String get roomTypeGroup => '👥 Group (up to 8)';
+
+  @override
+  String get visibility => 'Visibility';
+
+  @override
+  String get visibilityPublic => '🌐 Public';
+
+  @override
+  String get visibilityPrivate => '🔒 Private';
+
+  @override
+  String get create => 'CREATE';
+
+  @override
+  String get roomCode => 'Room code';
+
+  @override
+  String get copyCode => 'Copy';
+
+  @override
+  String get codeCopied => 'Code copied!';
+
+  @override
+  String get waitingForPlayers => 'Waiting for players…';
+
+  @override
+  String get readyButton => 'I\'M READY!';
+
+  @override
+  String get notReadyButton => 'NOT YET';
+
+  @override
+  String get readyHint =>
+      'The game starts when everyone is ready (2 players minimum).';
+
+  @override
+  String quickStartsIn(int seconds) {
+    return 'Starting in ${seconds}s';
+  }
+
+  @override
+  String get searchingPlayers => 'Looking for players…';
+
+  @override
+  String get hostBadge => 'Host';
+
+  @override
+  String get readyBadge => 'Ready';
+
+  @override
+  String get youBadge => 'You';
+
+  @override
+  String get answersSent => 'Answers sent!';
+
+  @override
+  String get waitingOthers => 'Waiting for the other players…';
+
+  @override
+  String get spectating => 'You\'ll play from the next round.';
+
+  @override
+  String get yourAnswers => 'Your answers';
+
+  @override
+  String get leaderboard => 'Leaderboard';
+
+  @override
+  String nextRoundIn(int seconds) {
+    return 'Next round in ${seconds}s';
+  }
+
+  @override
+  String get podiumTitle => 'PODIUM';
+
+  @override
+  String get leaveRoom => 'LEAVE';
+
+  @override
+  String get leaveRoomMessage => 'You are about to leave the room.';
+
+  @override
+  String noticeJoined(String name) {
+    return '$name joined the room';
+  }
+
+  @override
+  String noticeLeft(String name) {
+    return '$name left the room';
+  }
+
+  @override
+  String noticeDisconnected(String name) {
+    return '⚠️ $name disconnected';
+  }
+
+  @override
+  String noticeReconnected(String name) {
+    return '$name is back';
+  }
+
+  @override
+  String get connectionLost => 'Connection lost… reconnecting';
+
+  @override
+  String get errorRoomNotFound => 'Room not found.';
+
+  @override
+  String get errorRoomFull => 'This room is full.';
+
+  @override
+  String get errorGameInProgress => 'The game has already started.';
 }

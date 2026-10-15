@@ -42,6 +42,12 @@ Après une modification des modèles : `cd backend && .venv/bin/alembic revision
 | POST | `/api/v1/solo/games/{id}/rounds` | Démarre la manche suivante (le serveur tire la lettre) |
 | POST | `/api/v1/solo/games/{id}/rounds/{n}/submit` | Envoie les réponses, renvoie validation et points |
 
+### Temps réel (multijoueur)
+
+WebSocket : `ws://localhost:8010/ws?client_id=<id>&nickname=<pseudo>`. Messages JSON `{"type": ...}` :
+`quick_match`, `create_room`, `join_room`, `leave_room`, `set_ready`, `submit`, `subscribe_rooms` → le serveur répond par `welcome`, `online_count`, `room_list`, `room_state`, `notice`, `error`.
+Détail dans `backend/app/services/room_service.py`.
+
 Tests (utilisent une base `letterbattle_test` créée automatiquement, PostgreSQL doit tourner) :
 
 ```bash

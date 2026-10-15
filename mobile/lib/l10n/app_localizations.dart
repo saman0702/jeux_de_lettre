@@ -451,6 +451,330 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Tu peux faire mieux !'**
   String get gameOverTry;
+
+  /// No description provided for @modeQuickMatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Partie rapide'**
+  String get modeQuickMatch;
+
+  /// No description provided for @modeRooms.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salons'**
+  String get modeRooms;
+
+  /// No description provided for @onlineCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} en ligne'**
+  String onlineCount(int count);
+
+  /// No description provided for @offlineShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hors ligne'**
+  String get offlineShort;
+
+  /// No description provided for @nicknameTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisis ton pseudo'**
+  String get nicknameTitle;
+
+  /// No description provided for @nicknameHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton pseudo'**
+  String get nicknameHint;
+
+  /// No description provided for @nicknameConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'C\'EST PARTI !'**
+  String get nicknameConfirm;
+
+  /// No description provided for @roomsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salons'**
+  String get roomsTitle;
+
+  /// No description provided for @createRoom.
+  ///
+  /// In fr, this message translates to:
+  /// **'CRÉER UNE SALLE'**
+  String get createRoom;
+
+  /// No description provided for @joinWithCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoindre avec un code'**
+  String get joinWithCode;
+
+  /// No description provided for @joinCodeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code de la salle'**
+  String get joinCodeTitle;
+
+  /// No description provided for @join.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoindre'**
+  String get join;
+
+  /// No description provided for @publicRoomsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salons ouverts'**
+  String get publicRoomsTitle;
+
+  /// No description provided for @noPublicRooms.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun salon ouvert pour l\'instant. Crée le tien !'**
+  String get noPublicRooms;
+
+  /// No description provided for @roomOf.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salle de {name}'**
+  String roomOf(String name);
+
+  /// No description provided for @roundsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} manches'**
+  String roundsCount(int count);
+
+  /// No description provided for @playersCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count}/{max}'**
+  String playersCount(int count, int max);
+
+  /// No description provided for @createRoomTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle salle'**
+  String get createRoomTitle;
+
+  /// No description provided for @roomType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type de partie'**
+  String get roomType;
+
+  /// No description provided for @roomTypeDuel.
+  ///
+  /// In fr, this message translates to:
+  /// **'⚔️ Duel'**
+  String get roomTypeDuel;
+
+  /// No description provided for @roomTypeGroup.
+  ///
+  /// In fr, this message translates to:
+  /// **'👥 Groupe (8 max)'**
+  String get roomTypeGroup;
+
+  /// No description provided for @visibility.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visibilité'**
+  String get visibility;
+
+  /// No description provided for @visibilityPublic.
+  ///
+  /// In fr, this message translates to:
+  /// **'🌐 Publique'**
+  String get visibilityPublic;
+
+  /// No description provided for @visibilityPrivate.
+  ///
+  /// In fr, this message translates to:
+  /// **'🔒 Privée'**
+  String get visibilityPrivate;
+
+  /// No description provided for @create.
+  ///
+  /// In fr, this message translates to:
+  /// **'CRÉER'**
+  String get create;
+
+  /// No description provided for @roomCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code de la salle'**
+  String get roomCode;
+
+  /// No description provided for @copyCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Copier'**
+  String get copyCode;
+
+  /// No description provided for @codeCopied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code copié !'**
+  String get codeCopied;
+
+  /// No description provided for @waitingForPlayers.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente de joueurs…'**
+  String get waitingForPlayers;
+
+  /// No description provided for @readyButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'JE SUIS PRÊT !'**
+  String get readyButton;
+
+  /// No description provided for @notReadyButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'PAS ENCORE'**
+  String get notReadyButton;
+
+  /// No description provided for @readyHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'La partie démarre quand tout le monde est prêt (2 joueurs minimum).'**
+  String get readyHint;
+
+  /// No description provided for @quickStartsIn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Début dans {seconds} s'**
+  String quickStartsIn(int seconds);
+
+  /// No description provided for @searchingPlayers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche de joueurs…'**
+  String get searchingPlayers;
+
+  /// No description provided for @hostBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hôte'**
+  String get hostBadge;
+
+  /// No description provided for @readyBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prêt'**
+  String get readyBadge;
+
+  /// No description provided for @youBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toi'**
+  String get youBadge;
+
+  /// No description provided for @answersSent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réponses envoyées !'**
+  String get answersSent;
+
+  /// No description provided for @waitingOthers.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente des autres joueurs…'**
+  String get waitingOthers;
+
+  /// No description provided for @spectating.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu joueras dès la prochaine manche.'**
+  String get spectating;
+
+  /// No description provided for @yourAnswers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tes réponses'**
+  String get yourAnswers;
+
+  /// No description provided for @leaderboard.
+  ///
+  /// In fr, this message translates to:
+  /// **'Classement'**
+  String get leaderboard;
+
+  /// No description provided for @nextRoundIn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Manche suivante dans {seconds} s'**
+  String nextRoundIn(int seconds);
+
+  /// No description provided for @podiumTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'PODIUM'**
+  String get podiumTitle;
+
+  /// No description provided for @leaveRoom.
+  ///
+  /// In fr, this message translates to:
+  /// **'QUITTER'**
+  String get leaveRoom;
+
+  /// No description provided for @leaveRoomMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu vas quitter la salle.'**
+  String get leaveRoomMessage;
+
+  /// No description provided for @noticeJoined.
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} a rejoint la salle'**
+  String noticeJoined(String name);
+
+  /// No description provided for @noticeLeft.
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} a quitté la salle'**
+  String noticeLeft(String name);
+
+  /// No description provided for @noticeDisconnected.
+  ///
+  /// In fr, this message translates to:
+  /// **'⚠️ {name} s\'est déconnecté'**
+  String noticeDisconnected(String name);
+
+  /// No description provided for @noticeReconnected.
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} est de retour'**
+  String noticeReconnected(String name);
+
+  /// No description provided for @connectionLost.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion perdue… reconnexion'**
+  String get connectionLost;
+
+  /// No description provided for @errorRoomNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salle introuvable.'**
+  String get errorRoomNotFound;
+
+  /// No description provided for @errorRoomFull.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette salle est complète.'**
+  String get errorRoomFull;
+
+  /// No description provided for @errorGameInProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'La partie est déjà en cours.'**
+  String get errorGameInProgress;
 }
 
 class _AppLocalizationsDelegate
