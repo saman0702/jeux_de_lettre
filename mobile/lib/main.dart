@@ -97,18 +97,24 @@ class _LetterBattleAppState extends State<LetterBattleApp>
       feedback: _feedback,
       child: OnlineScope(
         controller: _online,
-        child: MaterialApp(
-          onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light(),
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: widget.home,
+        child: ListenableBuilder(
+          listenable: _feedback.settings,
+          builder: (context, _) => MaterialApp(
+            locale: _feedback.settings.languageCode == null
+                ? null
+                : Locale(_feedback.settings.languageCode!),
+            onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light(),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: widget.home,
+          ),
         ),
       ),
     );

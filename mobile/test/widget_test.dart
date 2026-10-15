@@ -85,4 +85,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('the language can be changed in the settings', (tester) async {
+    final settings = AppSettings.inMemory();
+    final feedback = GameFeedback(audio: SilentGameAudio(), settings: settings, ambientMotion: false);
+    tester.platformDispatcher.localesTestValue = const [Locale('fr')];
+    await tester.pumpWidget(LetterBattleApp(
+      feedback: feedback,
+      home: HomeScreen(apiClient: fakeApi(healthy: true)),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Partie rapide'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('settings_button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('EN'));
+    await tester.pumpAndSettle();
+    expect(settings.languageCode, 'en');
+    await tester.tap(find.byKey(const Key('settings_close')));
+    await tester.pumpAndSettle();
+    expect(find.text('Quick match'), findsOneWidget);
+
+    settings.languageCode = null;
+    await tester.pumpAndSettle();
+    expect(find.text('Partie rapide'), findsOneWidget, reason: 'Auto follows the phone again');
+  });
 }

@@ -54,6 +54,7 @@ enum GameIconKind {
   keyboard(Icons.keyboard_rounded, IconMotion.bob),
   voice(Icons.record_voice_over_rounded, IconMotion.pulse),
   settings(Icons.settings_rounded, IconMotion.spin),
+  language(Icons.translate_rounded, IconMotion.wiggle),
   warning(Icons.warning_amber_rounded, IconMotion.shake),
   crown(null, IconMotion.bob),
   medal1(null, IconMotion.swing),

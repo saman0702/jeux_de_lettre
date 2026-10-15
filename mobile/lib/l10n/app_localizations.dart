@@ -997,6 +997,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'EN LIGNE'**
   String get onlineLabel;
+
+  /// No description provided for @settingsLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Langue'**
+  String get settingsLanguage;
+
+  /// No description provided for @languageAuto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Auto'**
+  String get languageAuto;
 }
 
 class _AppLocalizationsDelegate

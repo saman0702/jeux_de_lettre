@@ -30,8 +30,8 @@ class PillSelector<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 8,
-      runSpacing: 10,
+      spacing: 7,
+      runSpacing: 8,
       children: [
         for (final option in options)
           _Pill(
@@ -74,11 +74,11 @@ class _Pill extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         curve: Curves.easeOutBack,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
         transform: Matrix4.translationValues(0, selected ? 0 : 3, 0),
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(11),
           boxShadow: [
             BoxShadow(
               color: selected
@@ -104,7 +104,7 @@ class _Pill extends StatelessWidget {
               Text(
                 label,
                 style: fredoka(
-                  size: 16,
+                  size: 15,
                   weight: selected ? FontWeight.w700 : FontWeight.w500,
                   color: selected ? AppColors.ink : AppColors.inkSoft,
                 ),

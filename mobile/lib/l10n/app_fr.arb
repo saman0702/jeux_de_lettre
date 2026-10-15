@@ -333,5 +333,7 @@
     }
   },
   "roundLabel": "MANCHE",
-  "onlineLabel": "EN LIGNE"
+  "onlineLabel": "EN LIGNE",
+  "settingsLanguage": "Langue",
+  "languageAuto": "Auto"
 }

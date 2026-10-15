@@ -149,5 +149,7 @@
   "voiceSoloGameEnd": "Game over! {points} points in total!",
   "dialogStay": "STAY",
   "roundLabel": "ROUND",
-  "onlineLabel": "ONLINE"
+  "onlineLabel": "ONLINE",
+  "settingsLanguage": "Language",
+  "languageAuto": "Auto"
 }

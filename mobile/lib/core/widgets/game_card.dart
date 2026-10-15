@@ -7,7 +7,7 @@ class GameCard extends StatelessWidget {
   const GameCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.all(14),
     this.color,
   });
 
@@ -21,9 +21,9 @@ class GameCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: color ?? AppColors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: const [
-          BoxShadow(color: Color(0x40250E6B), offset: Offset(0, 6)),
+          BoxShadow(color: Color(0x40250E6B), offset: Offset(0, 4)),
         ],
       ),
       child: child,

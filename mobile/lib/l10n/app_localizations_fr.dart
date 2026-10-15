@@ -511,4 +511,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onlineLabel => 'EN LIGNE';
+
+  @override
+  String get settingsLanguage => 'Langue';
+
+  @override
+  String get languageAuto => 'Auto';
 }

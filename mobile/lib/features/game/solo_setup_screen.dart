@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../animations/bounce_in.dart';
 import '../../animations/transitions/pop_route.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
+import '../../core/widgets/floating_bars_layout.dart';
 import '../../core/widgets/game_background.dart';
-import '../../core/widgets/game_card.dart';
 import '../../core/widgets/game_icon.dart';
 import '../../l10n/app_localizations.dart';
 import '../online/data/room_models.dart';
@@ -22,6 +21,7 @@ import 'data/solo_game_api.dart';
 import 'solo_game_screen.dart';
 import 'widgets/labels.dart';
 import 'widgets/pill_selector.dart';
+import 'widgets/option_section.dart';
 
 class SoloSetupScreen extends StatefulWidget {
   const SoloSetupScreen({super.key, required this.apiClient});
@@ -139,156 +139,128 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    Widget section(int index, String title, Widget child) => Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: BounceIn(
-        delay: Duration(milliseconds: 80 * index),
-        from: 0.8,
-        slideY: 0.3,
-        child: GameCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: fredoka(size: 18, weight: FontWeight.w700)),
-              const SizedBox(height: 12),
-              child,
-            ],
-          ),
-        ),
-      ),
-    );
-
     return Scaffold(
       body: GameBackground(
         child: SafeArea(
-          child: Column(
+          child: FloatingBarsLayout(
+            header: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: Row(
+                children: [
+                  RoundIconButton(
+                    icon: Icons.arrow_back_rounded,
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    l10n.soloSetupTitle,
+                    style: fredoka(
+                      size: 26,
+                      weight: FontWeight.w700,
+                      color: AppColors.white,
+                      shadows: textShadow,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            footer: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+              child: CandyButton(
+                label: l10n.startGame,
+                icon: Icons.play_arrow_rounded,
+                color: AppColors.green,
+                textColor: AppColors.white,
+                loading: _loading,
+                onPressed: _start,
+              ),
+            ),
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                child: Row(
-                  children: [
-                    RoundIconButton(
-                      icon: Icons.arrow_back_rounded,
-                      onPressed: () => Navigator.of(context).maybePop(),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      l10n.soloSetupTitle,
-                      style: fredoka(
-                        size: 26,
-                        weight: FontWeight.w700,
-                        color: AppColors.white,
-                        shadows: textShadow,
-                      ),
-                    ),
-                  ],
+              OptionSection(
+                index: 0,
+                title: l10n.rounds,
+                child: PillSelector<int>(
+                  options: SoloGameSettings.roundOptions,
+                  isSelected: (r) => r == _rounds,
+                  label: (r) => '$r',
+                  onTap: (r) => setState(() => _rounds = r),
                 ),
               ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              OptionSection(
+                index: 1,
+                title: l10n.roundDuration,
+                child: PillSelector<int>(
+                  options: SoloGameSettings.durationOptions,
+                  isSelected: (d) => d == _duration,
+                  label: (d) => l10n.secondsShort(d),
+                  onTap: (d) => setState(() => _duration = d),
+                ),
+              ),
+              OptionSection(
+                index: 2,
+                title: l10n.categories,
+                child: PillSelector<Category>(
+                  options: Category.values,
+                  isSelected: _categories.contains,
+                  label: (c) => c.label(l10n),
+                  icon: (c) => c.icon,
+                  iconColor: (c) => c.color,
+                  onTap: _toggleCategory,
+                ),
+              ),
+              OptionSection(
+                index: 3,
+                title: l10n.difficulty,
+                child: PillSelector<Difficulty>(
+                  options: Difficulty.values,
+                  isSelected: (d) => d == _difficulty,
+                  label: (d) => d.label(l10n),
+                  onTap: (d) => setState(() => _difficulty = d),
+                ),
+              ),
+              OptionSection(
+                index: 4,
+                title: l10n.opponents,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    section(
-                      0,
-                      l10n.rounds,
-                      PillSelector<int>(
-                        options: SoloGameSettings.roundOptions,
-                        isSelected: (r) => r == _rounds,
-                        label: (r) => '$r',
-                        onTap: (r) => setState(() => _rounds = r),
-                      ),
+                    PillSelector<int>(
+                      options: const [0, 1, 2, 3],
+                      isSelected: (n) => n == _bots,
+                      label: (n) => n == 0 ? l10n.opponentsNone : '$n',
+                      icon: (n) => n == 0 ? null : GameIconKind.bot,
+                      onTap: (n) => setState(() => _bots = n),
                     ),
-                    section(
-                      1,
-                      l10n.roundDuration,
-                      PillSelector<int>(
-                        options: SoloGameSettings.durationOptions,
-                        isSelected: (d) => d == _duration,
-                        label: (d) => l10n.secondsShort(d),
-                        onTap: (d) => setState(() => _duration = d),
-                      ),
-                    ),
-                    section(
-                      2,
-                      l10n.categories,
-                      PillSelector<Category>(
-                        options: Category.values,
-                        isSelected: _categories.contains,
-                        label: (c) => c.label(l10n),
-                        icon: (c) => c.icon,
-                        iconColor: (c) => c.color,
-                        onTap: _toggleCategory,
-                      ),
-                    ),
-                    section(
-                      3,
-                      l10n.difficulty,
-                      PillSelector<Difficulty>(
-                        options: Difficulty.values,
-                        isSelected: (d) => d == _difficulty,
-                        label: (d) => d.label(l10n),
-                        onTap: (d) => setState(() => _difficulty = d),
-                      ),
-                    ),
-                    section(
-                      4,
-                      l10n.opponents,
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          PillSelector<int>(
-                            options: const [0, 1, 2, 3],
-                            isSelected: (n) => n == _bots,
-                            label: (n) => n == 0 ? l10n.opponentsNone : '$n',
-                            icon: (n) => n == 0 ? null : GameIconKind.bot,
-                            onTap: (n) => setState(() => _bots = n),
-                          ),
-                          AnimatedSize(
-                            duration: const Duration(milliseconds: 250),
-                            curve: Curves.easeOutBack,
-                            child: _bots == 0
-                                ? const SizedBox(width: double.infinity)
-                                : Padding(
-                                    padding: const EdgeInsets.only(top: 14),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          l10n.botLevel,
-                                          style: fredoka(
-                                            size: 15,
-                                            weight: FontWeight.w600,
-                                            color: AppColors.inkSoft,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        PillSelector<Difficulty>(
-                                          options: Difficulty.values,
-                                          isSelected: (d) => d == _botLevel,
-                                          label: (d) => d.label(l10n),
-                                          onTap: (d) =>
-                                              setState(() => _botLevel = d),
-                                        ),
-                                      ],
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutBack,
+                      child: _bots == 0
+                          ? const SizedBox(width: double.infinity)
+                          : Padding(
+                              padding: const EdgeInsets.only(top: 14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l10n.botLevel,
+                                    style: fredoka(
+                                      size: 15,
+                                      weight: FontWeight.w600,
+                                      color: AppColors.inkSoft,
                                     ),
                                   ),
-                          ),
-                        ],
-                      ),
+                                  const SizedBox(height: 8),
+                                  PillSelector<Difficulty>(
+                                    options: Difficulty.values,
+                                    isSelected: (d) => d == _botLevel,
+                                    label: (d) => d.label(l10n),
+                                    onTap: (d) => setState(() => _botLevel = d),
+                                  ),
+                                ],
+                              ),
+                            ),
                     ),
                   ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-                child: CandyButton(
-                  label: l10n.startGame,
-                  icon: Icons.play_arrow_rounded,
-                  color: AppColors.green,
-                  textColor: AppColors.white,
-                  loading: _loading,
-                  onPressed: _start,
                 ),
               ),
             ],

@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
 import '../../core/widgets/game_icon.dart';
 import '../../core/widgets/game_toggle.dart';
+import '../game/widgets/pill_selector.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Game-menu style settings panel sliding up from the bottom.
@@ -88,6 +89,15 @@ class _SettingsSheet extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    BounceIn(
+                      from: 0.85,
+                      slideY: 0.3,
+                      child: _LanguageRow(
+                        value: settings.languageCode,
+                        onChanged: (code) => settings.languageCode = code,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     for (final (i, (icon, color, label, read, write))
                         in options.indexed)
                       Padding(
@@ -191,7 +201,7 @@ class _SettingRow extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
         decoration: BoxDecoration(
           color: AppColors.white,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: value ? color : const Color(0xFFDCD3F2),
             width: 3,
@@ -220,6 +230,60 @@ class _SettingRow extends StatelessWidget {
             GameToggle(value: value, onChanged: onChanged),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// App language: follow the phone, or force French / English.
+class _LanguageRow extends StatelessWidget {
+  const _LanguageRow({required this.value, required this.onChanged});
+
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      key: const Key('setting_language'),
+      padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.cyan, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.depthOf(AppColors.cyan),
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const GameIconBadge(
+            GameIconKind.language,
+            color: AppColors.cyan,
+            size: 44,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              l10n.settingsLanguage,
+              style: fredoka(size: 17, weight: FontWeight.w700),
+            ),
+          ),
+          PillSelector<String?>(
+            options: const [null, 'fr', 'en'],
+            isSelected: (code) => code == value,
+            label: (code) => switch (code) {
+              'fr' => 'FR',
+              'en' => 'EN',
+              _ => l10n.languageAuto,
+            },
+            onTap: onChanged,
+          ),
+        ],
       ),
     );
   }

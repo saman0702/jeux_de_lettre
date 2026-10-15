@@ -14,6 +14,7 @@ class AppSettings extends ChangeNotifier {
     this._gameKeyboard = true,
     this._voice = true,
     this._nickname,
+    this._languageCode,
   });
 
   /// Not persisted; used by tests.
@@ -36,6 +37,7 @@ class AppSettings extends ChangeNotifier {
       gameKeyboard: prefs.getBool(_gameKeyboardKey) ?? true,
       voice: prefs.getBool(_voiceKey) ?? true,
       nickname: prefs.getString(_nicknameKey),
+      languageCode: prefs.getString(_languageKey),
     );
   }
 
@@ -52,6 +54,7 @@ class AppSettings extends ChangeNotifier {
   static const _vibrationKey = 'settings.vibration';
   static const _gameKeyboardKey = 'settings.game_keyboard';
   static const _voiceKey = 'settings.voice';
+  static const _languageKey = 'settings.language';
   static const _nicknameKey = 'player.nickname';
   static const _clientIdKey = 'player.client_id';
 
@@ -66,6 +69,7 @@ class AppSettings extends ChangeNotifier {
   bool _gameKeyboard;
   bool _voice;
   String? _nickname;
+  String? _languageCode;
 
   bool get sound => _sound;
   bool get music => _music;
@@ -77,6 +81,19 @@ class AppSettings extends ChangeNotifier {
   /// Announcer voice at the end of rounds.
   bool get voice => _voice;
   String? get nickname => _nickname;
+
+  /// Chosen app language ('fr', 'en'), or null to follow the phone.
+  String? get languageCode => _languageCode;
+
+  set languageCode(String? value) {
+    _languageCode = value;
+    if (value == null) {
+      _prefs?.remove(_languageKey);
+    } else {
+      _prefs?.setString(_languageKey, value);
+    }
+    notifyListeners();
+  }
 
   set sound(bool value) => _update(_soundKey, value, () => _sound = value);
   set music(bool value) => _update(_musicKey, value, () => _music = value);

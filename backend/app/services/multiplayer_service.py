@@ -44,7 +44,7 @@ class RoundOutcome:
 
 async def create_game(
     session: AsyncSession, mode: str, settings: GameSettings, nicknames: dict[str, str]
-) -> tuple[str, dict[str, str]]:
+    ) -> tuple[str, dict[str, str]]:
     """Create the game and its players. Returns the game id and client id -> player id."""
     players = {client_id: Player(nickname=name) for client_id, name in nicknames.items()}
     game = Game(
@@ -99,7 +99,7 @@ async def close_round(
     participants: list[str],
     submissions: dict[str, tuple[datetime, dict[Category, str]]],
     hints: dict[str, dict[str, bool]] | None = None,
-) -> RoundOutcome:
+    ) -> RoundOutcome:
     """Validate and score everyone's answers for the current round.
 
     `participants` are the player ids that played the round; those missing
