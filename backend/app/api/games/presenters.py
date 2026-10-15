@@ -2,7 +2,7 @@ from app.models import Game, GameRound, Submission
 from app.schemas.game import AnswerResultOut, GameOut, GameSummaryOut, RoundResultOut
 
 
-def game_out(game: Game) -> GameOut:
+def game_out(game: Game, hints_left: int) -> GameOut:
     player = game.players[0]
     return GameOut(
         id=game.id,
@@ -16,6 +16,7 @@ def game_out(game: Game) -> GameOut:
         nickname=player.nickname,
         total_score=player.total_score,
         rounds_played=sum(1 for r in game.rounds if r.finished),
+        hints_left=hints_left,
     )
 
 
@@ -31,6 +32,7 @@ def round_result_out(game_round: GameRound, submission: Submission) -> RoundResu
                 status=a.status,
                 points=a.points,
                 matched_value=a.matched_value,
+                hinted=a.hinted,
             )
             for a in submission.answers
         ],
@@ -39,8 +41,8 @@ def round_result_out(game_round: GameRound, submission: Submission) -> RoundResu
     )
 
 
-def game_summary_out(game: Game) -> GameSummaryOut:
+def game_summary_out(game: Game, hints_left: int) -> GameSummaryOut:
     rounds = [
         round_result_out(r, r.submissions[0]) for r in game.rounds if r.finished and r.submissions
     ]
-    return GameSummaryOut(**game_out(game).model_dump(), rounds=rounds)
+    return GameSummaryOut(**game_out(game, hints_left).model_dump(), rounds=rounds)

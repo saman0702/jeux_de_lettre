@@ -63,6 +63,7 @@ class AnswerResultOut(BaseModel):
     status: str
     points: int
     matched_value: str | None
+    hinted: bool = False
 
 
 class RoundResultOut(BaseModel):
@@ -85,6 +86,7 @@ class GameOut(BaseModel):
     nickname: str
     total_score: int
     rounds_played: int
+    hints_left: int
 
 
 class SubmitResultOut(BaseModel):
@@ -94,6 +96,27 @@ class SubmitResultOut(BaseModel):
 
 class GameSummaryOut(GameOut):
     rounds: list[RoundResultOut]
+
+
+class HintRequestIn(BaseModel):
+    category: Category
+
+
+class HintPickIn(BaseModel):
+    category: Category
+    choice: str = Field(max_length=200)
+
+
+class HintOut(BaseModel):
+    category: Category
+    options: list[str]
+    hints_left: int
+
+
+class HintPickOut(BaseModel):
+    category: Category
+    correct: bool
+    answer: str
 
 
 class GameConfigOut(BaseModel):

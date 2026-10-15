@@ -98,12 +98,15 @@ async def close_round(
     game_id: str,
     participants: list[str],
     submissions: dict[str, tuple[datetime, dict[Category, str]]],
+    hints: dict[str, dict[str, bool]] | None = None,
 ) -> RoundOutcome:
     """Validate and score everyone's answers for the current round.
 
     `participants` are the player ids that played the round; those missing
-    from `submissions` score zero.
+    from `submissions` score zero. `hints` maps player id -> category ->
+    whether the picked hint option was the right one.
     """
+    hints = hints or {}
     game = await _game(session, game_id)
     game_round = game.current_round
     players = {p.id: p for p in game.players}
@@ -116,13 +119,15 @@ async def close_round(
             raw = answers.get(Category(category), "")
             if player_id not in submissions:
                 result = ValidationResult(Status.LATE)
+            elif hints.get(player_id, {}).get(category) is False:
+                result = ValidationResult(Status.HINT_WRONG)
             else:
                 result = await validate_answer(
                     session, Category(category), game.language, game_round.letter, raw
                 )
             validated[player_id][category] = result
 
-    points = score_round(validated)
+    points = score_round(validated, {pid: set(h) for pid, h in hints.items()})
     outcome = RoundOutcome(game_round.number, game_round.letter)
     for player_id in participants:
         submitted_at, answers = submissions.get(player_id, (game_round.ends_at, {}))
@@ -133,6 +138,7 @@ async def close_round(
                 matched_value=result.matched_value if result.is_valid else None,
                 status=result.status,
                 points=points[player_id][category],
+                hinted=category in hints.get(player_id, {}),
             )
             for category, result in validated[player_id].items()
         ]
@@ -161,6 +167,7 @@ async def close_round(
                         "status": a.status,
                         "points": a.points,
                         "matched_value": a.matched_value,
+                        "hinted": a.hinted,
                     }
                     for a in answer_rows
                 ],

@@ -16,6 +16,7 @@ class Status:
     WRONG_LETTER = "wrong_letter"
     NOT_FOUND = "not_found"
     LATE = "late"
+    HINT_WRONG = "hint_wrong"
 
 
 @dataclass(frozen=True)

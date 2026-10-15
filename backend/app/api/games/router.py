@@ -9,6 +9,10 @@ from app.schemas.game import (
     GameConfigOut,
     GameOut,
     GameSummaryOut,
+    HintOut,
+    HintPickIn,
+    HintPickOut,
+    HintRequestIn,
     RoundOut,
     SoloGameCreate,
     SubmitAnswers,
@@ -33,13 +37,13 @@ async def get_config():
 @router.post("/solo/games", response_model=GameOut, status_code=201)
 async def create_solo_game(data: SoloGameCreate, session: AsyncSession = Depends(get_session)):
     game = await game_service.create_solo_game(session, data)
-    return game_out(game)
+    return game_out(game, await game_service.hints_left(session, game))
 
 
 @router.get("/solo/games/{game_id}", response_model=GameSummaryOut)
 async def get_solo_game(game_id: str, session: AsyncSession = Depends(get_session)):
     game = await game_service.get_game(session, game_id)
-    return game_summary_out(game)
+    return game_summary_out(game, await game_service.hints_left(session, game))
 
 
 @router.post("/solo/games/{game_id}/rounds", response_model=RoundOut, status_code=201)
@@ -67,5 +71,30 @@ async def submit_round(
     submission = await game_service.submit_answers(session, game, number, data.answers)
     return SubmitResultOut(
         round=round_result_out(game.current_round, submission),
-        game=game_out(game),
+        game=game_out(game, await game_service.hints_left(session, game)),
     )
+
+
+@router.post("/solo/games/{game_id}/rounds/{number}/hint", response_model=HintOut)
+async def request_hint(
+    game_id: str,
+    number: int,
+    data: HintRequestIn,
+    session: AsyncSession = Depends(get_session),
+):
+    """Four options for a category, only one valid. Uses one of the game's hints."""
+    game = await game_service.get_game(session, game_id)
+    hint, left = await game_service.request_hint(session, game, number, data.category)
+    return HintOut(category=hint.category, options=hint.options, hints_left=left)
+
+
+@router.post("/solo/games/{game_id}/rounds/{number}/hint/pick", response_model=HintPickOut)
+async def pick_hint(
+    game_id: str,
+    number: int,
+    data: HintPickIn,
+    session: AsyncSession = Depends(get_session),
+):
+    game = await game_service.get_game(session, game_id)
+    hint = await game_service.pick_hint(session, game, number, data.category, data.choice)
+    return HintPickOut(category=hint.category, correct=hint.picked == hint.answer, answer=hint.answer)

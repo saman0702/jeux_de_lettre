@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.database import SessionLocal
 from app.core.game_rules import (
+    HINTS_PER_GAME,
     MAX_ROOM_PLAYERS,
     MIN_ROOM_PLAYERS,
     SUBMIT_GRACE_SECONDS,
@@ -30,7 +31,7 @@ from app.core.game_rules import (
 )
 from app.models.base import utcnow
 from app.schemas.game import GameSettings
-from app.services import bot_service, multiplayer_service
+from app.services import bot_service, hint_service, multiplayer_service
 from app.services.presence_service import PresenceStore, RedisPresence
 
 logger = logging.getLogger(__name__)
@@ -69,6 +70,7 @@ class RoomPlayer:
     # Set once the player takes part in the game (late joiners get it at the next round).
     db_player_id: str | None = None
     bot_level: Difficulty | None = None
+    hints_used: int = 0
 
     @property
     def bot(self) -> bool:
@@ -85,6 +87,7 @@ class LiveRound:
     submissions: dict[str, tuple[datetime, dict[Category, str]]] = field(default_factory=dict)
     all_in: asyncio.Event = field(default_factory=asyncio.Event)
     bot_tasks: list[asyncio.Task] = field(default_factory=list)
+    hints: dict[str, dict[str, hint_service.Hint]] = field(default_factory=dict)  # client -> category
 
 
 @dataclass
@@ -249,6 +252,8 @@ class RoomManager:
             "leave_room": self._on_leave_room,
             "set_ready": self._on_set_ready,
             "submit": self._on_submit,
+            "hint": self._on_hint,
+            "hint_pick": self._on_hint_pick,
             "add_bot": self._on_add_bot,
             "remove_bot": self._on_remove_bot,
             "subscribe_rooms": self._on_subscribe_rooms,
@@ -365,6 +370,73 @@ class RoomManager:
         await self._broadcast(room)
         self._check_all_in(room)
 
+    def _hintable_round(self, room: Room, client_id: str, message: dict) -> tuple[LiveRound, str]:
+        live = room.live_round
+        if (
+            room.phase != "round"
+            or live is None
+            or message.get("round") != live.number
+            or client_id not in live.participants
+            or client_id in live.submissions
+        ):
+            raise RoomError("round_not_current")
+        category = message.get("category")
+        if category not in [c.value for c in room.settings.categories]:
+            raise RoomError("invalid_category")
+        return live, category
+
+    async def _on_hint(self, connection: Connection, message: dict) -> None:
+        room = self._require_room(connection.client_id)
+        live, category = self._hintable_round(room, connection.client_id, message)
+        player = room.players[connection.client_id]
+        mine = live.hints.setdefault(connection.client_id, {})
+
+        hint = mine.get(category)
+        if hint is None:
+            if player.hints_used >= HINTS_PER_GAME:
+                raise RoomError("no_hints_left")
+            try:
+                async with self.session_factory() as session:
+                    hint = await hint_service.build_hint(
+                        session, room.settings.language, category, live.letter
+                    )
+            except hint_service.NoHintAvailable:
+                raise RoomError("no_hint_available") from None
+            mine[category] = hint
+            player.hints_used += 1
+        await self._send(
+            connection.client_id,
+            {
+                "type": "hint",
+                "round": live.number,
+                "category": category,
+                "options": hint.options,
+                "hints_left": HINTS_PER_GAME - player.hints_used,
+            },
+        )
+
+    async def _on_hint_pick(self, connection: Connection, message: dict) -> None:
+        room = self._require_room(connection.client_id)
+        live, category = self._hintable_round(room, connection.client_id, message)
+        hint = live.hints.get(connection.client_id, {}).get(category)
+        if hint is None:
+            raise RoomError("no_hint_requested")
+        if hint.picked is not None:
+            raise RoomError("hint_already_picked")
+        if message.get("choice") not in hint.options:
+            raise RoomError("invalid_choice")
+        hint.picked = message["choice"]
+        await self._send(
+            connection.client_id,
+            {
+                "type": "hint_result",
+                "round": live.number,
+                "category": category,
+                "correct": hint.correct,
+                "answer": hint.answer,
+            },
+        )
+
     async def _on_add_bot(self, connection: Connection, message: dict) -> None:
         room = self._require_host(connection.client_id)
         if room.quick or room.phase != "waiting":
@@ -474,6 +546,7 @@ class RoomManager:
             player.score = 0
             player.ready = room.quick or player.bot
             player.db_player_id = None
+            player.hints_used = 0
 
     def _current_room(self, client_id: str) -> Room | None:
         code = self._room_of.get(client_id)
@@ -628,12 +701,26 @@ class RoomManager:
         live = room.live_round
         for task in live.bot_tasks:
             task.cancel()
+        # Picked hint options replace whatever was typed in those categories.
+        hints: dict[str, dict[str, bool]] = {}
+        for cid, by_category in live.hints.items():
+            picked = {c: h for c, h in by_category.items() if h.picked is not None}
+            if not picked or cid not in live.participants:
+                continue
+            hints[live.participants[cid]] = {c: bool(h.correct) for c, h in picked.items()}
+            if cid in live.submissions:
+                submitted_at, answers = live.submissions[cid]
+                live.submissions[cid] = (
+                    submitted_at,
+                    {**answers, **{Category(c): h.picked for c, h in picked.items()}},
+                )
         async with self.session_factory() as session:
             outcome = await multiplayer_service.close_round(
                 session,
                 room.game_id,
                 participants=list(live.participants.values()),
                 submissions={live.participants[cid]: sub for cid, sub in live.submissions.items()},
+                hints=hints,
             )
 
         by_player_id = {p.db_player_id: p for p in room.players.values()}
@@ -727,6 +814,7 @@ class RoomManager:
                     "playing": bool(live and p.client_id in live.participants) or not room.in_game,
                     "bot": p.bot,
                     "bot_level": p.bot_level,
+                    "hints_left": HINTS_PER_GAME - p.hints_used,
                 }
                 for p in room.players.values()
             ],

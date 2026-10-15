@@ -53,3 +53,10 @@ SUBMIT_GRACE_SECONDS = 2.0
 
 MIN_ROOM_PLAYERS = 2
 MAX_ROOM_PLAYERS = 8
+
+# Hints ("jokers"): four words, one valid for the category; a right pick
+# scores half points.
+HINTS_PER_GAME = 3
+HINT_OPTIONS = 4
+HINT_POINTS_UNIQUE = 5
+HINT_POINTS_SHARED = 2

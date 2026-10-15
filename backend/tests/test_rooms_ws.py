@@ -305,3 +305,29 @@ def test_room_closes_when_only_bots_remain(client, manager):
         alice.send_json({"type": "leave_room"})
         wait_for(alice, lambda m: m["type"] == "left_room")
     assert room["code"] not in manager.rooms
+
+
+def test_hints_in_a_room(client):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice, categories=["animal"])
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        state(alice, "round")
+
+        alice.send_json({"type": "hint", "round": 1, "category": "animal"})
+        hint = wait_for(alice, lambda m: m["type"] == "hint")
+        assert len(hint["options"]) == 4 and hint["hints_left"] == 2
+        assert "answer" not in hint, "the right answer never leaves the server"
+
+        alice.send_json({"type": "hint_pick", "round": 1, "category": "animal", "choice": hint["options"][0]})
+        picked = wait_for(alice, lambda m: m["type"] == "hint_result")
+
+        alice.send_json({"type": "submit", "round": 1, "answers": {}})
+        bob.send_json({"type": "submit", "round": 1, "answers": {"animal": "Mouton"}})
+        results = {p["nickname"]: p for p in state(alice, "results")["results"]["players"]}
+        answer = results["Alice"]["answers"][0]
+        assert answer["hinted"]
+        expected = (5 if answer["value"] != "Mouton" else 2) if picked["correct"] else 0
+        assert answer["points"] == expected
+        assert state(alice)["players"][0]["hints_left"] == 2

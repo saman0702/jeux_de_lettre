@@ -77,6 +77,21 @@ class Submission(Base):
     )
 
 
+class HintRequest(Base):
+    """A hint shown to a player (solo games keep them between requests)."""
+
+    __tablename__ = "hint_requests"
+    __table_args__ = (UniqueConstraint("round_id", "player_id", "category"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    round_id: Mapped[int] = mapped_column(ForeignKey("game_rounds.id", ondelete="CASCADE"), index=True)
+    player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    category: Mapped[str] = mapped_column(String(32))
+    options: Mapped[list[str]] = mapped_column(JSON)
+    answer: Mapped[str] = mapped_column(String(200))
+    picked: Mapped[str | None] = mapped_column(String(200), nullable=True)
+
+
 class PlayerAnswer(Base):
     __tablename__ = "player_answers"
 
@@ -88,7 +103,9 @@ class PlayerAnswer(Base):
     raw_value: Mapped[str] = mapped_column(String(200))
     # Knowledge-base value the answer matched, when valid.
     matched_value: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    status: Mapped[str] = mapped_column(String(16))  # valid | empty | wrong_letter | not_found | late
+    status: Mapped[str] = mapped_column(String(16))  # valid | empty | wrong_letter | not_found | late | hint_wrong
     points: Mapped[int] = mapped_column(Integer, default=0)
+    # Answered by picking among the four hint options.
+    hinted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
     submission: Mapped[Submission] = relationship(back_populates="answers")
