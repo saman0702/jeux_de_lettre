@@ -68,6 +68,12 @@ class _SettingsSheet extends StatelessWidget {
                 settings.vibration,
                 (v) => settings.vibration = v,
               ),
+              toggle(
+                '⌨️',
+                l10n.settingsGameKeyboard,
+                settings.gameKeyboard,
+                (v) => settings.gameKeyboard = v,
+              ),
             ],
           ),
         ),

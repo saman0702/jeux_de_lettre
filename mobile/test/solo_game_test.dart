@@ -191,7 +191,7 @@ void main() {
     expect(audio.musicPlaying, isFalse);
 
     await tester.enterText(find.byKey(const Key('field_city')), 'Madrid');
-    await tester.tap(find.text('FINISH'));
+    await tester.tap(find.byKey(const Key('key_finish')));
     await tester.pumpAndSettle();
 
     expect(server.submissions.single, {'city': 'Madrid', 'fruit': ''});
@@ -332,7 +332,7 @@ void main() {
     );
     expect((feedback.audio as SilentGameAudio).played, contains(Sfx.valid));
 
-    await tester.tap(find.text('FINISH'));
+    await tester.tap(find.byKey(const Key('key_finish')));
     await tester.pumpAndSettle();
     expect(server.submissions.single['city'], 'Madrid');
   });
@@ -359,5 +359,58 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(audio.played, [Sfx.key, Sfx.match, Sfx.key, Sfx.erase]);
+  });
+
+  testWidgets('the game keyboard types, erases, moves on and finishes', (tester) async {
+    final server = FakeServer();
+    final feedback = testFeedback();
+    final audio = feedback.audio as SilentGameAudio;
+    await pumpGame(tester, server, feedback: feedback);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    await tester.pumpAndSettle();
+    audio.played.clear();
+
+    Future<void> press(String key) async {
+      await tester.tap(find.byKey(Key('key_$key')));
+      await tester.pump();
+    }
+
+    for (final key in ['M', 'A', 'D', 'X']) {
+      await press(key);
+    }
+    await press('backspace');
+    for (final key in ['R', 'I', 'D']) {
+      await press(key);
+    }
+    await press('next');
+    for (final key in ['M', 'E', 'L', 'O', 'N']) {
+      await press(key);
+    }
+    await tester.pumpAndSettle();
+
+    final city = tester.widget<TextField>(find.byKey(const Key('field_city'))).controller!.text;
+    final fruit = tester.widget<TextField>(find.byKey(const Key('field_fruit'))).controller!.text;
+    expect((city, fruit), ('MADRID', 'MELON'));
+    expect(audio.played, containsAllInOrder([Sfx.key, Sfx.match, Sfx.erase]));
+
+    await press('finish');
+    await tester.pumpAndSettle();
+    expect(server.submissions.single, {'city': 'MADRID', 'fruit': 'MELON'});
+  });
+
+  testWidgets('the phone keyboard can be used instead', (tester) async {
+    final feedback = testFeedback()..settings.gameKeyboard = false;
+    await pumpGame(tester, FakeServer(), feedback: feedback);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('key_A')), findsNothing);
+    expect(find.text('FINISH'), findsOneWidget);
+    final field = tester.widget<TextField>(find.byKey(const Key('field_city')));
+    expect(field.keyboardType, TextInputType.text);
   });
 }

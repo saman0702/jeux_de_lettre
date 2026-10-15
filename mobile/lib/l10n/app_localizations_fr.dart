@@ -425,4 +425,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get offlineModeNotice =>
       '📴 Pas de connexion : partie solo hors ligne';
+
+  @override
+  String get settingsGameKeyboard => 'Clavier du jeu';
+
+  @override
+  String get keyNext => 'Suivant';
+
+  @override
+  String get keySpace => 'espace';
 }

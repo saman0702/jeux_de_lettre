@@ -14,7 +14,8 @@ import '../data/models.dart';
 import '../hints/hint_controller.dart';
 import 'labels.dart';
 
-const _maxLength = 24;
+/// Longest answer accepted, also used by the game keyboard.
+const answerMaxLength = 24;
 
 /// Game-style answer input: typed letters become tiles that pop in with a
 /// "tock", the category shows as a coloured badge, and the active slot glows.
@@ -32,6 +33,8 @@ class AnswerSlot extends StatefulWidget {
     required this.isLast,
     required this.onDone,
     this.hints,
+    this.focusNode,
+    this.systemKeyboard = true,
   });
 
   final Category category;
@@ -43,13 +46,20 @@ class AnswerSlot extends StatefulWidget {
   final VoidCallback onDone;
   final HintController? hints;
 
+  /// Provided when the round screen drives focus (game keyboard).
+  final FocusNode? focusNode;
+
+  /// False with the game keyboard: the field keeps focus but the phone's
+  /// keyboard stays hidden.
+  final bool systemKeyboard;
+
   @override
   State<AnswerSlot> createState() => _AnswerSlotState();
 }
 
 class _AnswerSlotState extends State<AnswerSlot>
     with SingleTickerProviderStateMixin {
-  final _focus = FocusNode();
+  late final FocusNode _focus = widget.focusNode ?? FocusNode();
   final _scroll = ScrollController();
   late final AnimationController _glow = AnimationController(
     vsync: this,
@@ -80,7 +90,8 @@ class _AnswerSlotState extends State<AnswerSlot>
   @override
   void dispose() {
     widget.controller.removeListener(_onText);
-    _focus.dispose();
+    _focus.removeListener(_onFocus);
+    if (widget.focusNode == null) _focus.dispose();
     _scroll.dispose();
     _glow.dispose();
     super.dispose();
@@ -194,10 +205,15 @@ class _AnswerSlotState extends State<AnswerSlot>
                                 enableSuggestions: false,
                                 enableInteractiveSelection: false,
                                 showCursor: false,
+                                keyboardType: widget.systemKeyboard
+                                    ? TextInputType.text
+                                    : TextInputType.none,
                                 textCapitalization:
                                     TextCapitalization.characters,
                                 inputFormatters: [
-                                  LengthLimitingTextInputFormatter(_maxLength),
+                                  LengthLimitingTextInputFormatter(
+                                    answerMaxLength,
+                                  ),
                                 ],
                                 textInputAction: widget.isLast
                                     ? TextInputAction.done
@@ -383,7 +399,7 @@ class _Tiles extends StatelessWidget {
                       ),
                     ),
                   ),
-              if (focused && chars.length < _maxLength)
+              if (focused && chars.length < answerMaxLength)
                 Padding(
                   padding: EdgeInsets.only(top: (30 - size) / 2 + 4),
                   child: Opacity(

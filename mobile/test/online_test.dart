@@ -204,7 +204,7 @@ void main() {
     expect(find.byKey(const Key('letter')), findsOneWidget);
 
     await tester.enterText(find.byKey(const Key('field_city')), 'Madrid');
-    await tester.tap(find.text('FINISH'));
+    await tester.tap(find.byKey(const Key('key_finish')));
     await tester.pump();
     expect(h.socket.sent.last, {
       'type': 'submit',

@@ -126,5 +126,8 @@
   "hintedBadge": "Hint",
   "hintNoneLeft": "No hints left this game.",
   "hintUnavailable": "No hint available here.",
-  "offlineModeNotice": "📴 No connection: playing solo offline"
+  "offlineModeNotice": "📴 No connection: playing solo offline",
+  "settingsGameKeyboard": "Game keyboard",
+  "keyNext": "Next",
+  "keySpace": "space"
 }

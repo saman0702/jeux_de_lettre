@@ -859,6 +859,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'📴 Pas de connexion : partie solo hors ligne'**
   String get offlineModeNotice;
+
+  /// No description provided for @settingsGameKeyboard.
+  ///
+  /// In fr, this message translates to:
+  /// **'Clavier du jeu'**
+  String get settingsGameKeyboard;
+
+  /// No description provided for @keyNext.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivant'**
+  String get keyNext;
+
+  /// No description provided for @keySpace.
+  ///
+  /// In fr, this message translates to:
+  /// **'espace'**
+  String get keySpace;
 }
 
 class _AppLocalizationsDelegate

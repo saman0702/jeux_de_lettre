@@ -247,5 +247,8 @@
       }
     }
   },
-  "offlineModeNotice": "📴 Pas de connexion : partie solo hors ligne"
+  "offlineModeNotice": "📴 Pas de connexion : partie solo hors ligne",
+  "settingsGameKeyboard": "Clavier du jeu",
+  "keyNext": "Suivant",
+  "keySpace": "espace"
 }
