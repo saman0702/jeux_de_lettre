@@ -69,4 +69,14 @@ void main() {
     expect(find.text('Quick match'), findsOneWidget);
     expect(find.text('Server unreachable'), findsOneWidget);
   });
+
+  testWidgets('home does not overflow when the keyboard opens', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 2.75;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 900);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(LetterBattleApp(home: HomeScreen(apiClient: fakeApi(healthy: true))));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
 }

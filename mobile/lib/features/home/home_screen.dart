@@ -85,6 +85,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
+      // Dialogs (nickname, code) handle the keyboard; the menu must not shrink.
+      resizeToAvoidBottomInset: false,
       body: GameBackground(
         child: SafeArea(
           child: Padding(
