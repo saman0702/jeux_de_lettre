@@ -183,6 +183,7 @@ class _PodiumStep extends StatelessWidget {
             nickname: player.nickname,
             seed: player.clientId,
             size: place == 1 ? 64 : 52,
+            bot: player.bot,
           ),
           const SizedBox(height: 6),
           Text(

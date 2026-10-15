@@ -775,6 +775,48 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'La partie est déjà en cours.'**
   String get errorGameInProgress;
+
+  /// No description provided for @opponents.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adversaires'**
+  String get opponents;
+
+  /// No description provided for @opponentsNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun'**
+  String get opponentsNone;
+
+  /// No description provided for @botLevel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Niveau des bots'**
+  String get botLevel;
+
+  /// No description provided for @addBot.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un bot'**
+  String get addBot;
+
+  /// No description provided for @noticeBotsJoined.
+  ///
+  /// In fr, this message translates to:
+  /// **'Personne en ligne : des bots te rejoignent 🤖'**
+  String get noticeBotsJoined;
+
+  /// No description provided for @errorNotHost.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seul l\'hôte peut faire ça.'**
+  String get errorNotHost;
+
+  /// No description provided for @botTag.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bot'**
+  String get botTag;
 }
 
 class _AppLocalizationsDelegate

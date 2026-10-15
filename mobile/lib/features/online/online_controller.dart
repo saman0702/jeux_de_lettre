@@ -6,7 +6,16 @@ import '../../core/network/realtime_client.dart';
 import '../game/data/models.dart';
 import 'data/room_models.dart';
 
-enum NoticeKind { joined, left, disconnected, reconnected, error }
+enum NoticeKind { joined, left, disconnected, reconnected, botsJoined, error }
+
+const _noticeKinds = {
+  'joined': NoticeKind.joined,
+  'left': NoticeKind.left,
+  'disconnected': NoticeKind.disconnected,
+  'reconnected': NoticeKind.reconnected,
+  'bots_joined': NoticeKind.botsJoined,
+  'error': NoticeKind.error,
+};
 
 class RoomNotice {
   const RoomNotice(this.kind, this.nickname);
@@ -50,8 +59,23 @@ class OnlineController extends ChangeNotifier {
   void quickMatch(String language) =>
       _request({'type': 'quick_match', 'language': language});
 
-  void createRoom(RoomSettings settings) =>
-      _request({'type': 'create_room', 'settings': settings.toJson()});
+  /// With [bots] > 0 the room is filled with computer opponents and the
+  /// game starts at once.
+  void createRoom(
+    RoomSettings settings, {
+    int bots = 0,
+    Difficulty botLevel = Difficulty.normal,
+  }) => _request({
+    'type': 'create_room',
+    'settings': settings.toJson(),
+    if (bots > 0) 'bots': {'count': bots, 'level': botLevel.name},
+  });
+
+  void addBot(Difficulty level) =>
+      client.send({'type': 'add_bot', 'level': level.name});
+
+  void removeBot(String clientId) =>
+      client.send({'type': 'remove_bot', 'client_id': clientId});
 
   void joinRoom(String code) =>
       _request({'type': 'join_room', 'code': code.trim().toUpperCase()});
@@ -101,7 +125,7 @@ class OnlineController extends ChangeNotifier {
         _room = null;
         _searching = false;
       case 'notice':
-        final kind = NoticeKind.values.asNameMap()[event['kind']];
+        final kind = _noticeKinds[event['kind']];
         if (kind != null) {
           _notices.add(RoomNotice(kind, event['nickname'] as String? ?? ''));
         }

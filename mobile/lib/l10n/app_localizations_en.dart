@@ -378,4 +378,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorGameInProgress => 'The game has already started.';
+
+  @override
+  String get opponents => 'Opponents';
+
+  @override
+  String get opponentsNone => 'None';
+
+  @override
+  String get botLevel => 'Bot level';
+
+  @override
+  String get addBot => 'Add a bot';
+
+  @override
+  String get noticeBotsJoined => 'Nobody online: bots are joining you 🤖';
+
+  @override
+  String get errorNotHost => 'Only the host can do that.';
+
+  @override
+  String get botTag => 'Bot';
 }

@@ -7,7 +7,9 @@ import 'package:letter_battle/core/audio/game_audio.dart';
 import 'package:letter_battle/core/feedback/game_feedback.dart';
 import 'package:letter_battle/core/network/realtime_client.dart';
 import 'package:letter_battle/core/settings/app_settings.dart';
+import 'package:letter_battle/features/game/solo_setup_screen.dart';
 import 'package:letter_battle/features/home/home_screen.dart';
+import 'package:letter_battle/features/online/room_screen.dart';
 import 'package:letter_battle/features/online/online_controller.dart';
 import 'package:letter_battle/features/online/rooms_screen.dart';
 import 'package:letter_battle/main.dart';
@@ -100,7 +102,10 @@ Map<String, dynamic> player(
   int score = 0,
   bool finished = false,
   bool connected = true,
+  String? botLevel,
 }) => {
+  'bot': botLevel != null,
+  'bot_level': botLevel,
   'client_id': id,
   'nickname': name,
   'ready': ready,
@@ -352,5 +357,70 @@ void main() {
     await pumpFor(tester);
     expect(find.text('Room not found.'), findsOneWidget);
     expect(find.byType(RoomsScreen), findsOneWidget);
+  });
+
+  testWidgets('solo against bots starts an online game with computer players', (tester) async {
+    final h = Harness();
+    await h.start(tester, SoloSetupScreen(apiClient: fakeApi(healthy: true)));
+
+    final list = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(find.text('🤖 2'), 150, scrollable: list);
+    await tester.drag(list, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('🤖 2'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Bot level'), 150, scrollable: list);
+    await tester.drag(list, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Hard').last);
+    await tester.tap(find.text('PLAY'));
+    await pumpFor(tester);
+
+    final create = h.socket.sent.last;
+    expect(create['type'], 'create_room');
+    expect(create['bots'], {'count': 2, 'level': 'hard'});
+    expect((create['settings'] as Map)['max_players'], 3);
+    expect(find.byType(RoomScreen), findsOneWidget);
+  });
+
+  testWidgets('host adds and removes bots in the lobby', (tester) async {
+    final h = Harness();
+    await h.start(tester, const RoomsScreen());
+    await tester.tap(find.text('Join with a code'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('code_field')), 'X7K92');
+    await tester.tap(find.text('Join'));
+    await pumpFor(tester);
+
+    h.socket.push(roomEvent('waiting', players: [
+      player(me, 'Blaise'),
+      player('bot-1', 'Robo-Léa', ready: true, botLevel: 'easy'),
+    ]));
+    await pumpFor(tester);
+    expect(find.text('Robo-Léa'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('add_bot_button')));
+    await pumpFor(tester, const Duration(seconds: 1));
+    await tester.tap(find.text('Easy'));
+    await pumpFor(tester, const Duration(seconds: 1));
+    expect(h.socket.sent.last, {'type': 'add_bot', 'level': 'easy'});
+
+    await tester.tap(find.byKey(const Key('remove_bot-1')));
+    await tester.pump();
+    expect(h.socket.sent.last, {'type': 'remove_bot', 'client_id': 'bot-1'});
+    await pumpFor(tester, const Duration(seconds: 1));
+  });
+
+  testWidgets('lonely quick match announces the bots', (tester) async {
+    final h = Harness();
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+    await tester.tap(find.text('Quick match'));
+    await pumpFor(tester);
+    h.socket.push(roomEvent('waiting', quick: true, players: [player(me, 'Blaise', ready: true)]));
+    await pumpFor(tester, const Duration(milliseconds: 500));
+    h.socket.push({'type': 'notice', 'kind': 'bots_joined', 'nickname': ''});
+    await pumpFor(tester, const Duration(milliseconds: 500));
+    expect(find.text('Nobody online: bots are joining you 🤖'), findsOneWidget);
+    await pumpFor(tester, const Duration(seconds: 3));
   });
 }

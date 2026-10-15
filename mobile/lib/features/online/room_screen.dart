@@ -161,6 +161,7 @@ class _RoomScreenState extends State<RoomScreen> {
       NoticeKind.left => l10n.noticeLeft(notice.nickname),
       NoticeKind.disconnected => l10n.noticeDisconnected(notice.nickname),
       NoticeKind.reconnected => l10n.noticeReconnected(notice.nickname),
+      NoticeKind.botsJoined => l10n.noticeBotsJoined,
       NoticeKind.error => l10n.errorGeneric,
     };
     ScaffoldMessenger.of(context)
@@ -310,10 +311,13 @@ class _RoomScreenState extends State<RoomScreen> {
     switch (room.phase) {
       case RoomPhase.waiting:
       case RoomPhase.finished:
+        final isHost = room.hostId == _online.clientId && !room.quick;
         return LobbyView(
           room: room,
           myId: _online.clientId,
           onReady: _online.setReady,
+          onAddBot: isHost ? _online.addBot : null,
+          onRemoveBot: isHost ? _online.removeBot : null,
         );
       case RoomPhase.countdown:
         final seconds =

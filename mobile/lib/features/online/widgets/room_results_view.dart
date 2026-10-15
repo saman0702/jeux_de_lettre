@@ -219,6 +219,7 @@ class _LeaderboardRow extends StatelessWidget {
             seed: player.clientId,
             size: 36,
             connected: player.connected,
+            bot: player.bot,
           ),
           const SizedBox(width: 10),
           Expanded(

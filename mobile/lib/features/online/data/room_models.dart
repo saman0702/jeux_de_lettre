@@ -60,6 +60,7 @@ class RoomPlayer {
     required this.score,
     required this.finished,
     required this.playing,
+    this.botLevel,
   });
 
   factory RoomPlayer.fromJson(Map<String, dynamic> json) => RoomPlayer(
@@ -70,6 +71,9 @@ class RoomPlayer {
     score: json['score'] as int,
     finished: json['finished'] as bool,
     playing: json['playing'] as bool,
+    botLevel: json['bot_level'] == null
+        ? null
+        : Difficulty.values.byName(json['bot_level'] as String),
   );
 
   final String clientId;
@@ -83,6 +87,11 @@ class RoomPlayer {
 
   /// Takes part in the current round (false for a late joiner).
   final bool playing;
+
+  /// Set for computer opponents.
+  final Difficulty? botLevel;
+
+  bool get bot => botLevel != null;
 }
 
 class PlayerRoundResult {

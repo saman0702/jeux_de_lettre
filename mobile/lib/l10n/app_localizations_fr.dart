@@ -379,4 +379,26 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get errorGameInProgress => 'La partie est déjà en cours.';
+
+  @override
+  String get opponents => 'Adversaires';
+
+  @override
+  String get opponentsNone => 'Aucun';
+
+  @override
+  String get botLevel => 'Niveau des bots';
+
+  @override
+  String get addBot => 'Ajouter un bot';
+
+  @override
+  String get noticeBotsJoined =>
+      'Personne en ligne : des bots te rejoignent 🤖';
+
+  @override
+  String get errorNotHost => 'Seul l\'hôte peut faire ça.';
+
+  @override
+  String get botTag => 'Bot';
 }

@@ -223,5 +223,12 @@
         "type": "int"
       }
     }
-  }
+  },
+  "opponents": "Adversaires",
+  "opponentsNone": "Aucun",
+  "botLevel": "Niveau des bots",
+  "addBot": "Ajouter un bot",
+  "noticeBotsJoined": "Personne en ligne : des bots te rejoignent 🤖",
+  "errorNotHost": "Seul l'hôte peut faire ça.",
+  "botTag": "Bot"
 }

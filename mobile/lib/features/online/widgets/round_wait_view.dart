@@ -79,6 +79,7 @@ class RoundWaitView extends StatelessWidget {
                         seed: p.clientId,
                         size: 40,
                         connected: p.connected,
+                        bot: p.bot,
                       ),
                       title: Text(
                         p.nickname,

@@ -9,6 +9,10 @@ import '../../core/widgets/candy_button.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_card.dart';
 import '../../l10n/app_localizations.dart';
+import '../online/data/room_models.dart';
+import '../online/nickname_dialog.dart';
+import '../online/online_controller.dart';
+import '../online/room_screen.dart';
 import 'data/models.dart';
 import 'data/solo_game_api.dart';
 import 'solo_game_screen.dart';
@@ -30,9 +34,45 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
   int _duration = 30;
   Difficulty _difficulty = Difficulty.normal;
   final Set<Category> _categories = {...Category.values};
+  int _bots = 0;
+  Difficulty _botLevel = Difficulty.normal;
   bool _loading = false;
 
+  List<Category> get _selectedCategories => [
+    for (final c in Category.values)
+      if (_categories.contains(c)) c,
+  ];
+
+  /// Against bots the game runs online, like a room with computer players.
+  Future<void> _startAgainstBots() async {
+    final l10n = AppLocalizations.of(context);
+    final online = OnlineScope.of(context);
+    if (!online.isOnline) {
+      online.client.connect();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage(l10n, 'network_error'))),
+      );
+      return;
+    }
+    if (!await ensureNickname(context) || !mounted) return;
+    online.createRoom(
+      RoomSettings(
+        language: Localizations.localeOf(context).languageCode,
+        difficulty: _difficulty,
+        categories: _selectedCategories,
+        rounds: _rounds,
+        roundDuration: _duration,
+        maxPlayers: _bots + 1,
+      ),
+      bots: _bots,
+      botLevel: _botLevel,
+    );
+    Navigator.of(context)
+        .pushReplacement(PopRoute(builder: (_) => const RoomScreen()));
+  }
+
   Future<void> _start() async {
+    if (_bots > 0) return _startAgainstBots();
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
@@ -42,10 +82,7 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
         SoloGameSettings(
           language: Localizations.localeOf(context).languageCode,
           difficulty: _difficulty,
-          categories: [
-            for (final c in Category.values)
-              if (_categories.contains(c)) c,
-          ],
+          categories: _selectedCategories,
           rounds: _rounds,
           roundDuration: _duration,
           nickname: l10n.defaultNickname,
@@ -175,6 +212,52 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
                         isSelected: (d) => d == _difficulty,
                         label: (d) => d.label(l10n),
                         onTap: (d) => setState(() => _difficulty = d),
+                      ),
+                    ),
+                    section(
+                      4,
+                      l10n.opponents,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          PillSelector<int>(
+                            options: const [0, 1, 2, 3],
+                            isSelected: (n) => n == _bots,
+                            label: (n) => n == 0 ? l10n.opponentsNone : '🤖 $n',
+                            onTap: (n) => setState(() => _bots = n),
+                          ),
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeOutBack,
+                            child: _bots == 0
+                                ? const SizedBox(width: double.infinity)
+                                : Padding(
+                                    padding: const EdgeInsets.only(top: 14),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          l10n.botLevel,
+                                          style: fredoka(
+                                            size: 15,
+                                            weight: FontWeight.w600,
+                                            color: AppColors.inkSoft,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        PillSelector<Difficulty>(
+                                          options: Difficulty.values,
+                                          isSelected: (d) => d == _botLevel,
+                                          label: (d) => d.label(l10n),
+                                          onTap: (d) =>
+                                              setState(() => _botLevel = d),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

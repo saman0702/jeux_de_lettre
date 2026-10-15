@@ -24,6 +24,7 @@ class PlayerAvatar extends StatelessWidget {
     required this.seed,
     this.size = 52,
     this.connected = true,
+    this.bot = false,
   });
 
   final String nickname;
@@ -31,9 +32,16 @@ class PlayerAvatar extends StatelessWidget {
   final double size;
   final bool connected;
 
+  /// Computer opponents show a robot instead of their initial.
+  final bool bot;
+
+  static const _botColor = Color(0xFF9DB4D6);
+
   @override
   Widget build(BuildContext context) {
-    final color = connected ? avatarColor(seed) : AppColors.grey;
+    final color = bot
+        ? _botColor
+        : (connected ? avatarColor(seed) : AppColors.grey);
     return Container(
       width: size,
       height: size,
@@ -49,15 +57,17 @@ class PlayerAvatar extends StatelessWidget {
           ),
         ],
       ),
-      child: Text(
-        nickname.isEmpty ? '?' : nickname.characters.first.toUpperCase(),
-        style: fredoka(
-          size: size * 0.45,
-          weight: FontWeight.w700,
-          color: AppColors.ink,
-          height: 1,
-        ),
-      ),
+      child: bot
+          ? Text('🤖', style: TextStyle(fontSize: size * 0.5, height: 1))
+          : Text(
+              nickname.isEmpty ? '?' : nickname.characters.first.toUpperCase(),
+              style: fredoka(
+                size: size * 0.45,
+                weight: FontWeight.w700,
+                color: AppColors.ink,
+                height: 1,
+              ),
+            ),
     );
   }
 }

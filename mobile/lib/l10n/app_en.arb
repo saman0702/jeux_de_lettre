@@ -112,5 +112,12 @@
   "connectionLost": "Connection lost… reconnecting",
   "errorRoomNotFound": "Room not found.",
   "errorRoomFull": "This room is full.",
-  "errorGameInProgress": "The game has already started."
+  "errorGameInProgress": "The game has already started.",
+  "opponents": "Opponents",
+  "opponentsNone": "None",
+  "botLevel": "Bot level",
+  "addBot": "Add a bot",
+  "noticeBotsJoined": "Nobody online: bots are joining you 🤖",
+  "errorNotHost": "Only the host can do that.",
+  "botTag": "Bot"
 }

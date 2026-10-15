@@ -49,6 +49,7 @@ String errorMessage(AppLocalizations l10n, String? code) => switch (code) {
   'room_not_found' => l10n.errorRoomNotFound,
   'room_full' => l10n.errorRoomFull,
   'game_in_progress' => l10n.errorGameInProgress,
+  'not_host' => l10n.errorNotHost,
   _ => l10n.errorGeneric,
 };
 

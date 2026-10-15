@@ -8,6 +8,7 @@ import '../../../core/widgets/candy_button.dart';
 import '../../../core/widgets/game_card.dart';
 import '../../../core/widgets/letter_tile.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../game/data/models.dart';
 import '../../game/widgets/labels.dart';
 import '../data/room_models.dart';
 import 'player_avatar.dart';
@@ -19,11 +20,58 @@ class LobbyView extends StatelessWidget {
     required this.room,
     required this.myId,
     required this.onReady,
+    this.onAddBot,
+    this.onRemoveBot,
   });
 
   final RoomState room;
   final String myId;
   final ValueChanged<bool> onReady;
+
+  /// Host only: add or remove computer opponents.
+  final ValueChanged<Difficulty>? onAddBot;
+  final ValueChanged<String>? onRemoveBot;
+
+  Future<void> _pickBotLevel(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final level = await showModalBottomSheet<Difficulty>(
+      context: context,
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '🤖 ${l10n.botLevel}',
+                style: fredoka(size: 22, weight: FontWeight.w700),
+              ),
+              const SizedBox(height: 16),
+              for (final (level, color) in [
+                (Difficulty.easy, AppColors.green),
+                (Difficulty.normal, AppColors.yellow),
+                (Difficulty.hard, AppColors.pink),
+              ]) ...[
+                CandyButton(
+                  label: level.label(l10n),
+                  color: color,
+                  height: 54,
+                  fontSize: 19,
+                  onPressed: () => Navigator.pop(context, level),
+                ),
+                const SizedBox(height: 10),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+    if (level != null) onAddBot?.call(level);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +134,9 @@ class LobbyView extends StatelessWidget {
                           isHost: p.clientId == room.hostId,
                           isMe: p.clientId == myId,
                           showReady: !room.quick,
+                          onRemove: p.bot && onRemoveBot != null
+                              ? () => onRemoveBot!(p.clientId)
+                              : null,
                         ),
                       ),
                     for (
@@ -112,6 +163,18 @@ class LobbyView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
+            if (onAddBot != null &&
+                room.players.length < settings.maxPlayers) ...[
+              CandyButton(
+                key: const Key('add_bot_button'),
+                label: '🤖 ${l10n.addBot}',
+                color: AppColors.white,
+                height: 48,
+                fontSize: 17,
+                onPressed: () => _pickBotLevel(context),
+              ),
+              const SizedBox(height: 10),
+            ],
             CandyButton(
               key: const Key('ready_button'),
               label: (me?.ready ?? false)
@@ -180,12 +243,16 @@ class _PlayerSeat extends StatelessWidget {
     required this.isHost,
     required this.isMe,
     required this.showReady,
+    this.onRemove,
   });
 
   final RoomPlayer player;
   final bool isHost;
   final bool isMe;
   final bool showReady;
+
+  /// Shown on bots for the host.
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -199,6 +266,7 @@ class _PlayerSeat extends StatelessWidget {
               nickname: player.nickname,
               seed: player.clientId,
               connected: player.connected,
+              bot: player.bot,
             ),
             if (isHost)
               const Positioned(
@@ -225,6 +293,24 @@ class _PlayerSeat extends StatelessWidget {
                 bottom: -4,
                 right: -6,
                 child: Text('📡', style: TextStyle(fontSize: 18)),
+              ),
+            if (onRemove != null)
+              Positioned(
+                top: -6,
+                right: -8,
+                child: GestureDetector(
+                  key: Key('remove_${player.clientId}'),
+                  onTap: onRemove,
+                  child: const CircleAvatar(
+                    radius: 11,
+                    backgroundColor: AppColors.red,
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 15,
+                      color: AppColors.white,
+                    ),
+                  ),
+                ),
               ),
           ],
         ),
