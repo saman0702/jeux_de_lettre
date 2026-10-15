@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import contextmanager
+from dataclasses import replace
 
 import pytest
 from sqlalchemy import text
@@ -13,7 +14,15 @@ from app.services.presence_service import MemoryPresence
 from app.services.room_service import RoomManager, Timings
 from tests.conftest import TEST_DATABASE_URL
 
-FAST = Timings(countdown=0.05, results=0.05, quick_start=0.2, reconnect_grace=0.3, presence_interval=0.05)
+FAST = Timings(
+    countdown=0.05,
+    results=0.05,
+    quick_start=0.2,
+    reconnect_grace=0.3,
+    presence_interval=0.05,
+    quick_bot_fill=5.0,
+    bot_speed=0.001,
+)
 SETTINGS = {"language": "fr", "categories": ["city", "country"], "rounds": 5, "round_duration": 30}
 
 
@@ -32,7 +41,7 @@ def manager(monkeypatch):
     manager = RoomManager(
         session_factory=async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False),
         presence=MemoryPresence(),
-        timings=FAST,
+        timings=replace(FAST),
     )
     previous = app.state.room_manager
     app.state.room_manager = manager
@@ -235,3 +244,64 @@ def test_online_count(client):
         with player(client, "bob-00001", "Bob"):
             assert wait_for(alice, lambda m: m["type"] == "online_count" and m["count"] == 2)
         assert wait_for(alice, lambda m: m["type"] == "online_count" and m["count"] == 1)
+
+
+def test_play_against_bots(client):
+    with player(client, "alice-0001", "Alice") as alice:
+        alice.send_json({
+            "type": "create_room",
+            "settings": {**SETTINGS, "categories": ["country"]},
+            "bots": {"count": 2, "level": "hard"},
+        })
+        room = state(alice, "countdown")
+        bots = [p for p in room["players"] if p["bot"]]
+        assert len(bots) == 2 and all(b["bot_level"] == "hard" for b in bots)
+        assert len({b["nickname"] for b in bots}) == 2
+
+        state(alice, "round")
+        alice.send_json({"type": "submit", "round": 1, "answers": {"country": "Maroc"}})
+        results = state(alice, "results")["results"]["players"]
+        assert len(results) == 3
+        bot_answers = [p["answers"][0] for p in results if p["client_id"].startswith("bot-")]
+        # Bots answered on their own with real countries starting with M.
+        assert any(a["status"] == "valid" for a in bot_answers)
+
+
+def test_host_adds_and_removes_bots(client):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice)
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, check=lambda r: len(r["players"]) == 2)
+
+        bob.send_json({"type": "add_bot", "level": "easy"})
+        assert error(bob) == "not_host"
+
+        alice.send_json({"type": "add_bot", "level": "easy"})
+        room = state(alice, check=lambda r: len(r["players"]) == 3)
+        bot = room["players"][2]
+        assert bot["bot"] and bot["ready"]
+
+        alice.send_json({"type": "remove_bot", "client_id": bot["client_id"]})
+        assert len(state(alice, check=lambda r: len(r["players"]) == 2)["players"]) == 2
+
+        alice.send_json({"type": "remove_bot", "client_id": "bob-00001"})
+        assert error(alice) == "not_a_bot"
+
+
+def test_lonely_quick_match_gets_bots(client, manager):
+    manager.timings.quick_bot_fill = 0.1
+    with player(client, "alice-0001", "Alice") as alice:
+        alice.send_json({"type": "quick_match", "language": "fr"})
+        assert wait_for(alice, lambda m: m["type"] == "notice" and m["kind"] == "bots_joined")
+        room = state(alice, "round")
+        assert sum(p["bot"] for p in room["players"]) == 2
+
+
+def test_room_closes_when_only_bots_remain(client, manager):
+    with player(client, "alice-0001", "Alice") as alice:
+        room = create_room(alice)
+        alice.send_json({"type": "add_bot"})
+        state(alice, check=lambda r: len(r["players"]) == 2)
+        alice.send_json({"type": "leave_room"})
+        wait_for(alice, lambda m: m["type"] == "left_room")
+    assert room["code"] not in manager.rooms

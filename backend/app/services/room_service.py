@@ -25,11 +25,12 @@ from app.core.game_rules import (
     MIN_ROOM_PLAYERS,
     SUBMIT_GRACE_SECONDS,
     Category,
+    Difficulty,
     Language,
 )
 from app.models.base import utcnow
 from app.schemas.game import GameSettings
-from app.services import multiplayer_service
+from app.services import bot_service, multiplayer_service
 from app.services.presence_service import PresenceStore, RedisPresence
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,11 @@ class Timings:
     reconnect_grace: float = 30.0
     presence_interval: float = 5.0
     submit_grace: float = SUBMIT_GRACE_SECONDS
+    # A lone quick-match player gets bots after this wait.
+    quick_bot_fill: float = 12.0
+    quick_bot_count: int = 2
+    # Multiplies bot answer delays (tests use a tiny value).
+    bot_speed: float = 1.0
 
 
 @dataclass
@@ -62,6 +68,11 @@ class RoomPlayer:
     score: int = 0
     # Set once the player takes part in the game (late joiners get it at the next round).
     db_player_id: str | None = None
+    bot_level: Difficulty | None = None
+
+    @property
+    def bot(self) -> bool:
+        return self.bot_level is not None
 
 
 @dataclass
@@ -73,6 +84,7 @@ class LiveRound:
     participants: dict[str, str]  # client id -> db player id
     submissions: dict[str, tuple[datetime, dict[Category, str]]] = field(default_factory=dict)
     all_in: asyncio.Event = field(default_factory=asyncio.Event)
+    bot_tasks: list[asyncio.Task] = field(default_factory=list)
 
 
 @dataclass
@@ -93,6 +105,7 @@ class Room:
     next_round_at: datetime | None = None
     game_task: asyncio.Task | None = None
     quick_timer: asyncio.Task | None = None
+    bot_fill_timer: asyncio.Task | None = None
 
     @property
     def in_game(self) -> bool:
@@ -104,6 +117,9 @@ class Room:
 
     def connected_players(self) -> list[RoomPlayer]:
         return [p for p in self.players.values() if p.connected]
+
+    def humans(self) -> list[RoomPlayer]:
+        return [p for p in self.players.values() if not p.bot]
 
 
 @dataclass
@@ -149,7 +165,7 @@ class RoomManager:
     async def stop(self) -> None:
         tasks = [self._presence_task, *self._expiry_tasks.values()]
         for room in self.rooms.values():
-            tasks += [room.game_task, room.quick_timer]
+            tasks += [room.game_task, room.quick_timer, room.bot_fill_timer]
         for task in tasks:
             if task:
                 task.cancel()
@@ -233,6 +249,8 @@ class RoomManager:
             "leave_room": self._on_leave_room,
             "set_ready": self._on_set_ready,
             "submit": self._on_submit,
+            "add_bot": self._on_add_bot,
+            "remove_bot": self._on_remove_bot,
             "subscribe_rooms": self._on_subscribe_rooms,
             "unsubscribe_rooms": self._on_unsubscribe_rooms,
             "ping": self._on_ping,
@@ -254,9 +272,23 @@ class RoomManager:
             settings = RoomSettings.model_validate(message.get("settings") or {})
         except ValidationError:
             raise RoomError("invalid_settings") from None
+        bots = message.get("bots") if isinstance(message.get("bots"), dict) else {}
+        try:
+            bot_count = min(int(bots.get("count", 0)), settings.max_players - 1)
+            bot_level = Difficulty(bots.get("level", Difficulty.NORMAL))
+        except (TypeError, ValueError):
+            raise RoomError("invalid_settings") from None
+
         await self._leave(connection.client_id)
         room = self._new_room(settings, quick=False, host=connection)
         await self._add_player(room, connection)
+        if bot_count > 0:
+            # Playing against the computer: start right away.
+            for _ in range(bot_count):
+                self._add_bot(room, bot_level)
+            room.players[connection.client_id].ready = True
+            await self._broadcast(room)
+            await self._maybe_start(room)
 
     async def _on_join_room(self, connection: Connection, message: dict) -> None:
         code = str(message.get("code", "")).strip().upper()
@@ -333,6 +365,34 @@ class RoomManager:
         await self._broadcast(room)
         self._check_all_in(room)
 
+    async def _on_add_bot(self, connection: Connection, message: dict) -> None:
+        room = self._require_host(connection.client_id)
+        if room.quick or room.phase != "waiting":
+            raise RoomError("game_in_progress")
+        if not room.joinable:
+            raise RoomError("room_full")
+        try:
+            level = Difficulty(message.get("level", Difficulty.NORMAL))
+        except ValueError:
+            raise RoomError("invalid_settings") from None
+        bot = self._add_bot(room, level)
+        await self._notice(room, "joined", bot.nickname)
+        await self._broadcast(room)
+        await self._rooms_changed()
+        await self._maybe_start(room)
+
+    async def _on_remove_bot(self, connection: Connection, message: dict) -> None:
+        room = self._require_host(connection.client_id)
+        if room.phase != "waiting":
+            raise RoomError("game_in_progress")
+        bot = room.players.get(str(message.get("client_id", "")))
+        if bot is None or not bot.bot:
+            raise RoomError("not_a_bot")
+        del room.players[bot.client_id]
+        await self._notice(room, "left", bot.nickname)
+        await self._broadcast(room)
+        await self._rooms_changed()
+
     async def _on_subscribe_rooms(self, connection: Connection, message: dict) -> None:
         language = message.get("language")
         self._room_list_subscribers[connection.client_id] = language if language in list(Language) else None
@@ -350,6 +410,17 @@ class RoomManager:
         room = Room(code=code, settings=settings, quick=quick, host_id=host.client_id)
         self.rooms[code] = room
         return room
+
+    def _add_bot(self, room: Room, level: Difficulty) -> RoomPlayer:
+        taken = {p.nickname for p in room.players.values()}
+        bot = RoomPlayer(
+            client_id=f"bot-{secrets.token_hex(4)}",
+            nickname=bot_service.bot_name(taken),
+            ready=True,
+            bot_level=level,
+        )
+        room.players[bot.client_id] = bot
+        return bot
 
     async def _add_player(self, room: Room, connection: Connection) -> None:
         room.players[connection.client_id] = RoomPlayer(
@@ -369,11 +440,11 @@ class RoomManager:
         player = room.players.pop(client_id)
         self._room_of.pop(client_id, None)
 
-        if not room.players:
+        if not room.humans():
             await self._close_room(room)
             return
         if room.host_id == client_id:
-            room.host_id = next(iter(room.players))
+            room.host_id = room.humans()[0].client_id
         if room.quick:
             self._schedule_quick_start(room)
         await self._notice(room, "left", player.nickname)
@@ -383,7 +454,10 @@ class RoomManager:
         await self._maybe_start(room)
 
     async def _close_room(self, room: Room) -> None:
-        for task in (room.game_task, room.quick_timer):
+        tasks = [room.game_task, room.quick_timer, room.bot_fill_timer]
+        if room.live_round:
+            tasks += room.live_round.bot_tasks
+        for task in tasks:
             if task and task is not asyncio.current_task():
                 task.cancel()
         self.rooms.pop(room.code, None)
@@ -398,7 +472,7 @@ class RoomManager:
         room.go_at = room.next_round_at = None
         for player in room.players.values():
             player.score = 0
-            player.ready = room.quick
+            player.ready = room.quick or player.bot
             player.db_player_id = None
 
     def _current_room(self, client_id: str) -> Room | None:
@@ -409,6 +483,12 @@ class RoomManager:
         room = self._current_room(client_id)
         if room is None:
             raise RoomError("not_in_room")
+        return room
+
+    def _require_host(self, client_id: str) -> Room:
+        room = self._require_room(client_id)
+        if room.host_id != client_id:
+            raise RoomError("not_host")
         return room
 
     # ---------------------------------------------------------------- game start
@@ -424,6 +504,9 @@ class RoomManager:
         if room.phase != "waiting":
             return
         count = len(room.players)
+        if count >= MIN_ROOM_PLAYERS and room.bot_fill_timer:
+            room.bot_fill_timer.cancel()
+            room.bot_fill_timer = None
         if count >= room.settings.max_players:
             self._cancel_quick_timer(room)
             self._start_game(room)
@@ -433,12 +516,26 @@ class RoomManager:
                 room.quick_timer = asyncio.create_task(self._quick_start_later(room))
         else:
             self._cancel_quick_timer(room)
+            if count == 1 and room.bot_fill_timer is None:
+                room.bot_fill_timer = asyncio.create_task(self._fill_with_bots_later(room))
 
     def _cancel_quick_timer(self, room: Room) -> None:
         if room.quick_timer and room.quick_timer is not asyncio.current_task():
             room.quick_timer.cancel()
         room.quick_timer = None
         room.starts_at = None
+
+    async def _fill_with_bots_later(self, room: Room) -> None:
+        """Nobody else online: bots join so the player is not left waiting."""
+        await asyncio.sleep(self.timings.quick_bot_fill)
+        room.bot_fill_timer = None
+        if room.phase != "waiting" or len(room.players) != 1 or room.code not in self.rooms:
+            return
+        for _ in range(self.timings.quick_bot_count):
+            self._add_bot(room, room.settings.difficulty)
+        await self._notice(room, "bots_joined", "")
+        self._start_game(room)
+        await self._broadcast(room)
 
     async def _quick_start_later(self, room: Room) -> None:
         await asyncio.sleep(self.timings.quick_start)
@@ -522,12 +619,15 @@ class RoomManager:
         room.phase = "round"
         room.go_at = None
         await self._broadcast(room)
+        await self._launch_bots(room, room.live_round)
 
         timeout = (info.ends_at - utcnow()).total_seconds() + self.timings.submit_grace
         with contextlib.suppress(TimeoutError):
             await asyncio.wait_for(room.live_round.all_in.wait(), timeout=max(0.0, timeout))
 
         live = room.live_round
+        for task in live.bot_tasks:
+            task.cancel()
         async with self.session_factory() as session:
             outcome = await multiplayer_service.close_round(
                 session,
@@ -556,6 +656,33 @@ class RoomManager:
         room.live_round = None
         room.phase = "results"
         await self._broadcast(room)
+
+    async def _launch_bots(self, room: Room, live: LiveRound) -> None:
+        bots = [p for p in room.players.values() if p.bot and p.client_id in live.participants]
+        if not bots:
+            return
+        pool = max(bot_service.BOT_PROFILES[b.bot_level].pool for b in bots)
+        async with self.session_factory() as session:
+            options = await bot_service.candidates(
+                session, room.settings.language, [c.value for c in room.settings.categories], live.letter, pool
+            )
+        for bot in bots:
+            profile = bot_service.BOT_PROFILES[bot.bot_level]
+            answers = bot_service.choose_answers(
+                profile, {c: values[: profile.pool] for c, values in options.items()}
+            )
+            delay = bot_service.answer_delay(profile, room.settings.round_duration) * self.timings.bot_speed
+            live.bot_tasks.append(asyncio.create_task(self._bot_submit(room, live, bot.client_id, answers, delay)))
+
+    async def _bot_submit(
+        self, room: Room, live: LiveRound, client_id: str, answers: dict[Category, str], delay: float
+    ) -> None:
+        await asyncio.sleep(delay)
+        if room.live_round is not live or client_id in live.submissions:
+            return
+        live.submissions[client_id] = (utcnow(), answers)
+        await self._broadcast(room)
+        self._check_all_in(room)
 
     def _check_all_in(self, room: Room) -> None:
         """Ends the round early once every connected participant has answered."""
@@ -598,6 +725,8 @@ class RoomManager:
                     "score": p.score,
                     "finished": bool(live and p.client_id in live.submissions),
                     "playing": bool(live and p.client_id in live.participants) or not room.in_game,
+                    "bot": p.bot,
+                    "bot_level": p.bot_level,
                 }
                 for p in room.players.values()
             ],

@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Index, String
+from sqlalchemy import BigInteger, Boolean, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -21,3 +21,5 @@ class Answer(Base):
     normalized_value: Mapped[str] = mapped_column(String(200))
     first_letter: Mapped[str] = mapped_column(String(1))
     accepted: Mapped[bool] = mapped_column(Boolean, default=True)
+    # How well known the answer is (population for cities); bots prefer high values.
+    popularity: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")

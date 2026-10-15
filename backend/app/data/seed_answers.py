@@ -34,7 +34,8 @@ CURATED_FILES = {
     Category.FRUIT: "fruits.json",
 }
 
-Entry = tuple[str, str, str]  # category, language, value
+# category, language, value[, popularity]; popularity helps bots pick well-known answers
+Entry = tuple
 
 
 def curated_entries() -> Iterator[Entry]:
@@ -71,17 +72,28 @@ def city_entries() -> Iterator[Entry]:
     for line in lines:
         fields = line.split("\t")
         name, ascii_name, alternates = fields[1], fields[2], fields[3]
-        for value in [name, ascii_name, *alternates.split(",")]:
+        population = int(fields[14] or 0)
+        # Only the main spellings carry the population, so bots favour "Paris"
+        # over an exotic alternate name.
+        for value in [name, ascii_name]:
             if _is_city_name(value):
-                yield Category.CITY, ANY_LANGUAGE, value
+                yield Category.CITY, ANY_LANGUAGE, value, population
+        for value in alternates.split(","):
+            if _is_city_name(value):
+                yield Category.CITY, ANY_LANGUAGE, value, 0
 
 
 def build_rows(entries: Iterator[Entry]) -> list[dict]:
     rows: dict[tuple[str, str, str], dict] = {}
-    for category, language, value in entries:
+    for category, language, value, *rest in entries:
+        popularity = rest[0] if rest else 0
         normalized = normalize(value)
         key = (category, language, normalized)
-        if normalized and key not in rows:
+        if not normalized:
+            continue
+        if key in rows:
+            rows[key]["popularity"] = max(rows[key]["popularity"], popularity)
+        else:
             rows[key] = {
                 "category": category,
                 "language": language,
@@ -89,6 +101,7 @@ def build_rows(entries: Iterator[Entry]) -> list[dict]:
                 "normalized_value": normalized[:200],
                 "first_letter": first_letter(normalized),
                 "accepted": True,
+                "popularity": popularity,
             }
     return list(rows.values())
 
