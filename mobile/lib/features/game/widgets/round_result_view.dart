@@ -25,7 +25,13 @@ class RoundResultView extends StatefulWidget {
     required this.totalScore,
     required this.isLastRound,
     required this.onContinue,
+    this.goal,
+    this.continueLabel,
   });
+
+  /// Bandeau de défi sous l'en-tête (minimum atteint, éliminé…).
+  final Widget? goal;
+  final String? continueLabel;
 
   final RoundResult result;
   final int totalRounds;
@@ -133,36 +139,51 @@ class _RoundResultViewState extends State<RoundResultView>
           child: ScrollUnderBars(
             header: Padding(
               padding: const EdgeInsets.only(top: 16, bottom: 4),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  LetterTile(letter: result.letter, size: 56),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        OutlinedText(
-                          l10n.roundProgress(result.number, widget.totalRounds),
-                          style: fredoka(
-                            size: 20,
-                            weight: FontWeight.w700,
-                            color: AppColors.white,
-                          ),
-                        ),
-                        Row(
+                  Row(
+                    children: [
+                      LetterTile(letter: result.letter, size: 56),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const GameIcon(GameIconKind.timer, size: 18),
-                            const SizedBox(width: 4),
                             OutlinedText(
-                              l10n.finishedIn(seconds),
-                              strokeWidth: 3,
-                              style: fredoka(size: 15, color: AppColors.white),
+                              l10n.roundProgress(
+                                result.number,
+                                widget.totalRounds,
+                              ),
+                              style: fredoka(
+                                size: 20,
+                                weight: FontWeight.w700,
+                                color: AppColors.white,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                const GameIcon(GameIconKind.timer, size: 18),
+                                const SizedBox(width: 4),
+                                OutlinedText(
+                                  l10n.finishedIn(seconds),
+                                  strokeWidth: 3,
+                                  style: fredoka(
+                                    size: 15,
+                                    color: AppColors.white,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                  if (widget.goal != null) ...[
+                    const SizedBox(height: 8),
+                    widget.goal!,
+                  ],
                 ],
               ),
             ),
@@ -232,9 +253,9 @@ class _RoundResultViewState extends State<RoundResultView>
                   ),
                   const SizedBox(height: 14),
                   CandyButton(
-                    label: widget.isLastRound
-                        ? l10n.seeResults
-                        : l10n.nextRound,
+                    label:
+                        widget.continueLabel ??
+                        (widget.isLastRound ? l10n.seeResults : l10n.nextRound),
                     icon: widget.isLastRound
                         ? Icons.emoji_events_rounded
                         : Icons.arrow_forward_rounded,

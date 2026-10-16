@@ -492,5 +492,170 @@
         "type": "int"
       }
     }
-  }
+  },
+  "goalMinimum": "Min. {points} pts",
+  "@goalMinimum": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "goalProgress": "{score} / {target} pts",
+  "@goalProgress": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "challengePassed": "MINIMUM {points} PTS : RÉUSSI !",
+  "@challengePassed": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "challengeEliminated": "ÉLIMINÉ ! Il fallait {points} pts",
+  "@challengeEliminated": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "careerProgressBanner": "Objectif : {score} / {target} pts",
+  "@careerProgressBanner": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "careerWon": "Niveau {level} réussi !",
+  "@careerWon": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "careerLost": "Niveau {level} raté",
+  "@careerLost": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "careerMessage": "Objectif {target} pts · tu as marqué {score} pts",
+  "@careerMessage": {
+    "placeholders": {
+      "target": {
+        "type": "int"
+      },
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "careerStarsInfo": "Étoiles à {one}, {two} et {three} pts",
+  "@careerStarsInfo": {
+    "placeholders": {
+      "one": {
+        "type": "int"
+      },
+      "two": {
+        "type": "int"
+      },
+      "three": {
+        "type": "int"
+      }
+    }
+  },
+  "nextLevel": "NIVEAU SUIVANT",
+  "replayLevel": "REJOUER LE NIVEAU",
+  "levelsMap": "CARTE DES NIVEAUX",
+  "eliminationChampion": "Champion !",
+  "eliminationOut": "Éliminé !",
+  "eliminationMessage": "Tu as tenu {rounds, plural, =0{0 manche} =1{1 manche} other{{rounds} manches}} sur {total}",
+  "@eliminationMessage": {
+    "placeholders": {
+      "rounds": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "eliminationRecord": "Record : {rounds} manches",
+  "@eliminationRecord": {
+    "placeholders": {
+      "rounds": {
+        "type": "int"
+      }
+    }
+  },
+  "eliminationNewRecord": "Nouveau record : {rounds} manches !",
+  "@eliminationNewRecord": {
+    "placeholders": {
+      "rounds": {
+        "type": "int"
+      }
+    }
+  },
+  "careerTitle": "Carrière",
+  "worldBeginner": "Débutant",
+  "worldConfirmed": "Confirmé",
+  "worldExpert": "Expert",
+  "levelTitle": "Niveau {level}",
+  "@levelTitle": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "levelGoal": "Objectif : {target} points",
+  "@levelGoal": {
+    "placeholders": {
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "play": "JOUER",
+  "modeCareer": "Carrière",
+  "modeElimination": "Éliminatoires",
+  "modeFreeSolo": "Solo libre",
+  "eliminationRulesTitle": "Règles",
+  "eliminationRules": "Toutes les catégories, 30 secondes par manche. Marque au moins le minimum à chaque manche, sinon tu es éliminé. Tiens les {rounds} manches pour devenir champion !",
+  "@eliminationRules": {
+    "placeholders": {
+      "rounds": {
+        "type": "int"
+      }
+    }
+  },
+  "roundsRange": "Manches {from} à {to}",
+  "@roundsRange": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "eliminationBestTitle": "Ton record",
+  "eliminationNoRecord": "Pas encore de record"
 }

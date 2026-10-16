@@ -26,8 +26,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Solo'), findsOneWidget);
-    expect(find.text('Partie rapide'), findsOneWidget);
+    for (final mode in [
+      'Carrière',
+      'Solo libre',
+      'Éliminatoires',
+      'Partie rapide',
+      'Salons',
+    ]) {
+      expect(find.text(mode), findsOneWidget);
+    }
     expect(
       find.text('Serveur connecté'),
       findsNothing,

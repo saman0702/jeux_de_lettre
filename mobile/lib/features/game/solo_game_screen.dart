@@ -12,10 +12,15 @@ import '../../core/widgets/candy_button.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_card.dart';
 import '../../l10n/app_localizations.dart';
+import 'data/challenge.dart';
 import 'data/models.dart';
 import 'data/solo_backend.dart';
 import 'solo_game_controller.dart';
+import '../career/career_levels.dart';
+import '../online/online_controller.dart';
+import 'solo_launcher.dart';
 import 'solo_setup_screen.dart';
+import 'widgets/challenge_banner.dart';
 import 'widgets/game_over_view.dart';
 import 'widgets/labels.dart';
 import 'widgets/quit_button.dart';
@@ -30,7 +35,11 @@ class SoloGameScreen extends StatefulWidget {
     required this.game,
     required this.apiClient,
     this.controller,
+    this.challenge,
   });
+
+  /// Carrière ou éliminatoires ; null pour une partie libre.
+  final SoloChallenge? challenge;
 
   final SoloBackend api;
   final SoloGame game;
@@ -46,14 +55,42 @@ class SoloGameScreen extends StatefulWidget {
 class _SoloGameScreenState extends State<SoloGameScreen> {
   late final SoloGameController _controller =
       widget.controller ??
-      SoloGameController(api: widget.api, game: widget.game);
+      SoloGameController(
+        api: widget.api,
+        game: widget.game,
+        challenge: widget.challenge,
+      );
   GameFeedback? _feedback;
+
+  /// Fin de partie déjà enregistrée (étoiles de carrière, record).
+  bool _recorded = false;
+  bool _newRecord = false;
 
   @override
   void initState() {
     super.initState();
     _controller.addListener(_syncMusic);
+    _controller.addListener(_recordEnd);
     _controller.start();
+  }
+
+  /// Une seule fois à la fin : garde les étoiles du niveau ou le record.
+  void _recordEnd() {
+    if (_recorded || _controller.phase != SoloPhase.finished) return;
+    final settings = _feedback?.settings;
+    if (settings == null) return;
+    _recorded = true;
+    switch (widget.challenge) {
+      case final CareerLevel level:
+        settings.recordCareer(
+          level.number,
+          level.starsFor(_controller.game.totalScore),
+        );
+      case EliminationChallenge():
+        _newRecord = settings.recordElimination(_controller.roundsSurvived);
+      case null:
+        break;
+    }
   }
 
   @override
@@ -78,6 +115,7 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
   @override
   void dispose() {
     _controller.removeListener(_syncMusic);
+    _controller.removeListener(_recordEnd);
     _feedback?.setMusic(MusicMood.menu);
     _controller.dispose();
     super.dispose();
@@ -101,9 +139,148 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
   }
 
   void _playAgain() {
-    Navigator.of(context).pushReplacement(
-      PopRoute(builder: (_) => SoloSetupScreen(apiClient: widget.apiClient)),
+    final challenge = widget.challenge;
+    if (challenge == null) {
+      Navigator.of(context).pushReplacement(
+        PopRoute(builder: (_) => SoloSetupScreen(apiClient: widget.apiClient)),
+      );
+      return;
+    }
+    _launch(challenge);
+  }
+
+  /// Relance un défi (même niveau, niveau suivant, ou éliminatoires).
+  void _launch(SoloChallenge challenge) {
+    final l10n = AppLocalizations.of(context);
+    final language = Localizations.localeOf(context).languageCode;
+    final nickname = _feedback?.settings.nickname ?? l10n.defaultNickname;
+    final id = OnlineScope.of(context).clientId;
+    final settings = switch (challenge) {
+      final CareerLevel level => level.settings(language, nickname, id),
+      final EliminationChallenge elimination => elimination.settings(
+        language,
+        nickname,
+        id,
+      ),
+    };
+    launchSoloGame(
+      context,
+      apiClient: widget.apiClient,
+      settings: settings,
+      challenge: challenge,
     );
+  }
+
+  /// Objectif affiché pendant la manche.
+  String? _goal(AppLocalizations l10n) {
+    final round = _controller.round;
+    return switch (widget.challenge) {
+      final CareerLevel level => l10n.goalProgress(
+        _controller.game.totalScore,
+        level.target,
+      ),
+      EliminationChallenge() when round != null => l10n.goalMinimum(
+        widget.challenge!.requiredPoints(round.number)!,
+      ),
+      _ => null,
+    };
+  }
+
+  /// Bandeau sous l'en-tête des résultats de manche.
+  Widget? _resultGoal(AppLocalizations l10n) {
+    final result = _controller.lastResult;
+    if (result == null) return null;
+    switch (widget.challenge) {
+      case final CareerLevel level:
+        final total = _controller.game.totalScore;
+        return ChallengeBanner(
+          text: l10n.careerProgressBanner(total, level.target),
+          success: total >= level.target ? true : null,
+        );
+      case final EliminationChallenge elimination:
+        final required = elimination.requiredPoints(result.number);
+        return _controller.eliminatedAt == null
+            ? ChallengeBanner(
+                text: l10n.challengePassed(required),
+                success: true,
+              )
+            : ChallengeBanner(
+                text: l10n.challengeEliminated(required),
+                success: false,
+              );
+      case null:
+        return null;
+    }
+  }
+
+  Widget _gameOver(BuildContext context, AppLocalizations l10n) {
+    final c = _controller;
+    void home() => Navigator.of(context).pop();
+    switch (widget.challenge) {
+      case final CareerLevel level:
+        final total = c.game.totalScore;
+        final stars = level.starsFor(total);
+        final next = level.number < careerLevels.length
+            ? careerLevels[level.number]
+            : null;
+        return GameOverView(
+          totalScore: total,
+          maxScore: level.maxScore,
+          results: c.results,
+          stars: stars,
+          title: stars > 0
+              ? l10n.careerWon(level.number)
+              : l10n.careerLost(level.number),
+          message: l10n.careerMessage(level.target, total),
+          banner: ChallengeBanner(
+            text: l10n.careerStarsInfo(
+              level.target,
+              level.twoStars,
+              level.threeStars,
+            ),
+          ),
+          onNext: stars > 0 && next != null ? () => _launch(next) : null,
+          nextLabel: l10n.nextLevel,
+          playAgainLabel: l10n.replayLevel,
+          homeLabel: l10n.levelsMap,
+          onPlayAgain: _playAgain,
+          onHome: home,
+        );
+      case EliminationChallenge():
+        final survived = c.roundsSurvived;
+        final champion = c.eliminatedAt == null;
+        final best = _feedback?.settings.eliminationBest ?? survived;
+        return GameOverView(
+          totalScore: c.game.totalScore,
+          maxScore: c.game.totalRounds * c.game.categories.length * 10,
+          results: c.results,
+          stars: champion
+              ? 3
+              : survived >= 8
+              ? 2
+              : survived >= 4
+              ? 1
+              : 0,
+          title: champion ? l10n.eliminationChampion : l10n.eliminationOut,
+          message: l10n.eliminationMessage(survived, c.game.totalRounds),
+          banner: ChallengeBanner(
+            text: _newRecord
+                ? l10n.eliminationNewRecord(survived)
+                : l10n.eliminationRecord(best),
+            success: _newRecord ? true : null,
+          ),
+          onPlayAgain: _playAgain,
+          onHome: home,
+        );
+      case null:
+        return GameOverView(
+          totalScore: c.game.totalScore,
+          maxScore: c.game.totalRounds * c.game.categories.length * 10,
+          results: c.results,
+          onPlayAgain: _playAgain,
+          onHome: home,
+        );
+    }
   }
 
   @override
@@ -191,6 +368,7 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
           onFinish: c.submit,
           hints: c.hints,
           onQuit: _quit,
+          goal: _goal(l10n),
         );
       case SoloPhase.roundResult:
         return WithQuitButton(
@@ -199,18 +377,13 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
             result: c.lastResult!,
             totalRounds: c.game.totalRounds,
             totalScore: c.game.totalScore,
-            isLastRound: c.game.isFinished,
+            isLastRound: c.isOver,
             onContinue: c.nextRound,
+            goal: _resultGoal(l10n),
           ),
         );
       case SoloPhase.finished:
-        return GameOverView(
-          totalScore: c.game.totalScore,
-          maxScore: c.game.totalRounds * c.game.categories.length * 10,
-          results: c.results,
-          onPlayAgain: _playAgain,
-          onHome: () => Navigator.of(context).pop(),
-        );
+        return _gameOver(context, l10n);
       case SoloPhase.error:
         return Center(
           child: Padding(

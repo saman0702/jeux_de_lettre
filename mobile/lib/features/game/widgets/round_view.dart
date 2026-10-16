@@ -8,6 +8,7 @@ import '../../../core/feedback/game_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/candy_button.dart';
+import '../../../core/widgets/game_icon.dart';
 import '../../../core/widgets/scroll_under_bars.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
@@ -27,7 +28,11 @@ class RoundView extends StatefulWidget {
     this.submitting = false,
     this.hints,
     this.onQuit,
+    this.goal,
   });
+
+  /// Objectif affiché en haut (carrière, éliminatoires).
+  final String? goal;
 
   final GameRound round;
   final int totalRounds;
@@ -202,6 +207,10 @@ class _RoundViewState extends State<RoundView> {
                           ],
                         ),
                       ),
+                      if (widget.goal != null) ...[
+                        const SizedBox(width: 8),
+                        _GoalChip(text: widget.goal!),
+                      ],
                     ],
                   ),
                 ),
@@ -407,4 +416,38 @@ class _RingPainter extends CustomPainter {
   @override
   bool shouldRepaint(_RingPainter oldDelegate) =>
       oldDelegate.fraction != fraction || oldDelegate.color != color;
+}
+
+/// Pastille jaune de l'objectif : « Minimum 20 pts », « Objectif 80 pts »…
+class _GoalChip extends StatelessWidget {
+  const _GoalChip({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('goal_chip'),
+      padding: const EdgeInsets.fromLTRB(8, 6, 12, 6),
+      decoration: BoxDecoration(
+        color: AppColors.yellow,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.depthOf(AppColors.yellow),
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const GameIcon(GameIconKind.flag, size: 18, color: AppColors.ink),
+          const SizedBox(width: 4),
+          Text(text, style: gameFont(size: 15, color: AppColors.ink)),
+        ],
+      ),
+    );
+  }
 }

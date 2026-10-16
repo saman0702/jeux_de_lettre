@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 import '../../core/network/api_client.dart';
+import 'data/challenge.dart';
 import 'data/models.dart';
 import 'data/solo_backend.dart';
 import 'hints/hint_controller.dart';
@@ -13,6 +14,7 @@ class SoloGameController extends ChangeNotifier {
   SoloGameController({
     required this._api,
     required SoloGame game,
+    this.challenge,
     this.countdownStep = const Duration(seconds: 1),
     this.tick = const Duration(milliseconds: 100),
     this.now = DateTime.now,
@@ -22,6 +24,9 @@ class SoloGameController extends ChangeNotifier {
   static const countdownFrom = 3;
 
   final SoloBackend _api;
+
+  /// Carrière ou éliminatoires ; null pour une partie libre.
+  final SoloChallenge? challenge;
   final Duration countdownStep;
   final Duration tick;
   final DateTime Function() now;
@@ -41,6 +46,17 @@ class SoloGameController extends ChangeNotifier {
 
   SoloGame get game => _game;
 
+  /// Éliminatoires : manche où le minimum n'a pas été atteint.
+  int? _eliminatedAt;
+  int? get eliminatedAt => _eliminatedAt;
+
+  /// Manches réussies (toutes, sauf celle de l'élimination).
+  int get roundsSurvived =>
+      _eliminatedAt == null ? _results.length : _eliminatedAt! - 1;
+
+  /// La partie s'arrête après cette manche (dernière ou élimination).
+  bool get isOver => _game.isFinished || _eliminatedAt != null;
+
   /// Jokers de la manche en cours.
   HintController? get hints => _hints;
   GameRound? get round => _round;
@@ -59,7 +75,7 @@ class SoloGameController extends ChangeNotifier {
   /// final.
   void nextRound() {
     if (_phase != SoloPhase.roundResult) return;
-    if (_game.isFinished) {
+    if (isOver) {
       _setPhase(SoloPhase.finished);
     } else {
       _startCountdown();
@@ -131,6 +147,10 @@ class SoloGameController extends ChangeNotifier {
       );
       _results.add(result);
       _game = game;
+      final required = challenge?.requiredPoints(result.number);
+      if (required != null && result.roundScore < required) {
+        _eliminatedAt = result.number;
+      }
     } on ApiException catch (e) {
       return _fail(e, _sendAnswers);
     }

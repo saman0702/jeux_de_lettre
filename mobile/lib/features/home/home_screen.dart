@@ -12,8 +12,11 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
 import '../../core/widgets/game_background.dart';
+import '../../core/widgets/game_icon.dart';
 import '../../core/widgets/letter_tile.dart';
 import '../../l10n/app_localizations.dart';
+import '../career/career_screen.dart';
+import '../career/elimination_screen.dart';
 import '../game/solo_setup_screen.dart';
 import '../game/widgets/labels.dart';
 import '../online/nickname_dialog.dart';
@@ -50,6 +53,16 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openSolo() {
     Navigator.of(context)
         .push(PopRoute(builder: (_) => SoloSetupScreen(apiClient: _api)));
+  }
+
+  void _openCareer() {
+    Navigator.of(context)
+        .push(PopRoute(builder: (_) => CareerScreen(apiClient: _api)));
+  }
+
+  void _openElimination() {
+    Navigator.of(context)
+        .push(PopRoute(builder: (_) => EliminationScreen(apiClient: _api)));
   }
 
   /// Les modes en ligne demandent une connexion et un pseudo.
@@ -149,41 +162,88 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const Spacer(),
-                for (final (i, (label, icon, color, onPressed, badge)) in [
+                // Carrière en grand, puis les autres modes deux par deux.
+                BounceIn(
+                  delay: const Duration(milliseconds: 700),
+                  slideY: 0.6,
+                  child: CandyButton(
+                    key: const Key('mode_career'),
+                    label: l10n.modeCareer,
+                    gameIcon: GameIconKind.trophy,
+                    color: AppColors.yellow,
+                    onPressed: _openCareer,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                for (final (row, buttons) in [
                   (
-                    l10n.modeSolo,
-                    Icons.person_rounded,
-                    AppColors.yellow,
-                    _openSolo,
-                    null,
+                    0,
+                    [
+                      (
+                        l10n.modeFreeSolo,
+                        GameIconKind.person,
+                        AppColors.orange,
+                        _openSolo,
+                        'mode_solo',
+                      ),
+                      (
+                        l10n.modeElimination,
+                        GameIconKind.flag,
+                        AppColors.pink,
+                        _openElimination,
+                        'mode_elimination',
+                      ),
+                    ],
                   ),
                   (
-                    l10n.modeQuickMatch,
-                    Icons.bolt_rounded,
-                    AppColors.orange,
-                    _quickMatch,
-                    null,
+                    1,
+                    [
+                      (
+                        l10n.modeQuickMatch,
+                        GameIconKind.bolt,
+                        AppColors.cyan,
+                        _quickMatch,
+                        'mode_quick',
+                      ),
+                      (
+                        l10n.modeRooms,
+                        GameIconKind.group,
+                        AppColors.green,
+                        _openRooms,
+                        'mode_rooms',
+                      ),
+                    ],
                   ),
-                  (
-                    l10n.modeRooms,
-                    Icons.groups_rounded,
-                    AppColors.cyan,
-                    _openRooms,
-                    null,
+                ]) ...[
+                  Row(
+                    children: [
+                      for (final (i, (label, icon, color, onPressed, key))
+                          in buttons.indexed) ...[
+                        if (i > 0) const SizedBox(width: 12),
+                        Expanded(
+                          child: BounceIn(
+                            delay: Duration(
+                              milliseconds: 820 + row * 120 + i * 60,
+                            ),
+                            slideY: 0.6,
+                            child: CandyButton(
+                              key: Key(key),
+                              label: label,
+                              gameIcon: icon,
+                              color: color,
+                              textColor: color == AppColors.green
+                                  ? AppColors.white
+                                  : AppColors.ink,
+                              height: 58,
+                              fontSize: 17,
+                              onPressed: onPressed,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ].indexed) ...[
-                  BounceIn(
-                    delay: Duration(milliseconds: 700 + i * 120),
-                    slideY: 0.6,
-                    child: CandyButton(
-                      label: label,
-                      icon: icon,
-                      color: color,
-                      badge: badge,
-                      onPressed: onPressed,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                 ],
                 const Spacer(),
               ],

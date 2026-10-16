@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -17,7 +18,9 @@ class AppSettings extends ChangeNotifier {
     this._languageCode,
     this._avatarPreset = 0,
     this._avatarPending = false,
-  });
+    Map<int, int>? careerStars,
+    this._eliminationBest = 0,
+  }) : _careerStars = careerStars ?? {};
 
   /// Non persisté ; utilisé par les tests.
   AppSettings.inMemory({String? nickname, String clientId = 'test-client-id'})
@@ -42,7 +45,21 @@ class AppSettings extends ChangeNotifier {
       languageCode: prefs.getString(_languageKey),
       avatarPreset: prefs.getInt(_avatarPresetKey) ?? 0,
       avatarPending: prefs.getBool(_avatarPendingKey) ?? false,
+      careerStars: _decodeStars(prefs.getString(_careerKey)),
+      eliminationBest: prefs.getInt(_eliminationKey) ?? 0,
     );
+  }
+
+  static Map<int, int> _decodeStars(String? raw) {
+    if (raw == null) return {};
+    try {
+      return {
+        for (final e in (jsonDecode(raw) as Map<String, dynamic>).entries)
+          int.parse(e.key): e.value as int,
+      };
+    } catch (_) {
+      return {};
+    }
   }
 
   static String _randomId() {
@@ -63,6 +80,8 @@ class AppSettings extends ChangeNotifier {
   static const _clientIdKey = 'player.client_id';
   static const _avatarPresetKey = 'player.avatar_preset';
   static const _avatarPendingKey = 'player.avatar_pending';
+  static const _careerKey = 'career.stars';
+  static const _eliminationKey = 'elimination.best';
 
   final SharedPreferences? _prefs;
 
@@ -78,6 +97,38 @@ class AppSettings extends ChangeNotifier {
   String? _languageCode;
   int _avatarPreset;
   bool _avatarPending;
+  final Map<int, int> _careerStars;
+  int _eliminationBest;
+
+  /// Étoiles obtenues par niveau de carrière (meilleur résultat).
+  Map<int, int> get careerStars => Map.unmodifiable(_careerStars);
+
+  /// Un niveau est ouvert quand le précédent a au moins une étoile.
+  bool careerUnlocked(int level) =>
+      level <= 1 || (_careerStars[level - 1] ?? 0) > 0;
+
+  /// Garde le meilleur nombre d'étoiles du niveau.
+  void recordCareer(int level, int stars) {
+    if (stars <= (_careerStars[level] ?? 0)) return;
+    _careerStars[level] = stars;
+    _prefs?.setString(
+      _careerKey,
+      jsonEncode({for (final e in _careerStars.entries) '${e.key}': e.value}),
+    );
+    notifyListeners();
+  }
+
+  /// Record des éliminatoires : manches réussies.
+  int get eliminationBest => _eliminationBest;
+
+  /// Renvoie vrai si [rounds] bat le record.
+  bool recordElimination(int rounds) {
+    if (rounds <= _eliminationBest) return false;
+    _eliminationBest = rounds;
+    _prefs?.setInt(_eliminationKey, rounds);
+    notifyListeners();
+    return true;
+  }
 
   /// Personnage dessiné choisi, gardé sur le téléphone pour l'afficher hors
   /// ligne.

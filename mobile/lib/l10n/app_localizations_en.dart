@@ -706,4 +706,138 @@ class AppLocalizationsEn extends AppLocalizations {
   String levelProgress(int xp, int needed) {
     return '$xp / $needed points to the next level';
   }
+
+  @override
+  String goalMinimum(int points) {
+    return 'Min. $points pts';
+  }
+
+  @override
+  String goalProgress(int score, int target) {
+    return '$score / $target pts';
+  }
+
+  @override
+  String challengePassed(int points) {
+    return '$points PTS MINIMUM: PASSED!';
+  }
+
+  @override
+  String challengeEliminated(int points) {
+    return 'ELIMINATED! You needed $points pts';
+  }
+
+  @override
+  String careerProgressBanner(int score, int target) {
+    return 'Goal: $score / $target pts';
+  }
+
+  @override
+  String careerWon(int level) {
+    return 'Level $level cleared!';
+  }
+
+  @override
+  String careerLost(int level) {
+    return 'Level $level failed';
+  }
+
+  @override
+  String careerMessage(int target, int score) {
+    return 'Goal $target pts · you scored $score pts';
+  }
+
+  @override
+  String careerStarsInfo(int one, int two, int three) {
+    return 'Stars at $one, $two and $three pts';
+  }
+
+  @override
+  String get nextLevel => 'NEXT LEVEL';
+
+  @override
+  String get replayLevel => 'REPLAY LEVEL';
+
+  @override
+  String get levelsMap => 'LEVEL MAP';
+
+  @override
+  String get eliminationChampion => 'Champion!';
+
+  @override
+  String get eliminationOut => 'Eliminated!';
+
+  @override
+  String eliminationMessage(int rounds, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      rounds,
+      locale: localeName,
+      other: '$rounds rounds',
+      one: '1 round',
+    );
+    return 'You lasted $_temp0 out of $total';
+  }
+
+  @override
+  String eliminationRecord(int rounds) {
+    return 'Best: $rounds rounds';
+  }
+
+  @override
+  String eliminationNewRecord(int rounds) {
+    return 'New record: $rounds rounds!';
+  }
+
+  @override
+  String get careerTitle => 'Career';
+
+  @override
+  String get worldBeginner => 'Beginner';
+
+  @override
+  String get worldConfirmed => 'Confirmed';
+
+  @override
+  String get worldExpert => 'Expert';
+
+  @override
+  String levelTitle(int level) {
+    return 'Level $level';
+  }
+
+  @override
+  String levelGoal(int target) {
+    return 'Goal: $target points';
+  }
+
+  @override
+  String get play => 'PLAY';
+
+  @override
+  String get modeCareer => 'Career';
+
+  @override
+  String get modeElimination => 'Knockout';
+
+  @override
+  String get modeFreeSolo => 'Free solo';
+
+  @override
+  String get eliminationRulesTitle => 'Rules';
+
+  @override
+  String eliminationRules(int rounds) {
+    return 'All categories, 30 seconds per round. Score at least the minimum each round or you are out. Survive all $rounds rounds to become champion!';
+  }
+
+  @override
+  String roundsRange(int from, int to) {
+    return 'Rounds $from to $to';
+  }
+
+  @override
+  String get eliminationBestTitle => 'Your best';
+
+  @override
+  String get eliminationNoRecord => 'No record yet';
 }

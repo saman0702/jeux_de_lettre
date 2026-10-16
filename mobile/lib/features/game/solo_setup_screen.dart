@@ -15,11 +15,7 @@ import '../online/nickname_dialog.dart';
 import '../online/online_controller.dart';
 import '../online/room_screen.dart';
 import 'data/models.dart';
-import 'data/solo_backend.dart';
-import 'offline/offline_dictionary.dart';
-import 'offline/offline_engine.dart';
-import 'data/solo_game_api.dart';
-import 'solo_game_screen.dart';
+import 'solo_launcher.dart';
 import 'widgets/labels.dart';
 import 'widgets/pill_selector.dart';
 import 'widgets/option_section.dart';
@@ -34,10 +30,6 @@ class SoloSetupScreen extends StatefulWidget {
 }
 
 class _SoloSetupScreenState extends State<SoloSetupScreen> {
-  late final SoloGameApi _api = SoloGameApi(
-    widget.apiClient,
-    onWallet: OnlineScope.of(context).applyWallet,
-  );
   int _rounds = 5;
   int _duration = 30;
   Difficulty _difficulty = Difficulty.normal;
@@ -83,8 +75,6 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
   Future<void> _start() async {
     if (_bots > 0) return _startAgainstBots();
     final l10n = AppLocalizations.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
     setState(() => _loading = true);
     final settings = SoloGameSettings(
       language: Localizations.localeOf(context).languageCode,
@@ -98,33 +88,12 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
       clientId: OnlineScope.of(context).clientId,
     );
 
-    SoloBackend backend = _api;
-    SoloGame game;
-    try {
-      game = await _api.createGame(settings);
-    } on ApiException catch (e) {
-      if (e.code != 'network_error') {
-        messenger.showSnackBar(
-          SnackBar(content: Text(errorMessage(l10n, e.code))),
-        );
-        if (mounted) setState(() => _loading = false);
-        return;
-      }
-      // Pas de serveur : toute la partie tourne sur l'appareil.
-      backend = OfflineSoloBackend(await OfflineDictionary.load());
-      game = await backend.createGame(settings);
-      messenger.showSnackBar(SnackBar(content: Text(l10n.offlineModeNotice)));
-    }
-
-    navigator.pushReplacement(
-      PopRoute(
-        builder: (_) => SoloGameScreen(
-          api: backend,
-          game: game,
-          apiClient: widget.apiClient,
-        ),
-      ),
+    final started = await launchSoloGame(
+      context,
+      apiClient: widget.apiClient,
+      settings: settings,
     );
+    if (!started && mounted) setState(() => _loading = false);
   }
 
   void _toggleCategory(Category category) {

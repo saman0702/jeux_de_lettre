@@ -1285,6 +1285,198 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{xp} / {needed} points avant le niveau suivant'**
   String levelProgress(int xp, int needed);
+
+  /// No description provided for @goalMinimum.
+  ///
+  /// In fr, this message translates to:
+  /// **'Min. {points} pts'**
+  String goalMinimum(int points);
+
+  /// No description provided for @goalProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'{score} / {target} pts'**
+  String goalProgress(int score, int target);
+
+  /// No description provided for @challengePassed.
+  ///
+  /// In fr, this message translates to:
+  /// **'MINIMUM {points} PTS : RÉUSSI !'**
+  String challengePassed(int points);
+
+  /// No description provided for @challengeEliminated.
+  ///
+  /// In fr, this message translates to:
+  /// **'ÉLIMINÉ ! Il fallait {points} pts'**
+  String challengeEliminated(int points);
+
+  /// No description provided for @careerProgressBanner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Objectif : {score} / {target} pts'**
+  String careerProgressBanner(int score, int target);
+
+  /// No description provided for @careerWon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Niveau {level} réussi !'**
+  String careerWon(int level);
+
+  /// No description provided for @careerLost.
+  ///
+  /// In fr, this message translates to:
+  /// **'Niveau {level} raté'**
+  String careerLost(int level);
+
+  /// No description provided for @careerMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Objectif {target} pts · tu as marqué {score} pts'**
+  String careerMessage(int target, int score);
+
+  /// No description provided for @careerStarsInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Étoiles à {one}, {two} et {three} pts'**
+  String careerStarsInfo(int one, int two, int three);
+
+  /// No description provided for @nextLevel.
+  ///
+  /// In fr, this message translates to:
+  /// **'NIVEAU SUIVANT'**
+  String get nextLevel;
+
+  /// No description provided for @replayLevel.
+  ///
+  /// In fr, this message translates to:
+  /// **'REJOUER LE NIVEAU'**
+  String get replayLevel;
+
+  /// No description provided for @levelsMap.
+  ///
+  /// In fr, this message translates to:
+  /// **'CARTE DES NIVEAUX'**
+  String get levelsMap;
+
+  /// No description provided for @eliminationChampion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Champion !'**
+  String get eliminationChampion;
+
+  /// No description provided for @eliminationOut.
+  ///
+  /// In fr, this message translates to:
+  /// **'Éliminé !'**
+  String get eliminationOut;
+
+  /// No description provided for @eliminationMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu as tenu {rounds, plural, =0{0 manche} =1{1 manche} other{{rounds} manches}} sur {total}'**
+  String eliminationMessage(int rounds, int total);
+
+  /// No description provided for @eliminationRecord.
+  ///
+  /// In fr, this message translates to:
+  /// **'Record : {rounds} manches'**
+  String eliminationRecord(int rounds);
+
+  /// No description provided for @eliminationNewRecord.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau record : {rounds} manches !'**
+  String eliminationNewRecord(int rounds);
+
+  /// No description provided for @careerTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Carrière'**
+  String get careerTitle;
+
+  /// No description provided for @worldBeginner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Débutant'**
+  String get worldBeginner;
+
+  /// No description provided for @worldConfirmed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmé'**
+  String get worldConfirmed;
+
+  /// No description provided for @worldExpert.
+  ///
+  /// In fr, this message translates to:
+  /// **'Expert'**
+  String get worldExpert;
+
+  /// No description provided for @levelTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Niveau {level}'**
+  String levelTitle(int level);
+
+  /// No description provided for @levelGoal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Objectif : {target} points'**
+  String levelGoal(int target);
+
+  /// No description provided for @play.
+  ///
+  /// In fr, this message translates to:
+  /// **'JOUER'**
+  String get play;
+
+  /// No description provided for @modeCareer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Carrière'**
+  String get modeCareer;
+
+  /// No description provided for @modeElimination.
+  ///
+  /// In fr, this message translates to:
+  /// **'Éliminatoires'**
+  String get modeElimination;
+
+  /// No description provided for @modeFreeSolo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Solo libre'**
+  String get modeFreeSolo;
+
+  /// No description provided for @eliminationRulesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Règles'**
+  String get eliminationRulesTitle;
+
+  /// No description provided for @eliminationRules.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les catégories, 30 secondes par manche. Marque au moins le minimum à chaque manche, sinon tu es éliminé. Tiens les {rounds} manches pour devenir champion !'**
+  String eliminationRules(int rounds);
+
+  /// No description provided for @roundsRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'Manches {from} à {to}'**
+  String roundsRange(int from, int to);
+
+  /// No description provided for @eliminationBestTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton record'**
+  String get eliminationBestTitle;
+
+  /// No description provided for @eliminationNoRecord.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore de record'**
+  String get eliminationNoRecord;
 }
 
 class _AppLocalizationsDelegate

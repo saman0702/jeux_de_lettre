@@ -104,7 +104,17 @@ class _CandyButtonState extends State<CandyButton> {
                       colors: [Color.lerp(color, Colors.white, 0.25)!, color],
                     ),
                   ),
-                  child: Center(child: _content()),
+                  // Le libellé rétrécit plutôt que de déborder (boutons
+                  // côte à côte, langues aux mots longs).
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: _content(),
+                      ),
+                    ),
+                  ),
                 ),
               ),
               if (widget.badge != null)
