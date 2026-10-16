@@ -682,4 +682,40 @@ void main() {
     await pumpFor(tester, const Duration(seconds: 3));
     expect(find.text('You win 20 coins!'), findsOneWidget);
   });
+
+  testWidgets('a new level is celebrated', (tester) async {
+    final h = Harness();
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+    h.socket.push({
+      'type': 'wallet',
+      'coins': 1,
+      'coins_gained': 0,
+      'points_to_next_coin': 20,
+      'level': 1,
+      'level_xp': 90,
+      'level_xp_needed': 100,
+    });
+    await pumpFor(tester, const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('level_up')), findsNothing);
+
+    h.socket.push({
+      'type': 'wallet',
+      'coins': 2,
+      'coins_gained': 1,
+      'points_to_next_coin': 20,
+      'level': 2,
+      'level_xp': 10,
+      'level_xp_needed': 200,
+    });
+    await pumpFor(tester, const Duration(milliseconds: 600));
+    expect(find.text('LEVEL 2!'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('avatar_button')),
+        matching: find.text('2'),
+      ),
+      findsOneWidget,
+    );
+    await pumpFor(tester, const Duration(seconds: 3));
+  });
 }

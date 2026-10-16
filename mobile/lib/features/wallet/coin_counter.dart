@@ -11,6 +11,7 @@ import '../../l10n/app_localizations.dart';
 import '../../animations/transitions/pop_route.dart';
 import '../online/online_controller.dart';
 import '../shop/shop_screen.dart';
+import 'level_badge.dart';
 
 /// Capsule du solde de pièces, avec une jauge vers la prochaine pièce. Un
 /// toucher ouvre la boutique.
@@ -127,7 +128,8 @@ class CoinCounter extends StatelessWidget {
   }
 }
 
-/// Affiche « +N pièces » par-dessus n'importe quel écran à chaque gain.
+/// Affiche « +N pièces » (et « NIVEAU N ! ») par-dessus n'importe quel écran.
+/// Un passage de niveau est montré en priorité, puis les pièces.
 class CoinGainOverlay extends StatefulWidget {
   const CoinGainOverlay({super.key, required this.child});
 
@@ -144,25 +146,44 @@ class _CoinGainOverlayState extends State<CoinGainOverlay>
     duration: const Duration(milliseconds: 2200),
   );
   StreamSubscription<int>? _gains;
+  StreamSubscription<int>? _levels;
   int _amount = 0;
+  int? _level;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final online = OnlineScope.of(context);
     _gains?.cancel();
-    _gains = OnlineScope.of(context).coinGains.listen(_onGain);
+    _levels?.cancel();
+    _gains = online.coinGains.listen(_onGain);
+    _levels = online.levelUps.listen(_onLevel);
   }
 
   void _onGain(int amount) {
-    if (!mounted) return;
-    setState(() => _amount = amount);
+    // Ne coupe pas la célébration d'un niveau en cours.
+    if (!mounted || (_level != null && _show.isAnimating)) return;
+    setState(() {
+      _amount = amount;
+      _level = null;
+    });
     GameFeedbackScope.of(context).play(Sfx.points);
+    _show.forward(from: 0);
+  }
+
+  void _onLevel(int level) {
+    if (!mounted) return;
+    setState(() => _level = level);
+    final feedback = GameFeedbackScope.of(context);
+    feedback.play(Sfx.victory);
+    feedback.haptic(Haptic.heavy);
     _show.forward(from: 0);
   }
 
   @override
   void dispose() {
     _gains?.cancel();
+    _levels?.cancel();
     _show.dispose();
     super.dispose();
   }
@@ -201,7 +222,11 @@ class _CoinGainOverlayState extends State<CoinGainOverlay>
                     ),
                   );
                 },
-                child: Center(child: _GainBadge(amount: _amount)),
+                child: Center(
+                  child: _level == null
+                      ? _GainBadge(amount: _amount)
+                      : _LevelUpBadge(level: _level!),
+                ),
               ),
             ),
           ),
@@ -246,6 +271,55 @@ class _GainBadge extends StatelessWidget {
                 size: 20,
                 weight: FontWeight.w700,
                 color: AppColors.ink,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LevelUpBadge extends StatelessWidget {
+  const _LevelUpBadge({required this.level});
+
+  final int level;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final color = LevelBadge.colorOf(level);
+    return Material(
+      type: MaterialType.transparency,
+      child: Container(
+        key: const Key('level_up'),
+        padding: const EdgeInsets.fromLTRB(10, 8, 20, 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color.lerp(color, AppColors.white, 0.3)!, color],
+          ),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.white, width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.depthOf(color),
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            LevelBadge(level: level, size: 36),
+            const SizedBox(width: 10),
+            Text(
+              l10n.levelUp(level),
+              style: gameFont(
+                size: 24,
+                color: AppColors.white,
+                shadows: textShadow,
               ),
             ),
           ],

@@ -90,6 +90,7 @@ class RoomPlayer:
     hints_used: int = 0
     avatar_preset: int = 0
     avatar_url: str | None = None
+    level: int = 1
 
     @property
     def bot(self) -> bool:
@@ -162,6 +163,7 @@ class Connection:
     websocket: WebSocket
     avatar_preset: int = 0
     avatar_url: str | None = None
+    level: int = 1
 
 
 class RoomError(Exception):
@@ -239,6 +241,7 @@ class RoomManager:
             wallet = wallet_service.snapshot(profile).as_dict()
             connection.avatar_preset = profile.avatar_preset
             connection.avatar_url = wallet_service.avatar_url(profile)
+            connection.level = wallet_service.snapshot(profile).level
         except Exception:
             logger.exception("profile lookup failed for %s", client_id)
         self.connections[client_id] = connection
@@ -586,6 +589,7 @@ class RoomManager:
             ready=room.quick,
             avatar_preset=connection.avatar_preset,
             avatar_url=connection.avatar_url,
+            level=connection.level,
         )
         self._room_of[connection.client_id] = room.code
         if room.quick:
@@ -860,6 +864,12 @@ class RoomManager:
 
     async def _send_wallets(self, updates: dict[str, wallet_service.WalletUpdate]) -> None:
         for client_id, update in updates.items():
+            # Le niveau affiché dans la salle suit les points gagnés.
+            if connection := self.connections.get(client_id):
+                connection.level = update.level
+            room = self._current_room(client_id)
+            if room is not None and client_id in room.players:
+                room.players[client_id].level = update.level
             await self._send(client_id, {"type": "wallet", **update.as_dict()})
 
     async def _award_round_points(self, room: Room, results: list, client_of: dict[str, str]) -> None:
@@ -1023,6 +1033,7 @@ class RoomManager:
                     "hints_left": HINTS_PER_GAME - p.hints_used,
                     "avatar_preset": p.avatar_preset,
                     "avatar_url": p.avatar_url,
+                    "level": p.level,
                 }
                 for p in room.players.values()
             ],

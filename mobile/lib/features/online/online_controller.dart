@@ -40,6 +40,7 @@ class OnlineController extends ChangeNotifier {
   final _notices = StreamController<RoomNotice>.broadcast();
   final _errors = StreamController<String>.broadcast();
   final _coinGains = StreamController<int>.broadcast();
+  final _levelUps = StreamController<int>.broadcast();
 
   final Map<Category, Completer<HintOptions>> _hintRequests = {};
   final Map<Category, Completer<HintPick>> _hintPicks = {};
@@ -79,10 +80,20 @@ class OnlineController extends ChangeNotifier {
   void reportPlayer(String clientId) =>
       client.send({'type': 'report_player', 'client_id': clientId});
 
+  /// Nouveaux niveaux atteints, pour la célébration « NIVEAU N ! ».
+  Stream<int> get levelUps => _levelUps.stream;
+
+  /// Niveau du joueur (1 tant que le serveur ne l'a pas envoyé).
+  int get level => _wallet?.level ?? 1;
+
   /// Nouveau solde reçu par la socket ou par l'API solo.
   void applyWallet(WalletSnapshot wallet) {
+    final previous = _wallet;
     _wallet = wallet;
     if (wallet.coinsGained > 0) _coinGains.add(wallet.coinsGained);
+    if (previous != null && wallet.level > previous.level) {
+      _levelUps.add(wallet.level);
+    }
     notifyListeners();
   }
 
@@ -243,6 +254,7 @@ class OnlineController extends ChangeNotifier {
     _notices.close();
     _errors.close();
     _coinGains.close();
+    _levelUps.close();
     super.dispose();
   }
 }

@@ -12,6 +12,7 @@ import '../../game/data/models.dart';
 import '../../game/widgets/labels.dart';
 import '../data/room_models.dart';
 import '../../wallet/bet_banner.dart';
+import '../../wallet/level_badge.dart';
 import 'player_avatar.dart';
 import '../../../core/widgets/game_icon.dart';
 
@@ -340,6 +341,12 @@ class _PlayerSeat extends StatelessWidget {
                   size: 18,
                   color: AppColors.red,
                 ),
+              ),
+            if (!player.bot)
+              Positioned(
+                top: -6,
+                right: -8,
+                child: LevelBadge(level: player.level, size: 19),
               ),
             if (onReport != null)
               // Dans les limites de l'avatar pour rester touchable.

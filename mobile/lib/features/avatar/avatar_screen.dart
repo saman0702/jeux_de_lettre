@@ -16,6 +16,8 @@ import '../game/widgets/labels.dart';
 import '../online/online_controller.dart';
 import '../online/widgets/online_header.dart';
 import '../online/widgets/player_avatar.dart';
+import '../../core/widgets/outlined_text.dart';
+import '../wallet/level_badge.dart';
 import 'drawn_avatar.dart';
 import 'profile_api.dart';
 
@@ -169,6 +171,8 @@ class _AvatarScreenState extends State<AvatarScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 10),
+                _LevelProgress(online: online),
                 const SizedBox(height: 14),
                 Row(
                   children: [
@@ -246,6 +250,61 @@ class _AvatarScreenState extends State<AvatarScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Niveau du joueur et jauge vers le suivant.
+class _LevelProgress extends StatelessWidget {
+  const _LevelProgress({required this.online});
+
+  final OnlineController online;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final wallet = online.wallet;
+    return Column(
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            LevelBadge(level: online.level, size: 28),
+            const SizedBox(width: 8),
+            OutlinedText(
+              l10n.levelLabel(online.level),
+              style: gameFont(size: 22, color: AppColors.white),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        SizedBox(
+          width: 220,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              key: const Key('level_progress'),
+              minHeight: 10,
+              value: wallet?.levelProgress ?? 0,
+              backgroundColor: AppColors.white.withValues(alpha: 0.25),
+              valueColor: AlwaysStoppedAnimation(
+                LevelBadge.colorOf(online.level),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          l10n.levelProgress(
+            wallet?.levelXp ?? 0,
+            wallet?.levelXpNeeded ?? 100,
+          ),
+          style: fredoka(
+            size: 12,
+            color: AppColors.white.withValues(alpha: 0.85),
+          ),
+        ),
+      ],
     );
   }
 }

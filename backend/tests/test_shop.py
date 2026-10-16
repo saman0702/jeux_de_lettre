@@ -59,7 +59,7 @@ async def test_packs_are_listed(client):
 async def test_a_verified_purchase_credits_coins_once(client, store):
     response = await buy(client, "ok-1")
     assert response.status_code == 200, response.text
-    assert response.json() == {"coins": 550, "coins_gained": 550, "points_to_next_coin": 20}
+    assert response.json() | {"level": 1} == {"coins": 550, "coins_gained": 550, "points_to_next_coin": 20, "level": 1, "level_xp": 0, "level_xp_needed": 100}
 
     # L'appli renvoie le même achat (relancée avant d'avoir pu le confirmer) : pas de double crédit.
     again = await buy(client, "ok-1")

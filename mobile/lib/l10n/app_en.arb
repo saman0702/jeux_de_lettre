@@ -194,5 +194,8 @@
   "avatarPhotoNeedsConnection": "Go online to use a photo: it is turned into a drawing on the server.",
   "avatarPickFailed": "Could not open the camera or gallery. Check the app permissions.",
   "avatarSavedOffline": "Avatar chosen! It will be shared as soon as you are online.",
-  "credits": "Credits"
+  "credits": "Credits",
+  "levelUp": "LEVEL {level}!",
+  "levelLabel": "Level {level}",
+  "levelProgress": "{xp} / {needed} points to the next level"
 }

@@ -691,4 +691,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get credits => 'Credits';
+
+  @override
+  String levelUp(int level) {
+    return 'LEVEL $level!';
+  }
+
+  @override
+  String levelLabel(int level) {
+    return 'Level $level';
+  }
+
+  @override
+  String levelProgress(int xp, int needed) {
+    return '$xp / $needed points to the next level';
+  }
 }

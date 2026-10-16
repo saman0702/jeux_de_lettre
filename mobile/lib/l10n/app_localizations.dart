@@ -1267,6 +1267,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Crédits'**
   String get credits;
+
+  /// No description provided for @levelUp.
+  ///
+  /// In fr, this message translates to:
+  /// **'NIVEAU {level} !'**
+  String levelUp(int level);
+
+  /// No description provided for @levelLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Niveau {level}'**
+  String levelLabel(int level);
+
+  /// No description provided for @levelProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'{xp} / {needed} points avant le niveau suivant'**
+  String levelProgress(int xp, int needed);
 }
 
 class _AppLocalizationsDelegate

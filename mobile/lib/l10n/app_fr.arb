@@ -465,5 +465,32 @@
   "avatarPhotoNeedsConnection": "Connecte-toi pour utiliser une photo : elle est transformée en dessin sur le serveur.",
   "avatarPickFailed": "Impossible d'ouvrir l'appareil photo ou la galerie. Vérifie les autorisations de l'appli.",
   "avatarSavedOffline": "Avatar choisi ! Il sera partagé dès que tu seras en ligne.",
-  "credits": "Crédits"
+  "credits": "Crédits",
+  "levelUp": "NIVEAU {level} !",
+  "@levelUp": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "levelLabel": "Niveau {level}",
+  "@levelLabel": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "levelProgress": "{xp} / {needed} points avant le niveau suivant",
+  "@levelProgress": {
+    "placeholders": {
+      "xp": {
+        "type": "int"
+      },
+      "needed": {
+        "type": "int"
+      }
+    }
+  }
 }

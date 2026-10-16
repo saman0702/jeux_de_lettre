@@ -63,7 +63,7 @@ async def test_online_solo_game_fills_the_wallet(client, monkeypatch):
         )
     ).json()
     assert body["round"]["round_score"] == 30
-    assert body["wallet"] == {"coins": 1, "coins_gained": 1, "points_to_next_coin": 10}
+    assert body["wallet"] == {"coins": 1, "coins_gained": 1, "points_to_next_coin": 10, "level": 1, "level_xp": 30, "level_xp_needed": 100}
 
 
 async def test_solo_game_without_profile_has_no_wallet(client, monkeypatch):
@@ -136,3 +136,16 @@ async def test_three_reports_remove_a_photo(session, media):
     assert not await wallet_service.report_avatar(session, "reporter-2", CLIENT)
     assert await wallet_service.report_avatar(session, "reporter-3", CLIENT)
     assert profile.avatar_file is None
+
+
+def test_levels_follow_total_points():
+    assert [wallet_service.level_threshold(n) for n in range(1, 6)] == [0, 100, 300, 600, 1000]
+    assert wallet_service.level_of(0) == (1, 0, 100)
+    assert wallet_service.level_of(99) == (1, 99, 100)
+    assert wallet_service.level_of(100) == (2, 0, 200)
+    assert wallet_service.level_of(450) == (3, 150, 300)
+
+
+async def test_level_rises_with_points(session):
+    update = await wallet_service.award_points(session, CLIENT, 320)
+    assert (update.level, update.level_xp, update.level_xp_needed) == (3, 20, 300)

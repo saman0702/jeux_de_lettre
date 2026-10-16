@@ -24,6 +24,7 @@ import '../online/widgets/online_counter.dart';
 import '../avatar/avatar_screen.dart';
 import '../online/widgets/player_avatar.dart';
 import '../wallet/coin_counter.dart';
+import '../wallet/level_badge.dart';
 import 'settings_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -212,12 +213,22 @@ class _MyAvatarButton extends StatelessWidget {
         onTap: onTap,
         child: ListenableBuilder(
           listenable: online,
-          builder: (context, _) => PlayerAvatar(
-            nickname: '',
-            seed: online.clientId,
-            size: 46,
-            preset: online.avatarPreset,
-            photoUrl: online.avatarUrl,
+          builder: (context, _) => Stack(
+            clipBehavior: Clip.none,
+            children: [
+              PlayerAvatar(
+                nickname: '',
+                seed: online.clientId,
+                size: 46,
+                preset: online.avatarPreset,
+                photoUrl: online.avatarUrl,
+              ),
+              Positioned(
+                right: -6,
+                bottom: -4,
+                child: LevelBadge(level: online.level),
+              ),
+            ],
           ),
         ),
       ),

@@ -16,6 +16,7 @@ def profile_out(profile: Profile) -> ProfileOut:
         coins=profile.coins,
         total_points=profile.total_points,
         points_to_next_coin=wallet_service.snapshot(profile).points_to_next_coin,
+        level=wallet_service.snapshot(profile).level,
         avatar_preset=profile.avatar_preset,
         avatar_url=wallet_service.avatar_url(profile),
     )

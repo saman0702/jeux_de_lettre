@@ -84,6 +84,7 @@ class RoomPlayer {
     this.hintsLeft = 0,
     this.avatarPreset = 0,
     this.avatarUrl,
+    this.level = 1,
   });
 
   factory RoomPlayer.fromJson(Map<String, dynamic> json) => RoomPlayer(
@@ -100,6 +101,7 @@ class RoomPlayer {
     hintsLeft: json['hints_left'] as int? ?? 0,
     avatarPreset: json['avatar_preset'] as int? ?? 0,
     avatarUrl: json['avatar_url'] as String?,
+    level: json['level'] as int? ?? 1,
   );
 
   final String clientId;
@@ -126,6 +128,9 @@ class RoomPlayer {
 
   /// Photo transformée en avatar (chemin sur le serveur), sinon avatar dessiné.
   final String? avatarUrl;
+
+  /// Niveau du joueur (les bots restent au niveau 1).
+  final int level;
 }
 
 class PlayerRoundResult {

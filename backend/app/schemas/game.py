@@ -97,6 +97,9 @@ class WalletOut(BaseModel):
     coins: int
     coins_gained: int
     points_to_next_coin: int
+    level: int
+    level_xp: int
+    level_xp_needed: int
 
 
 class SubmitResultOut(BaseModel):
@@ -112,6 +115,7 @@ class ProfileOut(BaseModel):
     coins: int
     total_points: int
     points_to_next_coin: int
+    level: int
     avatar_preset: int
     avatar_url: str | None
 

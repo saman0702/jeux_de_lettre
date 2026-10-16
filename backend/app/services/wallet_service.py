@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.game_rules import POINTS_PER_COIN
+from app.core.game_rules import LEVEL_XP_STEP, POINTS_PER_COIN
 from app.models import AvatarReport, CoinTransaction, Profile
 
 CLIENT_ID = re.compile(r"^[A-Za-z0-9-]{8,64}$")
@@ -26,13 +26,34 @@ class WalletUpdate:
     coins: int
     coins_gained: int
     points_to_next_coin: int
+    level: int = 1
+    # Points gagnés dans le niveau actuel / points à gagner pour passer au suivant.
+    level_xp: int = 0
+    level_xp_needed: int = LEVEL_XP_STEP
 
     def as_dict(self) -> dict:
         return {
             "coins": self.coins,
             "coins_gained": self.coins_gained,
             "points_to_next_coin": self.points_to_next_coin,
+            "level": self.level,
+            "level_xp": self.level_xp,
+            "level_xp_needed": self.level_xp_needed,
         }
+
+
+def level_threshold(level: int) -> int:
+    """Total de points nécessaire pour atteindre [level]."""
+    return LEVEL_XP_STEP * level * (level - 1) // 2
+
+
+def level_of(total_points: int) -> tuple[int, int, int]:
+    """Niveau, points dans ce niveau et points à gagner pour le suivant."""
+    level = 1
+    while level_threshold(level + 1) <= total_points:
+        level += 1
+    start = level_threshold(level)
+    return level, total_points - start, level_threshold(level + 1) - start
 
 
 def is_client_id(value: str | None) -> bool:
@@ -81,7 +102,8 @@ async def report_avatar(session: AsyncSession, reporter_id: str, reported_id: st
 
 
 def snapshot(profile: Profile, gained: int = 0) -> WalletUpdate:
-    return WalletUpdate(profile.coins, gained, POINTS_PER_COIN - profile.points_balance)
+    level, xp, needed = level_of(profile.total_points)
+    return WalletUpdate(profile.coins, gained, POINTS_PER_COIN - profile.points_balance, level, xp, needed)
 
 
 async def award_points(

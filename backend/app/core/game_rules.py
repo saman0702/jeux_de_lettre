@@ -74,3 +74,8 @@ COIN_PACKS = {
     "coins_1200": 1200,
     "coins_2500": 2500,
 }
+
+# Niveaux de joueur : l'expérience est le total des points marqués dans les parties validées par
+# le serveur. Atteindre le niveau N demande LEVEL_XP_STEP * N * (N - 1) / 2 points au total :
+# niveau 2 à 100, 3 à 300, 4 à 600, 5 à 1 000, 10 à 4 500…
+LEVEL_XP_STEP = 100
