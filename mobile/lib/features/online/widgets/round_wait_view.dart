@@ -86,13 +86,7 @@ class RoundWaitView extends StatelessWidget {
                 children: [
                   for (final p in playing)
                     ListTile(
-                      leading: PlayerAvatar(
-                        nickname: p.nickname,
-                        seed: p.clientId,
-                        size: 40,
-                        connected: p.connected,
-                        bot: p.bot,
-                      ),
+                      leading: PlayerAvatar.of(p, size: 40),
                       title: Text(
                         p.nickname,
                         style: fredoka(size: 17, weight: FontWeight.w600),

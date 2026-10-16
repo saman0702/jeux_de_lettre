@@ -233,12 +233,7 @@ class _PodiumStep extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Column(
         children: [
-          PlayerAvatar(
-            nickname: player.nickname,
-            seed: player.clientId,
-            size: place == 1 ? 64 : 52,
-            bot: player.bot,
-          ),
+          PlayerAvatar.of(player, size: place == 1 ? 64 : 52),
           const SizedBox(height: 6),
           Text(
             isMe ? l10n.youBadge : player.nickname,

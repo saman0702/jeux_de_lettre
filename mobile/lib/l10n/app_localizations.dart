@@ -1105,6 +1105,78 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Pas de bots dans un salon de paris.'**
   String get errorBotsNotAllowed;
+
+  /// No description provided for @avatarTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon avatar'**
+  String get avatarTitle;
+
+  /// No description provided for @avatarCamera.
+  ///
+  /// In fr, this message translates to:
+  /// **'PHOTO'**
+  String get avatarCamera;
+
+  /// No description provided for @avatarGallery.
+  ///
+  /// In fr, this message translates to:
+  /// **'GALERIE'**
+  String get avatarGallery;
+
+  /// No description provided for @avatarPhotoInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ta photo est transformée en dessin avant d\'être montrée aux autres joueurs.'**
+  String get avatarPhotoInfo;
+
+  /// No description provided for @avatarCharacters.
+  ///
+  /// In fr, this message translates to:
+  /// **'Personnages'**
+  String get avatarCharacters;
+
+  /// No description provided for @avatarUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avatar mis à jour !'**
+  String get avatarUpdated;
+
+  /// No description provided for @errorInvalidImage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette image n\'a pas pu être lue.'**
+  String get errorInvalidImage;
+
+  /// No description provided for @errorFileTooLarge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Image trop lourde.'**
+  String get errorFileTooLarge;
+
+  /// No description provided for @reportTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signaler la photo ?'**
+  String get reportTitle;
+
+  /// No description provided for @reportMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'La photo de {name} est retirée après plusieurs signalements.'**
+  String reportMessage(String name);
+
+  /// No description provided for @reportConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'SIGNALER'**
+  String get reportConfirm;
+
+  /// No description provided for @reportSent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Merci, signalement envoyé.'**
+  String get reportSent;
 }
 
 class _AppLocalizationsDelegate

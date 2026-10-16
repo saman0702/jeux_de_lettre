@@ -25,6 +25,7 @@ class LobbyView extends StatelessWidget {
     required this.onReady,
     this.onAddBot,
     this.onRemoveBot,
+    this.onReport,
   });
 
   final RoomState room;
@@ -34,6 +35,9 @@ class LobbyView extends StatelessWidget {
   /// Hôte uniquement : ajouter ou retirer des adversaires ordinateur.
   final ValueChanged<Difficulty>? onAddBot;
   final ValueChanged<String>? onRemoveBot;
+
+  /// Signaler la photo d'un autre joueur.
+  final ValueChanged<RoomPlayer>? onReport;
 
   Future<void> _pickBotLevel(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
@@ -170,6 +174,12 @@ class LobbyView extends StatelessWidget {
                           onRemove: p.bot && onRemoveBot != null
                               ? () => onRemoveBot!(p.clientId)
                               : null,
+                          onReport:
+                              p.avatarUrl != null &&
+                                  p.clientId != myId &&
+                                  onReport != null
+                              ? () => onReport!(p)
+                              : null,
                         ),
                       ),
                     for (
@@ -278,6 +288,7 @@ class _PlayerSeat extends StatelessWidget {
     required this.isMe,
     required this.showReady,
     this.onRemove,
+    this.onReport,
   });
 
   final RoomPlayer player;
@@ -288,6 +299,9 @@ class _PlayerSeat extends StatelessWidget {
   /// Affiché sur les bots, pour l'hôte.
   final VoidCallback? onRemove;
 
+  /// Affiché sur les joueurs qui ont une photo.
+  final VoidCallback? onReport;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -296,12 +310,7 @@ class _PlayerSeat extends StatelessWidget {
         Stack(
           clipBehavior: Clip.none,
           children: [
-            PlayerAvatar(
-              nickname: player.nickname,
-              seed: player.clientId,
-              connected: player.connected,
-              bot: player.bot,
-            ),
+            PlayerAvatar.of(player),
             if (isHost)
               const Positioned(
                 top: -12,
@@ -330,6 +339,25 @@ class _PlayerSeat extends StatelessWidget {
                   GameIconKind.offline,
                   size: 18,
                   color: AppColors.red,
+                ),
+              ),
+            if (onReport != null)
+              // Dans les limites de l'avatar pour rester touchable.
+              Positioned(
+                bottom: 0,
+                left: 0,
+                child: GestureDetector(
+                  key: Key('report_${player.clientId}'),
+                  onTap: onReport,
+                  child: const CircleAvatar(
+                    radius: 11,
+                    backgroundColor: AppColors.white,
+                    child: GameIcon(
+                      GameIconKind.flag,
+                      size: 15,
+                      color: AppColors.red,
+                    ),
+                  ),
                 ),
               ),
             if (onRemove != null)

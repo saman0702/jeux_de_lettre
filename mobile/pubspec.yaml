@@ -43,6 +43,7 @@ dependencies:
   web_socket_channel: ^3.0.3
   vibration: ^3.2.1
   flutter_tts: ^4.2.5
+  image_picker: ^1.2.4
 
 dev_dependencies:
   flutter_test:

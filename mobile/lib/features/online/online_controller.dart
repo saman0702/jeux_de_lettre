@@ -49,6 +49,8 @@ class OnlineController extends ChangeNotifier {
   RoomState? _room;
   bool _searching = false;
   WalletSnapshot? _wallet;
+  int _avatarPreset = 0;
+  String? _avatarUrl;
 
   String get clientId => client.clientId;
   bool get isOnline => client.isOnline;
@@ -62,6 +64,20 @@ class OnlineController extends ChangeNotifier {
 
   /// Pièces gagnées, pour l'animation « +1 pièce ».
   Stream<int> get coinGains => _coinGains.stream;
+
+  /// Mon avatar : personnage dessiné, ou photo dessinée si [avatarUrl].
+  int get avatarPreset => _avatarPreset;
+  String? get avatarUrl => _avatarUrl;
+
+  void setAvatar(int preset, String? url) {
+    _avatarPreset = preset;
+    _avatarUrl = url;
+    notifyListeners();
+  }
+
+  /// Signale la photo d'un autre joueur de la salle.
+  void reportPlayer(String clientId) =>
+      client.send({'type': 'report_player', 'client_id': clientId});
 
   /// Nouveau solde reçu par la socket ou par l'API solo.
   void applyWallet(WalletSnapshot wallet) {
@@ -167,6 +183,13 @@ class OnlineController extends ChangeNotifier {
         if (event['wallet'] case final Map<String, dynamic> wallet) {
           _wallet = WalletSnapshot.fromJson(wallet);
         }
+        if (event['avatar'] case final Map<String, dynamic> avatar) {
+          _avatarPreset = avatar['preset'] as int? ?? 0;
+          _avatarUrl = avatar['url'] as String?;
+        }
+      case 'reported':
+        // Accusé de réception : le message est affiché dès l'envoi.
+        return;
       case 'wallet':
         applyWallet(WalletSnapshot.fromJson(event));
         return;

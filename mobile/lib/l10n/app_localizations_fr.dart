@@ -597,4 +597,43 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get errorBotsNotAllowed => 'Pas de bots dans un salon de paris.';
+
+  @override
+  String get avatarTitle => 'Mon avatar';
+
+  @override
+  String get avatarCamera => 'PHOTO';
+
+  @override
+  String get avatarGallery => 'GALERIE';
+
+  @override
+  String get avatarPhotoInfo =>
+      'Ta photo est transformée en dessin avant d\'être montrée aux autres joueurs.';
+
+  @override
+  String get avatarCharacters => 'Personnages';
+
+  @override
+  String get avatarUpdated => 'Avatar mis à jour !';
+
+  @override
+  String get errorInvalidImage => 'Cette image n\'a pas pu être lue.';
+
+  @override
+  String get errorFileTooLarge => 'Image trop lourde.';
+
+  @override
+  String get reportTitle => 'Signaler la photo ?';
+
+  @override
+  String reportMessage(String name) {
+    return 'La photo de $name est retirée après plusieurs signalements.';
+  }
+
+  @override
+  String get reportConfirm => 'SIGNALER';
+
+  @override
+  String get reportSent => 'Merci, signalement envoyé.';
 }

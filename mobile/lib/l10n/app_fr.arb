@@ -417,5 +417,24 @@
     }
   },
   "errorNotEnoughCoins": "Pas assez de pièces pour cette mise.",
-  "errorBotsNotAllowed": "Pas de bots dans un salon de paris."
+  "errorBotsNotAllowed": "Pas de bots dans un salon de paris.",
+  "avatarTitle": "Mon avatar",
+  "avatarCamera": "PHOTO",
+  "avatarGallery": "GALERIE",
+  "avatarPhotoInfo": "Ta photo est transformée en dessin avant d'être montrée aux autres joueurs.",
+  "avatarCharacters": "Personnages",
+  "avatarUpdated": "Avatar mis à jour !",
+  "errorInvalidImage": "Cette image n'a pas pu être lue.",
+  "errorFileTooLarge": "Image trop lourde.",
+  "reportTitle": "Signaler la photo ?",
+  "reportMessage": "La photo de {name} est retirée après plusieurs signalements.",
+  "@reportMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reportConfirm": "SIGNALER",
+  "reportSent": "Merci, signalement envoyé."
 }

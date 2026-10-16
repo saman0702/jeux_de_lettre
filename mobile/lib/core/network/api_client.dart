@@ -49,12 +49,38 @@ class ApiClient {
     ),
   );
 
+  Future<Map<String, dynamic>> putJson(
+    String path,
+    Map<String, dynamic> body,
+  ) => _send(
+    () => _client.put(
+      Uri.parse('$baseUrl$path'),
+      headers: {'content-type': 'application/json'},
+      body: jsonEncode(body),
+    ),
+  );
+
+  /// Envoie un fichier en multipart (champ [field]).
+  Future<Map<String, dynamic>> uploadBytes(
+    String path, {
+    required String field,
+    required List<int> bytes,
+    required String filename,
+  }) => _send(() async {
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'))
+      ..files.add(
+        http.MultipartFile.fromBytes(field, bytes, filename: filename),
+      );
+    return http.Response.fromStream(await _client.send(request));
+  }, timeout: const Duration(seconds: 30));
+
   Future<Map<String, dynamic>> _send(
-    Future<http.Response> Function() request,
-  ) async {
+    Future<http.Response> Function() request, {
+    Duration timeout = _timeout,
+  }) async {
     final http.Response response;
     try {
-      response = await request().timeout(_timeout);
+      response = await request().timeout(timeout);
     } catch (_) {
       throw ApiException('network_error');
     }

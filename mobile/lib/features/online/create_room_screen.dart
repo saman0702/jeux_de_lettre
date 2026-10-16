@@ -130,7 +130,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                         style: fredoka(
                           size: 13,
                           weight: FontWeight.w500,
-                          color: AppColors.white.withValues(alpha: 0.85),
+                          color: AppColors.inkSoft,
                         ),
                       ),
                     ],

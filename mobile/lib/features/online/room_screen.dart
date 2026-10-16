@@ -308,6 +308,22 @@ class _RoomScreenState extends State<RoomScreen> {
     };
   }
 
+  Future<void> _report(RoomPlayer player) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showGameConfirm(
+      context,
+      icon: GameIconKind.flag,
+      title: l10n.reportTitle,
+      message: l10n.reportMessage(player.nickname),
+      confirmLabel: l10n.reportConfirm,
+      cancelLabel: l10n.cancel,
+    );
+    if (!confirmed) return;
+    _online.reportPlayer(player.clientId);
+    messenger.showSnackBar(SnackBar(content: Text(l10n.reportSent)));
+  }
+
   Widget _buildPhase(RoomState? room) {
     final podium = _podium;
     if (podium != null) {
@@ -333,6 +349,7 @@ class _RoomScreenState extends State<RoomScreen> {
           // Pas de bots dans un salon de paris.
           onAddBot: isHost && !room.settings.betting ? _online.addBot : null,
           onRemoveBot: isHost ? _online.removeBot : null,
+          onReport: _report,
         );
       case RoomPhase.countdown:
         final seconds =

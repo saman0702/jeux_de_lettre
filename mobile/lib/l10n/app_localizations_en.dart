@@ -595,4 +595,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorBotsNotAllowed => 'No bots in a betting room.';
+
+  @override
+  String get avatarTitle => 'My avatar';
+
+  @override
+  String get avatarCamera => 'CAMERA';
+
+  @override
+  String get avatarGallery => 'GALLERY';
+
+  @override
+  String get avatarPhotoInfo =>
+      'Your photo is turned into a drawing before other players see it.';
+
+  @override
+  String get avatarCharacters => 'Characters';
+
+  @override
+  String get avatarUpdated => 'Avatar updated!';
+
+  @override
+  String get errorInvalidImage => 'This image could not be read.';
+
+  @override
+  String get errorFileTooLarge => 'Image too large.';
+
+  @override
+  String get reportTitle => 'Report this photo?';
+
+  @override
+  String reportMessage(String name) {
+    return '$name\'s photo is removed after several reports.';
+  }
+
+  @override
+  String get reportConfirm => 'REPORT';
+
+  @override
+  String get reportSent => 'Thanks, report sent.';
 }

@@ -17,6 +17,8 @@ import '../online/online_controller.dart';
 import '../online/room_screen.dart';
 import '../online/rooms_screen.dart';
 import '../online/widgets/online_counter.dart';
+import '../avatar/avatar_screen.dart';
+import '../online/widgets/player_avatar.dart';
 import '../wallet/coin_counter.dart';
 import 'settings_sheet.dart';
 
@@ -95,6 +97,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(width: 8),
                     const CoinCounter(),
                     const Spacer(),
+                    _MyAvatarButton(
+                      onTap: () => Navigator.of(context).push(
+                        PopRoute(builder: (_) => AvatarScreen(apiClient: _api)),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
                     RoundIconButton(
                       key: const Key('settings_button'),
                       icon: Icons.settings_rounded,
@@ -161,6 +169,37 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Spacer(),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Mon avatar en haut de l'accueil ; ouvre le choix d'avatar.
+class _MyAvatarButton extends StatelessWidget {
+  const _MyAvatarButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final online = OnlineScope.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Semantics(
+      button: true,
+      label: l10n.avatarTitle,
+      child: GestureDetector(
+        key: const Key('avatar_button'),
+        onTap: onTap,
+        child: ListenableBuilder(
+          listenable: online,
+          builder: (context, _) => PlayerAvatar(
+            nickname: '',
+            seed: online.clientId,
+            size: 46,
+            preset: online.avatarPreset,
+            photoUrl: online.avatarUrl,
           ),
         ),
       ),

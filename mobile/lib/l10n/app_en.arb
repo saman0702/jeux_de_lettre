@@ -167,5 +167,17 @@
   "betWon": "You win {count} coins!",
   "betLost": "Stake lost: {count} coins",
   "errorNotEnoughCoins": "Not enough coins for this stake.",
-  "errorBotsNotAllowed": "No bots in a betting room."
+  "errorBotsNotAllowed": "No bots in a betting room.",
+  "avatarTitle": "My avatar",
+  "avatarCamera": "CAMERA",
+  "avatarGallery": "GALLERY",
+  "avatarPhotoInfo": "Your photo is turned into a drawing before other players see it.",
+  "avatarCharacters": "Characters",
+  "avatarUpdated": "Avatar updated!",
+  "errorInvalidImage": "This image could not be read.",
+  "errorFileTooLarge": "Image too large.",
+  "reportTitle": "Report this photo?",
+  "reportMessage": "{name}'s photo is removed after several reports.",
+  "reportConfirm": "REPORT",
+  "reportSent": "Thanks, report sent."
 }

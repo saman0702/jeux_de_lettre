@@ -245,13 +245,7 @@ class _LeaderboardRow extends StatelessWidget {
                     style: fredoka(size: 20, weight: FontWeight.w700),
                   ),
           ),
-          PlayerAvatar(
-            nickname: player.nickname,
-            seed: player.clientId,
-            size: 36,
-            connected: player.connected,
-            bot: player.bot,
-          ),
+          PlayerAvatar.of(player, size: 36),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
