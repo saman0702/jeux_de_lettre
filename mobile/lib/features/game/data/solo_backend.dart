@@ -1,8 +1,9 @@
 import 'models.dart';
 
-/// What a solo game needs: the server (online) or the in-app engine (offline).
+/// Ce dont une partie solo a besoin : le serveur (en ligne) ou le moteur
+/// intégré à l'appli (hors ligne).
 abstract class SoloBackend {
-  /// True when the game runs on the device, without the server.
+  /// Vrai quand la partie tourne sur l'appareil, sans le serveur.
   bool get offline;
 
   Future<SoloGame> createGame(SoloGameSettings settings);

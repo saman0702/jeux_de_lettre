@@ -3,8 +3,8 @@ import 'package:vibration/vibration.dart';
 
 enum Haptic { light, medium, heavy }
 
-/// Makes the phone vibrate. Android's "haptic feedback" depends on a system
-/// touch setting that is often off, so real vibrations are used instead.
+/// Fait vibrer le téléphone. Le « retour haptique » d'Android dépend d'un
+/// réglage système souvent désactivé : on utilise donc de vraies vibrations.
 abstract class Vibrator {
   void vibrate(Haptic kind);
 }
@@ -25,7 +25,7 @@ class DeviceVibrator implements Vibrator {
   final bool _available;
   final bool _amplitude;
 
-  // (milliseconds, amplitude 1-255)
+  // (millisecondes, amplitude 1-255)
   static const _patterns = {
     Haptic.light: (12, 70),
     Haptic.medium: (28, 150),
@@ -57,7 +57,7 @@ class DeviceVibrator implements Vibrator {
   }
 }
 
-/// Records vibrations; used by tests.
+/// Enregistre les vibrations ; utilisé par les tests.
 class SilentVibrator implements Vibrator {
   final List<Haptic> vibrations = [];
 

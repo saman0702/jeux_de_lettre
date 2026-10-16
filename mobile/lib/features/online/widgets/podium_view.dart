@@ -16,7 +16,7 @@ import '../data/room_models.dart';
 import 'player_avatar.dart';
 import '../../../core/widgets/game_icon.dart';
 
-/// End of game: 🥇🥈🥉 podium, confetti, then play again or leave.
+/// Fin de partie : podium avec médailles, confettis, puis rejouer ou quitter.
 class PodiumView extends StatefulWidget {
   const PodiumView({
     super.key,
@@ -72,7 +72,7 @@ class _PodiumViewState extends State<PodiumView> {
     final ranking = widget.ranking;
     final rest = ranking.length > 3 ? ranking.sublist(3) : const <RoomPlayer>[];
 
-    // Podium order on screen: 2nd, 1st, 3rd.
+    // Ordre du podium à l'écran : 2e, 1er, 3e.
     final steps = [
       if (ranking.length > 1) (ranking[1], 2, 110.0, AppColors.cyan),
       (ranking[0], 1, 150.0, AppColors.yellow),

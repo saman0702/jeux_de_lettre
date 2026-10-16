@@ -18,7 +18,8 @@ import 'widget_test.dart' show fakeApi;
 
 const me = 'me-client-id';
 
-/// Fake WebSocket server: records what the app sends, pushes server events.
+/// Faux serveur WebSocket : enregistre ce que l'appli envoie et pousse des
+/// événements du serveur.
 class FakeSocket implements RealtimeConnection {
   final _incoming = StreamController<String>();
   final List<Map<String, dynamic>> sent = [];
@@ -32,7 +33,7 @@ class FakeSocket implements RealtimeConnection {
 
   @override
   Future<void> close() async {
-    // Not awaited: the app already cancelled its subscription.
+    // Sans await : l'appli a déjà annulé son abonnement.
     _incoming.close();
   }
 
@@ -80,8 +81,9 @@ class Harness {
   }
 }
 
-/// The room screen refreshes its countdowns continuously, so it never
-/// "settles": advance time explicitly instead of pumpAndSettle.
+/// L'écran de salle rafraîchit ses comptes à rebours en continu, il ne se «
+/// stabilise » donc jamais : on avance le temps explicitement au lieu
+/// d'utiliser pumpAndSettle.
 Future<void> pumpFor(
   WidgetTester tester, [
   Duration duration = const Duration(seconds: 2),

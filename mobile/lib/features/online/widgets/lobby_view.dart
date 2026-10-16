@@ -14,7 +14,8 @@ import '../data/room_models.dart';
 import 'player_avatar.dart';
 import '../../../core/widgets/game_icon.dart';
 
-/// Waiting room: code to share, players, ready button (or quick match timer).
+/// Salle d'attente : code à partager, joueurs, bouton « prêt » (ou minuteur de
+/// partie rapide).
 class LobbyView extends StatelessWidget {
   const LobbyView({
     super.key,
@@ -29,7 +30,7 @@ class LobbyView extends StatelessWidget {
   final String myId;
   final ValueChanged<bool> onReady;
 
-  /// Host only: add or remove computer opponents.
+  /// Hôte uniquement : ajouter ou retirer des adversaires ordinateur.
   final ValueChanged<Difficulty>? onAddBot;
   final ValueChanged<String>? onRemoveBot;
 
@@ -274,7 +275,7 @@ class _PlayerSeat extends StatelessWidget {
   final bool isMe;
   final bool showReady;
 
-  /// Shown on bots for the host.
+  /// Affiché sur les bots, pour l'hôte.
   final VoidCallback? onRemove;
 
   @override

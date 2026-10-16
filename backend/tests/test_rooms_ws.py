@@ -64,7 +64,9 @@ def player(client, client_id, nickname):
 
 
 def wait_for(ws, predicate, limit=200):
-    """Read messages until one matches; other events (notices, counts) are skipped."""
+    """Lit les messages jusqu'à en trouver un qui correspond ; les autres événements (notifications,
+    compteurs) sont ignorés.
+    """
     for _ in range(limit):
         message = ws.receive_json()
         if predicate(message):
@@ -126,7 +128,7 @@ def test_private_room_full_game(client):
         assert {p["nickname"]: p["score"] for p in final["players"]} == {"Alice": 5, "Bob": 15}
         assert all(not p["ready"] for p in final["players"])
 
-        # "Play again" brings the room back to the lobby with scores reset.
+        # « Rejouer » ramène la salle en attente avec les scores remis à zéro.
         alice.send_json({"type": "set_ready", "ready": True})
         lobby = state(alice, "waiting")
         assert all(p["score"] == 0 for p in lobby["players"])
@@ -195,7 +197,7 @@ def test_public_rooms_are_listed(client):
         assert rooms[0]["code"] == public["code"]
         assert rooms[0]["host"] == "Alice" and rooms[0]["players"] == 1
 
-        create_room(alice)  # private: replaces the public one, which is now empty
+        create_room(alice)  # privée : remplace la salle publique, désormais vide
         assert wait_for(bob, lambda m: m["type"] == "room_list")["rooms"] == []
 
 
@@ -263,7 +265,7 @@ def test_play_against_bots(client):
         results = state(alice, "results")["results"]["players"]
         assert len(results) == 3
         bot_answers = [p["answers"][0] for p in results if p["client_id"].startswith("bot-")]
-        # Bots answered on their own with real countries starting with M.
+        # Les bots ont répondu seuls, avec de vrais pays commençant par M.
         assert any(a["status"] == "valid" for a in bot_answers)
 
 

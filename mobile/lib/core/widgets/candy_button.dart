@@ -6,7 +6,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'game_icon.dart';
 
-/// Chunky 3D button that sinks when pressed, with a click sound and a tap haptic.
+/// Gros bouton 3D qui s'enfonce quand on appuie, avec un clic sonore et une
+/// vibration légère.
 class CandyButton extends StatefulWidget {
   const CandyButton({
     super.key,
@@ -28,10 +29,10 @@ class CandyButton extends StatefulWidget {
   final Color textColor;
   final IconData? icon;
 
-  /// Animated game icon shown instead of [icon].
+  /// Icône de jeu animée affichée à la place de [icon].
   final GameIconKind? gameIcon;
 
-  /// Small sticker in the corner, e.g. "Bientôt".
+  /// Petite pastille dans le coin, ex. « Bientôt ».
   final String? badge;
   final bool loading;
   final double fontSize;
@@ -174,8 +175,8 @@ class _CandyButtonState extends State<CandyButton> {
   }
 }
 
-/// Round candy button (back, settings...): it sinks when pressed and its
-/// icon can spin, like a game menu button.
+/// Bouton rond bonbon (retour, réglages...) : il s'enfonce quand on appuie et
+/// son icône peut tourner, comme un bouton de menu de jeu.
 class RoundIconButton extends StatefulWidget {
   const RoundIconButton({
     super.key,
@@ -194,7 +195,7 @@ class RoundIconButton extends StatefulWidget {
   final Color color;
   final Color iconColor;
 
-  /// Gives the icon a full turn on tap (settings gear).
+  /// Fait faire un tour complet à l'icône au toucher (engrenage des réglages).
   final bool spinOnTap;
   final double size;
 

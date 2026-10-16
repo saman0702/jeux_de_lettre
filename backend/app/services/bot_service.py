@@ -1,9 +1,8 @@
-"""Computer opponents.
+"""Adversaires contrôlés par l'ordinateur.
 
-A bot answers like a person would: not every category, not instantly, with
-well-known answers (Paris before an unknown village) and the odd typo. The
-level sets how often it finds an answer, how fast, and how obscure its
-answers can be.
+Un bot répond comme une personne : pas à toutes les catégories, pas instantanément, avec des
+réponses connues (Paris avant un village inconnu) et quelques fautes de frappe. Le niveau règle la
+fréquence de ses réponses, sa rapidité et la rareté de ses réponses.
 """
 
 import random
@@ -20,10 +19,10 @@ BOT_NAMES = ["Robo-Léa", "Robo-Max", "Robo-Zoé", "Robo-Tom", "Robo-Inès", "Ro
 
 @dataclass(frozen=True)
 class BotProfile:
-    answer_rate: float  # chance to fill in a category
-    typo_rate: float  # chance a given answer is misspelled (and rejected)
-    answer_time: tuple[float, float]  # share of the round before submitting
-    pool: int  # picks among the N most popular answers for the letter
+    answer_rate: float  # probabilité de remplir une catégorie
+    typo_rate: float  # probabilité qu'une réponse soit mal orthographiée (et donc refusée)
+    answer_time: tuple[float, float]  # part de la manche écoulée avant l'envoi
+    pool: int  # choisit parmi les N réponses les plus connues pour la lettre
 
 
 BOT_PROFILES: dict[Difficulty, BotProfile] = {
@@ -44,7 +43,7 @@ def bot_name(taken: set[str], rng: random.Random | None = None) -> str:
 async def candidates(
     session: AsyncSession, language: str, categories: list[str], letter: str, pool: int
 ) -> dict[str, list[str]]:
-    """The most popular known answers per category for this letter."""
+    """Les réponses connues les plus populaires par catégorie pour cette lettre."""
     result: dict[str, list[str]] = {}
     for category in categories:
         rows = await session.scalars(

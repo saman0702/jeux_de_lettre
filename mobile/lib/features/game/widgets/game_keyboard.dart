@@ -8,14 +8,16 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 
-/// Letter layouts. No accents: answers are compared without them.
+/// Dispositions des lettres. Pas d'accents : les réponses sont comparées sans
+/// eux.
 const _layouts = {
   'fr': ['AZERTYUIOP', 'QSDFGHJKLM', "WXCVBN'-"],
   'en': ['QWERTYUIOP', 'ASDFGHJKL', "ZXCVBNM'-"],
 };
 
-/// In-game keyboard: chunky candy keys that sink and pop when pressed.
-/// The round letter is highlighted so the first key is easy to find.
+/// Clavier du jeu : grosses touches bonbon qui s'enfoncent et ressortent quand
+/// on appuie. La lettre de la manche est mise en valeur pour trouver tout de
+/// suite la première touche.
 class GameKeyboard extends StatelessWidget {
   const GameKeyboard({
     super.key,
@@ -165,13 +167,14 @@ class _Key extends StatefulWidget {
   final double fontSize;
   final bool enabled;
 
-  /// Keeps firing while held (backspace).
+  /// Continue de se déclencher tant qu'on appuie (effacement).
   final bool repeat;
 
-  /// Played by the key itself; letter sounds come from the answer slot.
+  /// Joué par la touche elle-même ; le son des lettres vient du champ de
+  /// réponse.
   final Sfx? sound;
 
-  /// With both a label and an icon: icon before (true) or after the label.
+  /// Avec un libellé et une icône : icône avant (true) ou après le libellé.
   final bool iconFirst;
   final VoidCallback onTap;
 
@@ -281,7 +284,8 @@ class _KeyState extends State<_Key> {
                   height: _height,
                   child: AnimatedScale(
                     duration: const Duration(milliseconds: 90),
-                    // The key pops up a little under the finger, like a game.
+                    // La touche grossit un peu sous le doigt, comme dans un
+                    // jeu.
                     scale:
                         _pressed &&
                             widget.label != null &&

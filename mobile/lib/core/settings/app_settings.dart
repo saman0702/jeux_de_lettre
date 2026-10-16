@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Player preferences (sound, music, vibrations) and guest identity.
+/// Préférences du joueur (son, musique, vibrations) et identité d'invité.
 class AppSettings extends ChangeNotifier {
   AppSettings._(
     this._prefs, {
@@ -17,7 +17,7 @@ class AppSettings extends ChangeNotifier {
     this._languageCode,
   });
 
-  /// Not persisted; used by tests.
+  /// Non persisté ; utilisé par les tests.
   AppSettings.inMemory({String? nickname, String clientId = 'test-client-id'})
     : this._(null, clientId: clientId, nickname: nickname);
 
@@ -60,8 +60,8 @@ class AppSettings extends ChangeNotifier {
 
   final SharedPreferences? _prefs;
 
-  /// Random id kept on the device: it lets a guest get their seat back after
-  /// losing the connection.
+  /// Identifiant aléatoire gardé sur l'appareil : il permet à un invité de
+  /// retrouver sa place après une perte de connexion.
   final String clientId;
   bool _sound;
   bool _music;
@@ -75,14 +75,15 @@ class AppSettings extends ChangeNotifier {
   bool get music => _music;
   bool get vibration => _vibration;
 
-  /// Built-in game keyboard instead of the phone's one.
+  /// Clavier de jeu intégré à la place de celui du téléphone.
   bool get gameKeyboard => _gameKeyboard;
 
-  /// Announcer voice at the end of rounds.
+  /// Voix du présentateur en fin de manche.
   bool get voice => _voice;
   String? get nickname => _nickname;
 
-  /// Chosen app language ('fr', 'en'), or null to follow the phone.
+  /// Langue choisie pour l'appli ('fr', 'en'), ou null pour suivre le
+  /// téléphone.
   String? get languageCode => _languageCode;
 
   set languageCode(String? value) {

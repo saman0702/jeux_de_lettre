@@ -2,8 +2,8 @@ import 'dart:math';
 
 import '../../l10n/app_localizations.dart';
 
-/// What the announcer says. Variants are picked at random so it does not
-/// repeat the same line every round.
+/// Ce que dit le présentateur. Les variantes sont tirées au hasard pour ne pas
+/// répéter la même phrase à chaque manche.
 class Announcements {
   Announcements(this.l10n, [Random? random]) : _random = random ?? Random();
 
@@ -15,7 +15,7 @@ class Announcements {
   String get _encourage =>
       _pick([l10n.voiceEncourage1, l10n.voiceEncourage2, l10n.voiceEncourage3]);
 
-  /// Solo round: praise or encourage depending on the share of points won.
+  /// Manche solo : félicite ou encourage selon la part des points gagnés.
   String soloRound(int points, int maxPoints) {
     final ratio = maxPoints == 0 ? 0 : points / maxPoints;
     if (points == 0) return l10n.voiceSoloZero;
@@ -24,7 +24,7 @@ class Announcements {
     return l10n.voiceSoloLow;
   }
 
-  /// Multiplayer round, from this player's point of view.
+  /// Manche multijoueur, du point de vue de ce joueur.
   String roomRound({
     required Map<String, int> roundScores,
     required Map<String, String> names,

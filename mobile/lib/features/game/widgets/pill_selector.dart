@@ -6,7 +6,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/game_icon.dart';
 
-/// Row of chunky toggle pills; selected pills are raised and yellow.
+/// Rangée de grosses pastilles à choisir ; celles sélectionnées sont en relief
+/// et jaunes.
 class PillSelector<T> extends StatelessWidget {
   const PillSelector({
     super.key,
@@ -23,7 +24,7 @@ class PillSelector<T> extends StatelessWidget {
   final String Function(T option) label;
   final ValueChanged<T> onTap;
 
-  /// Optional animated icon before the label.
+  /// Icône animée facultative avant le libellé.
   final GameIconKind? Function(T option)? icon;
   final Color Function(T option)? iconColor;
 

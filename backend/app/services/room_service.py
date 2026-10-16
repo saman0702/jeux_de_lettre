@@ -1,11 +1,11 @@
-"""Live multiplayer rooms: lobby, quick match, synchronized rounds.
+"""Salons multijoueur en direct : salle d'attente, partie rapide, manches synchronisées.
 
-Each client keeps one WebSocket open. Whenever a room changes, every member
-receives the full `room_state`, so a client (or a reconnecting one) only
-ever needs the latest state to render the right screen.
+Chaque client garde une WebSocket ouverte. À chaque changement d'une salle, chaque membre reçoit le
+`room_state` complet : un client (ou un client qui se reconnecte) n'a besoin que du dernier état
+pour afficher le bon écran.
 
-Rooms live in this process's memory (one API worker for the MVP); games,
-rounds and answers are persisted through multiplayer_service.
+Les salles vivent dans la mémoire de ce processus (un seul worker d'API pour le MVP) ; les parties,
+manches et réponses sont enregistrées via multiplayer_service.
 """
 
 import asyncio
@@ -36,7 +36,7 @@ from app.services.presence_service import PresenceStore, RedisPresence
 
 logger = logging.getLogger(__name__)
 
-CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no O/0 or I/1 confusion
+CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # pas de confusion O/0 ni I/1
 CODE_LENGTH = 5
 
 
@@ -53,10 +53,10 @@ class Timings:
     reconnect_grace: float = 30.0
     presence_interval: float = 5.0
     submit_grace: float = SUBMIT_GRACE_SECONDS
-    # A lone quick-match player gets bots after this wait.
+    # Un joueur seul en partie rapide reçoit des bots après cette attente.
     quick_bot_fill: float = 12.0
     quick_bot_count: int = 2
-    # Multiplies bot answer delays (tests use a tiny value).
+    # Multiplie les délais de réponse des bots (les tests utilisent une toute petite valeur).
     bot_speed: float = 1.0
 
 
@@ -67,7 +67,8 @@ class RoomPlayer:
     ready: bool = False
     connected: bool = True
     score: int = 0
-    # Set once the player takes part in the game (late joiners get it at the next round).
+    # Renseigné dès que le joueur participe à la partie (ceux qui arrivent en retard l'obtiennent à
+    # la manche suivante).
     db_player_id: str | None = None
     bot_level: Difficulty | None = None
     hints_used: int = 0
@@ -83,11 +84,11 @@ class LiveRound:
     letter: str
     started_at: datetime
     ends_at: datetime
-    participants: dict[str, str]  # client id -> db player id
+    participants: dict[str, str]  # id client -> id joueur en base
     submissions: dict[str, tuple[datetime, dict[Category, str]]] = field(default_factory=dict)
     all_in: asyncio.Event = field(default_factory=asyncio.Event)
     bot_tasks: list[asyncio.Task] = field(default_factory=list)
-    hints: dict[str, dict[str, hint_service.Hint]] = field(default_factory=dict)  # client -> category
+    hints: dict[str, dict[str, hint_service.Hint]] = field(default_factory=dict)  # client -> catégorie
 
 
 @dataclass
@@ -103,7 +104,7 @@ class Room:
     round_number: int = 0
     live_round: LiveRound | None = None
     results: dict | None = None
-    starts_at: datetime | None = None  # quick match automatic start
+    starts_at: datetime | None = None  # démarrage automatique de la partie rapide
     go_at: datetime | None = None
     next_round_at: datetime | None = None
     game_task: asyncio.Task | None = None
@@ -154,13 +155,13 @@ class RoomManager:
         self.timings = timings or Timings()
         self.connections: dict[str, Connection] = {}
         self.rooms: dict[str, Room] = {}
-        self._room_of: dict[str, str] = {}  # client id -> room code
-        self._room_list_subscribers: dict[str, str | None] = {}  # client id -> language filter
+        self._room_of: dict[str, str] = {}  # id client -> code de salle
+        self._room_list_subscribers: dict[str, str | None] = {}  # id client -> filtre de langue
         self._expiry_tasks: dict[str, asyncio.Task] = {}
         self._online_count = 0
         self._presence_task: asyncio.Task | None = None
 
-    # ------------------------------------------------------------------ lifecycle
+    # ------------------------------------------------------------- cycle de vie
 
     def start(self) -> None:
         self._presence_task = asyncio.create_task(self._presence_loop())
@@ -189,7 +190,7 @@ class RoomManager:
             for client_id in list(self.connections):
                 await self._send(client_id, {"type": "online_count", "count": count})
 
-    # ---------------------------------------------------------------- connections
+    # ---------------------------------------------------------------- connexions
 
     async def connect(self, websocket: WebSocket, client_id: str, nickname: str) -> Connection:
         previous = self.connections.get(client_id)
@@ -217,7 +218,7 @@ class RoomManager:
     async def disconnect(self, connection: Connection) -> None:
         client_id = connection.client_id
         if self.connections.get(client_id) is not connection:
-            return  # replaced by a newer connection
+            return  # remplacée par une connexion plus récente
         del self.connections[client_id]
         self._room_list_subscribers.pop(client_id, None)
         with contextlib.suppress(Exception):
@@ -235,14 +236,14 @@ class RoomManager:
         self._expiry_tasks[client_id] = asyncio.create_task(self._expire(client_id))
 
     async def _expire(self, client_id: str) -> None:
-        """Players who do not come back in time leave their room."""
+        """Les joueurs qui ne reviennent pas à temps quittent leur salle."""
         await asyncio.sleep(self.timings.reconnect_grace)
         self._expiry_tasks.pop(client_id, None)
         room = self._current_room(client_id)
         if room is not None and not room.players[client_id].connected:
             await self._leave(client_id)
 
-    # ------------------------------------------------------------------- messages
+    # ------------------------------------------------------------------ messages
 
     async def handle(self, connection: Connection, message: dict) -> None:
         handlers = {
@@ -288,7 +289,7 @@ class RoomManager:
         room = self._new_room(settings, quick=False, host=connection)
         await self._add_player(room, connection)
         if bot_count > 0:
-            # Playing against the computer: start right away.
+            # Partie contre l'ordinateur : on démarre tout de suite.
             for _ in range(bot_count):
                 self._add_bot(room, bot_level)
             room.players[connection.client_id].ready = True
@@ -320,7 +321,7 @@ class RoomManager:
             for r in self.rooms.values()
             if r.quick and r.phase == "waiting" and r.joinable and r.settings.language == language
         ]
-        # Join the fullest room so games start sooner.
+        # Rejoint la salle la plus remplie pour que la partie démarre plus vite.
         room = max(candidates, key=lambda r: len(r.players), default=None)
         if room is None:
             room = self._new_room(RoomSettings(language=language, public=True), quick=True, host=connection)
@@ -473,7 +474,7 @@ class RoomManager:
     async def _on_unsubscribe_rooms(self, connection: Connection, message: dict) -> None:
         self._room_list_subscribers.pop(connection.client_id, None)
 
-    # ---------------------------------------------------------------------- rooms
+    # --------------------------------------------------------------------- salles
 
     def _new_room(self, settings: RoomSettings, quick: bool, host: Connection) -> Room:
         code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(CODE_LENGTH))
@@ -564,7 +565,7 @@ class RoomManager:
             raise RoomError("not_host")
         return room
 
-    # ---------------------------------------------------------------- game start
+    # ------------------------------------------------------- démarrage de partie
 
     async def _maybe_start(self, room: Room) -> None:
         if room.quick or room.phase != "waiting":
@@ -599,7 +600,8 @@ class RoomManager:
         room.starts_at = None
 
     async def _fill_with_bots_later(self, room: Room) -> None:
-        """Nobody else online: bots join so the player is not left waiting."""
+        """Personne d'autre en ligne : des bots rejoignent la partie pour que le joueur n'attende pas.
+        """
         await asyncio.sleep(self.timings.quick_bot_fill)
         room.bot_fill_timer = None
         if room.phase != "waiting" or len(room.players) != 1 or room.code not in self.rooms:
@@ -621,7 +623,7 @@ class RoomManager:
         room.phase = "countdown"
         room.game_task = asyncio.create_task(self._run_game(room))
 
-    # ----------------------------------------------------------------- game loop
+    # ------------------------------------------------------- boucle de la partie
 
     async def _run_game(self, room: Room) -> None:
         try:
@@ -701,7 +703,7 @@ class RoomManager:
         live = room.live_round
         for task in live.bot_tasks:
             task.cancel()
-        # Picked hint options replace whatever was typed in those categories.
+        # Les propositions de joker choisies remplacent ce qui a été tapé dans ces catégories.
         hints: dict[str, dict[str, bool]] = {}
         for cid, by_category in live.hints.items():
             picked = {c: h for c, h in by_category.items() if h.picked is not None}
@@ -777,7 +779,7 @@ class RoomManager:
         self._check_all_in(room)
 
     def _check_all_in(self, room: Room) -> None:
-        """Ends the round early once every connected participant has answered."""
+        """Termine la manche plus tôt dès que chaque participant connecté a répondu."""
         live = room.live_round
         if live is None or room.phase != "round":
             return
@@ -789,7 +791,7 @@ class RoomManager:
         if not waiting_for:
             live.all_in.set()
 
-    # -------------------------------------------------------------- serialization
+    # ------------------------------------------------------------- sérialisation
 
     def room_state(self, room: Room) -> dict:
         live = room.live_round
@@ -865,7 +867,7 @@ class RoomManager:
             for r in rooms[:50]
         ]
 
-    # -------------------------------------------------------------------- sending
+    # ---------------------------------------------------------------------- envoi
 
     async def _send(self, client_id: str, message: dict) -> None:
         connection = self.connections.get(client_id)

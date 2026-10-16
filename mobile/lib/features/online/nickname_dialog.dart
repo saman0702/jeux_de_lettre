@@ -8,8 +8,8 @@ import '../../l10n/app_localizations.dart';
 import 'online_controller.dart';
 import '../../core/widgets/game_icon.dart';
 
-/// Makes sure the player has a nickname before going online.
-/// Returns false if they dismissed the dialog.
+/// S'assure que le joueur a un pseudo avant de passer en ligne. Renvoie faux
+/// s'il a fermé la boîte de dialogue.
 Future<bool> ensureNickname(BuildContext context) async {
   final settings = GameFeedbackScope.of(context).settings;
   final online = OnlineScope.of(context);

@@ -16,7 +16,7 @@ import 'package:letter_battle/features/game/solo_game_screen.dart';
 import 'package:letter_battle/features/game/solo_setup_screen.dart';
 import 'package:letter_battle/main.dart';
 
-/// Minimal in-memory version of the solo API.
+/// Version minimale en mémoire de l'API solo.
 class FakeServer {
   FakeServer({this.totalRounds = 1, this.roundSeconds = 30});
 
@@ -256,7 +256,7 @@ void main() {
 
   test('remaining time follows the server clock, not the phone clock', () {
     final phoneNow = DateTime.utc(2026, 1, 1, 12, 0, 0);
-    // Phone clock is 10 minutes ahead of the server.
+    // L'horloge du téléphone a 10 minutes d'avance sur le serveur.
     final round = GameRound.fromJson({
       'number': 1,
       'letter': 'A',

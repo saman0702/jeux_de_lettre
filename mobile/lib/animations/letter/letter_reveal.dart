@@ -6,8 +6,8 @@ import '../../core/audio/game_audio.dart';
 import '../../core/feedback/game_feedback.dart';
 import '../../core/widgets/letter_tile.dart';
 
-/// Slot-machine reveal: random letters flick by, slow down, then the real
-/// letter lands with a bounce.
+/// Révélation façon machine à sous : des lettres au hasard défilent,
+/// ralentissent, puis la vraie lettre tombe en rebondissant.
 class LetterReveal extends StatefulWidget {
   const LetterReveal({super.key, required this.letter, this.size = 120});
 
@@ -59,7 +59,8 @@ class _LetterRevealState extends State<LetterReveal>
       builder: (context, _) {
         final t = _controller.value;
         if (t < _spinShare) {
-          // Decelerating flicker: the letter changes less and less often.
+          // Clignotement qui ralentit : la lettre change de moins en moins
+          // souvent.
           final step = pow(t / _spinShare, 0.5) * 14;
           final char =
               _alphabet[(step.floor() * 7 + _random.nextInt(3)) %

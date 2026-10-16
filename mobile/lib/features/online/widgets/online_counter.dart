@@ -8,8 +8,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../online_controller.dart';
 
-/// Game HUD capsule: a glowing LED that pulses while connected, the number
-/// of players online in big digits.
+/// Capsule d'affichage de jeu : un voyant lumineux qui pulse quand on est
+/// connecté, et le nombre de joueurs en ligne en gros chiffres.
 class OnlineCounter extends StatefulWidget {
   const OnlineCounter({super.key});
 
@@ -79,7 +79,7 @@ class _OnlineCounterState extends State<OnlineCounter>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // LED with a halo.
+                // Voyant avec un halo.
                 Container(
                   width: 16,
                   height: 16,

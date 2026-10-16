@@ -25,9 +25,9 @@ class RoomNotice {
   final String nickname;
 }
 
-/// Online state shared by the whole app: player count, open rooms and the
-/// room the player is in. The server pushes the full room state on every
-/// change, so this mostly keeps the latest copy.
+/// État en ligne partagé par toute l'appli : nombre de joueurs, salons ouverts
+/// et salle où se trouve le joueur. Le serveur envoie l'état complet de la
+/// salle à chaque changement : on garde surtout la dernière copie.
 class OnlineController extends ChangeNotifier {
   OnlineController(this.client) {
     _subscription = client.events.listen(_onEvent);
@@ -54,7 +54,8 @@ class OnlineController extends ChangeNotifier {
   RoomState? get room => _room;
   RoomPlayer? get me => _room?.player(clientId);
 
-  /// Waiting for the server to put us in a room (quick match, create, join).
+  /// En attente que le serveur nous place dans une salle (partie rapide,
+  /// création, rejoindre).
   bool get searching => _searching;
 
   Stream<RoomNotice> get notices => _notices.stream;
@@ -63,8 +64,8 @@ class OnlineController extends ChangeNotifier {
   void quickMatch(String language) =>
       _request({'type': 'quick_match', 'language': language});
 
-  /// With [bots] > 0 the room is filled with computer opponents and the
-  /// game starts at once.
+  /// Avec [bots] > 0, la salle est complétée par des adversaires ordinateur et
+  /// la partie démarre aussitôt.
   void createRoom(
     RoomSettings settings, {
     int bots = 0,
@@ -105,7 +106,8 @@ class OnlineController extends ChangeNotifier {
 
   void unwatchRooms() => client.send({'type': 'unsubscribe_rooms'});
 
-  /// Asks the server for the four options of a category (uses a joker).
+  /// Demande au serveur les quatre propositions d'une catégorie (consomme un
+  /// joker).
   Future<HintOptions> requestHint(int round, Category category) {
     final completer = _hintRequests[category] = Completer<HintOptions>();
     client.send({'type': 'hint', 'round': round, 'category': category.name});
@@ -176,7 +178,8 @@ class OnlineController extends ChangeNotifier {
       case 'error':
         final code = event['code'] as String? ?? 'error';
         if (_hintRequests.isNotEmpty || _hintPicks.isNotEmpty) {
-          // Hint errors are shown by the hint button, not as room errors.
+          // Les erreurs de joker sont affichées par le bouton joker, pas comme
+          // des erreurs de salle.
           _failPendingHints(code);
           return;
         }

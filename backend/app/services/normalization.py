@@ -1,6 +1,6 @@
-"""Turn free-text answers into comparable keys.
+"""Transforme les réponses libres en clés comparables.
 
-"Éléphant", "elephant " and "ELEPHANT" all become "elephant".
+« Éléphant », « elephant  » et « ELEPHANT » deviennent tous « elephant ».
 """
 
 import re
@@ -14,8 +14,8 @@ _NON_ALNUM = re.compile(r"[^a-z0-9 ]")
 
 _LEADING_ARTICLES = re.compile(r"^(?:le|la|les|l|un|une|des|du|the|a|an) (?=.)")
 
-# Common nouns may be typed with an article or in the plural; proper nouns
-# (cities) keep their article because it belongs to the name ("Le Havre").
+# Les noms communs peuvent être tapés avec un article ou au pluriel ; les noms propres (villes)
+# gardent leur article, qui fait partie du nom (« Le Havre »).
 _COMMON_NOUN_CATEGORIES = frozenset({Category.ANIMAL, Category.FRUIT})
 _ARTICLE_CATEGORIES = frozenset({Category.ANIMAL, Category.FRUIT, Category.COUNTRY})
 
@@ -38,7 +38,7 @@ def first_letter(normalized: str) -> str:
 
 
 def lookup_keys(raw: str, category: Category) -> list[str]:
-    """Normalized forms to search the knowledge base with, most specific first."""
+    """Formes normalisées à chercher dans la base, de la plus précise à la plus large."""
     base = normalize(raw)
     if not base:
         return []
@@ -56,6 +56,6 @@ def lookup_keys(raw: str, category: Category) -> list[str]:
 
 
 def starts_with_letter(normalized: str, letter: str) -> bool:
-    """True if the answer starts with the letter, with or without its article."""
+    """Vrai si la réponse commence par la lettre, avec ou sans son article."""
     letter = letter.upper()
     return first_letter(normalized) == letter or first_letter(strip_article(normalized)) == letter

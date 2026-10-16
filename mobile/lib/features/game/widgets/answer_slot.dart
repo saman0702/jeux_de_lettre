@@ -15,14 +15,15 @@ import '../data/models.dart';
 import '../hints/hint_controller.dart';
 import 'labels.dart';
 
-/// Longest answer accepted, also used by the game keyboard.
+/// Réponse la plus longue acceptée, utilisée aussi par le clavier de jeu.
 const answerMaxLength = 24;
 
-/// Game-style answer input: typed letters become tiles that pop in with a
-/// "tock", the category shows as a coloured badge, and the active slot glows.
+/// Saisie des réponses façon jeu : les lettres tapées deviennent des tuiles qui
+/// apparaissent avec un « toc », la catégorie s'affiche en badge coloré et le
+/// champ actif brille.
 ///
-/// A real (invisible) TextField still handles the keyboard, IME and
-/// accessibility; only its rendering is replaced.
+/// Un vrai TextField (invisible) gère toujours le clavier, la saisie et
+/// l'accessibilité ; seul son affichage est remplacé.
 class AnswerSlot extends StatefulWidget {
   const AnswerSlot({
     super.key,
@@ -47,11 +48,11 @@ class AnswerSlot extends StatefulWidget {
   final VoidCallback onDone;
   final HintController? hints;
 
-  /// Provided when the round screen drives focus (game keyboard).
+  /// Fourni quand l'écran de manche pilote le focus (clavier de jeu).
   final FocusNode? focusNode;
 
-  /// False with the game keyboard: the field keeps focus but the phone's
-  /// keyboard stays hidden.
+  /// Faux avec le clavier de jeu : le champ garde le focus mais le clavier du
+  /// téléphone reste caché.
   final bool systemKeyboard;
 
   @override
@@ -125,7 +126,7 @@ class _AnswerSlotState extends State<AnswerSlot>
     }
     _matched = _matches;
     _previous = text;
-    // Keep the newest tile in view.
+    // Garde la dernière tuile visible.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
         _scroll.animateTo(
@@ -193,7 +194,8 @@ class _AnswerSlotState extends State<AnswerSlot>
                         child: Stack(
                           alignment: Alignment.centerLeft,
                           children: [
-                            // The real input, invisible: tiles below show its text.
+                            // La vraie saisie, invisible : les tuiles en
+                            // dessous affichent son texte.
                             Opacity(
                               opacity: 0,
                               child: TextField(
@@ -258,7 +260,7 @@ class _AnswerSlotState extends State<AnswerSlot>
                     ],
                   ),
                 ),
-                // Game-HUD style label sitting on the border.
+                // Étiquette façon affichage de jeu, posée sur le bord.
                 Positioned(
                   top: -10,
                   left: 18,
@@ -325,7 +327,7 @@ class _Tiles extends StatelessWidget {
     final chars = text.characters.toList();
 
     if (chars.isEmpty && !focused) {
-      // Ghost hint: the letter to start with.
+      // Indice fantôme : la lettre par laquelle commencer.
       return Opacity(
         opacity: 0.35,
         child: Row(
@@ -345,7 +347,8 @@ class _Tiles extends StatelessWidget {
       );
     }
 
-    // Tiles shrink so the whole word stays visible, down to a readable size.
+    // Les tuiles rétrécissent pour que le mot entier reste visible, jusqu'à une
+    // taille encore lisible.
     return LayoutBuilder(
       builder: (context, constraints) {
         final slots = chars.length + (focused ? 1 : 0);

@@ -15,7 +15,7 @@ class Game(TimestampMixin, Base):
     difficulty: Mapped[str] = mapped_column(String(16))
     categories: Mapped[list[str]] = mapped_column(JSON)
     total_rounds: Mapped[int] = mapped_column(Integer)
-    round_duration: Mapped[int] = mapped_column(Integer)  # seconds
+    round_duration: Mapped[int] = mapped_column(Integer)  # secondes
     status: Mapped[str] = mapped_column(String(16), default="waiting")  # waiting | playing | finished
 
     players: Mapped[list["Player"]] = relationship(
@@ -60,7 +60,7 @@ class GameRound(Base):
 
 
 class Submission(Base):
-    """One player's answers for one round."""
+    """Les réponses d'un joueur pour une manche."""
 
     __tablename__ = "submissions"
     __table_args__ = (UniqueConstraint("round_id", "player_id"),)
@@ -78,7 +78,7 @@ class Submission(Base):
 
 
 class HintRequest(Base):
-    """A hint shown to a player (solo games keep them between requests)."""
+    """Un joker montré à un joueur (les parties solo le conservent entre deux requêtes)."""
 
     __tablename__ = "hint_requests"
     __table_args__ = (UniqueConstraint("round_id", "player_id", "category"),)
@@ -101,11 +101,11 @@ class PlayerAnswer(Base):
     )
     category: Mapped[str] = mapped_column(String(32))
     raw_value: Mapped[str] = mapped_column(String(200))
-    # Knowledge-base value the answer matched, when valid.
+    # Valeur de la base qui correspond à la réponse, quand elle est valide.
     matched_value: Mapped[str | None] = mapped_column(String(200), nullable=True)
     status: Mapped[str] = mapped_column(String(16))  # valid | empty | wrong_letter | not_found | late | hint_wrong
     points: Mapped[int] = mapped_column(Integer, default=0)
-    # Answered by picking among the four hint options.
+    # Réponse obtenue en choisissant parmi les quatre propositions du joker.
     hinted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     # Réponse valide montrée au joueur quand la sienne ne l'était pas.
     suggestion: Mapped[str | None] = mapped_column(String(200), nullable=True)

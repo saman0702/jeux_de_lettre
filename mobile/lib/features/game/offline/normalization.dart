@@ -1,8 +1,10 @@
-/// Port of the server's answer normalization (backend/app/services/normalization.py).
+/// Portage de la normalisation des réponses du serveur
+/// (backend/app/services/normalization.py).
 ///
-/// "Éléphant", "elephant " and "ELEPHANT" all become "elephant". Accent
-/// folding uses the table exported from the server, so both sides produce
-/// the same keys; test/offline_test.dart checks it against server output.
+/// « Éléphant », « elephant  » et « ELEPHANT » deviennent tous « elephant ». La
+/// suppression des accents utilise la table exportée depuis le serveur : les
+/// deux côtés produisent les mêmes clés ; test/offline_test.dart le vérifie sur
+/// des résultats du serveur.
 library;
 
 import '../data/models.dart';
@@ -19,7 +21,7 @@ const _articleCategories = {Category.animal, Category.fruit, Category.country};
 class Normalizer {
   const Normalizer(this._charMap);
 
-  /// Non-ASCII character -> folded text (é -> e, œ -> oe, ß -> ss).
+  /// Caractère non ASCII -> texte simplifié (é -> e, œ -> oe, ß -> ss).
   final Map<String, String> _charMap;
 
   String normalize(String text) {
@@ -41,14 +43,15 @@ class Normalizer {
   static String firstLetter(String normalized) =>
       normalized.isEmpty ? '' : normalized[0].toUpperCase();
 
-  /// True if the answer starts with the letter, with or without its article.
+  /// Vrai si la réponse commence par la lettre, avec ou sans son article.
   static bool startsWithLetter(String normalized, String letter) {
     final upper = letter.toUpperCase();
     return firstLetter(normalized) == upper ||
         firstLetter(stripArticle(normalized)) == upper;
   }
 
-  /// Normalized forms to look up, most specific first (articles, plurals).
+  /// Formes normalisées à chercher, de la plus précise à la plus large
+  /// (articles, pluriels).
   List<String> lookupKeys(String raw, Category category) {
     final base = normalize(raw);
     if (base.isEmpty) return const [];

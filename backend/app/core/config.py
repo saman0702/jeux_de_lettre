@@ -3,8 +3,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # Inside Docker, DATABASE_URL / REDIS_URL are set by docker-compose. Locally,
-    # the URLs are built from the POSTGRES_* / REDIS_PORT values of the repo's .env.
+    # Dans Docker, DATABASE_URL / REDIS_URL sont fournis par docker-compose. En local, les URL sont
+    # construites à partir des valeurs POSTGRES_* / REDIS_PORT du .env du dépôt.
     model_config = SettingsConfigDict(env_file=(".env", "../.env"), extra="ignore")
 
     app_name: str = "Letter Battle API"

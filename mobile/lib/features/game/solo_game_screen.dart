@@ -35,7 +35,7 @@ class SoloGameScreen extends StatefulWidget {
   final SoloGame game;
   final ApiClient apiClient;
 
-  /// Injected in tests to control timings.
+  /// Injecté dans les tests pour maîtriser les délais.
   final SoloGameController? controller;
 
   @override
@@ -57,7 +57,8 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // The menu music stops while playing so the countdown and ticks stand out.
+    // La musique du menu s'arrête pendant le jeu pour que le compte à rebours
+    // et le tic-tac ressortent.
     _feedback ??= GameFeedbackScope.of(context)..musicWanted = false;
   }
 
@@ -131,7 +132,8 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
     );
   }
 
-  /// Playing and submitting share a key so the round screen is not rebuilt.
+  /// Jeu et envoi partagent une clé pour que l'écran de manche ne soit pas
+  /// reconstruit.
   String get _phaseKey => switch (_controller.phase) {
     SoloPhase.playing ||
     SoloPhase.submitting => 'round-${_controller.round?.number}',
@@ -139,7 +141,7 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
     final phase => phase.name,
   };
 
-  /// Each round has its own colours; the end of the game turns gold.
+  /// Chaque manche a ses couleurs ; la fin de partie passe au doré.
   BackgroundPalette get _palette {
     final c = _controller;
     if (c.phase == SoloPhase.finished) return BackgroundPalette.victory;

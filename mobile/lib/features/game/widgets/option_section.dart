@@ -4,7 +4,7 @@ import '../../../animations/bounce_in.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/game_card.dart';
 
-/// Compact settings card: a title and its options.
+/// Carte de réglages compacte : un titre et ses options.
 class OptionSection extends StatelessWidget {
   const OptionSection({
     super.key,
@@ -13,7 +13,7 @@ class OptionSection extends StatelessWidget {
     required this.child,
   });
 
-  /// Position in the list, for the staggered entrance.
+  /// Position dans la liste, pour l'apparition décalée.
   final int index;
   final String title;
   final Widget child;

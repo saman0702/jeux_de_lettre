@@ -24,8 +24,9 @@ import 'widgets/round_wait_view.dart';
 import 'widgets/searching_view.dart';
 import '../../core/widgets/game_icon.dart';
 
-/// The room the player is in, whatever its phase. Pushed right after asking
-/// the server for a room (quick match, create, join).
+/// La salle où se trouve le joueur, quelle que soit sa phase. Ouverte juste
+/// après avoir demandé une salle au serveur (partie rapide, création,
+/// rejoindre).
 class RoomScreen extends StatefulWidget {
   const RoomScreen({
     super.key,
@@ -33,7 +34,8 @@ class RoomScreen extends StatefulWidget {
     this.now = DateTime.now,
   });
 
-  /// Refresh rate of the countdowns; injectable for tests along with [now].
+  /// Fréquence de rafraîchissement des comptes à rebours ; injectable dans les
+  /// tests avec [now].
   final Duration tick;
   final DateTime Function() now;
 
@@ -52,12 +54,13 @@ class _RoomScreenState extends State<RoomScreen> {
   HintController? _hints;
   int? _submittedRound;
 
-  /// The final podium stays on screen until the player chooses, even if
-  /// someone else already restarted the room.
+  /// Le podium final reste à l'écran jusqu'au choix du joueur, même si
+  /// quelqu'un a déjà relancé la salle.
   List<RoomPlayer>? _podium;
   bool _left = false;
 
-  /// Set once a room request was seen, so a failed request closes the screen.
+  /// Renseigné dès qu'une demande de salle a été vue, pour qu'une demande
+  /// échouée ferme l'écran.
   bool _active = false;
 
   @override
@@ -88,7 +91,8 @@ class _RoomScreenState extends State<RoomScreen> {
     _hints?.dispose();
     _feedback.musicWanted = true;
     if (!_left && _online.room != null) {
-      // Not during the tree teardown: leaving notifies other screens.
+      // Pas pendant le démontage de l'arbre : quitter la salle prévient
+      // d'autres écrans.
       final online = _online;
       Future.microtask(online.leaveRoom);
     }
@@ -101,7 +105,8 @@ class _RoomScreenState extends State<RoomScreen> {
     final room = _room;
     if (room != null || _online.searching) _active = true;
     if (room == null) {
-      // Server-side error while searching (e.g. room full): back to the menu.
+      // Erreur du serveur pendant la recherche (ex. salle pleine) : retour au
+      // menu.
       if (_active && !_online.searching && !_left && mounted) _close();
       return;
     }
@@ -143,7 +148,8 @@ class _RoomScreenState extends State<RoomScreen> {
         round.remaining(widget.now()) == Duration.zero) {
       _submit();
     }
-    // Countdowns (quick match start, 3-2-1, timer, next round) follow the clock.
+    // Les comptes à rebours (début de partie rapide, 3-2-1, chrono, manche
+    // suivante) suivent l'horloge.
     setState(() {});
   }
 
@@ -185,7 +191,8 @@ class _RoomScreenState extends State<RoomScreen> {
 
   void _showError(String code) {
     if (!mounted) return;
-    // Errors about stale rounds are harmless (e.g. a submit right at the buzzer).
+    // Les erreurs sur des manches périmées sont sans gravité (ex. un envoi pile
+    // à la fin du temps).
     if (code.startsWith('round_')) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(errorMessage(AppLocalizations.of(context), code))),
@@ -196,7 +203,7 @@ class _RoomScreenState extends State<RoomScreen> {
     if (_left) return;
     _left = true;
     if (_online.room != null || _online.searching) _online.leaveRoom();
-    // pop(), not maybePop(): the PopScope guard would ask to confirm again.
+    // pop() et non maybePop() : la garde PopScope redemanderait confirmation.
     Navigator.of(context).pop();
   }
 

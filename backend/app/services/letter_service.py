@@ -1,4 +1,4 @@
-"""Server-side letter draw."""
+"""Tirage de la lettre côté serveur."""
 
 import secrets
 import time
@@ -15,7 +15,7 @@ from app.core.game_rules import (
 )
 from app.models import Answer
 
-LetterCounts = dict[str, dict[str, int]]  # category -> letter -> number of answers
+LetterCounts = dict[str, dict[str, int]]  # catégorie -> lettre -> nombre de réponses
 
 _CACHE_TTL_SECONDS = 600
 _counts_cache: dict[str, tuple[float, LetterCounts]] = {}
@@ -60,7 +60,9 @@ def eligible_letters(
 
 
 def draw_letter(eligible: set[str], used: Iterable[str]) -> str:
-    """Pick a letter not used yet in the game; reuse letters only once all are spent."""
+    """Choisit une lettre pas encore utilisée dans la partie ; réutilise les lettres seulement quand
+    toutes ont servi.
+    """
     if not eligible:
         raise NoLetterAvailable
     fresh = eligible - set(used)

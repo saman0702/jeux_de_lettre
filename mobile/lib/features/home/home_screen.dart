@@ -44,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .push(PopRoute(builder: (_) => SoloSetupScreen(apiClient: _api)));
   }
 
-  /// Online modes need a connection and a nickname.
+  /// Les modes en ligne demandent une connexion et un pseudo.
   Future<bool> _readyForOnline() async {
     final online = OnlineScope.of(context);
     if (!online.isOnline) {
@@ -78,7 +78,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      // Dialogs (nickname, code) handle the keyboard; the menu must not shrink.
+      // Les boîtes de dialogue (pseudo, code) gèrent le clavier ; le menu ne
+      // doit pas rétrécir.
       resizeToAvoidBottomInset: false,
       body: GameBackground(
         child: SafeArea(

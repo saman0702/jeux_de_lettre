@@ -82,7 +82,8 @@ async def request_hint(
     data: HintRequestIn,
     session: AsyncSession = Depends(get_session),
 ):
-    """Four options for a category, only one valid. Uses one of the game's hints."""
+    """Quatre propositions pour une catégorie, une seule valide. Consomme un des jokers de la partie.
+    """
     game = await game_service.get_game(session, game_id)
     hint, left = await game_service.request_hint(session, game, number, data.category)
     return HintOut(category=hint.category, options=hint.options, hints_left=left)

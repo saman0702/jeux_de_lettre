@@ -11,8 +11,8 @@ import '../data/room_models.dart';
 import 'player_avatar.dart';
 import '../../../core/widgets/game_icon.dart';
 
-/// Shown after sending your answers (or when joining mid-round): who is
-/// still writing, and the round timer.
+/// Affiché après l'envoi de tes réponses (ou en arrivant en pleine manche) :
+/// qui écrit encore, et le chrono de la manche.
 class RoundWaitView extends StatelessWidget {
   const RoundWaitView({
     super.key,

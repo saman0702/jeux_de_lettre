@@ -41,21 +41,22 @@ class SoloGameController extends ChangeNotifier {
 
   SoloGame get game => _game;
 
-  /// Jokers for the current round.
+  /// Jokers de la manche en cours.
   HintController? get hints => _hints;
   GameRound? get round => _round;
   List<RoundResult> get results => List.unmodifiable(_results);
   RoundResult? get lastResult => _results.isEmpty ? null : _results.last;
   SoloPhase get phase => _phase;
 
-  /// 3, 2, 1, then 0 for "GO!".
+  /// 3, 2, 1, puis 0 pour « GO ! ».
   int get countdown => _countdown;
   Duration get remaining => _remaining;
   String? get errorCode => _errorCode;
 
   void start() => _startCountdown();
 
-  /// Leaves the round result: next countdown, or the final screen.
+  /// Quitte le résultat de la manche : compte à rebours suivant, ou écran
+  /// final.
   void nextRound() {
     if (_phase != SoloPhase.roundResult) return;
     if (_game.isFinished) {
@@ -109,7 +110,8 @@ class SoloGameController extends ChangeNotifier {
     });
   }
 
-  /// Sends the answers; called by the "Finish" button or when time runs out.
+  /// Envoie les réponses ; appelé par le bouton « Terminer » ou quand le temps
+  /// est écoulé.
   Future<void> submit() async {
     if (_phase != SoloPhase.playing) return;
     _timer?.cancel();

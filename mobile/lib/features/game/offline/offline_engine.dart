@@ -5,7 +5,7 @@ import '../data/solo_backend.dart';
 import 'normalization.dart';
 import 'offline_dictionary.dart';
 
-/// Same rules as the server (backend/app/core/game_rules.py).
+/// Mêmes règles que le serveur (backend/app/core/game_rules.py).
 abstract final class OfflineRules {
   static const hardLetters = 'KQWXYZ';
   static const allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -49,8 +49,8 @@ class _Hint {
   String? picked;
 }
 
-/// Solo games played entirely on the device, for when the server is
-/// unreachable. Validation and scoring match the server.
+/// Parties solo jouées entièrement sur l'appareil, quand le serveur est
+/// injoignable. La validation et le score sont identiques à ceux du serveur.
 class OfflineSoloBackend implements SoloBackend {
   OfflineSoloBackend(
     this._dictionary, {
@@ -90,7 +90,7 @@ class OfflineSoloBackend implements SoloBackend {
   _Game _game(String id) =>
       _games[id] ?? (throw StateError('unknown offline game $id'));
 
-  // ------------------------------------------------------------------ letters
+  // ------------------------------------------------------------------- lettres
 
   String _drawLetter(_Game game) {
     final settings = game.settings;
@@ -129,9 +129,9 @@ class OfflineSoloBackend implements SoloBackend {
     );
   }
 
-  // --------------------------------------------------------------- validation
+  // ---------------------------------------------------------------- validation
 
-  /// Port of validation_service.validate_answer.
+  /// Portage de validation_service.validate_answer.
   (AnswerStatus, String?) validate(
     Category category,
     String language,
@@ -220,7 +220,7 @@ class OfflineSoloBackend implements SoloBackend {
         : answers[_random.nextInt(answers.length)].value;
   }
 
-  // -------------------------------------------------------------------- hints
+  // -------------------------------------------------------------------- jokers
 
   @override
   Future<HintOptions> requestHint(
@@ -266,7 +266,7 @@ class OfflineSoloBackend implements SoloBackend {
     );
   }
 
-  /// Port of hint_service.build_hint.
+  /// Portage de hint_service.build_hint.
   _Hint _buildHint(Category category, String language, String letter) {
     int pool(Category c) => c == Category.city ? 12 : 40;
     final answers = _dictionary.answers(

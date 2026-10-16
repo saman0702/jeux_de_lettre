@@ -90,8 +90,9 @@ class GameRound {
     required this.clockOffset,
   });
 
-  /// The server clock is the reference: `clockOffset` is how far the device
-  /// clock is behind it, so a wrong phone time cannot add seconds.
+  /// L'horloge du serveur fait référence : `clockOffset` indique le retard de
+  /// l'horloge de l'appareil, pour qu'une mauvaise heure sur le téléphone ne
+  /// puisse pas ajouter de secondes.
   factory GameRound.fromJson(
     Map<String, dynamic> json, {
     DateTime? receivedAt,
@@ -145,14 +146,14 @@ class AnswerResult {
   final int points;
   final String? matchedValue;
 
-  /// Answered with a hint (half points).
+  /// Réponse obtenue grâce à un joker (moitié des points).
   final bool hinted;
 
   /// Réponse valide proposée quand celle du joueur ne l'était pas.
   final String? suggestion;
 }
 
-/// The four options of a hint; the right one stays on the server.
+/// Les quatre propositions d'un joker ; la bonne reste sur le serveur.
 class HintOptions {
   const HintOptions({
     required this.category,

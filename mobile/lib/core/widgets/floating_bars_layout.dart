@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Scrolling content that passes under a transparent header and footer,
-/// fading out at the edges, like menus in games.
+/// Contenu défilant qui passe sous un en-tête et un pied de page transparents,
+/// en s'estompant aux bords, comme les menus des jeux.
 class FloatingBarsLayout extends StatelessWidget {
   const FloatingBarsLayout({
     super.key,

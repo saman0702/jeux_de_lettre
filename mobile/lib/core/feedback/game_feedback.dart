@@ -7,7 +7,7 @@ import 'vibrator.dart';
 
 export 'vibrator.dart' show Haptic;
 
-/// Sound, music and vibrations, filtered by the player's settings.
+/// Sons, musique et vibrations, filtrés selon les réglages du joueur.
 class GameFeedback {
   GameFeedback({
     required this.audio,
@@ -20,7 +20,7 @@ class GameFeedback {
     settings.addListener(_syncMusic);
   }
 
-  /// No sound and no looping background animation; used by tests.
+  /// Aucun son ni animation de fond en boucle ; utilisé par les tests.
   factory GameFeedback.silent() => GameFeedback(
     audio: SilentGameAudio(),
     settings: AppSettings.inMemory(),
@@ -32,8 +32,8 @@ class GameFeedback {
   final Vibrator vibrator;
   final Announcer announcer;
 
-  /// Endless decorative animations (floating letters...). Disabled in tests so
-  /// `pumpAndSettle` can settle.
+  /// Animations décoratives sans fin (fond animé...). Désactivées dans les
+  /// tests pour que `pumpAndSettle` puisse se stabiliser.
   final bool ambientMotion;
 
   bool _musicWanted = false;
@@ -51,7 +51,7 @@ class GameFeedback {
     if (settings.vibration) vibrator.vibrate(kind);
   }
 
-  /// Menus want music; the game screen does not.
+  /// Les menus veulent de la musique, l'écran de jeu non.
   set musicWanted(bool value) {
     _musicWanted = value;
     _syncMusic();

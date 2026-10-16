@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 
 import '../constants/api_config.dart';
 
-/// Error returned by the API, `code` is the server's `detail` (e.g. `round_in_progress`).
+/// Erreur renvoyée par l'API ; `code` est le `detail` du serveur (ex.
+/// `round_in_progress`).
 class ApiException implements Exception {
   ApiException(this.code, [this.statusCode]);
 
@@ -24,7 +25,7 @@ class ApiClient {
 
   static const _timeout = Duration(seconds: 10);
 
-  /// Returns true when the API and its dependencies are healthy.
+  /// Renvoie vrai quand l'API et ses dépendances répondent.
   Future<bool> checkHealth() async {
     try {
       final body = await getJson('/health');

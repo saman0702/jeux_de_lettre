@@ -47,7 +47,8 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
       if (_categories.contains(c)) c,
   ];
 
-  /// Against bots the game runs online, like a room with computer players.
+  /// Contre des bots, la partie se joue en ligne, comme un salon avec des
+  /// joueurs ordinateur.
   Future<void> _startAgainstBots() async {
     final l10n = AppLocalizations.of(context);
     final online = OnlineScope.of(context);
@@ -102,7 +103,7 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
         if (mounted) setState(() => _loading = false);
         return;
       }
-      // No server: the whole game runs on the device.
+      // Pas de serveur : toute la partie tourne sur l'appareil.
       backend = OfflineSoloBackend(await OfflineDictionary.load());
       game = await backend.createGame(settings);
       messenger.showSnackBar(SnackBar(content: Text(l10n.offlineModeNotice)));

@@ -21,7 +21,7 @@ import 'widgets/online_header.dart';
 import 'widgets/player_avatar.dart';
 import '../../core/widgets/game_icon.dart';
 
-/// Open public rooms, plus creating a room or joining one with a code.
+/// Salons publics ouverts, avec la création d'une salle ou l'accès par code.
 class RoomsScreen extends StatefulWidget {
   const RoomsScreen({super.key});
 
@@ -48,7 +48,8 @@ class _RoomsScreenState extends State<RoomsScreen> {
     }
   }
 
-  /// The subscription is lost with the connection: renew it on reconnect.
+  /// L'abonnement est perdu avec la connexion : on le renouvelle à la
+  /// reconnexion.
   void _rewatch() {
     if (_online.isOnline) _online.watchRooms(_language);
   }

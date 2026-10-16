@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Emojis look different on every phone; the app draws its own animated
-/// icons (lib/core/widgets/game_icon.dart) instead.
+/// Les emojis s'affichent différemment selon les téléphones ; l'appli dessine à
+/// la place ses propres icônes animées (lib/core/widgets/game_icon.dart).
 final _emoji = RegExp(
   '[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B50}\u{23F1}\u{231A}\u{2328}]',
   unicode: true,

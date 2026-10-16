@@ -6,7 +6,7 @@ from app.core.game_rules import DURATION_OPTIONS, ROUND_OPTIONS, Category, Diffi
 
 
 class GameSettings(BaseModel):
-    """Options shared by every mode."""
+    """Options communes à tous les modes."""
 
     language: Language
     difficulty: Difficulty = Difficulty.NORMAL
@@ -53,7 +53,7 @@ class RoundOut(BaseModel):
     duration: int
     started_at: datetime
     ends_at: datetime
-    # Lets the client compute its clock offset; the server clock is the reference.
+    # Permet au client de calculer son décalage d'horloge ; l'horloge du serveur fait référence.
     server_time: datetime
 
 

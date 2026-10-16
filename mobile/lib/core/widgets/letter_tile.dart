@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 
-/// Board-game style letter tile with a 3D edge.
+/// Tuile-lettre façon jeu de plateau, avec une tranche en 3D.
 class LetterTile extends StatelessWidget {
   const LetterTile({
     super.key,

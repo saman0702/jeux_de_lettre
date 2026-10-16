@@ -17,7 +17,7 @@ Color avatarColor(String seed) =>
     _avatarColors[seed.codeUnits.fold<int>(0, (a, b) => a + b) %
         _avatarColors.length];
 
-/// Round avatar with the player's initial; greyed out when disconnected.
+/// Avatar rond avec l'initiale du joueur ; grisé quand il est déconnecté.
 class PlayerAvatar extends StatelessWidget {
   const PlayerAvatar({
     super.key,
@@ -33,7 +33,7 @@ class PlayerAvatar extends StatelessWidget {
   final double size;
   final bool connected;
 
-  /// Computer opponents show a robot instead of their initial.
+  /// Les adversaires ordinateur affichent un robot au lieu de leur initiale.
   final bool bot;
 
   static const _botColor = Color(0xFF9DB4D6);

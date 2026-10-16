@@ -35,10 +35,10 @@ class RoundView extends StatefulWidget {
   final VoidCallback onFinish;
   final bool submitting;
 
-  /// Jokers for this round; no hint buttons when null.
+  /// Jokers de cette manche ; pas de bouton joker quand null.
   final HintController? hints;
 
-  /// Shows a ✕ button to leave the game.
+  /// Affiche un bouton pour quitter la partie.
   final VoidCallback? onQuit;
 
   @override
@@ -54,7 +54,7 @@ class _RoundViewState extends State<RoundView> {
   FocusNode _node(Category category) => _focus.putIfAbsent(category, () {
     final node = FocusNode();
     node.addListener(() {
-      // Keep the field being typed in visible above the keyboard.
+      // Garde le champ en cours de saisie visible au-dessus du clavier.
       final context = _slotKeys[category]?.currentContext;
       if (node.hasFocus && context != null) {
         Scrollable.ensureVisible(
@@ -78,7 +78,7 @@ class _RoundViewState extends State<RoundView> {
   bool _editable(Category category) =>
       !widget.submitting && !(widget.hints?.field(category)?.locked ?? false);
 
-  /// The field the game keyboard types into (the first free one by default).
+  /// Le champ dans lequel tape le clavier du jeu (le premier libre par défaut).
   Category? _activeField() {
     for (final c in _categories) {
       if (_focus[c]?.hasFocus ?? false) return _editable(c) ? c : null;
@@ -155,7 +155,7 @@ class _RoundViewState extends State<RoundView> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 children: [
-                  // Shrinks on narrow phones rather than overflowing.
+                  // Rétrécit sur les téléphones étroits plutôt que de déborder.
                   Expanded(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
@@ -279,7 +279,8 @@ class _RoundViewState extends State<RoundView> {
   }
 }
 
-/// Circular countdown. Ticks, vibrates and pulses during the last 5 seconds.
+/// Chrono circulaire. Fait tic-tac, vibre et pulse pendant les 5 dernières
+/// secondes.
 class TimerBadge extends StatefulWidget {
   const TimerBadge({super.key, required this.remaining, required this.total});
 

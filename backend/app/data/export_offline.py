@@ -1,14 +1,14 @@
-"""Export the answer knowledge base for offline solo games in the app.
+"""Exporte la base de réponses pour les parties solo hors ligne de l'appli.
 
     python -m app.data.export_offline
 
-Writes into mobile/:
-- assets/data/answers.tsv.gz: category, language, first letter, normalized
-  value, value — sorted so the best-known answers of each letter come first
-- assets/data/normalize_map.json: how each non-ASCII character normalizes,
-  so the app compares typed answers exactly like the server
-- test/fixtures/normalize_cases.json: inputs and expected keys used by the
-  app's tests to check both sides agree
+Écrit dans mobile/ :
+- assets/data/answers.tsv.gz : catégorie, langue, première lettre, valeur normalisée, valeur —
+  triées pour que les réponses les plus connues de chaque lettre viennent en premier
+- assets/data/normalize_map.json : la normalisation de chaque caractère non ASCII, pour que l'appli
+  compare les réponses exactement comme le serveur
+- test/fixtures/normalize_cases.json : entrées et clés attendues, utilisées par les tests de l'appli
+  pour vérifier que les deux côtés concordent
 """
 
 import gzip
@@ -23,11 +23,11 @@ MOBILE = Path(__file__).resolve().parents[3] / "mobile"
 
 
 def char_map() -> dict[str, str]:
-    """How the server folds each non-ASCII character (accents, ligatures, case).
+    """Comment le serveur transforme chaque caractère non ASCII (accents, ligatures, casse).
 
-    The app maps characters through this table, then applies the same
-    separator and a-z0-9 filtering, which gives the same key as `normalize`.
-    Characters absent from the table are dropped, as on the server.
+    L'appli fait passer chaque caractère par cette table, puis applique le même filtrage des
+    séparateurs et des a-z0-9, ce qui donne la même clé que `normalize`. Les caractères absents de
+    la table sont supprimés, comme sur le serveur.
     """
     mapping = {}
     for code in range(0x80, 0x3000):

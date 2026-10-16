@@ -14,7 +14,8 @@ import 'data/room_models.dart';
 import 'online_controller.dart';
 import 'widgets/online_header.dart';
 
-/// Room options; pops `true` once the creation request is sent.
+/// Options de la salle ; renvoie `true` une fois la demande de création
+/// envoyée.
 class CreateRoomScreen extends StatefulWidget {
   const CreateRoomScreen({super.key});
 

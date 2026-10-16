@@ -13,8 +13,8 @@ import '../data/models.dart';
 import 'labels.dart';
 import '../../../core/widgets/game_icon.dart';
 
-/// Answers are revealed one by one (✅ ding / ❌ buzz), then the round score
-/// counts up.
+/// Les réponses sont dévoilées une à une (ding si juste, buzz si faux), puis le
+/// score de la manche défile.
 class RoundResultView extends StatefulWidget {
   const RoundResultView({
     super.key,

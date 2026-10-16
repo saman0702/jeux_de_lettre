@@ -1,5 +1,6 @@
-"""Who is online: every open WebSocket refreshes its heartbeat in Redis, so
-the count stays right even with several API workers."""
+"""Qui est en ligne : chaque WebSocket ouverte rafraîchit son signal de présence dans Redis, pour que
+le compte reste juste même avec plusieurs workers d'API.
+"""
 
 import time
 from typing import Protocol
@@ -32,7 +33,7 @@ class RedisPresence:
 
 
 class MemoryPresence:
-    """Single-process store, used by tests."""
+    """Stockage en mémoire d'un seul processus, utilisé par les tests."""
 
     def __init__(self) -> None:
         self._seen: dict[str, float] = {}

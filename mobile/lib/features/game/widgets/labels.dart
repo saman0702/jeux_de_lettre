@@ -13,7 +13,7 @@ extension CategoryLabel on Category {
     Category.fruit => GameIconKind.fruit,
   };
 
-  /// Each category has its own colour in the game.
+  /// Chaque catégorie a sa propre couleur dans le jeu.
   Color get color => switch (this) {
     Category.city => AppColors.cyan,
     Category.country => AppColors.green,
@@ -72,8 +72,8 @@ String errorMessage(AppLocalizations l10n, String? code) => switch (code) {
 const _accents = 'ÀÁÂÃÄÅàáâãäåÇçÈÉÊËèéêëÌÍÎÏìíîïÑñÒÓÔÕÖòóôõöÙÚÛÜùúûüÝýÿ';
 const _plain = 'AAAAAAaaaaaaCcEEEEeeeeIIIIiiiiNnOOOOOoooooUUUUuuuuYyy';
 
-/// First letter of an answer without its accent, e.g. "Éléphant" -> "E".
-/// Only a visual hint: the server does the real validation.
+/// Première lettre d'une réponse sans son accent, ex. « Éléphant » -> « E ».
+/// Simple indication visuelle : la vraie validation est faite par le serveur.
 String firstLetterOf(String text) {
   final trimmed = text.trimLeft();
   if (trimmed.isEmpty) return '';

@@ -1,10 +1,10 @@
-"""Load the answer knowledge base.
+"""Charge la base de réponses.
 
     python -m app.data.seed_answers
 
-Countries, animals and fruits come from the curated JSON files in seed/.
-Cities come from GeoNames (cities with 5000+ inhabitants, CC BY 4.0) and are
-valid in every game language.
+Les pays, animaux et fruits viennent des fichiers JSON choisis à la main dans seed/. Les villes
+viennent de GeoNames (villes de plus de 5 000 habitants, CC BY 4.0) et sont valables dans toutes les
+langues.
 """
 
 import asyncio
@@ -34,7 +34,8 @@ CURATED_FILES = {
     Category.FRUIT: "fruits.json",
 }
 
-# category, language, value[, popularity]; popularity helps bots pick well-known answers
+# catégorie, langue, valeur[, popularité] ; la popularité aide les bots à choisir des réponses
+# connues
 Entry = tuple
 
 
@@ -51,8 +52,8 @@ def _is_latin(text: str) -> bool:
 
 
 def _is_city_name(text: str) -> bool:
-    # GeoNames alternate names mix proper spellings ("Londres") with codes
-    # ("YXU") and lowercase transliterations ("lndn"); keep the proper ones.
+    # Les noms alternatifs de GeoNames mélangent de vraies orthographes (« Londres »), des codes («
+    # YXU ») et des translittérations en minuscules (« lndn ») : on ne garde que les vraies.
     return len(text) >= 2 and _is_latin(text) and text[0].isupper() and not text.isupper()
 
 
@@ -73,8 +74,8 @@ def city_entries() -> Iterator[Entry]:
         fields = line.split("\t")
         name, ascii_name, alternates = fields[1], fields[2], fields[3]
         population = int(fields[14] or 0)
-        # Only the main spellings carry the population, so bots favour "Paris"
-        # over an exotic alternate name.
+        # Seules les orthographes principales portent la population, pour que les bots préfèrent «
+        # Paris » à un nom alternatif exotique.
         for value in [name, ascii_name]:
             if _is_city_name(value):
                 yield Category.CITY, ANY_LANGUAGE, value, population

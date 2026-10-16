@@ -84,18 +84,18 @@ class RoomPlayer {
   final bool connected;
   final int score;
 
-  /// Has sent their answers for the current round.
+  /// A envoyé ses réponses pour la manche en cours.
   final bool finished;
 
-  /// Takes part in the current round (false for a late joiner).
+  /// Participe à la manche en cours (faux pour un joueur arrivé en retard).
   final bool playing;
 
-  /// Set for computer opponents.
+  /// Renseigné pour les adversaires contrôlés par l'ordinateur.
   final Difficulty? botLevel;
 
   bool get bot => botLevel != null;
 
-  /// Jokers left in this game.
+  /// Jokers restants dans cette partie.
   final int hintsLeft;
 }
 
@@ -234,7 +234,8 @@ class RoomState {
   final DateTime? goAt;
   final DateTime? nextRoundAt;
 
-  /// Server clock minus device clock, to count down to server deadlines.
+  /// Horloge du serveur moins horloge de l'appareil, pour décompter jusqu'aux
+  /// échéances du serveur.
   final Duration clockOffset;
 
   RoomPlayer? player(String clientId) {
@@ -244,14 +245,15 @@ class RoomState {
     return null;
   }
 
-  /// Time left until a server deadline, measured on the server clock.
+  /// Temps restant avant une échéance du serveur, mesuré sur l'horloge du
+  /// serveur.
   Duration until(DateTime? deadline, [DateTime? now]) {
     if (deadline == null) return Duration.zero;
     final left = deadline.difference((now ?? DateTime.now()).add(clockOffset));
     return left.isNegative ? Duration.zero : left;
   }
 
-  /// Players ranked by total score.
+  /// Joueurs classés par score total.
   List<RoomPlayer> get ranking =>
       [...players]..sort((a, b) => b.score.compareTo(a.score));
 }

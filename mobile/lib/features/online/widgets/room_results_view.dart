@@ -17,7 +17,8 @@ import '../data/room_models.dart';
 import 'player_avatar.dart';
 import '../../../core/widgets/game_icon.dart';
 
-/// Round results: your answers pop in one by one, then the leaderboard.
+/// Résultats de la manche : tes réponses apparaissent une à une, puis le
+/// classement.
 class RoomResultsView extends StatefulWidget {
   const RoomResultsView({super.key, required this.room, required this.myId});
 

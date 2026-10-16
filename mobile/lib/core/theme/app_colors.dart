@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Letter Battle palette: bright "candy" colours on a purple background.
+/// Palette de Letter Battle : couleurs vives « bonbon » sur fond violet.
 abstract final class AppColors {
   static const purple = Color(0xFF6C3CE1);
   static const purpleDeep = Color(0xFF4421A8);
@@ -18,7 +18,8 @@ abstract final class AppColors {
   static const red = Color(0xFFFF5A5F);
   static const grey = Color(0xFFB9B1D6);
 
-  /// Darker shade used as the 3D "depth" under candy buttons and tiles.
+  /// Teinte plus sombre servant de relief 3D sous les boutons bonbon et les
+  /// tuiles.
   static Color depthOf(Color color) => HSLColor.fromColor(color)
       .withLightness((HSLColor.fromColor(color).lightness - 0.18).clamp(0, 1))
       .toColor();

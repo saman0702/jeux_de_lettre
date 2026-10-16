@@ -6,7 +6,8 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../constants/api_config.dart';
 
-/// A live, bidirectional text connection (a WebSocket in the app, a fake in tests).
+/// Une connexion texte bidirectionnelle en direct (une WebSocket dans l'appli,
+/// une imitation dans les tests).
 abstract class RealtimeConnection {
   Stream<String> get messages;
   void send(String message);
@@ -38,7 +39,8 @@ class _WebSocketConnection implements RealtimeConnection {
 
 enum RealtimeStatus { connecting, online, offline }
 
-/// Keeps one WebSocket to the server open, reconnecting with backoff.
+/// Garde une WebSocket ouverte vers le serveur, en se reconnectant avec un
+/// délai croissant.
 class RealtimeClient extends ChangeNotifier {
   RealtimeClient({
     required this.clientId,
@@ -51,7 +53,8 @@ class RealtimeClient extends ChangeNotifier {
   final String clientId;
   final String baseUrl;
 
-  /// Keeps idle connections alive through proxies; null disables (tests).
+  /// Garde les connexions inactives en vie à travers les proxys ; null
+  /// désactive (tests).
   final Duration? pingInterval;
   final RealtimeConnector _connector;
   final _events = StreamController<Map<String, dynamic>>.broadcast();
@@ -101,7 +104,7 @@ class RealtimeClient extends ChangeNotifier {
     }
   }
 
-  /// Reconnects so the server sees the new nickname.
+  /// Se reconnecte pour que le serveur voie le nouveau pseudo.
   Future<void> updateNickname(String nickname) async {
     if (nickname == _nickname) return;
     _nickname = nickname;
@@ -118,7 +121,7 @@ class RealtimeClient extends ChangeNotifier {
       final decoded = jsonDecode(raw);
       if (decoded is Map<String, dynamic>) _events.add(decoded);
     } catch (_) {
-      // Ignore malformed frames.
+      // Ignore les trames mal formées.
     }
   }
 
@@ -134,8 +137,8 @@ class RealtimeClient extends ChangeNotifier {
     _retryTimer = Timer(delay, connect);
   }
 
-  /// Closes the current socket without waiting for the close handshake,
-  /// which can take seconds on a bad network.
+  /// Ferme la socket actuelle sans attendre la fin de la fermeture, qui peut
+  /// prendre plusieurs secondes sur un mauvais réseau.
   void _drop() {
     _pingTimer?.cancel();
     _subscription?.cancel();

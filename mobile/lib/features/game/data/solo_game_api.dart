@@ -2,7 +2,7 @@ import '../../../core/network/api_client.dart';
 import 'models.dart';
 import 'solo_backend.dart';
 
-/// Solo games played on the server (the default when online).
+/// Parties solo jouées sur le serveur (par défaut quand on est en ligne).
 class SoloGameApi implements SoloBackend {
   SoloGameApi(this._api);
 

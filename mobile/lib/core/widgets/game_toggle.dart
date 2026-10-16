@@ -4,7 +4,8 @@ import '../audio/game_audio.dart';
 import '../feedback/game_feedback.dart';
 import '../theme/app_colors.dart';
 
-/// Chunky ON/OFF switch: the knob slides with a bounce and shows ✓ or ✕.
+/// Gros interrupteur ON/OFF : le bouton glisse en rebondissant et affiche ✓ ou
+/// ✕.
 class GameToggle extends StatelessWidget {
   const GameToggle({super.key, required this.value, required this.onChanged});
 

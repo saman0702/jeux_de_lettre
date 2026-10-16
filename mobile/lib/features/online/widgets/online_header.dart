@@ -4,7 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/candy_button.dart';
 
-/// Back button + white title used at the top of online screens.
+/// Bouton retour + titre blanc en haut des écrans en ligne.
 class OnlineHeader extends StatelessWidget {
   const OnlineHeader({
     super.key,

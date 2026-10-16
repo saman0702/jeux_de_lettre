@@ -9,7 +9,7 @@ import '../../../core/widgets/candy_button.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/widgets/game_icon.dart';
 
-/// Radar-like pulse while the server finds or creates a room.
+/// Pulsation façon radar pendant que le serveur trouve ou crée une salle.
 class SearchingView extends StatefulWidget {
   const SearchingView({super.key, required this.onCancel, this.label});
 

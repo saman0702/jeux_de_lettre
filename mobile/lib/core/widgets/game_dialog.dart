@@ -8,8 +8,9 @@ import '../theme/app_theme.dart';
 import 'candy_button.dart';
 import 'game_icon.dart';
 
-/// Game-style yes/no box: it pops in with a bounce, has a ribbon title, a
-/// big animated icon and candy buttons. Returns true when the player confirms.
+/// Boîte oui/non façon jeu : elle apparaît avec un rebond, a un titre en
+/// bandeau, une grande icône animée et des boutons bonbon. Renvoie vrai quand
+/// le joueur confirme.
 Future<bool> showGameConfirm(
   BuildContext context, {
   required GameIconKind icon,
@@ -81,7 +82,7 @@ class _GameConfirm extends StatelessWidget {
               clipBehavior: Clip.none,
               alignment: Alignment.topCenter,
               children: [
-                // The box itself.
+                // La boîte elle-même.
                 Container(
                   margin: const EdgeInsets.only(top: 58),
                   padding: const EdgeInsets.fromLTRB(20, 54, 20, 18),
@@ -142,7 +143,7 @@ class _GameConfirm extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Ribbon title across the top edge.
+                // Titre en bandeau sur le bord supérieur.
                 Positioned(
                   top: 40,
                   child: Container(
@@ -179,7 +180,7 @@ class _GameConfirm extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Big icon badge.
+                // Grand badge avec l'icône.
                 Positioned(
                   top: -6,
                   child: BounceIn(

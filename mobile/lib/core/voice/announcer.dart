@@ -1,13 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
-/// Speaks short announcements (round winner, encouragement).
+/// Prononce de courtes annonces (gagnant de la manche, encouragements).
 abstract class Announcer {
   void say(String text, String languageCode);
   void stop();
 }
 
-/// The phone's text-to-speech voice; works offline once the language is installed.
+/// La voix de synthèse du téléphone ; fonctionne hors ligne une fois la langue
+/// installée.
 class DeviceAnnouncer implements Announcer {
   final FlutterTts _tts = FlutterTts();
   String? _language;
@@ -20,7 +21,8 @@ class DeviceAnnouncer implements Announcer {
       final locale = _locales[languageCode] ?? 'fr-FR';
       if (_language != locale) {
         await _tts.setLanguage(locale);
-        // A lively game-show voice: a bit faster and higher than usual.
+        // Une voix enjouée de jeu télé : un peu plus rapide et plus aiguë que
+        // d'habitude.
         await _tts.setSpeechRate(0.52);
         await _tts.setPitch(1.12);
         _language = locale;
@@ -38,7 +40,7 @@ class DeviceAnnouncer implements Announcer {
   }
 }
 
-/// Records what would be said; used by tests.
+/// Enregistre ce qui serait dit ; utilisé par les tests.
 class SilentAnnouncer implements Announcer {
   final List<String> said = [];
 

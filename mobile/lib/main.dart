@@ -28,9 +28,10 @@ Future<void> main() async {
       nickname: settings.nickname ?? 'Joueur',
     ),
   );
-  // One connection for the whole app: online count, rooms and games.
+  // Une seule connexion pour toute l'appli : compteur en ligne, salons et
+  // parties.
   online.client.connect();
-  // Ready for offline solo games without delaying the start.
+  // Prêt pour les parties solo hors ligne, sans retarder le démarrage.
   OfflineDictionary.load();
   runApp(LetterBattleApp(feedback: feedback, online: online));
 }
@@ -45,10 +46,10 @@ class LetterBattleApp extends StatefulWidget {
 
   final Widget home;
 
-  /// Defaults to a silent instance (tests).
+  /// Par défaut, une instance silencieuse (tests).
   final GameFeedback? feedback;
 
-  /// Defaults to a controller that never connects (tests).
+  /// Par défaut, un contrôleur qui ne se connecte jamais (tests).
   final OnlineController? online;
 
   @override
@@ -81,9 +82,10 @@ class _LetterBattleAppState extends State<LetterBattleApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // No music while the app is in the background.
+    // Pas de musique quand l'appli est en arrière-plan.
     _feedback.appInForeground = state == AppLifecycleState.resumed;
-    // Phones may kill the socket in the background: reconnect on return.
+    // Les téléphones peuvent couper la socket en arrière-plan : on se
+    // reconnecte au retour.
     if (state == AppLifecycleState.resumed &&
         widget.online != null &&
         !_online.isOnline) {

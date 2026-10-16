@@ -9,7 +9,7 @@ import '../offline/offline_engine.dart';
 import '../widgets/labels.dart';
 import 'hint_picker.dart';
 
-/// Where hints come from: the solo REST API or the room WebSocket.
+/// D'où viennent les jokers : l'API REST du solo ou la WebSocket du salon.
 abstract class HintSource {
   Future<HintOptions> request(Category category);
   Future<HintPick> pick(Category category, String choice);
@@ -22,11 +22,13 @@ class HintFieldState {
   final String? picked;
   final bool? correct;
 
-  /// Once an option is picked the field is locked for the round.
+  /// Dès qu'une proposition est choisie, le champ est verrouillé pour la
+  /// manche.
   bool get locked => picked != null;
 }
 
-/// Hint state of one round: which fields used a hint and how many are left.
+/// État des jokers d'une manche : quels champs en ont utilisé un et combien il
+/// en reste.
 class HintController extends ChangeNotifier {
   HintController({
     required this.source,
@@ -43,14 +45,16 @@ class HintController extends ChangeNotifier {
   int get hintsLeft => _hintsLeft;
   HintFieldState? field(Category category) => _fields[category];
 
-  /// A hint button is shown if one is left, or to reopen unpicked options.
+  /// Le bouton joker s'affiche s'il en reste un, ou pour rouvrir des
+  /// propositions non choisies.
   bool canHint(Category category) {
     final state = _fields[category];
     if (state != null) return !state.locked;
     return _hintsLeft > 0;
   }
 
-  /// Requests the options, lets the player choose, and fills [controller].
+  /// Demande les propositions, laisse le joueur choisir et remplit
+  /// [controller].
   Future<void> use(
     BuildContext context,
     Category category,

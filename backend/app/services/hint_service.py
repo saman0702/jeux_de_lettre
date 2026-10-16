@@ -1,8 +1,8 @@
-"""Hints: four words starting with the round letter, only one of which
-belongs to the category. The decoys come from the other categories (a fruit
-offered for "Animal"), so the player has to know which one fits.
+"""Jokers : quatre mots commençant par la lettre de la manche, dont un seul appartient à la catégorie.
+Les leurres viennent des autres catégories (un fruit proposé pour « Animal ») : il faut savoir
+lequel convient.
 
-The server keeps the right answer; clients only ever see the four options.
+Le serveur garde la bonne réponse ; les clients ne voient que les quatre propositions.
 """
 
 import random
@@ -16,7 +16,7 @@ from app.models import Answer
 from app.services.normalization import normalize
 
 _POOL = 60
-# Decoys must look plausible: only the best-known cities (Lima, not Laiwu).
+# Les leurres doivent être crédibles : seulement les villes les plus connues (Lima, pas Laiwu).
 _DECOY_POOL = {"city": 12}
 _DEFAULT_DECOY_POOL = 40
 
@@ -30,7 +30,7 @@ class Hint:
 
     @property
     def correct(self) -> bool | None:
-        """None until the player picks."""
+        """None tant que le joueur n'a pas choisi."""
         return None if self.picked is None else self.picked == self.answer
 
 
@@ -65,7 +65,7 @@ async def _valid_keys(session: AsyncSession, category: str, language: str, keys:
 
 
 def _scramble(word: str, rng: random.Random) -> str:
-    """A believable non-word keeping the first letter ("Moutno")."""
+    """Un faux mot crédible qui garde la première lettre (« Moutno »)."""
     if len(word) < 4:
         return word + word[-1].lower()
     middle = list(word[1:])
@@ -96,7 +96,7 @@ async def build_hint(
         rng.shuffle(candidates)
         if not candidates:
             continue
-        # A decoy that also fits the category (Kiwi: fruit and bird) would be unfair.
+        # Un leurre qui conviendrait aussi à la catégorie (kiwi : fruit et oiseau) serait injuste.
         valid = await _valid_keys(session, category, language, [normalize(c) for c in candidates])
         for candidate in candidates:
             if normalize(candidate) not in valid and candidate not in decoys:

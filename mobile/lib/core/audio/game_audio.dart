@@ -20,7 +20,8 @@ enum Sfx {
   hintOpen,
 }
 
-/// Asset base name; some effects have variants (key_1, key_2...) played in turn.
+/// Nom de base du fichier ; certains effets ont des variantes (key_1, key_2...)
+/// jouées à tour de rôle.
 const _sfxFiles = {Sfx.hintOpen: 'hint_open'};
 const _sfxVariants = {
   Sfx.key: 3,
@@ -31,25 +32,26 @@ const _sfxVariants = {
   Sfx.victory: 2,
 };
 
-/// A random index in [0, count) different from [last] when there is a choice,
-/// so a sound or tune never plays twice in a row.
+/// Un index au hasard dans [0, count) différent de [last] quand il y a le
+/// choix, pour qu'un son ou une musique ne passe jamais deux fois de suite.
 int pickOtherIndex(Random random, int count, int? last) {
   if (count <= 1) return 0;
   final pick = random.nextInt(count - 1);
   return last == null || pick < last ? pick : pick + 1;
 }
 
-/// Menu tunes; a different one starts each time the menu music comes back.
+/// Musiques de menu ; une autre démarre à chaque fois que la musique du menu
+/// revient.
 const _musicTracks = ['menu_1.wav', 'menu_2.wav', 'menu_3.wav'];
 
-/// Plays sound effects and the menu music.
+/// Joue les effets sonores et la musique du menu.
 abstract class GameAudio {
   void play(Sfx sfx);
   void startMusic();
   void stopMusic();
 }
 
-/// Used in tests and whenever audio cannot be initialised.
+/// Utilisé dans les tests et quand l'audio ne peut pas être initialisé.
 class SilentGameAudio implements GameAudio {
   final List<Sfx> played = [];
   bool musicPlaying = false;
@@ -69,8 +71,8 @@ class AudioplayersGameAudio implements GameAudio {
 
   static const _musicVolume = 0.45;
 
-  // Mix with other apps' audio and between our own players, so a sound
-  // effect never pauses the music.
+  // Se mélange au son des autres applis et entre nos propres lecteurs, pour
+  // qu'un effet sonore ne mette jamais la musique en pause.
   static final _context = AudioContextConfig(
     focus: AudioContextConfigFocus.mixWithOthers,
   ).build();
@@ -133,7 +135,7 @@ class AudioplayersGameAudio implements GameAudio {
   Future<void> _playTrack(int track) async {
     try {
       await _music.setSource(AssetSource('sounds/${_musicTracks[track]}'));
-      // The menu may have been left while the tune was loading.
+      // Le menu a pu être quitté pendant le chargement de la musique.
       if (_musicWanted && _track == track) await _music.resume();
     } catch (error) {
       debugPrint('Music unavailable: $error');

@@ -6,7 +6,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 
-/// "QUIT" candy pill to leave a game in progress (asks for confirmation).
+/// Pastille bonbon « QUITTER » pour sortir d'une partie en cours (demande
+/// confirmation).
 class QuitButton extends StatefulWidget {
   const QuitButton({super.key, required this.onQuit});
 
@@ -81,8 +82,8 @@ class _QuitButtonState extends State<QuitButton> {
   }
 }
 
-/// Puts a [QuitButton] above screens that have no header of their own
-/// (countdown, results, waiting).
+/// Place un [QuitButton] au-dessus des écrans qui n'ont pas d'en-tête (compte à
+/// rebours, résultats, attente).
 class WithQuitButton extends StatelessWidget {
   const WithQuitButton({super.key, required this.onQuit, required this.child});
 

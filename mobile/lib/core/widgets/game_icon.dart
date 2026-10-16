@@ -6,7 +6,7 @@ import '../feedback/game_feedback.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 
-/// Little looping animations that bring icons to life.
+/// Petites animations en boucle qui donnent vie aux icônes.
 enum IconMotion {
   none,
   bob,
@@ -22,8 +22,8 @@ enum IconMotion {
   waddle,
 }
 
-/// Every pictogram of the game. Drawn by the app (not emojis), so they look
-/// the same on every phone and move like game icons.
+/// Tous les pictogrammes du jeu. Dessinés par l'appli (pas des emojis) : ils
+/// sont identiques sur tous les téléphones et bougent comme des icônes de jeu.
 enum GameIconKind {
   city(Icons.location_city_rounded, IconMotion.bob),
   country(Icons.public_rounded, IconMotion.wiggle),
@@ -63,7 +63,7 @@ enum GameIconKind {
 
   const GameIconKind(this.icon, this.motion);
 
-  /// Material glyph, or null for icons drawn by hand.
+  /// Glyphe Material, ou null pour les icônes dessinées à la main.
   final IconData? icon;
   final IconMotion motion;
 
@@ -71,7 +71,8 @@ enum GameIconKind {
       [medal1, medal2, medal3][place.clamp(1, 3) - 1];
 }
 
-/// An animated pictogram. Motion stops when ambient motion is off (tests).
+/// Un pictogramme animé. Le mouvement s'arrête quand les animations d'ambiance
+/// sont coupées (tests).
 class GameIcon extends StatefulWidget {
   const GameIcon(
     this.kind, {
@@ -85,7 +86,7 @@ class GameIcon extends StatefulWidget {
   final double size;
   final Color color;
 
-  /// Overrides the icon's own motion.
+  /// Remplace le mouvement propre à l'icône.
   final IconMotion? motion;
 
   @override
@@ -118,7 +119,8 @@ class _GameIconState extends State<GameIcon>
         GameFeedbackScope.of(context).ambientMotion &&
         _motion != IconMotion.none;
     if (animate && !_loop.isAnimating) {
-      // Start at a random point so a row of icons does not move in lockstep.
+      // Démarre à un moment au hasard pour qu'une rangée d'icônes ne bouge pas
+      // en même temps.
       _loop.value = _random.nextDouble();
       _loop.repeat();
     } else if (!animate) {
@@ -146,7 +148,7 @@ class _GameIconState extends State<GameIcon>
     );
   }
 
-  /// Applies a motion at loop progress [t] (0..1).
+  /// Applique un mouvement à l'avancement [t] de la boucle (0..1).
   static Widget _move(IconMotion motion, double t, double size, Widget child) {
     final wave = sin(t * 2 * pi);
     switch (motion) {
@@ -203,7 +205,7 @@ class _GameIconState extends State<GameIcon>
       case IconMotion.spin:
         return Transform.rotate(angle: t * 2 * pi, child: child);
       case IconMotion.shake:
-        // Short bursts of shaking, then rest.
+        // Courtes secousses, puis repos.
         final burst = t < 0.25 ? sin(t * 40 * pi) * (1 - t / 0.25) : 0.0;
         return Transform.translate(
           offset: Offset(burst * size * 0.08, 0),
@@ -221,7 +223,7 @@ class _GameIconState extends State<GameIcon>
           child: child,
         );
       case IconMotion.tick:
-        // The timer jumps a notch each second.
+        // Le chrono saute d'un cran chaque seconde.
         final step = (t * 2).floor();
         return Transform.rotate(
           angle: (step.isEven ? -1 : 1) * 0.1,
@@ -258,7 +260,7 @@ class _Glyph extends StatelessWidget {
   }
 }
 
-/// Hand-drawn icons that Material does not provide.
+/// Icônes dessinées à la main que Material ne fournit pas.
 class _DrawnIcon extends CustomPainter {
   _DrawnIcon(this.kind, this.color);
 
@@ -297,7 +299,7 @@ class _DrawnIcon extends CustomPainter {
       Paint()..color = const Color(0x55000000),
     );
     canvas.drawPath(body, Paint()..color = color);
-    // Stem and leaf.
+    // Tige et feuille.
     canvas.drawLine(
       Offset(w * 0.5, w * 0.3),
       Offset(w * 0.55, w * 0.1),
@@ -312,7 +314,7 @@ class _DrawnIcon extends CustomPainter {
       ..quadraticBezierTo(w * 0.72, w * 0.3, w * 0.56, w * 0.18)
       ..close();
     canvas.drawPath(leaf, Paint()..color = color);
-    // Shine.
+    // Reflet.
     canvas.drawOval(
       Rect.fromLTWH(w * 0.24, w * 0.42, w * 0.12, w * 0.2),
       Paint()
@@ -409,7 +411,8 @@ class _DrawnIcon extends CustomPainter {
       oldDelegate.kind != kind || oldDelegate.color != color;
 }
 
-/// Icon in a round candy badge (category badges, settings rows...).
+/// Icône dans un badge rond bonbon (badges de catégorie, lignes de
+/// réglages...).
 class GameIconBadge extends StatelessWidget {
   const GameIconBadge(
     this.kind, {

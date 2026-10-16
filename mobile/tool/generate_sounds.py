@@ -1,9 +1,9 @@
-"""Synthesize the game's sound effects and menu music.
+"""Synthétise les effets sonores et la musique de menu du jeu.
 
     python3 tool/generate_sounds.py
 
-Everything is generated from scratch (no third-party samples), so the files
-are free to use. Output: assets/sounds/*.wav (16-bit mono, 44.1 kHz).
+Tout est généré de zéro (aucun échantillon tiers), donc les fichiers sont libres d'utilisation.
+Sortie : assets/sounds/*.wav (mono 16 bits, 44,1 kHz).
 """
 
 import math
@@ -33,7 +33,7 @@ def osc(kind: str, phase: float) -> float:
         return 1.0 if p < 0.5 else -1.0
     if kind == "triangle":
         return 4 * abs(p - 0.5) - 1
-    if kind == "bell":  # sine with soft harmonics
+    if kind == "bell":  # sinusoïde avec des harmoniques douces
         return (
             math.sin(2 * math.pi * p)
             + 0.35 * math.sin(4 * math.pi * p)
@@ -51,7 +51,9 @@ def tone(
     decay: float = 6.0,
     volume: float = 1.0,
 ) -> list[float]:
-    """A note with a short attack and exponential decay; optional pitch glide f0 -> f1."""
+    """Une note à l'attaque brève et à la décroissance exponentielle ; glissement de hauteur f0 -> f1
+    facultatif.
+    """
     n = int(RATE * duration)
     out, phase = [], 0.0
     for i in range(n):
@@ -59,7 +61,7 @@ def tone(
         f = f0 if f1 is None else f0 + (f1 - f0) * (i / n)
         phase += f / RATE
         env = min(1.0, t / attack) * math.exp(-decay * t)
-        release = min(1.0, (n - i) / (RATE * 0.01))  # avoid clicks at the end
+        release = min(1.0, (n - i) / (RATE * 0.01))  # évite les clics à la fin
         out.append(osc(kind, phase) * env * release * volume)
     return out
 
@@ -75,7 +77,7 @@ def silence(duration: float) -> list[float]:
 
 
 def mix(*tracks: tuple[float, list[float]]) -> list[float]:
-    """Mix (start_seconds, samples) tracks together."""
+    """Mixe ensemble des pistes (début_en_secondes, échantillons)."""
     length = max(int(start * RATE) + len(samples) for start, samples in tracks)
     out = [0.0] * length
     for start, samples in tracks:
@@ -110,9 +112,10 @@ def sound_effects() -> None:
 
 
 def variant_effects() -> None:
-    """Frequent effects come in several versions, played in turn, so the game
-    does not keep repeating the exact same sound."""
-    # GO! — three short fanfares.
+    """Les effets fréquents existent en plusieurs versions, jouées à tour de rôle, pour que le jeu ne
+    répète pas toujours exactement le même son.
+    """
+    # GO ! — trois courtes fanfares.
     for i, (arp, top) in enumerate([
         (["C5", "E5", "G5"], ["C6", "G5"]),
         (["D5", "F#5", "A5"], ["D6", "A5"]),
@@ -122,19 +125,19 @@ def variant_effects() -> None:
             *[(j * 0.06, tone(freq(n), 0.25, "square", decay=12, volume=0.4)) for j, n in enumerate(arp)],
             *[(0.06 * len(arp), tone(freq(n), 0.5, "bell", decay=5, volume=v)) for n, v in zip(top, (1, 0.6))],
         ))
-    # Right answer — rising chimes in different intervals.
+    # Bonne réponse — carillons montants sur différents intervalles.
     for i, (a, b) in enumerate([("E6", "B6"), ("C6", "G6"), ("G6", "D7")], start=1):
         write(f"valid_{i}", mix((0, tone(freq(a), 0.2, "bell", decay=12)),
                                 (0.08, tone(freq(b), 0.3, "bell", decay=10))), peak=0.6)
-    # Wrong answer — a soft "bwop" and a double "buzz".
+    # Mauvaise réponse — un « bwop » doux et un double « buzz ».
     write("invalid_1", tone(260, 0.28, "square", f1=150, decay=8, volume=0.5), peak=0.4)
     write("invalid_2", seq(tone(220, 0.1, "triangle", decay=20), tone(170, 0.18, "triangle", f1=130, decay=12)), peak=0.4)
-    # Points — coin sounds.
+    # Points — bruits de pièces.
     write("points_1", seq(tone(freq("B5"), 0.07, "square", decay=10, volume=0.5),
                           tone(freq("E6"), 0.3, "square", decay=9, volume=0.5)), peak=0.45)
     write("points_2", seq(*[tone(freq(n), 0.05, "square", decay=14, volume=0.5) for n in ["C6", "E6", "G6"]],
                           tone(freq("C7"), 0.25, "bell", decay=9)), peak=0.45)
-    # Victory — two fanfares.
+    # Victoire — deux fanfares.
     fanfare = [("C5", 0.0), ("E5", 0.12), ("G5", 0.24), ("C6", 0.36), ("G5", 0.6), ("C6", 0.72)]
     write("victory_1", mix(
         *[(t, tone(freq(n), 0.3, "square", decay=6, volume=0.35)) for n, t in fanfare],
@@ -148,8 +151,9 @@ def variant_effects() -> None:
 
 
 def typing_sounds() -> None:
-    """Soft wooden "tock" when a letter tile lands, in three pitches so fast
-    typing does not sound mechanical."""
+    """« Toc » boisé et doux quand une tuile-lettre se pose, sur trois hauteurs pour qu'une frappe
+    rapide ne sonne pas mécanique.
+    """
     for i, pitch in enumerate([880, 990, 1110], start=1):
         write(
             f"key_{i}",
@@ -172,7 +176,7 @@ def typing_sounds() -> None:
 
 def music_track(name, bpm, chords, roots, arps, melody, lead="bell", arp_kind="square", bass_kind="triangle",
                 swing=0.0) -> None:
-    """An 8-bar loop that ends exactly on the loop point."""
+    """Une boucle de 8 mesures qui se termine pile sur le point de bouclage."""
     beat = 60 / bpm
     bar = 4 * beat
     tracks = []
@@ -193,7 +197,7 @@ def music_track(name, bpm, chords, roots, arps, melody, lead="bell", arp_kind="s
 
 
 def menu_music() -> None:
-    """Three menu tunes; the app changes tune each time the menu comes back."""
+    """Trois musiques de menu ; l'appli change de musique à chaque retour au menu."""
     music_track(
         "menu_1", 112,
         ["C", "A", "F", "G", "C", "A", "F", "G"],

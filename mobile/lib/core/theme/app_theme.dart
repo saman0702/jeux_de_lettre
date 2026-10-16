@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
-/// Emoji font used when a glyph is missing from Fredoka. Phones fall back to
-/// their system emoji font anyway; naming one also lets screenshots render them.
+/// Police d'emojis utilisée quand Fredoka n'a pas le caractère. Les téléphones
+/// utilisent de toute façon leur police d'emojis système ; la nommer permet
+/// aussi de les afficher dans les captures.
 const emojiFallback = ['NotoColorEmoji'];
 
-/// Fredoka is a variable font: the weight is set through its `wght` axis.
+/// Fredoka est une police variable : la graisse passe par son axe `wght`.
 TextStyle fredoka({
   double size = 16,
   FontWeight weight = FontWeight.w500,
@@ -24,7 +25,7 @@ TextStyle fredoka({
   shadows: shadows,
 );
 
-/// Soft drop shadow for white text on the purple background.
+/// Ombre portée douce pour le texte blanc sur le fond violet.
 const textShadow = [
   Shadow(color: Color(0x55000000), offset: Offset(0, 3), blurRadius: 0),
 ];

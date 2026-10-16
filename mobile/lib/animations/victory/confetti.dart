@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 
-/// One-shot confetti burst falling over its child.
+/// Pluie de confettis unique qui tombe par-dessus son enfant.
 class ConfettiOverlay extends StatefulWidget {
   const ConfettiOverlay({super.key, required this.child, this.pieces = 90});
 

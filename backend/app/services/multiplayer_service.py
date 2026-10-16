@@ -1,7 +1,7 @@
-"""Persistence and scoring of multiplayer games (duel, rooms, quick match).
+"""Persistance et score des parties multijoueur (duel, salons, partie rapide).
 
-The live orchestration lives in room_service; this module only talks to the
-database, reusing the models of solo games.
+L'orchestration en direct se trouve dans room_service ; ce module ne fait que dialoguer avec la base
+de données, en réutilisant les modèles des parties solo.
 """
 
 from dataclasses import dataclass, field
@@ -32,7 +32,7 @@ class PlayerRoundResult:
     player_id: str
     answers: list[dict]
     round_score: int
-    elapsed_ms: int | None  # None when the player did not submit
+    elapsed_ms: int | None  # None quand le joueur n'a rien envoyé
 
 
 @dataclass
@@ -47,7 +47,9 @@ class RoundOutcome:
 async def create_game(
     session: AsyncSession, mode: str, settings: GameSettings, nicknames: dict[str, str]
     ) -> tuple[str, dict[str, str]]:
-    """Create the game and its players. Returns the game id and client id -> player id."""
+    """Crée la partie et ses joueurs. Renvoie l'id de la partie et la correspondance id client -> id
+    joueur.
+    """
     players = {client_id: Player(nickname=name) for client_id, name in nicknames.items()}
     game = Game(
         mode=mode,
@@ -102,11 +104,10 @@ async def close_round(
     submissions: dict[str, tuple[datetime, dict[Category, str]]],
     hints: dict[str, dict[str, bool]] | None = None,
     ) -> RoundOutcome:
-    """Validate and score everyone's answers for the current round.
+    """Valide et note les réponses de tous les joueurs pour la manche en cours.
 
-    `participants` are the player ids that played the round; those missing
-    from `submissions` score zero. `hints` maps player id -> category ->
-    whether the picked hint option was the right one.
+    `participants` sont les ids des joueurs qui ont joué la manche ; ceux absents de `submissions`
+    marquent zéro. `hints` associe id joueur -> catégorie -> si le joker choisi était le bon.
     """
     hints = hints or {}
     game = await _game(session, game_id)

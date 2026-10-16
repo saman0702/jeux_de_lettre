@@ -1,4 +1,4 @@
-"""Game lifecycle. The server owns the letter, the clock and the score."""
+"""Cycle de vie d'une partie. Le serveur maîtrise la lettre, le chrono et le score."""
 
 from datetime import timedelta
 
@@ -50,7 +50,7 @@ def _is_expired(game_round: GameRound) -> bool:
 
 
 async def _close_expired_round(session: AsyncSession, game: Game, game_round: GameRound) -> None:
-    """Players who never submitted get a late, zero-point submission."""
+    """Les joueurs qui n'ont rien envoyé reçoivent un envoi « en retard » à zéro point."""
     submitted = {s.player_id for s in game_round.submissions}
     for player in game.players:
         if player.id not in submitted:
@@ -130,7 +130,7 @@ async def _hint_for(session: AsyncSession, game_round: GameRound, player_id: str
 async def request_hint(
     session: AsyncSession, game: Game, round_number: int, category: Category
     ) -> tuple[HintRequest, int]:
-    """Four options for a category; asking again returns the same ones."""
+    """Quatre propositions pour une catégorie ; redemander renvoie les mêmes."""
     game_round = _playable_round(game, round_number)
     if category.value not in game.categories:
         raise GameError("invalid_category", 422)

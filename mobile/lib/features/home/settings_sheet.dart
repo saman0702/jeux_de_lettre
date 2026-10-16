@@ -10,7 +10,7 @@ import '../../core/widgets/game_toggle.dart';
 import '../game/widgets/pill_selector.dart';
 import '../../l10n/app_localizations.dart';
 
-/// Game-menu style settings panel sliding up from the bottom.
+/// Panneau de réglages façon menu de jeu qui monte depuis le bas.
 Future<void> showSettingsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     isScrollControlled: true,
@@ -121,7 +121,8 @@ class _SettingsSheet extends StatelessWidget {
               ),
             ),
           ),
-          // Ribbon title over the top edge, with a close button.
+          // Titre en bandeau sur le bord supérieur, avec un bouton de
+          // fermeture.
           Positioned(
             top: 0,
             child: Container(
@@ -235,7 +236,7 @@ class _SettingRow extends StatelessWidget {
   }
 }
 
-/// App language: follow the phone, or force French / English.
+/// Langue de l'appli : suivre le téléphone, ou forcer le français / l'anglais.
 class _LanguageRow extends StatelessWidget {
   const _LanguageRow({required this.value, required this.onChanged});
 
