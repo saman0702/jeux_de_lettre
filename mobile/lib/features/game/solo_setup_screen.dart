@@ -187,6 +187,8 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
               OptionSection(
                 index: 0,
                 title: l10n.rounds,
+                icon: GameIconKind.layers,
+                color: AppColors.yellow,
                 child: PillSelector<int>(
                   options: SoloGameSettings.roundOptions,
                   isSelected: (r) => r == _rounds,
@@ -197,6 +199,8 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
               OptionSection(
                 index: 1,
                 title: l10n.roundDuration,
+                icon: GameIconKind.timer,
+                color: AppColors.cyan,
                 child: PillSelector<int>(
                   options: SoloGameSettings.durationOptions,
                   isSelected: (d) => d == _duration,
@@ -207,6 +211,8 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
               OptionSection(
                 index: 2,
                 title: l10n.categories,
+                icon: GameIconKind.categories,
+                color: AppColors.pink,
                 child: PillSelector<Category>(
                   options: Category.values,
                   isSelected: _categories.contains,
@@ -219,6 +225,8 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
               OptionSection(
                 index: 3,
                 title: l10n.difficulty,
+                icon: GameIconKind.flame,
+                color: AppColors.orange,
                 child: PillSelector<Difficulty>(
                   options: Difficulty.values,
                   isSelected: (d) => d == _difficulty,
@@ -229,6 +237,8 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
               OptionSection(
                 index: 4,
                 title: l10n.opponents,
+                icon: GameIconKind.bot,
+                color: AppColors.purpleLight,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

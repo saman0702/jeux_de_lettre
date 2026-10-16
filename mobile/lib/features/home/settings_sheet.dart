@@ -116,16 +116,36 @@ class _SettingsSheet extends StatelessWidget {
                           ),
                         ),
                       ),
-                    const SizedBox(height: 4),
-                    // Mention exigée par la licence CC BY des musiques.
-                    Text(
-                      l10n.musicCredits,
-                      key: const Key('music_credits'),
-                      textAlign: TextAlign.center,
-                      style: fredoka(
-                        size: 11,
-                        weight: FontWeight.w500,
-                        color: AppColors.inkSoft,
+                    // Lien discret : la licence CC BY des musiques demande de
+                    // citer l'auteur quelque part dans l'appli.
+                    TextButton(
+                      key: const Key('credits_button'),
+                      onPressed: () => showDialog<void>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text(
+                            l10n.credits,
+                            style: fredoka(size: 20, weight: FontWeight.w700),
+                          ),
+                          content: Text(
+                            l10n.musicCredits,
+                            style: fredoka(size: 14),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      child: Text(
+                        l10n.credits,
+                        style: fredoka(
+                          size: 12,
+                          weight: FontWeight.w600,
+                          color: AppColors.inkSoft,
+                        ),
                       ),
                     ),
                   ],

@@ -688,4 +688,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get avatarSavedOffline =>
       'Avatar chosen! It will be shared as soon as you are online.';
+
+  @override
+  String get credits => 'Credits';
 }

@@ -193,5 +193,6 @@
   "shopLegal": "Payment secured by Google Play or the App Store. Coins have no monetary value: they cannot be refunded, exchanged or converted into money.",
   "avatarPhotoNeedsConnection": "Go online to use a photo: it is turned into a drawing on the server.",
   "avatarPickFailed": "Could not open the camera or gallery. Check the app permissions.",
-  "avatarSavedOffline": "Avatar chosen! It will be shared as soon as you are online."
+  "avatarSavedOffline": "Avatar chosen! It will be shared as soon as you are online.",
+  "credits": "Credits"
 }

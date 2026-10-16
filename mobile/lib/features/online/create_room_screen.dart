@@ -108,6 +108,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
               OptionSection(
                 index: 0,
                 title: l10n.roomKind,
+                icon: GameIconKind.bet,
+                color: AppColors.yellow,
                 child: PillSelector<RoomKind>(
                   options: RoomKind.values,
                   isSelected: (k) => k == _kind,
@@ -123,6 +125,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                 OptionSection(
                   index: 0,
                   title: l10n.stake,
+                  icon: GameIconKind.coin,
+                  color: AppColors.orange,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -136,6 +140,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                       const SizedBox(height: 8),
                       Text(
                         '${l10n.yourCoins(OnlineScope.of(context).wallet?.coins ?? 0)} · ${l10n.betRules}',
+                        textAlign: TextAlign.center,
                         style: fredoka(
                           size: 13,
                           weight: FontWeight.w500,
@@ -148,6 +153,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
               OptionSection(
                 index: 1,
                 title: l10n.roomType,
+                icon: GameIconKind.duel,
+                color: AppColors.green,
                 child: PillSelector<int>(
                   options: const [2, 8],
                   isSelected: (n) => n == _maxPlayers,
@@ -159,6 +166,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
               OptionSection(
                 index: 2,
                 title: l10n.visibility,
+                icon: GameIconKind.public,
+                color: AppColors.cyan,
                 child: PillSelector<bool>(
                   options: const [true, false],
                   isSelected: (p) => p == _public,
@@ -171,6 +180,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
               OptionSection(
                 index: 3,
                 title: l10n.rounds,
+                icon: GameIconKind.layers,
+                color: AppColors.yellow,
                 child: PillSelector<int>(
                   options: SoloGameSettings.roundOptions,
                   isSelected: (r) => r == _rounds,
@@ -181,6 +192,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
               OptionSection(
                 index: 4,
                 title: l10n.roundDuration,
+                icon: GameIconKind.timer,
+                color: AppColors.cyan,
                 child: PillSelector<int>(
                   options: SoloGameSettings.durationOptions,
                   isSelected: (d) => d == _duration,
@@ -191,6 +204,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
               OptionSection(
                 index: 5,
                 title: l10n.categories,
+                icon: GameIconKind.categories,
+                color: AppColors.pink,
                 child: PillSelector<Category>(
                   options: Category.values,
                   isSelected: _categories.contains,
@@ -203,6 +218,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
               OptionSection(
                 index: 6,
                 title: l10n.difficulty,
+                icon: GameIconKind.flame,
+                color: AppColors.orange,
                 child: PillSelector<Difficulty>(
                   options: Difficulty.values,
                   isSelected: (d) => d == _difficulty,

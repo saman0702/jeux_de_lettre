@@ -33,6 +33,7 @@ class PillSelector<T> extends StatelessWidget {
     return Wrap(
       spacing: 7,
       runSpacing: 8,
+      alignment: WrapAlignment.center,
       children: [
         for (final option in options)
           _Pill(

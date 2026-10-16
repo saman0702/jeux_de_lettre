@@ -64,7 +64,10 @@ enum GameIconKind {
   bet(Icons.casino_rounded, IconMotion.shake),
   camera(Icons.photo_camera_rounded, IconMotion.pulse),
   gallery(Icons.photo_library_rounded, IconMotion.bob),
-  flag(Icons.flag_rounded, IconMotion.swing);
+  flag(Icons.flag_rounded, IconMotion.swing),
+  layers(Icons.layers_rounded, IconMotion.bob),
+  categories(Icons.category_rounded, IconMotion.wiggle),
+  flame(Icons.local_fire_department_rounded, IconMotion.flicker);
 
   const GameIconKind(this.icon, this.motion);
 

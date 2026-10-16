@@ -1261,6 +1261,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Avatar choisi ! Il sera partagé dès que tu seras en ligne.'**
   String get avatarSavedOffline;
+
+  /// No description provided for @credits.
+  ///
+  /// In fr, this message translates to:
+  /// **'Crédits'**
+  String get credits;
 }
 
 class _AppLocalizationsDelegate
