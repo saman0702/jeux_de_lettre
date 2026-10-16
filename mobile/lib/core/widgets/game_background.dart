@@ -148,18 +148,10 @@ class _Bubble {
 }
 
 class _Letter {
-  const _Letter(
-    this.char,
-    this.x,
-    this.y,
-    this.size,
-    this.blur,
-    this.speed,
-    this.phase,
-  );
+  const _Letter(this.char, this.x, this.y, this.size, this.speed, this.phase);
 
   final String char;
-  final double x, y, size, blur, speed, phase;
+  final double x, y, size, speed, phase;
 }
 
 const _bubbles = [
@@ -172,17 +164,17 @@ const _bubbles = [
 ];
 
 const _letters = [
-  _Letter('A', 0.30, 0.07, 92, 2.5, 0.8, 0.3),
-  _Letter('B', 0.88, 0.14, 84, 2.0, 1.0, 1.1),
-  _Letter('C', 0.10, 0.24, 104, 3.5, 0.7, 2.0),
-  _Letter('D', 0.92, 0.30, 88, 2.0, 0.9, 2.7),
-  _Letter('F', 0.12, 0.43, 90, 2.5, 1.1, 3.4),
-  _Letter('G', 0.88, 0.44, 86, 3.0, 0.8, 4.0),
-  _Letter('M', 0.14, 0.66, 100, 4.0, 0.7, 4.8),
-  _Letter('P', 0.80, 0.66, 92, 2.5, 1.0, 5.5),
-  _Letter('R', 0.14, 0.80, 88, 3.0, 0.9, 0.9),
-  _Letter('S', 0.88, 0.78, 84, 2.0, 1.1, 1.6),
-  _Letter('V', 0.58, 0.90, 98, 3.0, 0.8, 2.3),
+  _Letter('A', 0.30, 0.07, 92, 0.8, 0.3),
+  _Letter('B', 0.88, 0.14, 84, 1.0, 1.1),
+  _Letter('C', 0.10, 0.24, 104, 0.7, 2.0),
+  _Letter('D', 0.92, 0.30, 88, 0.9, 2.7),
+  _Letter('F', 0.12, 0.43, 90, 1.1, 3.4),
+  _Letter('G', 0.88, 0.44, 86, 0.8, 4.0),
+  _Letter('M', 0.14, 0.66, 100, 0.7, 4.8),
+  _Letter('P', 0.80, 0.66, 92, 1.0, 5.5),
+  _Letter('R', 0.14, 0.80, 88, 0.9, 0.9),
+  _Letter('S', 0.88, 0.78, 84, 1.1, 1.6),
+  _Letter('V', 0.58, 0.90, 98, 0.8, 2.3),
 ];
 
 /// Lettre [index] à [seconds] secondes de l'horloge partagée : position et
@@ -205,8 +197,7 @@ class _ScenePainter extends CustomPainter {
 
   final ValueNotifier<double> time;
 
-  static final Map<(String, double, double, bool), TextPainter> _letterCache =
-      {};
+  static final Map<(String, double, bool), TextPainter> _letterCache = {};
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -243,8 +234,8 @@ class _ScenePainter extends CustomPainter {
         r,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.4
-          ..color = Colors.white.withValues(alpha: 0.18),
+          ..strokeWidth = 0.6
+          ..color = Colors.white.withValues(alpha: 0.10),
       );
       // Reflet.
       canvas.drawOval(
@@ -260,42 +251,37 @@ class _ScenePainter extends CustomPainter {
     }
   }
 
-  /// Lettre « gelée » : [shadow] dessine l'ombre douce qui donne le volume.
-  static TextPainter _letter(
-    String char,
-    double size,
-    double blur, {
-    bool shadow = false,
-  }) => _letterCache.putIfAbsent((char, size, blur, shadow), () {
-    return TextPainter(
-      text: TextSpan(
-        text: char,
-        style: TextStyle(
-          fontFamily: 'Fredoka',
-          fontSize: size,
-          fontWeight: FontWeight.w700,
-          fontVariations: const [ui.FontVariation('wght', 700)],
-          height: 1,
-          foreground: Paint()
-            ..color = shadow
-                ? const Color(0xFF1A0A55).withValues(alpha: 0.22)
-                : const Color(0xFFD9C8FF).withValues(alpha: 0.30)
-            ..maskFilter = MaskFilter.blur(
-              BlurStyle.normal,
-              shadow ? blur + 4 : blur,
+  /// Lettre nette ; [shadow] dessine l'ombre légère qui donne le volume.
+  static TextPainter _letter(String char, double size, {bool shadow = false}) =>
+      _letterCache.putIfAbsent((char, size, shadow), () {
+        return TextPainter(
+          text: TextSpan(
+            text: char,
+            style: TextStyle(
+              fontFamily: 'Fredoka',
+              fontSize: size,
+              fontWeight: FontWeight.w700,
+              fontVariations: const [ui.FontVariation('wght', 700)],
+              height: 1,
+              foreground: Paint()
+                ..color = shadow
+                    ? const Color(0xFF1A0A55).withValues(alpha: 0.22)
+                    : const Color(0xFFD9C8FF).withValues(alpha: 0.30)
+                ..maskFilter = shadow
+                    ? const MaskFilter.blur(BlurStyle.normal, 2)
+                    : null,
             ),
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-  });
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+      });
 
   void _paintLetters(Canvas canvas, Size size, double t) {
     for (var i = 0; i < _letters.length; i++) {
       final l = _letters[i];
       final (center, angle) = letterPose(i, t, size);
-      final shadow = _letter(l.char, l.size, l.blur, shadow: true);
-      final body = _letter(l.char, l.size, l.blur);
+      final shadow = _letter(l.char, l.size, shadow: true);
+      final body = _letter(l.char, l.size);
       canvas.save();
       canvas.translate(center.dx, center.dy);
       canvas.rotate(angle);
