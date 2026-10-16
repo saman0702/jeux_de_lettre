@@ -8,16 +8,17 @@ import 'package:letter_battle/core/widgets/game_background.dart';
 import 'solo_game_test.dart' show FakeServer, pumpGame;
 
 void main() {
-  test('les halos du fond bougent en continu, sans jamais sauter', () {
+  test('les lettres du fond bougent en continu, sans jamais sauter', () {
     const size = Size(400, 860);
     const step = 1 / 60; // une image
-    for (var i = 0; i < haloCount; i++) {
+    for (var i = 0; i < backgroundLetterCount; i++) {
       // Inclut une longue session et d'anciennes limites de boucle.
       for (final start in [0.0, 39.9, 3600.0, 86400.0]) {
         for (var t = start; t < start + 0.5; t += step) {
-          final a = haloCenter(i, t, size);
-          final b = haloCenter(i, t + step, size);
-          expect((b - a).distance, lessThan(1), reason: 'halo $i à ${t}s');
+          final (a, angleA) = letterPose(i, t, size);
+          final (b, angleB) = letterPose(i, t + step, size);
+          expect((b - a).distance, lessThan(1), reason: 'lettre $i à ${t}s');
+          expect((angleB - angleA).abs(), lessThan(0.01));
         }
       }
     }
