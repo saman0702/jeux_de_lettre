@@ -36,6 +36,8 @@ class GameSettings(BaseModel):
 
 class SoloGameCreate(GameSettings):
     nickname: str = Field(default="Player", min_length=1, max_length=32)
+    # Identifiant de l'appli : les points de la partie vont dans son porte-monnaie.
+    client_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9-]{8,64}$")
 
 
 class SubmitAnswers(BaseModel):
@@ -91,9 +93,32 @@ class GameOut(BaseModel):
     hints_left: int
 
 
+class WalletOut(BaseModel):
+    coins: int
+    coins_gained: int
+    points_to_next_coin: int
+
+
 class SubmitResultOut(BaseModel):
     round: RoundResultOut
     game: GameOut
+    # Présent quand la partie est liée à un profil.
+    wallet: WalletOut | None = None
+
+
+class ProfileOut(BaseModel):
+    client_id: str
+    nickname: str
+    coins: int
+    total_points: int
+    points_to_next_coin: int
+    avatar_preset: int
+    avatar_url: str | None
+
+
+class ProfileUpdate(BaseModel):
+    nickname: str | None = Field(default=None, min_length=1, max_length=32)
+    avatar_preset: int | None = Field(default=None, ge=0, le=63)
 
 
 class GameSummaryOut(GameOut):

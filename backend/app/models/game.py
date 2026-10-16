@@ -17,6 +17,8 @@ class Game(TimestampMixin, Base):
     total_rounds: Mapped[int] = mapped_column(Integer)
     round_duration: Mapped[int] = mapped_column(Integer)  # secondes
     status: Mapped[str] = mapped_column(String(16), default="waiting")  # waiting | playing | finished
+    # Joueur à créditer en pièces pour une partie solo (absent pour un invité sans profil).
+    owner_client_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     players: Mapped[list["Player"]] = relationship(
         back_populates="game", order_by="Player.created_at", lazy="selectin"

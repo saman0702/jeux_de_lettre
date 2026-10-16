@@ -54,7 +54,7 @@ def database():
 async def session_factory():
     engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
     async with engine.begin() as conn:
-        await conn.execute(text("TRUNCATE games CASCADE"))
+        await conn.execute(text("TRUNCATE games, profiles CASCADE"))
     letter_service.clear_cache()
     yield async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     await engine.dispose()

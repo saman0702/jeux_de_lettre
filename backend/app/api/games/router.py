@@ -68,10 +68,11 @@ async def submit_round(
     session: AsyncSession = Depends(get_session),
 ):
     game = await game_service.get_game(session, game_id)
-    submission = await game_service.submit_answers(session, game, number, data.answers)
+    submission, wallet = await game_service.submit_answers(session, game, number, data.answers)
     return SubmitResultOut(
         round=round_result_out(game.current_round, submission),
         game=game_out(game, await game_service.hints_left(session, game)),
+        wallet=wallet.as_dict() if wallet else None,
     )
 
 

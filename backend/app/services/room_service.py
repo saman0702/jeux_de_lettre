@@ -16,13 +16,14 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
 from fastapi import WebSocket
-from pydantic import Field, ValidationError
+from pydantic import Field, ValidationError, model_validator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.database import SessionLocal
 from app.core.game_rules import (
     HINTS_PER_GAME,
     MAX_ROOM_PLAYERS,
+    MAX_STAKE,
     MIN_ROOM_PLAYERS,
     SUBMIT_GRACE_SECONDS,
     Category,
@@ -31,7 +32,7 @@ from app.core.game_rules import (
 )
 from app.models.base import utcnow
 from app.schemas.game import GameSettings
-from app.services import bot_service, hint_service, multiplayer_service
+from app.services import bot_service, hint_service, multiplayer_service, wallet_service
 from app.services.presence_service import PresenceStore, RedisPresence
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,21 @@ CODE_LENGTH = 5
 class RoomSettings(GameSettings):
     public: bool = False
     max_players: int = Field(default=MAX_ROOM_PLAYERS, ge=MIN_ROOM_PLAYERS, le=MAX_ROOM_PLAYERS)
+    # « classic » : partie normale ; « bet » : chaque joueur mise `stake` pièces, le premier rafle le pot.
+    kind: str = Field(default="classic", pattern="^(classic|bet)$")
+    stake: int = Field(default=0, ge=0, le=MAX_STAKE)
+
+    @model_validator(mode="after")
+    def _check_stake(self) -> "RoomSettings":
+        if self.kind == "bet" and self.stake < 1:
+            raise ValueError("a betting room needs a stake")
+        if self.kind == "classic":
+            self.stake = 0
+        return self
+
+    @property
+    def betting(self) -> bool:
+        return self.kind == "bet"
 
 
 @dataclass
@@ -72,6 +88,8 @@ class RoomPlayer:
     db_player_id: str | None = None
     bot_level: Difficulty | None = None
     hints_used: int = 0
+    avatar_preset: int = 0
+    avatar_url: str | None = None
 
     @property
     def bot(self) -> bool:
@@ -110,6 +128,10 @@ class Room:
     game_task: asyncio.Task | None = None
     quick_timer: asyncio.Task | None = None
     bot_fill_timer: asyncio.Task | None = None
+    # Salon de paris : joueurs qui ont payé leur mise pour la partie en cours, et ce que chacun a
+    # gagné une fois la partie terminée.
+    stakers: list[str] = field(default_factory=list)
+    winnings: dict[str, int] = field(default_factory=dict)
 
     @property
     def in_game(self) -> bool:
@@ -117,7 +139,14 @@ class Room:
 
     @property
     def joinable(self) -> bool:
+        # On ne rejoint pas un salon de paris en cours : la mise est payée au départ.
+        if self.settings.betting and self.in_game:
+            return False
         return len(self.players) < self.settings.max_players
+
+    @property
+    def pot(self) -> int:
+        return self.settings.stake * len(self.stakers)
 
     def connected_players(self) -> list[RoomPlayer]:
         return [p for p in self.players.values() if p.connected]
@@ -131,6 +160,8 @@ class Connection:
     client_id: str
     nickname: str
     websocket: WebSocket
+    avatar_preset: int = 0
+    avatar_url: str | None = None
 
 
 class RoomError(Exception):
@@ -199,12 +230,25 @@ class RoomManager:
                 await previous.websocket.close(code=4000, reason="replaced")
 
         connection = Connection(client_id, nickname, websocket)
+        # Profil lu avant d'enregistrer la connexion : « welcome » reste ainsi le premier message.
+        wallet = None
+        try:
+            async with self.session_factory() as session:
+                profile = await wallet_service.get_profile(session, client_id, nickname)
+                await session.commit()
+            wallet = wallet_service.snapshot(profile).as_dict()
+            connection.avatar_preset = profile.avatar_preset
+            connection.avatar_url = wallet_service.avatar_url(profile)
+        except Exception:
+            logger.exception("profile lookup failed for %s", client_id)
         self.connections[client_id] = connection
         if task := self._expiry_tasks.pop(client_id, None):
             task.cancel()
 
         await self.presence.touch([client_id])
-        await self._send(client_id, {"type": "welcome", "online_count": await self.presence.count()})
+        await self._send(
+            client_id, {"type": "welcome", "online_count": await self.presence.count(), "wallet": wallet}
+        )
         await self._refresh_online_count()
 
         room = self._current_room(client_id)
@@ -284,6 +328,10 @@ class RoomManager:
             bot_level = Difficulty(bots.get("level", Difficulty.NORMAL))
         except (TypeError, ValueError):
             raise RoomError("invalid_settings") from None
+        if settings.betting:
+            if bot_count > 0:
+                raise RoomError("bots_not_allowed")
+            await self._require_coins(connection.client_id, settings.stake)
 
         await self._leave(connection.client_id)
         room = self._new_room(settings, quick=False, host=connection)
@@ -305,7 +353,9 @@ class RoomManager:
             await self._broadcast(room)
             return
         if not room.joinable:
-            raise RoomError("room_full")
+            raise RoomError("game_in_progress" if room.in_game else "room_full")
+        if room.settings.betting:
+            await self._require_coins(connection.client_id, room.settings.stake)
         await self._leave(connection.client_id)
         await self._add_player(room, connection)
 
@@ -442,6 +492,8 @@ class RoomManager:
         room = self._require_host(connection.client_id)
         if room.quick or room.phase != "waiting":
             raise RoomError("game_in_progress")
+        if room.settings.betting:
+            raise RoomError("bots_not_allowed")
         if not room.joinable:
             raise RoomError("room_full")
         try:
@@ -497,7 +549,11 @@ class RoomManager:
 
     async def _add_player(self, room: Room, connection: Connection) -> None:
         room.players[connection.client_id] = RoomPlayer(
-            client_id=connection.client_id, nickname=connection.nickname, ready=room.quick
+            client_id=connection.client_id,
+            nickname=connection.nickname,
+            ready=room.quick,
+            avatar_preset=connection.avatar_preset,
+            avatar_url=connection.avatar_url,
         )
         self._room_of[connection.client_id] = room.code
         if room.quick:
@@ -543,6 +599,8 @@ class RoomManager:
         room.live_round = None
         room.results = None
         room.go_at = room.next_round_at = None
+        room.stakers = []
+        room.winnings = {}
         for player in room.players.values():
             player.score = 0
             player.ready = room.quick or player.bot
@@ -628,6 +686,8 @@ class RoomManager:
     async def _run_game(self, room: Room) -> None:
         try:
             await self._rooms_changed()
+            if room.settings.betting and not await self._collect_stakes(room):
+                return
             mode = "duel" if room.settings.max_players == 2 else "multiplayer"
             async with self.session_factory() as session:
                 room.game_id, ids = await multiplayer_service.create_game(
@@ -649,11 +709,13 @@ class RoomManager:
 
             async with self.session_factory() as session:
                 await multiplayer_service.finish_game(session, room.game_id)
+            await self._pay_winners(room)
         except asyncio.CancelledError:
             raise
         except Exception:
             logger.exception("game loop failed in room %s", room.code)
             await self._notice(room, "error", "")
+            await self._refund_stakes(room)
         finally:
             room.game_task = None
 
@@ -750,6 +812,107 @@ class RoomManager:
         room.live_round = None
         room.phase = "results"
         await self._broadcast(room)
+        await self._award_round_points(room, outcome.results, client_of)
+
+    # ------------------------------------------------------------- pièces
+
+    async def _require_coins(self, client_id: str, amount: int) -> None:
+        async with self.session_factory() as session:
+            try:
+                profile = await wallet_service.get_profile(session, client_id)
+            except wallet_service.WalletError as error:
+                raise RoomError(error.code) from None
+            await session.commit()
+        if profile.coins < amount:
+            raise RoomError("not_enough_coins")
+
+    async def _send_wallets(self, updates: dict[str, wallet_service.WalletUpdate]) -> None:
+        for client_id, update in updates.items():
+            await self._send(client_id, {"type": "wallet", **update.as_dict()})
+
+    async def _award_round_points(self, room: Room, results: list, client_of: dict[str, str]) -> None:
+        """Les points de la manche reviennent aux joueurs humains : 20 points font une pièce."""
+        updates = {}
+        async with self.session_factory() as session:
+            for result in results:
+                client_id = client_of[result.player_id]
+                player = room.players.get(client_id)
+                if player is None or player.bot or not wallet_service.is_client_id(client_id):
+                    continue
+                updates[client_id] = await wallet_service.award_points(
+                    session, client_id, result.round_score, reference=room.game_id
+                )
+            await session.commit()
+        await self._send_wallets(updates)
+
+    async def _collect_stakes(self, room: Room) -> bool:
+        """Prélève la mise de chaque joueur au départ d'un salon de paris.
+
+        Tout ou rien : si un joueur n'a plus assez de pièces, personne n'est débité, il est renvoyé
+        de la salle et les autres reviennent en attente.
+        """
+        stake = room.settings.stake
+        humans = [p.client_id for p in room.humans()]
+        broke = []
+        async with self.session_factory() as session:
+            for client_id in humans:
+                try:
+                    await wallet_service.debit(session, client_id, stake, "bet_stake", reference=room.code)
+                except wallet_service.WalletError:
+                    broke.append(client_id)
+            if broke:
+                await session.rollback()
+            else:
+                await session.commit()
+                updates = {
+                    cid: wallet_service.snapshot(await wallet_service.get_profile(session, cid))
+                    for cid in humans
+                }
+        if broke:
+            # Retour en attente : chacun doit se redéclarer prêt.
+            room.phase = "waiting"
+            for player in room.players.values():
+                player.ready = False
+            for client_id in broke:
+                await self._error(client_id, "not_enough_coins")
+                await self._leave(client_id)
+                await self._send(client_id, {"type": "left_room"})
+            if room.code in self.rooms:
+                await self._broadcast(room)
+                await self._rooms_changed()
+            return False
+        room.stakers = humans
+        await self._send_wallets(updates)
+        return True
+
+    async def _pay_winners(self, room: Room) -> None:
+        """Le meilleur score parmi les joueurs restés jusqu'au bout rafle le pot (partagé en cas
+        d'égalité). Celui qui quitte la partie perd sa mise."""
+        if not room.stakers:
+            return
+        remaining = [room.players[cid] for cid in room.stakers if cid in room.players]
+        if not remaining:
+            return
+        best = max(p.score for p in remaining)
+        winners = [p.client_id for p in remaining if p.score == best]
+        share, rest = divmod(room.pot, len(winners))
+        room.winnings = {cid: share + (1 if i < rest else 0) for i, cid in enumerate(winners)}
+        await self._credit_all(room, room.winnings, "bet_win")
+
+    async def _refund_stakes(self, room: Room) -> None:
+        """Partie interrompue par une erreur : chacun récupère sa mise."""
+        if room.stakers and not room.winnings:
+            await self._credit_all(room, {cid: room.settings.stake for cid in room.stakers}, "bet_refund")
+            room.stakers = []
+
+    async def _credit_all(self, room: Room, amounts: dict[str, int], reason: str) -> None:
+        updates = {}
+        async with self.session_factory() as session:
+            for client_id, amount in amounts.items():
+                profile = await wallet_service.credit(session, client_id, amount, reason, reference=room.game_id)
+                updates[client_id] = wallet_service.snapshot(profile, amount)
+            await session.commit()
+        await self._send_wallets(updates)
 
     async def _launch_bots(self, room: Room, live: LiveRound) -> None:
         bots = [p for p in room.players.values() if p.bot and p.client_id in live.participants]
@@ -802,7 +965,11 @@ class RoomManager:
             "quick": room.quick,
             "host_id": room.host_id,
             "phase": room.phase,
+            "pot": room.pot,
+            "winnings": room.winnings,
             "settings": {
+                "kind": settings.kind,
+                "stake": settings.stake,
                 "language": settings.language,
                 "difficulty": settings.difficulty,
                 "categories": [c.value for c in settings.categories],
@@ -822,6 +989,8 @@ class RoomManager:
                     "bot": p.bot,
                     "bot_level": p.bot_level,
                     "hints_left": HINTS_PER_GAME - p.hints_used,
+                    "avatar_preset": p.avatar_preset,
+                    "avatar_url": p.avatar_url,
                 }
                 for p in room.players.values()
             ],
@@ -863,6 +1032,8 @@ class RoomManager:
                 "difficulty": r.settings.difficulty,
                 "rounds": r.settings.rounds,
                 "round_duration": r.settings.round_duration,
+                "kind": r.settings.kind,
+                "stake": r.settings.stake,
             }
             for r in rooms[:50]
         ]

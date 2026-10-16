@@ -9,7 +9,7 @@ from sqlalchemy.pool import NullPool
 from starlette.testclient import TestClient
 
 from app.main import app
-from app.services import letter_service
+from app.services import letter_service, wallet_service
 from app.services.presence_service import MemoryPresence
 from app.services.room_service import RoomManager, Timings
 from tests.conftest import TEST_DATABASE_URL
@@ -32,7 +32,7 @@ def manager(monkeypatch):
 
     async def truncate():
         async with engine.begin() as conn:
-            await conn.execute(text("TRUNCATE games CASCADE"))
+            await conn.execute(text("TRUNCATE games, profiles CASCADE"))
 
     asyncio.run(truncate())
     letter_service.clear_cache()
@@ -350,3 +350,122 @@ def test_round_results_include_examples_for_missed_categories(client):
         assert "country" not in results["examples"], "personne n'a raté le pays"
         alice_fruit = next(p for p in results["players"] if p["nickname"] == "Alice")["answers"][1]
         assert alice_fruit["suggestion"] == results["examples"]["fruit"]
+
+
+# ------------------------------------------------------------------ pièces et paris
+
+
+def give_coins(manager, client_id, amount):
+    async def run():
+        async with manager.session_factory() as session:
+            await wallet_service.credit(session, client_id, amount, "bet_win")
+            await session.commit()
+
+    asyncio.run(run())
+
+
+def coins_of(manager, client_id):
+    async def run():
+        async with manager.session_factory() as session:
+            return (await wallet_service.get_profile(session, client_id)).coins
+
+    return asyncio.run(run())
+
+
+def play_bet_game(alice, bob, room, alice_answers, bob_answers):
+    bob.send_json({"type": "join_room", "code": room["code"]})
+    state(bob, "waiting")
+    alice.send_json({"type": "set_ready", "ready": True})
+    bob.send_json({"type": "set_ready", "ready": True})
+    state(alice, "round")
+    alice.send_json({"type": "submit", "round": 1, "answers": alice_answers})
+    bob.send_json({"type": "submit", "round": 1, "answers": bob_answers})
+    for number in range(2, 6):
+        state(alice, "round", lambda r, n=number: r["round"]["number"] == n)
+        alice.send_json({"type": "submit", "round": number, "answers": {}})
+        bob.send_json({"type": "submit", "round": number, "answers": {}})
+    return state(alice, "finished")
+
+
+def test_welcome_carries_the_wallet(client, manager):
+    give_coins(manager, "alice-0001", 7)
+    with client.websocket_connect("/ws?client_id=alice-0001&nickname=Alice") as ws:
+        welcome = ws.receive_json()
+        assert welcome["wallet"] == {"coins": 7, "coins_gained": 0, "points_to_next_coin": 20}
+
+
+def test_round_points_become_coins(client):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice)
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, "waiting")
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        state(alice, "round")
+        alice.send_json({"type": "submit", "round": 1, "answers": {"city": "Madrid", "country": "Maroc"}})
+        bob.send_json({"type": "submit", "round": 1, "answers": {}})
+        wallet = wait_for(alice, lambda m: m["type"] == "wallet")
+        assert wallet == {"type": "wallet", "coins": 1, "coins_gained": 1, "points_to_next_coin": 20}
+
+
+def test_betting_room_needs_coins(client, manager):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        alice.send_json({"type": "create_room", "settings": {**SETTINGS, "kind": "bet", "stake": 5}})
+        assert error(alice) == "not_enough_coins"
+
+        give_coins(manager, "alice-0001", 5)
+        room = create_room(alice, kind="bet", stake=5)
+        assert room["settings"]["kind"] == "bet" and room["settings"]["stake"] == 5
+
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        assert error(bob) == "not_enough_coins"
+
+        alice.send_json({"type": "add_bot", "level": "easy"})
+        assert error(alice) == "bots_not_allowed"
+
+        alice.send_json({"type": "create_room", "settings": {**SETTINGS, "kind": "bet", "stake": 0}})
+        assert error(alice) == "invalid_settings"
+
+
+def test_winner_takes_the_pot(client, manager):
+    give_coins(manager, "alice-0001", 10)
+    give_coins(manager, "bob-00001", 10)
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice, kind="bet", stake=10)
+        final = play_bet_game(alice, bob, room, {"city": "Madrid"}, {})
+        assert final["pot"] == 20
+        assert final["winnings"] == {"alice-0001": 20}
+    assert coins_of(manager, "alice-0001") == 20
+    assert coins_of(manager, "bob-00001") == 0
+
+
+def test_tied_players_share_the_pot(client, manager):
+    give_coins(manager, "alice-0001", 3)
+    give_coins(manager, "bob-00001", 3)
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice, kind="bet", stake=3)
+        final = play_bet_game(alice, bob, room, {}, {})
+        assert final["winnings"] == {"alice-0001": 3, "bob-00001": 3}
+
+
+def test_player_who_cannot_pay_anymore_is_sent_away(client, manager):
+    give_coins(manager, "alice-0001", 5)
+    give_coins(manager, "bob-00001", 5)
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice, kind="bet", stake=5)
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, "waiting")
+        # Bob dépense ses pièces ailleurs avant le départ.
+        asyncio.run(_spend(manager, "bob-00001", 5))
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        assert error(bob) == "not_enough_coins"
+        room = state(alice, "waiting", lambda r: len(r["players"]) == 1)
+        assert room["pot"] == 0
+    assert coins_of(manager, "alice-0001") == 5
+
+
+async def _spend(manager, client_id, amount):
+    async with manager.session_factory() as session:
+        await wallet_service.debit(session, client_id, amount, "bet_stake")
+        await session.commit()

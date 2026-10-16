@@ -9,7 +9,7 @@ from app.core.game_rules import HINTS_PER_GAME, SUBMIT_GRACE_SECONDS, Category, 
 from app.models import Game, GameRound, HintRequest, Player, PlayerAnswer, Submission
 from app.models.base import utcnow
 from app.schemas.game import SoloGameCreate
-from app.services import hint_service, letter_service, suggestion_service
+from app.services import hint_service, letter_service, suggestion_service, wallet_service
 from app.services.scoring_service import score_round
 from app.services.validation_service import Status, ValidationResult, validate_answer
 
@@ -39,8 +39,11 @@ async def create_solo_game(session: AsyncSession, data: SoloGameCreate) -> Game:
         status="playing",
         players=[Player(nickname=data.nickname)],
         rounds=[],
+        owner_client_id=data.client_id,
     )
     session.add(game)
+    if data.client_id:
+        await wallet_service.get_profile(session, data.client_id, data.nickname)
     await session.commit()
     return game
 
@@ -176,7 +179,8 @@ async def pick_hint(
 
 async def submit_answers(
     session: AsyncSession, game: Game, round_number: int, answers: dict[Category, str]
-    ) -> Submission:
+) -> tuple[Submission, wallet_service.WalletUpdate | None]:
+    """Valide et note la manche ; crédite les points au profil du joueur s'il en a un."""
     game_round = game.current_round
     if game_round is None or game_round.number != round_number:
         raise GameError("round_not_current")
@@ -238,5 +242,10 @@ async def submit_answers(
     if game_round.number >= game.total_rounds:
         game.status = "finished"
 
+    wallet = None
+    if game.owner_client_id:
+        wallet = await wallet_service.award_points(
+            session, game.owner_client_id, submission.score, reference=game.id
+        )
     await session.commit()
-    return submission
+    return submission, wallet

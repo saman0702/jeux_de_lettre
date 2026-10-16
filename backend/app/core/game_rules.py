@@ -60,3 +60,8 @@ HINTS_PER_GAME = 3
 HINT_OPTIONS = 4
 HINT_POINTS_UNIQUE = 5
 HINT_POINTS_SHARED = 2
+
+# Pièces : les points validés par le serveur se convertissent en pièces.
+POINTS_PER_COIN = 20
+# Mise maximale d'un salon de paris.
+MAX_STAKE = 1000

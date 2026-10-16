@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.api.games.router import router as games_router
+from app.api.profiles.router import router as profiles_router
 from app.api.health import router as health_router
 from app.core.config import settings
 from app.core.database import engine
@@ -26,6 +27,7 @@ app = FastAPI(title=settings.app_name, lifespan=lifespan)
 app.state.room_manager = room_manager
 app.include_router(health_router)
 app.include_router(games_router)
+app.include_router(profiles_router)
 app.include_router(ws_router)
 
 
