@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Contenu défilant qui passe sous un en-tête et un pied de page transparents,
-/// en s'estompant aux bords, comme les menus des jeux.
+/// Contenu défilant qui passe sous un en-tête et un pied de page entièrement
+/// transparents (pas de fondu ni de bandeau), comme les menus des jeux.
 class FloatingBarsLayout extends StatelessWidget {
   const FloatingBarsLayout({
     super.key,
@@ -26,36 +26,9 @@ class FloatingBarsLayout extends StatelessWidget {
     return Stack(
       children: [
         Positioned.fill(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final height = constraints.maxHeight;
-              return ShaderMask(
-                blendMode: BlendMode.dstIn,
-                shaderCallback: (rect) => LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: const [
-                    Colors.transparent,
-                    Colors.black,
-                    Colors.black,
-                    Colors.transparent,
-                  ],
-                  stops: [
-                    (headerHeight * 0.55 / height).clamp(0.0, 1.0),
-                    (headerHeight * 0.95 / height).clamp(0.0, 1.0),
-                    (1 - bottom * 0.55 / height).clamp(0.0, 1.0),
-                    (1 - bottom * 0.15 / height).clamp(0.0, 1.0),
-                  ],
-                ).createShader(rect),
-                child: ListView(
-                  padding: padding.copyWith(
-                    top: headerHeight,
-                    bottom: bottom + 8,
-                  ),
-                  children: children,
-                ),
-              );
-            },
+          child: ListView(
+            padding: padding.copyWith(top: headerHeight, bottom: bottom + 8),
+            children: children,
           ),
         ),
         Positioned(top: 0, left: 0, right: 0, child: header),
