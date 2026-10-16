@@ -843,4 +843,33 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eliminationNoRecord => 'Pas encore de record';
+
+  @override
+  String get roomFormat => 'Format';
+
+  @override
+  String get formatRounds => 'Par manches';
+
+  @override
+  String get formatElimination => 'Éliminatoires';
+
+  @override
+  String get formatRoundsHelp =>
+      'Toutes les manches sont jouées : le meilleur total gagne.';
+
+  @override
+  String get formatEliminationHelp =>
+      'À chaque manche, le plus petit score est éliminé. Le dernier en lice gagne.';
+
+  @override
+  String get youAreEliminated =>
+      'Tu es éliminé : regarde la fin de la partie !';
+
+  @override
+  String get youAreOut => 'Tu es éliminé !';
+
+  @override
+  String playerIsOut(String name) {
+    return '$name est éliminé !';
+  }
 }

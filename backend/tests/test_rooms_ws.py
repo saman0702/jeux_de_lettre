@@ -491,3 +491,65 @@ def test_avatars_are_shared_and_photos_can_be_reported(client, manager):
 
         alice.send_json({"type": "report_player", "client_id": "alice-0001"})
         assert error(alice) == "invalid_message"
+
+
+# ------------------------------------------------------------------ éliminatoires
+
+
+def test_knockout_room_eliminates_the_lowest_score_each_round(client):
+    with (
+        player(client, "alice-0001", "Alice") as alice,
+        player(client, "bob-00001", "Bob") as bob,
+        player(client, "carol-0001", "Carol") as carol,
+    ):
+        room = create_room(alice, format="elimination")
+        assert room["settings"]["format"] == "elimination"
+        for ws in (bob, carol):
+            ws.send_json({"type": "join_room", "code": room["code"]})
+            state(ws, "waiting")
+        for ws in (alice, bob, carol):
+            ws.send_json({"type": "set_ready", "ready": True})
+
+        # Manche 1 : tout le monde à 0, personne ne sort.
+        state(alice, "round")
+        for ws in (alice, bob, carol):
+            ws.send_json({"type": "submit", "round": 1, "answers": {}})
+        assert state(alice, "results")["results"]["eliminated"] == []
+
+        # Manche 2 : Carol n'a rien, elle sort.
+        state(alice, "round", lambda r: r["round"]["number"] == 2)
+        alice.send_json({"type": "submit", "round": 2, "answers": {"city": "Madrid"}})
+        bob.send_json({"type": "submit", "round": 2, "answers": {"country": "Maroc"}})
+        carol.send_json({"type": "submit", "round": 2, "answers": {}})
+        results = state(alice, "results", lambda r: r["results"]["number"] == 2)
+        assert results["results"]["eliminated"] == ["carol-0001"]
+        assert {p["client_id"]: p["eliminated_round"] for p in results["players"]}["carol-0001"] == 2
+
+        # Manche 3 : Carol regarde ; Bob n'a rien et sort, Alice gagne, la partie s'arrête.
+        round3 = state(alice, "round", lambda r: r["round"]["number"] == 3)
+        assert {p["client_id"]: p["playing"] for p in round3["players"]}["carol-0001"] is False
+        alice.send_json({"type": "submit", "round": 3, "answers": {"city": "Madrid"}})
+        bob.send_json({"type": "submit", "round": 3, "answers": {}})
+        final = state(alice, "finished")
+        assert final["round_number"] == 3, "ends as soon as one player is left"
+        assert {p["client_id"]: p["eliminated_round"] for p in final["players"]} == {
+            "alice-0001": None,
+            "bob-00001": 3,
+            "carol-0001": 2,
+        }
+
+
+def test_knockout_rooms_cannot_be_joined_during_a_game(client):
+    with (
+        player(client, "alice-0001", "Alice") as alice,
+        player(client, "bob-00001", "Bob") as bob,
+        player(client, "carol-0001", "Carol") as carol,
+    ):
+        room = create_room(alice, format="elimination")
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, "waiting")
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        state(alice, "round")
+        carol.send_json({"type": "join_room", "code": room["code"]})
+        assert error(carol) == "game_in_progress"

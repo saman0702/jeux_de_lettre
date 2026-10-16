@@ -3,6 +3,10 @@ import '../../game/data/models.dart';
 enum RoomPhase { waiting, countdown, round, results, finished }
 
 /// Salon normal, ou salon de paris où chacun mise des pièces.
+/// Toutes les manches (meilleur total) ou éliminatoires (le plus petit score
+/// de chaque manche sort).
+enum RoomFormat { rounds, elimination }
+
 enum RoomKind {
   classic,
   bet;
@@ -24,6 +28,7 @@ class RoomSettings {
     this.public = false,
     this.kind = RoomKind.classic,
     this.stake = 0,
+    this.format = RoomFormat.rounds,
   });
 
   factory RoomSettings.fromJson(
@@ -42,6 +47,7 @@ class RoomSettings {
     public: public,
     kind: RoomKind.values.byName(json['kind'] as String? ?? 'classic'),
     stake: json['stake'] as int? ?? 0,
+    format: RoomFormat.values.byName(json['format'] as String? ?? 'rounds'),
   );
 
   final String language;
@@ -58,6 +64,9 @@ class RoomSettings {
 
   bool get betting => kind == RoomKind.bet;
 
+  final RoomFormat format;
+  bool get elimination => format == RoomFormat.elimination;
+
   Map<String, dynamic> toJson() => {
     'language': language,
     'difficulty': difficulty.name,
@@ -68,6 +77,7 @@ class RoomSettings {
     'public': public,
     'kind': kind.name,
     'stake': stake,
+    'format': format.name,
   };
 }
 
@@ -85,6 +95,7 @@ class RoomPlayer {
     this.avatarPreset = 0,
     this.avatarUrl,
     this.level = 1,
+    this.eliminatedRound,
   });
 
   factory RoomPlayer.fromJson(Map<String, dynamic> json) => RoomPlayer(
@@ -102,6 +113,7 @@ class RoomPlayer {
     avatarPreset: json['avatar_preset'] as int? ?? 0,
     avatarUrl: json['avatar_url'] as String?,
     level: json['level'] as int? ?? 1,
+    eliminatedRound: json['eliminated_round'] as int?,
   );
 
   final String clientId;
@@ -131,6 +143,10 @@ class RoomPlayer {
 
   /// Niveau du joueur (les bots restent au niveau 1).
   final int level;
+
+  /// Éliminatoires : manche où le joueur est sorti.
+  final int? eliminatedRound;
+  bool get eliminated => eliminatedRound != null;
 }
 
 class PlayerRoundResult {
@@ -169,6 +185,7 @@ class RoomRoundResults {
     required this.letter,
     required this.players,
     this.examples = const {},
+    this.eliminated = const [],
   });
 
   factory RoomRoundResults.fromJson(Map<String, dynamic> json) =>
@@ -183,6 +200,10 @@ class RoomRoundResults {
           for (final e in ((json['examples'] as Map?) ?? const {}).entries)
             Category.values.byName(e.key as String): e.value as String,
         },
+        eliminated: [
+          for (final id in (json['eliminated'] as List?) ?? const [])
+            id as String,
+        ],
       );
 
   final int number;
@@ -191,6 +212,9 @@ class RoomRoundResults {
 
   /// Une réponse valide par catégorie ratée par au moins un joueur.
   final Map<Category, String> examples;
+
+  /// Éliminatoires : joueurs sortis à cette manche.
+  final List<String> eliminated;
 
   /// Ce que les autres joueurs ont trouvé dans [category] : (pseudo, réponse).
   List<(String, String)> foundByOthers(Category category, String me) => [
@@ -298,9 +322,17 @@ class RoomState {
     return left.isNegative ? Duration.zero : left;
   }
 
-  /// Joueurs classés par score total.
-  List<RoomPlayer> get ranking =>
-      [...players]..sort((a, b) => b.score.compareTo(a.score));
+  /// Joueurs classés par score total. En éliminatoires, ceux encore en lice
+  /// d'abord, puis les éliminés du plus tardif au plus précoce.
+  List<RoomPlayer> get ranking => [...players]
+    ..sort((a, b) {
+      if (settings.elimination) {
+        final ra = a.eliminatedRound ?? 1 << 20;
+        final rb = b.eliminatedRound ?? 1 << 20;
+        if (ra != rb) return rb.compareTo(ra);
+      }
+      return b.score.compareTo(a.score);
+    });
 }
 
 class RoomSummary {
@@ -315,6 +347,7 @@ class RoomSummary {
     required this.roundDuration,
     this.kind = RoomKind.classic,
     this.stake = 0,
+    this.format = RoomFormat.rounds,
   });
 
   factory RoomSummary.fromJson(Map<String, dynamic> json) => RoomSummary(
@@ -328,11 +361,13 @@ class RoomSummary {
     roundDuration: json['round_duration'] as int,
     kind: RoomKind.values.byName(json['kind'] as String? ?? 'classic'),
     stake: json['stake'] as int? ?? 0,
+    format: RoomFormat.values.byName(json['format'] as String? ?? 'rounds'),
   );
 
   final String code;
   final bool quick;
   final String host;
+  final RoomFormat format;
   final RoomKind kind;
   final int stake;
   final int players;

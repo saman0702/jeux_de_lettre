@@ -1477,6 +1477,54 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Pas encore de record'**
   String get eliminationNoRecord;
+
+  /// No description provided for @roomFormat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Format'**
+  String get roomFormat;
+
+  /// No description provided for @formatRounds.
+  ///
+  /// In fr, this message translates to:
+  /// **'Par manches'**
+  String get formatRounds;
+
+  /// No description provided for @formatElimination.
+  ///
+  /// In fr, this message translates to:
+  /// **'Éliminatoires'**
+  String get formatElimination;
+
+  /// No description provided for @formatRoundsHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les manches sont jouées : le meilleur total gagne.'**
+  String get formatRoundsHelp;
+
+  /// No description provided for @formatEliminationHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'À chaque manche, le plus petit score est éliminé. Le dernier en lice gagne.'**
+  String get formatEliminationHelp;
+
+  /// No description provided for @youAreEliminated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu es éliminé : regarde la fin de la partie !'**
+  String get youAreEliminated;
+
+  /// No description provided for @youAreOut.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu es éliminé !'**
+  String get youAreOut;
+
+  /// No description provided for @playerIsOut.
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} est éliminé !'**
+  String playerIsOut(String name);
 }
 
 class _AppLocalizationsDelegate

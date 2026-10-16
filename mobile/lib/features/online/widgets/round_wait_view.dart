@@ -18,10 +18,14 @@ class RoundWaitView extends StatelessWidget {
     super.key,
     required this.room,
     required this.spectating,
+    this.eliminated = false,
   });
 
   final RoomState room;
   final bool spectating;
+
+  /// Éliminatoires : le joueur est sorti et regarde la fin.
+  final bool eliminated;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +60,11 @@ class RoundWaitView extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  spectating ? l10n.spectating : l10n.answersSent,
+                  eliminated
+                      ? l10n.youAreEliminated
+                      : spectating
+                      ? l10n.spectating
+                      : l10n.answersSent,
                   key: const Key('wait_message'),
                   textAlign: TextAlign.center,
                   style: fredoka(

@@ -229,5 +229,13 @@
   "eliminationRules": "All categories, 30 seconds per round. Score at least the minimum each round or you are out. Survive all {rounds} rounds to become champion!",
   "roundsRange": "Rounds {from} to {to}",
   "eliminationBestTitle": "Your best",
-  "eliminationNoRecord": "No record yet"
+  "eliminationNoRecord": "No record yet",
+  "roomFormat": "Format",
+  "formatRounds": "Rounds",
+  "formatElimination": "Knockout",
+  "formatRoundsHelp": "Every round is played: the best total wins.",
+  "formatEliminationHelp": "Each round, the lowest score is knocked out. The last one standing wins.",
+  "youAreEliminated": "You are out: watch the end of the game!",
+  "youAreOut": "You are out!",
+  "playerIsOut": "{name} is out!"
 }

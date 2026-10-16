@@ -254,6 +254,8 @@ class _RoomTile extends StatelessWidget {
                       chip(l10n.roundsCount(room.rounds)),
                       chip(l10n.secondsShort(room.roundDuration)),
                       chip(room.language.toUpperCase()),
+                      if (room.format == RoomFormat.elimination)
+                        chip(l10n.formatElimination),
                       if (room.kind == RoomKind.bet)
                         Container(
                           margin: const EdgeInsets.only(right: 6, top: 6),

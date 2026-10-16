@@ -379,7 +379,11 @@ class _RoomScreenState extends State<RoomScreen> {
         }
         return WithQuitButton(
           onQuit: _confirmLeave,
-          child: RoundWaitView(room: room, spectating: !(me?.playing ?? false)),
+          child: RoundWaitView(
+            room: room,
+            spectating: !(me?.playing ?? false),
+            eliminated: me?.eliminated ?? false,
+          ),
         );
       case RoomPhase.results:
         return WithQuitButton(

@@ -657,5 +657,20 @@
     }
   },
   "eliminationBestTitle": "Ton record",
-  "eliminationNoRecord": "Pas encore de record"
+  "eliminationNoRecord": "Pas encore de record",
+  "roomFormat": "Format",
+  "formatRounds": "Par manches",
+  "formatElimination": "Éliminatoires",
+  "formatRoundsHelp": "Toutes les manches sont jouées : le meilleur total gagne.",
+  "formatEliminationHelp": "À chaque manche, le plus petit score est éliminé. Le dernier en lice gagne.",
+  "youAreEliminated": "Tu es éliminé : regarde la fin de la partie !",
+  "youAreOut": "Tu es éliminé !",
+  "playerIsOut": "{name} est éliminé !",
+  "@playerIsOut": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

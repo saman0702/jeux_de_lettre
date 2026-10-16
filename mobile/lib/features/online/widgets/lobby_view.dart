@@ -128,6 +128,7 @@ class LobbyView extends StatelessWidget {
               chip(l10n.roundsCount(settings.rounds)),
               chip(l10n.secondsShort(settings.roundDuration)),
               chip(settings.difficulty.label(l10n)),
+              if (settings.elimination) chip(l10n.formatElimination),
               for (final c in settings.categories)
                 Container(
                   padding: const EdgeInsets.symmetric(

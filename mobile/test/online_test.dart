@@ -718,4 +718,67 @@ void main() {
     );
     await pumpFor(tester, const Duration(seconds: 3));
   });
+
+  testWidgets('knockout room: the eliminated player is shown and watches', (
+    tester,
+  ) async {
+    final h = Harness();
+    await h.start(tester, const RoomScreen());
+    Map<String, dynamic> knockout(Map<String, dynamic> event) {
+      ((event['room'] as Map<String, dynamic>)['settings']
+              as Map<String, dynamic>)['format'] =
+          'elimination';
+      return event;
+    }
+
+    h.socket.push(
+      knockout(
+        roomEvent(
+          'results',
+          players: [
+            player(me, 'Blaise', score: 0),
+            {...player('kev', 'Kevin', score: 10)},
+          ],
+          results: {
+            'number': 1,
+            'letter': 'M',
+            'players': [
+              {
+                'client_id': me,
+                'nickname': 'Blaise',
+                'answers': [],
+                'round_score': 0,
+              },
+              {
+                'client_id': 'kev',
+                'nickname': 'Kevin',
+                'answers': [],
+                'round_score': 10,
+              },
+            ],
+            'eliminated': [me],
+          },
+        ),
+      ),
+    );
+    await pumpFor(tester);
+    expect(find.text('You are out!'), findsOneWidget);
+
+    final round = knockout(
+      roomEvent(
+        'round',
+        players: [
+          {...player(me, 'Blaise'), 'playing': false, 'eliminated_round': 1},
+          player('kev', 'Kevin'),
+        ],
+        round: round1(),
+      ),
+    );
+    h.socket.push(round);
+    await pumpFor(tester);
+    expect(
+      find.text('You are out: watch the end of the game!'),
+      findsOneWidget,
+    );
+  });
 }

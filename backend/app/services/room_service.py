@@ -47,6 +47,9 @@ class RoomSettings(GameSettings):
     # « classic » : partie normale ; « bet » : chaque joueur mise `stake` pièces, le premier rafle le pot.
     kind: str = Field(default="classic", pattern="^(classic|bet)$")
     stake: int = Field(default=0, ge=0, le=MAX_STAKE)
+    # « rounds » : toutes les manches, le meilleur total gagne ; « elimination » : à chaque manche,
+    # le plus petit score de la manche est éliminé, le dernier en lice gagne.
+    format: str = Field(default="rounds", pattern="^(rounds|elimination)$")
 
     @model_validator(mode="after")
     def _check_stake(self) -> "RoomSettings":
@@ -59,6 +62,10 @@ class RoomSettings(GameSettings):
     @property
     def betting(self) -> bool:
         return self.kind == "bet"
+
+    @property
+    def elimination(self) -> bool:
+        return self.format == "elimination"
 
 
 @dataclass
@@ -88,6 +95,8 @@ class RoomPlayer:
     db_player_id: str | None = None
     bot_level: Difficulty | None = None
     hints_used: int = 0
+    # Éliminatoires : manche où le joueur a été éliminé (il regarde la suite).
+    eliminated_round: int | None = None
     avatar_preset: int = 0
     avatar_url: str | None = None
     level: int = 1
@@ -140,8 +149,9 @@ class Room:
 
     @property
     def joinable(self) -> bool:
-        # On ne rejoint pas un salon de paris en cours : la mise est payée au départ.
-        if self.settings.betting and self.in_game:
+        # On ne rejoint pas en cours de partie un salon de paris (mise payée au départ) ni des
+        # éliminatoires (tout le monde part à égalité).
+        if (self.settings.betting or self.settings.elimination) and self.in_game:
             return False
         return len(self.players) < self.settings.max_players
 
@@ -642,6 +652,7 @@ class RoomManager:
             player.ready = room.quick or player.bot
             player.db_player_id = None
             player.hints_used = 0
+            player.eliminated_round = None
 
     def _current_room(self, client_id: str) -> Room | None:
         code = self._room_of.get(client_id)
@@ -739,6 +750,9 @@ class RoomManager:
                 await self._play_round(room, number)
                 if number == room.settings.rounds:
                     break
+                # Éliminatoires : la partie s'arrête quand il ne reste qu'un joueur en lice.
+                if room.settings.elimination and len(self._alive(room)) <= 1:
+                    break
                 room.next_round_at = utcnow() + timedelta(seconds=self.timings.results)
                 await self._broadcast(room)
                 await asyncio.sleep(self.timings.results)
@@ -787,7 +801,9 @@ class RoomManager:
             letter=info.letter,
             started_at=info.started_at,
             ends_at=info.ends_at,
-            participants={cid: p.db_player_id for cid, p in room.players.items()},
+            participants={
+                cid: p.db_player_id for cid, p in room.players.items() if p.eliminated_round is None
+            },
         )
         room.phase = "round"
         room.go_at = None
@@ -839,16 +855,37 @@ class RoomManager:
                     "elapsed_ms": result.elapsed_ms,
                 }
             )
+        eliminated = self._eliminate(room, outcome.number, {r["client_id"]: r["round_score"] for r in results})
         room.results = {
             "number": outcome.number,
             "letter": outcome.letter,
             "players": results,
             "examples": outcome.examples,
+            "eliminated": eliminated,
         }
         room.live_round = None
         room.phase = "results"
         await self._broadcast(room)
         await self._award_round_points(room, outcome.results, client_of)
+
+    def _alive(self, room: Room) -> list[RoomPlayer]:
+        return [p for p in room.players.values() if p.eliminated_round is None]
+
+    def _eliminate(self, room: Room, number: int, round_scores: dict[str, int]) -> list[str]:
+        """Éliminatoires : le plus petit score de la manche sort (tous ceux à égalité). Personne ne
+        sort si tous les joueurs en lice ont le même score."""
+        if not room.settings.elimination:
+            return []
+        alive = [p for p in self._alive(room) if p.client_id in round_scores]
+        if len(alive) < 2:
+            return []
+        lowest = min(round_scores[p.client_id] for p in alive)
+        losers = [p for p in alive if round_scores[p.client_id] == lowest]
+        if len(losers) == len(alive):
+            return []
+        for player in losers:
+            player.eliminated_round = number
+        return [p.client_id for p in losers]
 
     # ------------------------------------------------------------- pièces
 
@@ -933,6 +970,9 @@ class RoomManager:
         if not room.stakers:
             return
         remaining = [room.players[cid] for cid in room.stakers if cid in room.players]
+        if room.settings.elimination:
+            # Seuls les joueurs encore en lice peuvent gagner.
+            remaining = [p for p in remaining if p.eliminated_round is None] or remaining
         if not remaining:
             return
         best = max(p.score for p in remaining)
@@ -1012,6 +1052,7 @@ class RoomManager:
             "settings": {
                 "kind": settings.kind,
                 "stake": settings.stake,
+                "format": settings.format,
                 "language": settings.language,
                 "difficulty": settings.difficulty,
                 "categories": [c.value for c in settings.categories],
@@ -1034,6 +1075,7 @@ class RoomManager:
                     "avatar_preset": p.avatar_preset,
                     "avatar_url": p.avatar_url,
                     "level": p.level,
+                    "eliminated_round": p.eliminated_round,
                 }
                 for p in room.players.values()
             ],
@@ -1077,6 +1119,7 @@ class RoomManager:
                 "round_duration": r.settings.round_duration,
                 "kind": r.settings.kind,
                 "stake": r.settings.stake,
+                "format": r.settings.format,
             }
             for r in rooms[:50]
         ]

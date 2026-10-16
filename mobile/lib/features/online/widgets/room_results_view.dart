@@ -16,6 +16,7 @@ import '../../game/widgets/round_result_view.dart';
 import '../data/room_models.dart';
 import '../../../core/widgets/outlined_text.dart';
 import '../../../core/widgets/scroll_under_bars.dart';
+import '../../game/widgets/challenge_banner.dart';
 import 'player_avatar.dart';
 import '../../../core/widgets/game_icon.dart';
 
@@ -163,6 +164,18 @@ class _RoomResultsViewState extends State<RoomResultsView> {
             bottom: padding.bottom + (room.nextRoundAt == null ? 6 : 0),
           ),
           children: [
+            for (final id in results.eliminated)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Center(
+                  child: ChallengeBanner(
+                    text: id == widget.myId
+                        ? l10n.youAreOut
+                        : l10n.playerIsOut(room.player(id)?.nickname ?? ''),
+                    success: false,
+                  ),
+                ),
+              ),
             if (mine != null) ...[
               _SectionTitle(l10n.yourAnswers),
               for (final (i, answer) in mine.answers.indexed)
@@ -238,48 +251,61 @@ class _LeaderboardRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final out = player.eliminated;
     return Container(
       color: isMe ? AppColors.yellow.withValues(alpha: 0.25) : null,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 30,
-            child: rank <= 3
-                ? GameIcon(GameIconKind.medal(rank), size: 26)
-                : Text(
-                    '$rank',
-                    style: fredoka(size: 20, weight: FontWeight.w700),
-                  ),
-          ),
-          PlayerAvatar.of(player, size: 36),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              isMe ? '${player.nickname} (${l10n.youBadge})' : player.nickname,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: fredoka(size: 17, weight: FontWeight.w600),
+      child: Opacity(
+        // Éliminatoires : les joueurs sortis restent dans le classement, grisés.
+        opacity: out ? 0.45 : 1,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 30,
+              child: out
+                  ? const GameIcon(
+                      GameIconKind.warning,
+                      size: 22,
+                      color: AppColors.red,
+                    )
+                  : rank <= 3
+                  ? GameIcon(GameIconKind.medal(rank), size: 26)
+                  : Text(
+                      '$rank',
+                      style: fredoka(size: 20, weight: FontWeight.w700),
+                    ),
             ),
-          ),
-          if (gained != null)
-            Text(
-              '+$gained  ',
-              style: fredoka(
-                size: 15,
-                weight: FontWeight.w700,
-                color: AppColors.green,
+            PlayerAvatar.of(player, size: 36),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                isMe
+                    ? '${player.nickname} (${l10n.youBadge})'
+                    : player.nickname,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: fredoka(size: 17, weight: FontWeight.w600),
               ),
             ),
-          Text(
-            l10n.pointsShort(player.score),
-            style: fredoka(
-              size: 17,
-              weight: FontWeight.w700,
-              color: AppColors.purple,
+            if (gained != null)
+              Text(
+                '+$gained  ',
+                style: fredoka(
+                  size: 15,
+                  weight: FontWeight.w700,
+                  color: AppColors.green,
+                ),
+              ),
+            Text(
+              l10n.pointsShort(player.score),
+              style: fredoka(
+                size: 17,
+                weight: FontWeight.w700,
+                color: AppColors.purple,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
