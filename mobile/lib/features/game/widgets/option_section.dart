@@ -33,6 +33,9 @@ class OptionSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final depth = AppColors.depthOf(color);
+    // Texte foncé sur les couleurs claires (jaune, bleu…) pour rester lisible.
+    final light = color.computeLuminance() > 0.3;
+    final ink = light ? AppColors.ink : AppColors.white;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: BounceIn(
@@ -75,15 +78,15 @@ class OptionSection extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  GameIcon(icon, size: 20, color: AppColors.white),
+                  GameIcon(icon, size: 20, color: ink),
                   const SizedBox(width: 6),
                   Text(
                     title.toUpperCase(),
                     style: fredoka(
                       size: 14,
                       weight: FontWeight.w700,
-                      color: AppColors.white,
-                      shadows: textShadow,
+                      color: ink,
+                      shadows: light ? null : textShadow,
                     ),
                   ),
                 ],
