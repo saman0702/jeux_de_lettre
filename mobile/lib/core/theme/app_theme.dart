@@ -7,22 +7,44 @@ import 'app_colors.dart';
 /// aussi de les afficher dans les captures.
 const emojiFallback = ['NotoColorEmoji'];
 
-/// Fredoka est une police variable : la graisse passe par son axe `wght`.
+/// Style de texte du jeu. Les textes en gras (titres, boutons, scores, mots
+/// joués) prennent la police de jeu Lilita One ; les petits textes restent en
+/// Fredoka, plus lisible en petit. Fredoka est une police variable : sa
+/// graisse passe par l'axe `wght`.
 TextStyle fredoka({
   double size = 16,
   FontWeight weight = FontWeight.w500,
   Color color = AppColors.ink,
   double? height,
   List<Shadow>? shadows,
+}) => weight.value >= 700
+    ? gameFont(size: size, color: color, height: height, shadows: shadows)
+    : TextStyle(
+        fontFamily: 'Fredoka',
+        fontFamilyFallback: emojiFallback,
+        fontSize: size,
+        fontWeight: weight,
+        fontVariations: [FontVariation('wght', weight.value.toDouble())],
+        color: color,
+        height: height,
+        shadows: shadows,
+      );
+
+/// Police de jeu (une seule graisse, déjà très épaisse).
+TextStyle gameFont({
+  double size = 16,
+  Color color = AppColors.ink,
+  double? height,
+  List<Shadow>? shadows,
+  double letterSpacing = 0.3,
 }) => TextStyle(
-  fontFamily: 'Fredoka',
-  fontFamilyFallback: emojiFallback,
+  fontFamily: 'LilitaOne',
+  fontFamilyFallback: const ['Fredoka', ...emojiFallback],
   fontSize: size,
-  fontWeight: weight,
-  fontVariations: [FontVariation('wght', weight.value.toDouble())],
   color: color,
   height: height,
   shadows: shadows,
+  letterSpacing: letterSpacing,
 );
 
 /// Ombre portée douce pour le texte blanc sur le fond violet.

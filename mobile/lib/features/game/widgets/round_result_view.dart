@@ -184,10 +184,11 @@ class _RoundResultViewState extends State<RoundResultView>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              l10n.roundScore,
-                              style: fredoka(
-                                size: 14,
+                              l10n.roundScore.toUpperCase(),
+                              style: gameFont(
+                                size: 12,
                                 color: AppColors.inkSoft,
+                                letterSpacing: 1,
                               ),
                             ),
                             Transform.scale(
@@ -213,10 +214,11 @@ class _RoundResultViewState extends State<RoundResultView>
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              l10n.totalScore,
-                              style: fredoka(
-                                size: 14,
+                              l10n.totalScore.toUpperCase(),
+                              style: gameFont(
+                                size: 12,
                                 color: AppColors.inkSoft,
+                                letterSpacing: 1,
                               ),
                             ),
                             Text(
@@ -314,8 +316,12 @@ class AnswerCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  answer.category.label(l10n),
-                  style: fredoka(size: 13, color: AppColors.inkSoft),
+                  answer.category.label(l10n).toUpperCase(),
+                  style: gameFont(
+                    size: 12,
+                    color: answer.category.color,
+                    letterSpacing: 1,
+                  ),
                 ),
                 Text(
                   shown,

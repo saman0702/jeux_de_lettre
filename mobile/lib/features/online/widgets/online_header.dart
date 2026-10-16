@@ -31,7 +31,7 @@ class OnlineHeader extends StatelessWidget {
           Expanded(
             child: OutlinedText(
               title,
-              strokeWidth: 5,
+              strokeWidth: 3.5,
               style: fredoka(
                 size: 26,
                 weight: FontWeight.w700,

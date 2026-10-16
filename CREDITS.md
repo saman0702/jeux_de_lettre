@@ -25,4 +25,4 @@ aussi affichée dans l'appli (Réglages).
 ## Sons et police
 
 - Effets sonores : synthétisés par `mobile/tool/generate_sounds.py` (aucun échantillon tiers).
-- Police Fredoka : SIL Open Font License.
+- Polices Fredoka et Lilita One (Juan Montoreano) : SIL Open Font License (`mobile/assets/fonts/LilitaOne-OFL.txt`).

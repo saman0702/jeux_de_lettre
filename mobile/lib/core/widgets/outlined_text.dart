@@ -11,7 +11,7 @@ class OutlinedText extends StatelessWidget {
     super.key,
     required this.style,
     this.outline = AppColors.ink,
-    this.strokeWidth = 4,
+    this.strokeWidth = 3,
     this.maxLines = 1,
     this.textAlign = TextAlign.start,
   });

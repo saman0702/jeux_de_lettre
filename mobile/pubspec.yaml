@@ -78,6 +78,10 @@ flutter:
     - family: Fredoka
       fonts:
         - asset: assets/fonts/Fredoka.ttf
+    # Police de titre façon jeu mobile (SIL OFL, voir LilitaOne-OFL.txt).
+    - family: LilitaOne
+      fonts:
+        - asset: assets/fonts/LilitaOne.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:
