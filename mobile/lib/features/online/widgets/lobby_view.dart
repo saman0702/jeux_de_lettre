@@ -11,6 +11,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../game/data/models.dart';
 import '../../game/widgets/labels.dart';
 import '../data/room_models.dart';
+import '../../wallet/bet_banner.dart';
 import 'player_avatar.dart';
 import '../../../core/widgets/game_icon.dart';
 
@@ -136,6 +137,15 @@ class LobbyView extends StatelessWidget {
                 ),
             ],
           ),
+          if (settings.betting) ...[
+            const SizedBox(height: 10),
+            Center(
+              child: BetBanner(
+                text:
+                    '${l10n.stakeShort(settings.stake)} · ${l10n.potLabel(settings.stake * room.players.length)}',
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Expanded(
             child: Align(

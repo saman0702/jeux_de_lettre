@@ -354,5 +354,68 @@
         "type": "String"
       }
     }
-  }
+  },
+  "coinsCount": "{count, plural, =0{0 pièce} =1{1 pièce} other{{count} pièces}}",
+  "@coinsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coinsGained": "+{count, plural, =1{1 pièce} other{{count} pièces}}",
+  "@coinsGained": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "roomKind": "Salon",
+  "roomKindClassic": "Classique",
+  "roomKindBet": "Paris",
+  "stake": "Mise par joueur",
+  "stakeShort": "Mise {count}",
+  "@stakeShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "potLabel": "Pot : {count}",
+  "@potLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "betRules": "Chaque joueur mise la même somme. Le premier rafle tout, le pot est partagé en cas d'égalité. Pas de bots.",
+  "yourCoins": "Ton solde : {count}",
+  "@yourCoins": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "betWon": "Tu rafles {count} pièces !",
+  "@betWon": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "betLost": "Mise perdue : {count} pièces",
+  "@betLost": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorNotEnoughCoins": "Pas assez de pièces pour cette mise.",
+  "errorBotsNotAllowed": "Pas de bots dans un salon de paris."
 }

@@ -21,6 +21,7 @@ class SoloGameSettings {
     this.rounds = 5,
     this.roundDuration = 30,
     this.nickname = 'Player',
+    this.clientId,
   });
 
   static const roundOptions = [5, 10, 15];
@@ -33,6 +34,9 @@ class SoloGameSettings {
   final int roundDuration;
   final String nickname;
 
+  /// Profil à créditer en pièces (parties sur le serveur uniquement).
+  final String? clientId;
+
   Map<String, dynamic> toJson() => {
     'language': language,
     'difficulty': difficulty.name,
@@ -40,6 +44,7 @@ class SoloGameSettings {
     'rounds': rounds,
     'round_duration': roundDuration,
     'nickname': nickname,
+    if (clientId != null) 'client_id': clientId,
   };
 }
 

@@ -254,6 +254,30 @@ class _RoomTile extends StatelessWidget {
                       chip(l10n.roundsCount(room.rounds)),
                       chip(l10n.secondsShort(room.roundDuration)),
                       chip(room.language.toUpperCase()),
+                      if (room.kind == RoomKind.bet)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6, top: 6),
+                          padding: const EdgeInsets.fromLTRB(4, 2, 8, 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.yellow,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const GameIcon(GameIconKind.coin, size: 16),
+                              const SizedBox(width: 3),
+                              Text(
+                                l10n.stakeShort(room.stake),
+                                style: fredoka(
+                                  size: 13,
+                                  weight: FontWeight.w700,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ],

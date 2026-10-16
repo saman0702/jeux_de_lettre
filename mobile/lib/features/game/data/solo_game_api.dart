@@ -1,12 +1,18 @@
+import 'package:flutter/foundation.dart' show ValueChanged;
+
 import '../../../core/network/api_client.dart';
+import '../../wallet/wallet.dart';
 import 'models.dart';
 import 'solo_backend.dart';
 
 /// Parties solo jouées sur le serveur (par défaut quand on est en ligne).
 class SoloGameApi implements SoloBackend {
-  SoloGameApi(this._api);
+  SoloGameApi(this._api, {this.onWallet});
 
   final ApiClient _api;
+
+  /// Reçoit le nouveau solde de pièces après chaque manche.
+  final ValueChanged<WalletSnapshot>? onWallet;
 
   @override
   bool get offline => false;
@@ -34,6 +40,9 @@ class SoloGameApi implements SoloBackend {
         'answers': {for (final e in answers.entries) e.key.name: e.value},
       },
     );
+    if (body['wallet'] case final Map<String, dynamic> wallet) {
+      onWallet?.call(WalletSnapshot.fromJson(wallet));
+    }
     return (
       RoundResult.fromJson(body['round'] as Map<String, dynamic>),
       SoloGame.fromJson(body['game'] as Map<String, dynamic>),

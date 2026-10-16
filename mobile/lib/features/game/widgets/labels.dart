@@ -66,6 +66,8 @@ String errorMessage(AppLocalizations l10n, String? code) => switch (code) {
   'room_full' => l10n.errorRoomFull,
   'game_in_progress' => l10n.errorGameInProgress,
   'not_host' => l10n.errorNotHost,
+  'not_enough_coins' => l10n.errorNotEnoughCoins,
+  'bots_not_allowed' => l10n.errorBotsNotAllowed,
   _ => l10n.errorGeneric,
 };
 

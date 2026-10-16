@@ -302,6 +302,8 @@ void main() {
       'rounds': 10,
       'round_duration': 45,
       'nickname': 'Player',
+      // Les points de la partie vont dans le porte-monnaie de ce profil.
+      'client_id': isNotEmpty,
     });
     expect(find.byType(SoloGameScreen), findsOneWidget);
   });

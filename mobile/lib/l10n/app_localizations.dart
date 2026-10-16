@@ -1021,6 +1021,90 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{name} a trouvé : {answer}'**
   String suggestionFoundBy(String name, String answer);
+
+  /// No description provided for @coinsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{0 pièce} =1{1 pièce} other{{count} pièces}}'**
+  String coinsCount(int count);
+
+  /// No description provided for @coinsGained.
+  ///
+  /// In fr, this message translates to:
+  /// **'+{count, plural, =1{1 pièce} other{{count} pièces}}'**
+  String coinsGained(int count);
+
+  /// No description provided for @roomKind.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salon'**
+  String get roomKind;
+
+  /// No description provided for @roomKindClassic.
+  ///
+  /// In fr, this message translates to:
+  /// **'Classique'**
+  String get roomKindClassic;
+
+  /// No description provided for @roomKindBet.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paris'**
+  String get roomKindBet;
+
+  /// No description provided for @stake.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mise par joueur'**
+  String get stake;
+
+  /// No description provided for @stakeShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mise {count}'**
+  String stakeShort(int count);
+
+  /// No description provided for @potLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pot : {count}'**
+  String potLabel(int count);
+
+  /// No description provided for @betRules.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaque joueur mise la même somme. Le premier rafle tout, le pot est partagé en cas d\'égalité. Pas de bots.'**
+  String get betRules;
+
+  /// No description provided for @yourCoins.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton solde : {count}'**
+  String yourCoins(int count);
+
+  /// No description provided for @betWon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu rafles {count} pièces !'**
+  String betWon(int count);
+
+  /// No description provided for @betLost.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mise perdue : {count} pièces'**
+  String betLost(int count);
+
+  /// No description provided for @errorNotEnoughCoins.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas assez de pièces pour cette mise.'**
+  String get errorNotEnoughCoins;
+
+  /// No description provided for @errorBotsNotAllowed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de bots dans un salon de paris.'**
+  String get errorBotsNotAllowed;
 }
 
 class _AppLocalizationsDelegate

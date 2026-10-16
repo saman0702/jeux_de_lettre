@@ -11,6 +11,7 @@ import 'core/theme/app_theme.dart';
 import 'features/game/offline/offline_dictionary.dart';
 import 'features/home/home_screen.dart';
 import 'features/online/online_controller.dart';
+import 'features/wallet/coin_counter.dart';
 import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
@@ -115,6 +116,8 @@ class _LetterBattleAppState extends State<LetterBattleApp>
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) =>
+                CoinGainOverlay(child: child ?? const SizedBox.shrink()),
             home: widget.home,
           ),
         ),

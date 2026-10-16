@@ -11,7 +11,9 @@ import 'package:letter_battle/features/game/solo_setup_screen.dart';
 import 'package:letter_battle/features/home/home_screen.dart';
 import 'package:letter_battle/features/online/room_screen.dart';
 import 'package:letter_battle/features/online/online_controller.dart';
+import 'package:letter_battle/features/online/create_room_screen.dart';
 import 'package:letter_battle/features/online/rooms_screen.dart';
+import 'package:letter_battle/features/wallet/wallet.dart';
 import 'package:letter_battle/main.dart';
 
 import 'widget_test.dart' show fakeApi;
@@ -577,5 +579,89 @@ void main() {
       findsOneWidget,
       reason: 'personne n\'a trouvé la ville',
     );
+  });
+
+  testWidgets('home shows the coins and celebrates a gain', (tester) async {
+    final h = Harness();
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+    h.socket.push({
+      'type': 'wallet',
+      'coins': 4,
+      'coins_gained': 0,
+      'points_to_next_coin': 10,
+    });
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('coin_counter')),
+        matching: find.text('4'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('coin_gain')), findsNothing);
+
+    h.socket.push({
+      'type': 'wallet',
+      'coins': 5,
+      'coins_gained': 1,
+      'points_to_next_coin': 20,
+    });
+    await pumpFor(tester, const Duration(milliseconds: 600));
+    expect(find.byKey(const Key('coin_gain')), findsOneWidget);
+    expect(find.text('+1 coin'), findsOneWidget);
+    await pumpFor(tester, const Duration(seconds: 3));
+    expect(find.byKey(const Key('coin_gain')), findsNothing);
+    expect(h.online.wallet!.coins, 5);
+  });
+
+  testWidgets('creating a betting room sends the stake', (tester) async {
+    final h = Harness();
+    await h.start(tester, const CreateRoomScreen());
+    h.online.applyWallet(const WalletSnapshot(coins: 30));
+    await tester.pump();
+
+    await tester.tap(find.text('Bets'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('25'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Your balance: 30'), findsOneWidget);
+    await tester.tap(find.text('CREATE'));
+    await tester.pump();
+    final settings = h.socket.sent.last['settings'] as Map<String, dynamic>;
+    expect((settings['kind'], settings['stake']), ('bet', 25));
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('a betting room shows the pot, then what I won', (tester) async {
+    final h = Harness();
+    await h.start(tester, const RoomScreen());
+    Map<String, dynamic> bet(Map<String, dynamic> event) {
+      final room = event['room'] as Map<String, dynamic>;
+      (room['settings'] as Map<String, dynamic>)
+        ..['kind'] = 'bet'
+        ..['stake'] = 10;
+      return event;
+    }
+
+    h.socket.push(bet(roomEvent('waiting')));
+    await pumpFor(tester);
+    expect(find.text('Stake 10 · Pot: 20'), findsOneWidget);
+    expect(find.byKey(const Key('add_bot_button')), findsNothing);
+
+    final finished = bet(
+      roomEvent(
+        'finished',
+        players: [
+          player(me, 'Blaise', score: 30),
+          player('kev', 'Kevin', score: 10),
+        ],
+      ),
+    );
+    (finished['room'] as Map<String, dynamic>)
+      ..['pot'] = 20
+      ..['winnings'] = {me: 20};
+    h.socket.push(finished);
+    await pumpFor(tester, const Duration(seconds: 3));
+    expect(find.text('You win 20 coins!'), findsOneWidget);
   });
 }

@@ -17,6 +17,7 @@ import '../online/online_controller.dart';
 import '../online/room_screen.dart';
 import '../online/rooms_screen.dart';
 import '../online/widgets/online_counter.dart';
+import '../wallet/coin_counter.dart';
 import 'settings_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -91,6 +92,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   children: [
                     const OnlineCounter(),
+                    const SizedBox(width: 8),
+                    const CoinCounter(),
                     const Spacer(),
                     RoundIconButton(
                       key: const Key('settings_button'),

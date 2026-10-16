@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../animations/transitions/pop_route.dart';
+import '../../core/feedback/game_feedback.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -33,7 +34,10 @@ class SoloSetupScreen extends StatefulWidget {
 }
 
 class _SoloSetupScreenState extends State<SoloSetupScreen> {
-  late final SoloGameApi _api = SoloGameApi(widget.apiClient);
+  late final SoloGameApi _api = SoloGameApi(
+    widget.apiClient,
+    onWallet: OnlineScope.of(context).applyWallet,
+  );
   int _rounds = 5;
   int _duration = 30;
   Difficulty _difficulty = Difficulty.normal;
@@ -88,7 +92,10 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
       categories: _selectedCategories,
       rounds: _rounds,
       roundDuration: _duration,
-      nickname: l10n.defaultNickname,
+      nickname:
+          GameFeedbackScope.of(context).settings.nickname ??
+          l10n.defaultNickname,
+      clientId: OnlineScope.of(context).clientId,
     );
 
     SoloBackend backend = _api;

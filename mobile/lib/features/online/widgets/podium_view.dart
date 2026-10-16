@@ -13,6 +13,7 @@ import '../../../core/widgets/candy_button.dart';
 import '../../../core/widgets/game_card.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/room_models.dart';
+import '../../wallet/bet_banner.dart';
 import 'player_avatar.dart';
 import '../../../core/widgets/game_icon.dart';
 
@@ -24,9 +25,15 @@ class PodiumView extends StatefulWidget {
     required this.myId,
     required this.onPlayAgain,
     required this.onLeave,
+    this.stake = 0,
+    this.winnings = const {},
   });
 
   final List<RoomPlayer> ranking;
+
+  /// Salon de paris : mise de chaque joueur et gains des vainqueurs.
+  final int stake;
+  final Map<String, int> winnings;
   final String myId;
   final VoidCallback onPlayAgain;
   final VoidCallback onLeave;
@@ -105,6 +112,21 @@ class _PodiumViewState extends State<PodiumView> {
                 ),
               ],
             ),
+            if (widget.stake > 0) ...[
+              const SizedBox(height: 10),
+              Center(
+                child: BounceIn(
+                  delay: const Duration(milliseconds: 1200),
+                  child: switch (widget.winnings[widget.myId]) {
+                    final int won => BetBanner(text: l10n.betWon(won)),
+                    null => BetBanner(
+                      text: l10n.betLost(widget.stake),
+                      highlight: false,
+                    ),
+                  },
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,

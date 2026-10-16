@@ -527,4 +527,74 @@ class AppLocalizationsFr extends AppLocalizations {
   String suggestionFoundBy(String name, String answer) {
     return '$name a trouvé : $answer';
   }
+
+  @override
+  String coinsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pièces',
+      one: '1 pièce',
+      zero: '0 pièce',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String coinsGained(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pièces',
+      one: '1 pièce',
+    );
+    return '+$_temp0';
+  }
+
+  @override
+  String get roomKind => 'Salon';
+
+  @override
+  String get roomKindClassic => 'Classique';
+
+  @override
+  String get roomKindBet => 'Paris';
+
+  @override
+  String get stake => 'Mise par joueur';
+
+  @override
+  String stakeShort(int count) {
+    return 'Mise $count';
+  }
+
+  @override
+  String potLabel(int count) {
+    return 'Pot : $count';
+  }
+
+  @override
+  String get betRules =>
+      'Chaque joueur mise la même somme. Le premier rafle tout, le pot est partagé en cas d\'égalité. Pas de bots.';
+
+  @override
+  String yourCoins(int count) {
+    return 'Ton solde : $count';
+  }
+
+  @override
+  String betWon(int count) {
+    return 'Tu rafles $count pièces !';
+  }
+
+  @override
+  String betLost(int count) {
+    return 'Mise perdue : $count pièces';
+  }
+
+  @override
+  String get errorNotEnoughCoins => 'Pas assez de pièces pour cette mise.';
+
+  @override
+  String get errorBotsNotAllowed => 'Pas de bots dans un salon de paris.';
 }

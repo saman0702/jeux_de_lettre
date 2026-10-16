@@ -153,5 +153,19 @@
   "settingsLanguage": "Language",
   "languageAuto": "Auto",
   "suggestionExample": "Possible answer: {answer}",
-  "suggestionFoundBy": "{name} found: {answer}"
+  "suggestionFoundBy": "{name} found: {answer}",
+  "coinsCount": "{count, plural, =0{0 coins} =1{1 coin} other{{count} coins}}",
+  "coinsGained": "+{count, plural, =1{1 coin} other{{count} coins}}",
+  "roomKind": "Room",
+  "roomKindClassic": "Classic",
+  "roomKindBet": "Bets",
+  "stake": "Stake per player",
+  "stakeShort": "Stake {count}",
+  "potLabel": "Pot: {count}",
+  "betRules": "Everyone bets the same amount. The winner takes it all; ties share the pot. No bots.",
+  "yourCoins": "Your balance: {count}",
+  "betWon": "You win {count} coins!",
+  "betLost": "Stake lost: {count} coins",
+  "errorNotEnoughCoins": "Not enough coins for this stake.",
+  "errorBotsNotAllowed": "No bots in a betting room."
 }

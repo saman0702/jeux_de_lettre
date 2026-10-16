@@ -2,6 +2,14 @@ import '../../game/data/models.dart';
 
 enum RoomPhase { waiting, countdown, round, results, finished }
 
+/// Salon normal, ou salon de paris où chacun mise des pièces.
+enum RoomKind {
+  classic,
+  bet;
+
+  static const stakeOptions = [5, 10, 25, 50, 100];
+}
+
 DateTime? _date(Object? value) =>
     value == null ? null : DateTime.parse(value as String);
 
@@ -14,6 +22,8 @@ class RoomSettings {
     this.roundDuration = 30,
     this.maxPlayers = 8,
     this.public = false,
+    this.kind = RoomKind.classic,
+    this.stake = 0,
   });
 
   factory RoomSettings.fromJson(
@@ -30,6 +40,8 @@ class RoomSettings {
     roundDuration: json['round_duration'] as int,
     maxPlayers: json['max_players'] as int,
     public: public,
+    kind: RoomKind.values.byName(json['kind'] as String? ?? 'classic'),
+    stake: json['stake'] as int? ?? 0,
   );
 
   final String language;
@@ -39,6 +51,12 @@ class RoomSettings {
   final int roundDuration;
   final int maxPlayers;
   final bool public;
+  final RoomKind kind;
+
+  /// Pièces misées par chaque joueur dans un salon de paris.
+  final int stake;
+
+  bool get betting => kind == RoomKind.bet;
 
   Map<String, dynamic> toJson() => {
     'language': language,
@@ -48,6 +66,8 @@ class RoomSettings {
     'round_duration': roundDuration,
     'max_players': maxPlayers,
     'public': public,
+    'kind': kind.name,
+    'stake': stake,
   };
 }
 
@@ -62,6 +82,8 @@ class RoomPlayer {
     required this.playing,
     this.botLevel,
     this.hintsLeft = 0,
+    this.avatarPreset = 0,
+    this.avatarUrl,
   });
 
   factory RoomPlayer.fromJson(Map<String, dynamic> json) => RoomPlayer(
@@ -76,6 +98,8 @@ class RoomPlayer {
         ? null
         : Difficulty.values.byName(json['bot_level'] as String),
     hintsLeft: json['hints_left'] as int? ?? 0,
+    avatarPreset: json['avatar_preset'] as int? ?? 0,
+    avatarUrl: json['avatar_url'] as String?,
   );
 
   final String clientId;
@@ -97,6 +121,11 @@ class RoomPlayer {
 
   /// Jokers restants dans cette partie.
   final int hintsLeft;
+
+  final int avatarPreset;
+
+  /// Photo transformée en avatar (chemin sur le serveur), sinon avatar dessiné.
+  final String? avatarUrl;
 }
 
 class PlayerRoundResult {
@@ -183,6 +212,8 @@ class RoomState {
     this.startsAt,
     this.goAt,
     this.nextRoundAt,
+    this.pot = 0,
+    this.winnings = const {},
   });
 
   factory RoomState.fromJson(
@@ -217,6 +248,11 @@ class RoomState {
       startsAt: _date(json['starts_at']),
       goAt: _date(json['go_at']),
       nextRoundAt: _date(json['next_round_at']),
+      pot: json['pot'] as int? ?? 0,
+      winnings: {
+        for (final e in ((json['winnings'] as Map?) ?? const {}).entries)
+          e.key as String: e.value as int,
+      },
       clockOffset: serverTime.difference(receivedAt ?? DateTime.now()),
     );
   }
@@ -233,6 +269,10 @@ class RoomState {
   final DateTime? startsAt;
   final DateTime? goAt;
   final DateTime? nextRoundAt;
+
+  /// Salon de paris : pièces en jeu, puis ce que chaque gagnant a remporté.
+  final int pot;
+  final Map<String, int> winnings;
 
   /// Horloge du serveur moins horloge de l'appareil, pour décompter jusqu'aux
   /// échéances du serveur.
@@ -268,6 +308,8 @@ class RoomSummary {
     required this.language,
     required this.rounds,
     required this.roundDuration,
+    this.kind = RoomKind.classic,
+    this.stake = 0,
   });
 
   factory RoomSummary.fromJson(Map<String, dynamic> json) => RoomSummary(
@@ -279,11 +321,15 @@ class RoomSummary {
     language: json['language'] as String,
     rounds: json['rounds'] as int,
     roundDuration: json['round_duration'] as int,
+    kind: RoomKind.values.byName(json['kind'] as String? ?? 'classic'),
+    stake: json['stake'] as int? ?? 0,
   );
 
   final String code;
   final bool quick;
   final String host;
+  final RoomKind kind;
+  final int stake;
   final int players;
   final int maxPlayers;
   final String language;

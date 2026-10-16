@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/realtime_client.dart';
 import '../game/data/models.dart';
+import '../wallet/wallet.dart';
 import 'data/room_models.dart';
 
 enum NoticeKind { joined, left, disconnected, reconnected, botsJoined, error }
@@ -38,6 +39,7 @@ class OnlineController extends ChangeNotifier {
   late final StreamSubscription<Map<String, dynamic>> _subscription;
   final _notices = StreamController<RoomNotice>.broadcast();
   final _errors = StreamController<String>.broadcast();
+  final _coinGains = StreamController<int>.broadcast();
 
   final Map<Category, Completer<HintOptions>> _hintRequests = {};
   final Map<Category, Completer<HintPick>> _hintPicks = {};
@@ -46,6 +48,7 @@ class OnlineController extends ChangeNotifier {
   List<RoomSummary> _rooms = const [];
   RoomState? _room;
   bool _searching = false;
+  WalletSnapshot? _wallet;
 
   String get clientId => client.clientId;
   bool get isOnline => client.isOnline;
@@ -53,6 +56,19 @@ class OnlineController extends ChangeNotifier {
   List<RoomSummary> get rooms => _rooms;
   RoomState? get room => _room;
   RoomPlayer? get me => _room?.player(clientId);
+
+  /// Solde de pièces connu (null tant que le serveur ne l'a pas envoyé).
+  WalletSnapshot? get wallet => _wallet;
+
+  /// Pièces gagnées, pour l'animation « +1 pièce ».
+  Stream<int> get coinGains => _coinGains.stream;
+
+  /// Nouveau solde reçu par la socket ou par l'API solo.
+  void applyWallet(WalletSnapshot wallet) {
+    _wallet = wallet;
+    if (wallet.coinsGained > 0) _coinGains.add(wallet.coinsGained);
+    notifyListeners();
+  }
 
   /// En attente que le serveur nous place dans une salle (partie rapide,
   /// création, rejoindre).
@@ -148,6 +164,12 @@ class OnlineController extends ChangeNotifier {
     switch (event['type']) {
       case 'welcome':
         _onlineCount = event['online_count'] as int;
+        if (event['wallet'] case final Map<String, dynamic> wallet) {
+          _wallet = WalletSnapshot.fromJson(wallet);
+        }
+      case 'wallet':
+        applyWallet(WalletSnapshot.fromJson(event));
+        return;
       case 'online_count':
         _onlineCount = event['count'] as int;
       case 'room_list':
@@ -197,6 +219,7 @@ class OnlineController extends ChangeNotifier {
     client.removeListener(notifyListeners);
     _notices.close();
     _errors.close();
+    _coinGains.close();
     super.dispose();
   }
 }

@@ -57,6 +57,8 @@ class _RoomScreenState extends State<RoomScreen> {
   /// Le podium final reste à l'écran jusqu'au choix du joueur, même si
   /// quelqu'un a déjà relancé la salle.
   List<RoomPlayer>? _podium;
+  int _podiumStake = 0;
+  Map<String, int> _podiumWinnings = const {};
   bool _left = false;
 
   /// Renseigné dès qu'une demande de salle a été vue, pour qu'une demande
@@ -112,6 +114,8 @@ class _RoomScreenState extends State<RoomScreen> {
     }
     if (room.phase == RoomPhase.finished && _podium == null) {
       _podium = room.ranking;
+      _podiumStake = room.settings.stake;
+      _podiumWinnings = room.winnings;
     }
     _feedback.musicWanted =
         room.phase == RoomPhase.waiting || room.phase == RoomPhase.finished;
@@ -312,6 +316,8 @@ class _RoomScreenState extends State<RoomScreen> {
         myId: _online.clientId,
         onPlayAgain: _playAgain,
         onLeave: _close,
+        stake: _podiumStake,
+        winnings: _podiumWinnings,
       );
     }
     if (room == null) return SearchingView(onCancel: _close);
@@ -324,7 +330,8 @@ class _RoomScreenState extends State<RoomScreen> {
           room: room,
           myId: _online.clientId,
           onReady: _online.setReady,
-          onAddBot: isHost ? _online.addBot : null,
+          // Pas de bots dans un salon de paris.
+          onAddBot: isHost && !room.settings.betting ? _online.addBot : null,
           onRemoveBot: isHost ? _online.removeBot : null,
         );
       case RoomPhase.countdown:

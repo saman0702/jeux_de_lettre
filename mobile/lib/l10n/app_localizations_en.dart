@@ -525,4 +525,74 @@ class AppLocalizationsEn extends AppLocalizations {
   String suggestionFoundBy(String name, String answer) {
     return '$name found: $answer';
   }
+
+  @override
+  String coinsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count coins',
+      one: '1 coin',
+      zero: '0 coins',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String coinsGained(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count coins',
+      one: '1 coin',
+    );
+    return '+$_temp0';
+  }
+
+  @override
+  String get roomKind => 'Room';
+
+  @override
+  String get roomKindClassic => 'Classic';
+
+  @override
+  String get roomKindBet => 'Bets';
+
+  @override
+  String get stake => 'Stake per player';
+
+  @override
+  String stakeShort(int count) {
+    return 'Stake $count';
+  }
+
+  @override
+  String potLabel(int count) {
+    return 'Pot: $count';
+  }
+
+  @override
+  String get betRules =>
+      'Everyone bets the same amount. The winner takes it all; ties share the pot. No bots.';
+
+  @override
+  String yourCoins(int count) {
+    return 'Your balance: $count';
+  }
+
+  @override
+  String betWon(int count) {
+    return 'You win $count coins!';
+  }
+
+  @override
+  String betLost(int count) {
+    return 'Stake lost: $count coins';
+  }
+
+  @override
+  String get errorNotEnoughCoins => 'Not enough coins for this stake.';
+
+  @override
+  String get errorBotsNotAllowed => 'No bots in a betting room.';
 }

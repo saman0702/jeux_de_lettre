@@ -59,7 +59,12 @@ enum GameIconKind {
   crown(null, IconMotion.bob),
   medal1(null, IconMotion.swing),
   medal2(null, IconMotion.swing),
-  medal3(null, IconMotion.swing);
+  medal3(null, IconMotion.swing),
+  coin(null, IconMotion.spin),
+  bet(Icons.casino_rounded, IconMotion.shake),
+  camera(Icons.photo_camera_rounded, IconMotion.pulse),
+  gallery(Icons.photo_library_rounded, IconMotion.bob),
+  flag(Icons.flag_rounded, IconMotion.swing);
 
   const GameIconKind(this.icon, this.motion);
 
@@ -280,9 +285,53 @@ class _DrawnIcon extends CustomPainter {
         _medal(canvas, size, 2, const Color(0xFFD5DCE8));
       case GameIconKind.medal3:
         _medal(canvas, size, 3, const Color(0xFFE59A5B));
+      case GameIconKind.coin:
+        _coin(canvas, size);
       default:
         break;
     }
+  }
+
+  /// Pièce d'or : tranche plus sombre, anneau intérieur, étoile en relief.
+  void _coin(Canvas canvas, Size s) {
+    final w = s.width;
+    final center = Offset(w / 2, w / 2);
+    canvas.drawCircle(
+      center.translate(0, w * 0.05),
+      w * 0.46,
+      Paint()..color = const Color(0xFFC97A0A),
+    );
+    canvas.drawCircle(
+      center,
+      w * 0.46,
+      Paint()
+        ..shader = const RadialGradient(
+          center: Alignment(-0.35, -0.4),
+          colors: [Color(0xFFFFF3A6), Color(0xFFFFC93C), Color(0xFFF29D12)],
+          stops: [0, 0.55, 1],
+        ).createShader(Rect.fromCircle(center: center, radius: w * 0.46)),
+    );
+    canvas.drawCircle(
+      center,
+      w * 0.34,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.05
+        ..color = const Color(0xFFD98A0E),
+    );
+    final star = Path();
+    for (var i = 0; i < 10; i++) {
+      final r = i.isEven ? w * 0.2 : w * 0.09;
+      final a = -pi / 2 + i * pi / 5;
+      final p = center + Offset(cos(a) * r, sin(a) * r);
+      i == 0 ? star.moveTo(p.dx, p.dy) : star.lineTo(p.dx, p.dy);
+    }
+    star.close();
+    canvas.drawPath(star, Paint()..color = const Color(0xFFD98A0E));
+    canvas.drawPath(
+      star.shift(Offset(0, -w * 0.02)),
+      Paint()..color = const Color(0xFFFFF6C2),
+    );
   }
 
   void _apple(Canvas canvas, Size s) {
