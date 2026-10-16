@@ -162,24 +162,6 @@ class _Letter {
   final double x, y, size, blur, speed, phase;
 }
 
-enum _ShapeKind { star, triangle, diamond, pearl }
-
-class _Shape {
-  const _Shape(this.kind, this.x, this.y, this.size, this.phase);
-
-  final _ShapeKind kind;
-  final double x, y, size, phase;
-}
-
-class _Beam {
-  const _Beam(this.points, this.color, this.speed);
-
-  /// Points de contrôle de la courbe, en fractions de l'écran.
-  final List<Offset> points;
-  final Color color;
-  final double speed;
-}
-
 const _bubbles = [
   _Bubble(0.02, 0.18, 0.30, 0.0),
   _Bubble(0.98, 0.02, 0.26, 1.7),
@@ -201,77 +183,6 @@ const _letters = [
   _Letter('R', 0.14, 0.80, 88, 3.0, 0.9, 0.9),
   _Letter('S', 0.88, 0.78, 84, 2.0, 1.1, 1.6),
   _Letter('V', 0.58, 0.90, 98, 3.0, 0.8, 2.3),
-];
-
-const _shapes = [
-  _Shape(_ShapeKind.star, 0.10, 0.04, 16, 0.2),
-  _Shape(_ShapeKind.triangle, 0.10, 0.12, 14, 1.0),
-  _Shape(_ShapeKind.triangle, 0.33, 0.17, 12, 1.8),
-  _Shape(_ShapeKind.pearl, 0.80, 0.07, 9, 2.6),
-  _Shape(_ShapeKind.triangle, 0.64, 0.21, 13, 3.3),
-  _Shape(_ShapeKind.pearl, 0.84, 0.21, 12, 4.1),
-  _Shape(_ShapeKind.pearl, 0.26, 0.29, 8, 4.9),
-  _Shape(_ShapeKind.star, 0.36, 0.34, 13, 5.6),
-  _Shape(_ShapeKind.triangle, 0.78, 0.50, 14, 0.6),
-  _Shape(_ShapeKind.star, 0.68, 0.58, 13, 1.4),
-  _Shape(_ShapeKind.pearl, 0.92, 0.58, 9, 2.1),
-  _Shape(_ShapeKind.diamond, 0.42, 0.69, 18, 2.9),
-  _Shape(_ShapeKind.pearl, 0.66, 0.74, 12, 3.7),
-  _Shape(_ShapeKind.star, 0.35, 0.84, 14, 4.4),
-  _Shape(_ShapeKind.pearl, 0.06, 0.72, 9, 5.2),
-];
-
-const _beams = [
-  _Beam(
-    [
-      Offset(-0.1, 0.32),
-      Offset(0.3, 0.45),
-      Offset(0.6, 0.20),
-      Offset(1.1, 0.24),
-    ],
-    Color(0xFFFF8BE8),
-    0.05,
-  ),
-  _Beam(
-    [
-      Offset(-0.1, 0.33),
-      Offset(0.25, 0.40),
-      Offset(0.5, 0.48),
-      Offset(1.1, 0.30),
-    ],
-    Color(0xFFE3B8FF),
-    0.04,
-  ),
-  _Beam(
-    [
-      Offset(-0.1, 0.46),
-      Offset(0.3, 0.54),
-      Offset(0.6, 0.50),
-      Offset(1.1, 0.62),
-    ],
-    Color(0xFF8FB4FF),
-    0.06,
-  ),
-  _Beam(
-    [
-      Offset(-0.1, 0.72),
-      Offset(0.35, 0.74),
-      Offset(0.7, 0.66),
-      Offset(1.1, 0.70),
-    ],
-    Color(0xFFFF9CF0),
-    0.045,
-  ),
-  _Beam(
-    [
-      Offset(0.1, 0.72),
-      Offset(0.3, 0.78),
-      Offset(0.42, 0.80),
-      Offset(0.47, 0.82),
-    ],
-    Color(0xFFFFC2F7),
-    0.07,
-  ),
 ];
 
 /// Lettre [index] à [seconds] secondes de l'horloge partagée : position et
@@ -301,9 +212,7 @@ class _ScenePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final t = time.value;
     _paintBubbles(canvas, size, t);
-    _paintBeams(canvas, size, t);
     _paintLetters(canvas, size, t);
-    _paintShapes(canvas, size, t);
   }
 
   void _paintBubbles(Canvas canvas, Size size, double t) {
@@ -348,56 +257,6 @@ class _ScenePainter extends CustomPainter {
           ..color = Colors.white.withValues(alpha: 0.22)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
       );
-    }
-  }
-
-  void _paintBeams(Canvas canvas, Size size, double t) {
-    for (final beam in _beams) {
-      final p = [
-        for (final o in beam.points)
-          Offset(o.dx * size.width, o.dy * size.height),
-      ];
-      final path = Path()
-        ..moveTo(p[0].dx, p[0].dy)
-        ..cubicTo(p[1].dx, p[1].dy, p[2].dx, p[2].dy, p[3].dx, p[3].dy);
-      // Ligne : un halo flou sous un trait fin.
-      canvas.drawPath(
-        path,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 5
-          ..color = beam.color.withValues(alpha: 0.10)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
-      );
-      canvas.drawPath(
-        path,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.2
-          ..color = beam.color.withValues(alpha: 0.35),
-      );
-      // Point de lumière qui parcourt la ligne (il réapparaît à l'autre
-      // bout en restant hors écran ou en fondu, donc sans à-coup visible).
-      final metric = path.computeMetrics().first;
-      final progress = (t * beam.speed + beam.points[0].dy) % 1.0;
-      final fade = sin(progress * pi);
-      final pos = metric
-          .getTangentForOffset(metric.length * progress)
-          ?.position;
-      if (pos != null && fade > 0.02) {
-        canvas.drawCircle(
-          pos,
-          12,
-          Paint()
-            ..color = beam.color.withValues(alpha: 0.55 * fade)
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
-        );
-        canvas.drawCircle(
-          pos,
-          3.4,
-          Paint()..color = Colors.white.withValues(alpha: 0.95 * fade),
-        );
-      }
     }
   }
 
@@ -447,84 +306,6 @@ class _ScenePainter extends CustomPainter {
       body.paint(canvas, Offset(-body.width / 2, -body.height / 2));
       canvas.restore();
     }
-  }
-
-  void _paintShapes(Canvas canvas, Size size, double t) {
-    for (final s in _shapes) {
-      final center = Offset(
-        s.x * size.width + sin(t * 0.3 + s.phase) * 5,
-        s.y * size.height + sin(t * 0.4 + s.phase * 1.4) * 8,
-      );
-      final angle = sin(t * 0.25 + s.phase) * 0.35;
-      final r = s.size;
-      final rect = Rect.fromCircle(center: center, radius: r);
-      final fill = Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFC9A7FF).withValues(alpha: 0.85),
-            const Color(0xFF7B4DFF).withValues(alpha: 0.75),
-          ],
-        ).createShader(rect);
-      canvas.save();
-      canvas.translate(center.dx, center.dy);
-      canvas.rotate(angle);
-      final path = switch (s.kind) {
-        _ShapeKind.star => _star(r),
-        _ShapeKind.triangle => _roundedPolygon(3, r),
-        _ShapeKind.diamond => _roundedPolygon(4, r),
-        _ShapeKind.pearl => null,
-      };
-      if (path == null) {
-        canvas.drawCircle(Offset.zero, r, fill);
-      } else {
-        // Le trait épais aux jointures arrondies adoucit les angles (effet bonbon).
-        canvas.drawPath(path, fill);
-        canvas.drawPath(
-          path,
-          Paint()
-            ..shader = fill.shader
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = r * 0.45
-            ..strokeJoin = StrokeJoin.round,
-        );
-      }
-      // Reflet.
-      canvas.drawCircle(
-        Offset(-r * 0.3, -r * 0.35),
-        r * 0.28,
-        Paint()
-          ..color = Colors.white.withValues(alpha: 0.55)
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * 0.12),
-      );
-      canvas.restore();
-    }
-  }
-
-  static Path _star(double r) {
-    final path = Path();
-    for (var i = 0; i < 10; i++) {
-      final radius = i.isEven ? r : r * 0.48;
-      final a = -pi / 2 + i * pi / 5;
-      final point = Offset(cos(a) * radius, sin(a) * radius);
-      i == 0
-          ? path.moveTo(point.dx, point.dy)
-          : path.lineTo(point.dx, point.dy);
-    }
-    return path..close();
-  }
-
-  static Path _roundedPolygon(int sides, double r) {
-    final path = Path();
-    for (var i = 0; i < sides; i++) {
-      final a = -pi / 2 + i * 2 * pi / sides;
-      final point = Offset(cos(a) * r, sin(a) * r);
-      i == 0
-          ? path.moveTo(point.dx, point.dy)
-          : path.lineTo(point.dx, point.dy);
-    }
-    return path..close();
   }
 
   @override
