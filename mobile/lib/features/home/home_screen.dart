@@ -97,10 +97,24 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Row(
                   children: [
-                    const OnlineCounter(),
+                    // Rétrécit sur les petits écrans plutôt que de déborder.
+                    // Prend toute la place libre : réglages et avatar restent
+                    // à droite.
+                    const Flexible(
+                      fit: FlexFit.tight,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          children: [
+                            OnlineCounter(),
+                            SizedBox(width: 8),
+                            CoinCounter(),
+                          ],
+                        ),
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    const CoinCounter(),
-                    const Spacer(),
                     _MyAvatarButton(
                       onTap: () => Navigator.of(context).push(
                         PopRoute(builder: (_) => AvatarScreen(apiClient: _api)),

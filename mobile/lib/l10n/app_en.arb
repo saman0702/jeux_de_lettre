@@ -180,5 +180,15 @@
   "reportMessage": "{name}'s photo is removed after several reports.",
   "reportConfirm": "REPORT",
   "reportSent": "Thanks, report sent.",
-  "musicCredits": "Music by Kevin MacLeod (incompetech.com), licensed under Creative Commons BY 4.0: “Monkeys Spinning Monkeys”, “Fluffing a Duck”, “Carefree”, “Pixel Peeker Polka”, “Sneaky Snitch”, “Investigations”, “Run Amok”, “Funkorama”, “Itty Bitty 8 Bit”, “Bit Quest”."
+  "musicCredits": "Music by Kevin MacLeod (incompetech.com), licensed under Creative Commons BY 4.0: “Monkeys Spinning Monkeys”, “Fluffing a Duck”, “Carefree”, “Pixel Peeker Polka”, “Sneaky Snitch”, “Investigations”, “Run Amok”, “Funkorama”, “Itty Bitty 8 Bit”, “Bit Quest”.",
+  "shopTitle": "Shop",
+  "shopCoinsLabel": "coins",
+  "shopBonus": "+{percent}%",
+  "shopBought": "+{count} coins, thank you!",
+  "shopPending": "Payment pending: your coins will arrive once it is confirmed.",
+  "shopInvalid": "This purchase could not be validated.",
+  "shopStoreError": "The purchase did not go through.",
+  "shopRetryLater": "Purchase received: your coins will be added as soon as the server is reachable.",
+  "shopUnavailable": "The shop is not available on this device right now.",
+  "shopLegal": "Payment secured by Google Play or the App Store. Coins have no monetary value: they cannot be refunded, exchanged or converted into money."
 }

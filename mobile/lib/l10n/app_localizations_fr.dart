@@ -640,4 +640,42 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get musicCredits =>
       'Musiques de Kevin MacLeod (incompetech.com), licence Creative Commons BY 4.0 : « Monkeys Spinning Monkeys », « Fluffing a Duck », « Carefree », « Pixel Peeker Polka », « Sneaky Snitch », « Investigations », « Run Amok », « Funkorama », « Itty Bitty 8 Bit », « Bit Quest ».';
+
+  @override
+  String get shopTitle => 'Boutique';
+
+  @override
+  String get shopCoinsLabel => 'pièces';
+
+  @override
+  String shopBonus(int percent) {
+    return '+$percent %';
+  }
+
+  @override
+  String shopBought(int count) {
+    return '+$count pièces, merci !';
+  }
+
+  @override
+  String get shopPending =>
+      'Paiement en attente : tes pièces arriveront dès qu\'il sera confirmé.';
+
+  @override
+  String get shopInvalid => 'Cet achat n\'a pas pu être validé.';
+
+  @override
+  String get shopStoreError => 'L\'achat n\'a pas abouti.';
+
+  @override
+  String get shopRetryLater =>
+      'Achat reçu : tes pièces seront ajoutées dès que le serveur sera joignable.';
+
+  @override
+  String get shopUnavailable =>
+      'La boutique n\'est pas disponible sur cet appareil pour le moment.';
+
+  @override
+  String get shopLegal =>
+      'Paiement sécurisé par Google Play ou l\'App Store. Les pièces n\'ont aucune valeur monétaire : elles ne sont ni remboursables, ni échangeables, ni convertibles en argent.';
 }

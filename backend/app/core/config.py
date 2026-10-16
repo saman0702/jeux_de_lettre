@@ -18,6 +18,19 @@ class Settings(BaseSettings):
     # Avatars dessinés à partir des photos (servis sous /media).
     media_dir: str = "media"
 
+    # Boutique : vérification des achats auprès des stores. Sans ces réglages, la boutique répond
+    # « store_not_configured ».
+    google_play_package: str = "com.letterbattle.letter_battle"
+    # Fichier JSON du compte de service ayant accès à l'API Google Play Developer.
+    google_service_account_file: str | None = None
+    apple_bundle_id: str = "com.letterbattle.letterBattle"
+    apple_issuer_id: str | None = None
+    apple_key_id: str | None = None
+    # Clé privée « In-App Purchase » (.p8) téléchargée depuis App Store Connect.
+    apple_private_key_file: str | None = None
+    # « sandbox » pendant les tests, « production » une fois l'appli publiée.
+    apple_environment: str = "sandbox"
+
     database_url_env: str | None = Field(default=None, validation_alias="DATABASE_URL")
     redis_url_env: str | None = Field(default=None, validation_alias="REDIS_URL")
 

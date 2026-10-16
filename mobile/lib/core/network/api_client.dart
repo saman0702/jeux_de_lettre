@@ -38,6 +38,22 @@ class ApiClient {
   Future<Map<String, dynamic>> getJson(String path) =>
       _send(() => _client.get(Uri.parse('$baseUrl$path')));
 
+  /// Pour les réponses qui sont une liste JSON.
+  Future<List<dynamic>> getJsonList(String path) async {
+    final http.Response response;
+    try {
+      response = await _client
+          .get(Uri.parse('$baseUrl$path'))
+          .timeout(_timeout);
+    } catch (_) {
+      throw ApiException('network_error');
+    }
+    if (response.statusCode >= 400) {
+      throw ApiException('http_${response.statusCode}', response.statusCode);
+    }
+    return jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+  }
+
   Future<Map<String, dynamic>> postJson(
     String path, [
     Map<String, dynamic>? body,

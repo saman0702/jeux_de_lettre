@@ -638,4 +638,42 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get musicCredits =>
       'Music by Kevin MacLeod (incompetech.com), licensed under Creative Commons BY 4.0: “Monkeys Spinning Monkeys”, “Fluffing a Duck”, “Carefree”, “Pixel Peeker Polka”, “Sneaky Snitch”, “Investigations”, “Run Amok”, “Funkorama”, “Itty Bitty 8 Bit”, “Bit Quest”.';
+
+  @override
+  String get shopTitle => 'Shop';
+
+  @override
+  String get shopCoinsLabel => 'coins';
+
+  @override
+  String shopBonus(int percent) {
+    return '+$percent%';
+  }
+
+  @override
+  String shopBought(int count) {
+    return '+$count coins, thank you!';
+  }
+
+  @override
+  String get shopPending =>
+      'Payment pending: your coins will arrive once it is confirmed.';
+
+  @override
+  String get shopInvalid => 'This purchase could not be validated.';
+
+  @override
+  String get shopStoreError => 'The purchase did not go through.';
+
+  @override
+  String get shopRetryLater =>
+      'Purchase received: your coins will be added as soon as the server is reachable.';
+
+  @override
+  String get shopUnavailable =>
+      'The shop is not available on this device right now.';
+
+  @override
+  String get shopLegal =>
+      'Payment secured by Google Play or the App Store. Coins have no monetary value: they cannot be refunded, exchanged or converted into money.';
 }

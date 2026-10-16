@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.games.router import router as games_router
 from app.api.profiles.router import router as profiles_router
+from app.api.shop.router import router as shop_router
 from app.api.health import router as health_router
 from app.core.config import settings
 from app.core.database import engine
@@ -30,6 +31,7 @@ app.state.room_manager = room_manager
 app.include_router(health_router)
 app.include_router(games_router)
 app.include_router(profiles_router)
+app.include_router(shop_router)
 app.include_router(ws_router)
 avatar_service.avatars_dir()
 app.mount("/media", StaticFiles(directory=settings.media_dir), name="media")

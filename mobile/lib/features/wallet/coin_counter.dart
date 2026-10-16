@@ -8,9 +8,12 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/game_icon.dart';
 import '../../l10n/app_localizations.dart';
+import '../../animations/transitions/pop_route.dart';
 import '../online/online_controller.dart';
+import '../shop/shop_screen.dart';
 
-/// Capsule du solde de pièces, avec une jauge vers la prochaine pièce.
+/// Capsule du solde de pièces, avec une jauge vers la prochaine pièce. Un
+/// toucher ouvre la boutique.
 class CoinCounter extends StatelessWidget {
   const CoinCounter({super.key});
 
@@ -26,74 +29,96 @@ class CoinCounter extends StatelessWidget {
         final coins = wallet?.coins ?? 0;
         return Semantics(
           label: l10n.coinsCount(coins),
-          child: Container(
-            key: const Key('coin_counter'),
-            padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: AppColors.white.withValues(alpha: 0.9),
-                width: 2,
-              ),
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF3A2A86), Color(0xFF221556)],
-              ),
-              boxShadow: const [
-                BoxShadow(color: Color(0x66000000), offset: Offset(0, 4)),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const GameIcon(GameIconKind.coin, size: 26),
-                const SizedBox(width: 6),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 400),
-                      transitionBuilder: (child, animation) => ScaleTransition(
-                        scale: CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.elasticOut,
-                        ),
-                        child: child,
-                      ),
-                      child: Text(
-                        '$coins',
-                        key: ValueKey(coins),
-                        style: fredoka(
-                          size: 17,
-                          weight: FontWeight.w700,
-                          color: AppColors.yellow,
-                          height: 1,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    // Avancement vers la prochaine pièce.
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(3),
-                      child: SizedBox(
-                        width: 34,
-                        height: 4,
-                        child: LinearProgressIndicator(
-                          value: wallet?.progress ?? 0,
-                          backgroundColor: AppColors.white.withValues(
-                            alpha: 0.2,
-                          ),
-                          valueColor: const AlwaysStoppedAnimation(
-                            AppColors.yellow,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+          button: true,
+          child: GestureDetector(
+            onTap: () =>
+                Navigator.of(context)
+                    .push(PopRoute(builder: (_) => const ShopScreen())),
+            child: Container(
+              key: const Key('coin_counter'),
+              padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: AppColors.white.withValues(alpha: 0.9),
+                  width: 2,
                 ),
-              ],
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF3A2A86), Color(0xFF221556)],
+                ),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x66000000), offset: Offset(0, 4)),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const GameIcon(GameIconKind.coin, size: 26),
+                  const SizedBox(width: 6),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        transitionBuilder: (child, animation) =>
+                            ScaleTransition(
+                              scale: CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.elasticOut,
+                              ),
+                              child: child,
+                            ),
+                        child: Text(
+                          '$coins',
+                          key: ValueKey(coins),
+                          style: fredoka(
+                            size: 17,
+                            weight: FontWeight.w700,
+                            color: AppColors.yellow,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      // Avancement vers la prochaine pièce.
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: SizedBox(
+                          width: 34,
+                          height: 4,
+                          child: LinearProgressIndicator(
+                            value: wallet?.progress ?? 0,
+                            backgroundColor: AppColors.white.withValues(
+                              alpha: 0.2,
+                            ),
+                            valueColor: const AlwaysStoppedAnimation(
+                              AppColors.yellow,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 6),
+                  // « + » : on peut acheter des pièces.
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: const BoxDecoration(
+                      color: AppColors.green,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.add_rounded,
+                      size: 16,
+                      color: AppColors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

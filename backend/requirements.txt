@@ -7,3 +7,5 @@ redis==5.2.1
 alembic==1.14.0
 pillow==11.0.0
 python-multipart==0.0.20
+httpx==0.28.1
+pyjwt[crypto]==2.10.1

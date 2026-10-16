@@ -65,3 +65,12 @@ HINT_POINTS_SHARED = 2
 POINTS_PER_COIN = 20
 # Mise maximale d'un salon de paris.
 MAX_STAKE = 1000
+
+# Packs de pièces vendus dans les stores : identifiant du produit (le même dans la Play Console et
+# App Store Connect) -> nombre de pièces. Les prix sont fixés dans les stores.
+COIN_PACKS = {
+    "coins_100": 100,
+    "coins_550": 550,
+    "coins_1200": 1200,
+    "coins_2500": 2500,
+}

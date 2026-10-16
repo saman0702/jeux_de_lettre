@@ -35,7 +35,7 @@ class CoinTransaction(TimestampMixin, Base):
     client_id: Mapped[str] = mapped_column(ForeignKey("profiles.client_id", ondelete="CASCADE"), index=True)
     # Positif pour un gain, négatif pour une dépense.
     amount: Mapped[int] = mapped_column(Integer)
-    # points | bet_stake | bet_win | bet_refund
+    # points | bet_stake | bet_win | bet_refund | purchase
     reason: Mapped[str] = mapped_column(String(32))
     reference: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
@@ -50,3 +50,18 @@ class AvatarReport(TimestampMixin, Base):
     reporter_id: Mapped[str] = mapped_column(String(64))
     reported_id: Mapped[str] = mapped_column(ForeignKey("profiles.client_id"), index=True)
     avatar_file: Mapped[str] = mapped_column(String(64))
+
+
+class CoinPurchase(TimestampMixin, Base):
+    """Achat de pièces vérifié auprès d'un store. Le jeton unique empêche de créditer deux fois."""
+
+    __tablename__ = "coin_purchases"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    client_id: Mapped[str] = mapped_column(ForeignKey("profiles.client_id"), index=True)
+    platform: Mapped[str] = mapped_column(String(16))  # android | ios
+    product_id: Mapped[str] = mapped_column(String(64))
+    # Jeton d'achat Google ou identifiant de transaction Apple.
+    store_token: Mapped[str] = mapped_column(String(512), unique=True)
+    order_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    coins: Mapped[int] = mapped_column(Integer)

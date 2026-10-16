@@ -11,6 +11,9 @@ import 'core/theme/app_theme.dart';
 import 'features/game/offline/offline_dictionary.dart';
 import 'features/home/home_screen.dart';
 import 'features/online/online_controller.dart';
+import 'core/network/api_client.dart';
+import 'features/shop/coin_store.dart';
+import 'features/shop/shop_controller.dart';
 import 'features/wallet/coin_counter.dart';
 import 'l10n/app_localizations.dart';
 
@@ -32,9 +35,16 @@ Future<void> main() async {
   // Une seule connexion pour toute l'appli : compteur en ligne, salons et
   // parties.
   online.client.connect();
+  // Écoute le store dès le démarrage : un achat interrompu est repris.
+  final shop = ShopController(
+    store: DeviceCoinStore(),
+    api: ApiClient(),
+    clientId: settings.clientId,
+    onWallet: online.applyWallet,
+  )..start();
   // Prêt pour les parties solo hors ligne, sans retarder le démarrage.
   OfflineDictionary.load();
-  runApp(LetterBattleApp(feedback: feedback, online: online));
+  runApp(LetterBattleApp(feedback: feedback, online: online, shop: shop));
 }
 
 class LetterBattleApp extends StatefulWidget {
@@ -43,6 +53,7 @@ class LetterBattleApp extends StatefulWidget {
     this.home = const HomeScreen(),
     this.feedback,
     this.online,
+    this.shop,
   });
 
   final Widget home;
@@ -52,6 +63,9 @@ class LetterBattleApp extends StatefulWidget {
 
   /// Par défaut, un contrôleur qui ne se connecte jamais (tests).
   final OnlineController? online;
+
+  /// Par défaut, une boutique sans store (tests).
+  final ShopController? shop;
 
   @override
   State<LetterBattleApp> createState() => _LetterBattleAppState();
@@ -67,6 +81,14 @@ class _LetterBattleAppState extends State<LetterBattleApp>
           clientId: _feedback.settings.clientId,
           nickname: 'Joueur',
         ),
+      );
+  late final ShopController _shop =
+      widget.shop ??
+      ShopController(
+        store: UnavailableCoinStore(),
+        api: ApiClient(),
+        clientId: _online.clientId,
+        onWallet: _online.applyWallet,
       );
 
   @override
@@ -100,25 +122,29 @@ class _LetterBattleAppState extends State<LetterBattleApp>
       feedback: _feedback,
       child: OnlineScope(
         controller: _online,
-        child: ListenableBuilder(
-          listenable: _feedback.settings,
-          builder: (context, _) => MaterialApp(
-            locale: _feedback.settings.languageCode == null
-                ? null
-                : Locale(_feedback.settings.languageCode!),
-            onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.light(),
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            builder: (context, child) =>
-                CoinGainOverlay(child: child ?? const SizedBox.shrink()),
-            home: widget.home,
+        child: ShopScope(
+          controller: _shop,
+          child: ListenableBuilder(
+            listenable: _feedback.settings,
+            builder: (context, _) => MaterialApp(
+              locale: _feedback.settings.languageCode == null
+                  ? null
+                  : Locale(_feedback.settings.languageCode!),
+              onGenerateTitle: (context) =>
+                  AppLocalizations.of(context).appTitle,
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.light(),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              builder: (context, child) =>
+                  CoinGainOverlay(child: child ?? const SizedBox.shrink()),
+              home: widget.home,
+            ),
           ),
         ),
       ),

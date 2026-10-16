@@ -1183,6 +1183,66 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Musiques de Kevin MacLeod (incompetech.com), licence Creative Commons BY 4.0 : « Monkeys Spinning Monkeys », « Fluffing a Duck », « Carefree », « Pixel Peeker Polka », « Sneaky Snitch », « Investigations », « Run Amok », « Funkorama », « Itty Bitty 8 Bit », « Bit Quest ».'**
   String get musicCredits;
+
+  /// No description provided for @shopTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Boutique'**
+  String get shopTitle;
+
+  /// No description provided for @shopCoinsLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'pièces'**
+  String get shopCoinsLabel;
+
+  /// No description provided for @shopBonus.
+  ///
+  /// In fr, this message translates to:
+  /// **'+{percent} %'**
+  String shopBonus(int percent);
+
+  /// No description provided for @shopBought.
+  ///
+  /// In fr, this message translates to:
+  /// **'+{count} pièces, merci !'**
+  String shopBought(int count);
+
+  /// No description provided for @shopPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paiement en attente : tes pièces arriveront dès qu\'il sera confirmé.'**
+  String get shopPending;
+
+  /// No description provided for @shopInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet achat n\'a pas pu être validé.'**
+  String get shopInvalid;
+
+  /// No description provided for @shopStoreError.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'achat n\'a pas abouti.'**
+  String get shopStoreError;
+
+  /// No description provided for @shopRetryLater.
+  ///
+  /// In fr, this message translates to:
+  /// **'Achat reçu : tes pièces seront ajoutées dès que le serveur sera joignable.'**
+  String get shopRetryLater;
+
+  /// No description provided for @shopUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'La boutique n\'est pas disponible sur cet appareil pour le moment.'**
+  String get shopUnavailable;
+
+  /// No description provided for @shopLegal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paiement sécurisé par Google Play ou l\'App Store. Les pièces n\'ont aucune valeur monétaire : elles ne sont ni remboursables, ni échangeables, ni convertibles en argent.'**
+  String get shopLegal;
 }
 
 class _AppLocalizationsDelegate

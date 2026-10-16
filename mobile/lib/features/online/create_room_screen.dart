@@ -12,6 +12,8 @@ import '../game/widgets/labels.dart';
 import '../game/widgets/pill_selector.dart';
 import '../game/widgets/option_section.dart';
 import 'data/room_models.dart';
+import '../../animations/transitions/pop_route.dart';
+import '../shop/shop_screen.dart';
 import 'online_controller.dart';
 import 'widgets/online_header.dart';
 
@@ -47,9 +49,16 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   void _create() {
     final online = OnlineScope.of(context);
     if (_kind == RoomKind.bet && (online.wallet?.coins ?? 0) < _stake) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context).errorNotEnoughCoins),
+          content: Text(l10n.errorNotEnoughCoins),
+          action: SnackBarAction(
+            label: l10n.shopTitle,
+            onPressed: () =>
+                Navigator.of(context)
+                    .push(PopRoute(builder: (_) => const ShopScreen())),
+          ),
         ),
       );
       return;

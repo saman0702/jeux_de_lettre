@@ -15,3 +15,7 @@ backend/app/data/.cache/
 
 # Avatars envoyés par les joueurs
 backend/media/
+
+# Clés des stores (boutique)
+secrets/*
+!secrets/.gitkeep

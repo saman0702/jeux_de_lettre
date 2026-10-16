@@ -13,6 +13,7 @@ import 'package:letter_battle/features/online/room_screen.dart';
 import 'package:letter_battle/features/online/online_controller.dart';
 import 'package:letter_battle/features/online/create_room_screen.dart';
 import 'package:letter_battle/features/online/rooms_screen.dart';
+import 'package:letter_battle/features/shop/shop_controller.dart';
 import 'package:letter_battle/features/wallet/wallet.dart';
 import 'package:letter_battle/main.dart';
 
@@ -72,10 +73,19 @@ class Harness {
   late FakeSocket socket;
   final List<Uri> uris = [];
 
-  Future<void> start(WidgetTester tester, Widget home) async {
+  Future<void> start(
+    WidgetTester tester,
+    Widget home, {
+    ShopController? shop,
+  }) async {
     tester.platformDispatcher.localesTestValue = const [Locale('en')];
     await tester.pumpWidget(
-      LetterBattleApp(feedback: feedback, online: online, home: home),
+      LetterBattleApp(
+        feedback: feedback,
+        online: online,
+        shop: shop,
+        home: home,
+      ),
     );
     await client.connect();
     socket.push({'type': 'welcome', 'online_count': 7});
