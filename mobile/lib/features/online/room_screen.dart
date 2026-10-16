@@ -238,9 +238,6 @@ class _RoomScreenState extends State<RoomScreen> {
       child: Scaffold(
         body: GameBackground(
           palette: _palette(room),
-          focusLetter: room?.phase == RoomPhase.round
-              ? room?.round?.letter
-              : null,
           child: SafeArea(
             child: Column(
               children: [

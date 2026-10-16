@@ -126,6 +126,7 @@ class AnswerResult {
     required this.points,
     this.matchedValue,
     this.hinted = false,
+    this.suggestion,
   });
 
   factory AnswerResult.fromJson(Map<String, dynamic> json) => AnswerResult(
@@ -135,6 +136,7 @@ class AnswerResult {
     points: json['points'] as int,
     matchedValue: json['matched_value'] as String?,
     hinted: json['hinted'] as bool? ?? false,
+    suggestion: json['suggestion'] as String?,
   );
 
   final Category category;
@@ -145,6 +147,9 @@ class AnswerResult {
 
   /// Answered with a hint (half points).
   final bool hinted;
+
+  /// Réponse valide proposée quand celle du joueur ne l'était pas.
+  final String? suggestion;
 }
 
 /// The four options of a hint; the right one stays on the server.

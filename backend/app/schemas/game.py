@@ -64,6 +64,8 @@ class AnswerResultOut(BaseModel):
     points: int
     matched_value: str | None
     hinted: bool = False
+    # Réponse valide proposée quand celle du joueur ne l'était pas.
+    suggestion: str | None = None
 
 
 class RoundResultOut(BaseModel):

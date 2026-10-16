@@ -89,6 +89,22 @@ class _RoomResultsViewState extends State<RoomResultsView> {
     super.dispose();
   }
 
+  /// En ligne : ce que les autres ont trouvé là où le joueur a échoué,
+  /// sinon une réponse possible.
+  String? _correction(AppLocalizations l10n, AnswerResult answer) {
+    if (answer.status == AnswerStatus.valid) return null;
+    final results = widget.room.results!;
+    final found = results.foundByOthers(answer.category, widget.myId);
+    if (found.isNotEmpty) {
+      return found
+          .take(2)
+          .map((f) => l10n.suggestionFoundBy(f.$1, f.$2))
+          .join('  ·  ');
+    }
+    final example = results.examples[answer.category] ?? answer.suggestion;
+    return example == null ? null : l10n.suggestionExample(example);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -131,7 +147,10 @@ class _RoomResultsViewState extends State<RoomResultsView> {
                       child: BounceIn(
                         delay: Duration(milliseconds: 250 + i * _stepMs),
                         from: 0.6,
-                        child: AnswerCard(answer: answer),
+                        child: AnswerCard(
+                          answer: answer,
+                          correction: _correction(l10n, answer),
+                        ),
                       ),
                     ),
                 ],

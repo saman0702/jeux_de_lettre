@@ -106,6 +106,7 @@ class FakeServer {
               'status': 'empty',
               'points': 0,
               'matched_value': null,
+              'suggestion': 'Mangue',
             },
           ],
           'round_score': points,
@@ -199,6 +200,11 @@ void main() {
     expect(find.text('Valid'), findsOneWidget);
     expect(find.text('+10'), findsWidgets);
     expect(find.text('Finished in 4.2s'), findsOneWidget);
+    expect(
+      find.text('Possible answer: Mangue'),
+      findsOneWidget,
+      reason: 'bonne réponse montrée pour le fruit raté',
+    );
     expect(
       audio.played,
       containsAllInOrder([Sfx.valid, Sfx.invalid, Sfx.points]),

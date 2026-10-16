@@ -151,5 +151,7 @@
   "roundLabel": "ROUND",
   "onlineLabel": "ONLINE",
   "settingsLanguage": "Language",
-  "languageAuto": "Auto"
+  "languageAuto": "Auto",
+  "suggestionExample": "Possible answer: {answer}",
+  "suggestionFoundBy": "{name} found: {answer}"
 }

@@ -129,3 +129,21 @@ async def test_game_finishes_after_last_round(client):
 async def test_unknown_game_returns_404(client):
     response = await client.get("/api/v1/solo/games/nope")
     assert response.status_code == 404
+
+
+async def test_missed_answers_come_with_a_suggestion(client, letter_m):
+    """Une réponse ratée est accompagnée d'une bonne réponse pour apprendre."""
+    game = await create_game(client, categories=["city", "animal", "fruit"])
+    await client.post(f"/api/v1/solo/games/{game['id']}/rounds")
+    body = (
+        await client.post(
+            f"/api/v1/solo/games/{game['id']}/rounds/1/submit",
+            json={"answers": {"city": "Marseille", "animal": "Chat", "fruit": ""}},
+        )
+    ).json()
+    answers = {a["category"]: a for a in body["round"]["answers"]}
+
+    assert answers["city"]["suggestion"] is None, "pas de suggestion pour une bonne réponse"
+    for category in ("animal", "fruit"):
+        suggestion = answers[category]["suggestion"]
+        assert suggestion and suggestion[0].upper() == "M"

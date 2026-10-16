@@ -134,6 +134,7 @@ class RoomRoundResults {
     required this.number,
     required this.letter,
     required this.players,
+    this.examples = const {},
   });
 
   factory RoomRoundResults.fromJson(Map<String, dynamic> json) =>
@@ -144,11 +145,27 @@ class RoomRoundResults {
           for (final p in json['players'] as List)
             PlayerRoundResult.fromJson(p as Map<String, dynamic>),
         ],
+        examples: {
+          for (final e in ((json['examples'] as Map?) ?? const {}).entries)
+            Category.values.byName(e.key as String): e.value as String,
+        },
       );
 
   final int number;
   final String letter;
   final List<PlayerRoundResult> players;
+
+  /// Une réponse valide par catégorie ratée par au moins un joueur.
+  final Map<Category, String> examples;
+
+  /// Ce que les autres joueurs ont trouvé dans [category] : (pseudo, réponse).
+  List<(String, String)> foundByOthers(Category category, String me) => [
+    for (final p in players)
+      if (p.clientId != me)
+        for (final a in p.answers)
+          if (a.category == category && a.status == AnswerStatus.valid)
+            (p.nickname, a.matchedValue ?? a.value),
+  ];
 }
 
 class RoomState {

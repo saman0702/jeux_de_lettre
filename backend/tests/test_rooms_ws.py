@@ -331,3 +331,20 @@ def test_hints_in_a_room(client):
         expected = (5 if answer["value"] != "Mouton" else 2) if picked["correct"] else 0
         assert answer["points"] == expected
         assert state(alice)["players"][0]["hints_left"] == 2
+
+
+def test_round_results_include_examples_for_missed_categories(client):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice, categories=["country", "fruit"])
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        state(alice, "round")
+        alice.send_json({"type": "submit", "round": 1, "answers": {"country": "Maroc"}})
+        bob.send_json({"type": "submit", "round": 1, "answers": {"country": "Maroc"}})
+
+        results = state(alice, "results")["results"]
+        assert "fruit" in results["examples"] and results["examples"]["fruit"][0] == "M"
+        assert "country" not in results["examples"], "personne n'a raté le pays"
+        alice_fruit = next(p for p in results["players"] if p["nickname"] == "Alice")["answers"][1]
+        assert alice_fruit["suggestion"] == results["examples"]["fruit"]

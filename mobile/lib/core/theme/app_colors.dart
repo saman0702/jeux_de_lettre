@@ -18,12 +18,6 @@ abstract final class AppColors {
   static const red = Color(0xFFFF5A5F);
   static const grey = Color(0xFFB9B1D6);
 
-  static const backgroundGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [purpleLight, purple, purpleDeep],
-  );
-
   /// Darker shade used as the 3D "depth" under candy buttons and tiles.
   static Color depthOf(Color color) => HSLColor.fromColor(color)
       .withLightness((HSLColor.fromColor(color).lightness - 0.18).clamp(0, 1))

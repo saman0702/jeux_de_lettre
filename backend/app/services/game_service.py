@@ -9,7 +9,7 @@ from app.core.game_rules import HINTS_PER_GAME, SUBMIT_GRACE_SECONDS, Category, 
 from app.models import Game, GameRound, HintRequest, Player, PlayerAnswer, Submission
 from app.models.base import utcnow
 from app.schemas.game import SoloGameCreate
-from app.services import hint_service, letter_service
+from app.services import hint_service, letter_service, suggestion_service
 from app.services.scoring_service import score_round
 from app.services.validation_service import Status, ValidationResult, validate_answer
 
@@ -212,6 +212,9 @@ async def submit_answers(
             )
 
     points = score_round({player.id: results}, {player.id: set(picked)})[player.id]
+    # Une bonne réponse à montrer pour chaque catégorie ratée.
+    missed = [c for c, r in results.items() if not r.is_valid]
+    examples = await suggestion_service.example_answers(session, game.language, missed, game_round.letter)
     submission = Submission(
         player_id=player.id,
         submitted_at=min(submitted_at, game_round.ends_at),
@@ -224,6 +227,7 @@ async def submit_answers(
                 status=result.status,
                 points=points[category],
                 hinted=category in picked,
+                suggestion=examples.get(category),
             )
             for category, result in results.items()
         ],

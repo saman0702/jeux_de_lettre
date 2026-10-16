@@ -40,3 +40,6 @@ Décisions prises après le cahier des charges ([CAHIER_DES_CHARGES.md](CAHIER_D
 | 34 | Pas d'info technique à l'écran | « Serveur connecté / injoignable » retiré de l'accueil : le compteur « en ligne » suffit et le solo bascule seul hors ligne. |
 | 35 | Écrans plus compacts | Cartes moins arrondies (16 au lieu de 24), marges et espacements réduits, pastilles plus petites. Sur les écrans de réglage de partie, la liste défile sous l'en-tête et le bouton du bas, transparents, avec un fondu aux bords. |
 | 36 | Choix de la langue | Réglages > Langue : Auto (langue du téléphone), FR ou EN. Appliqué immédiatement à toute l'appli, à la voix du présentateur et aux nouvelles parties ; mémorisé. |
+| 37 | Fond sobre | Plus de lettres flottantes ni d'étoiles filantes : dégradé assombri, halos de lumière très doux et quelques scintillements discrets. |
+| 38 | Bonne réponse en fin de manche | Solo : chaque réponse ratée affiche « Réponse possible : … » (réponse connue de la catégorie, aussi en hors ligne). En ligne : « Flore a trouvé : … » pour ce que les autres ont trouvé, sinon une réponse possible. |
+| 39 | Commentaires en français | Les commentaires et docstrings du code sont écrits en français (les noms de variables et fonctions restent en anglais). |

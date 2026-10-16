@@ -335,5 +335,24 @@
   "roundLabel": "MANCHE",
   "onlineLabel": "EN LIGNE",
   "settingsLanguage": "Langue",
-  "languageAuto": "Auto"
+  "languageAuto": "Auto",
+  "suggestionExample": "Réponse possible : {answer}",
+  "suggestionFoundBy": "{name} a trouvé : {answer}",
+  "@suggestionExample": {
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
+  },
+  "@suggestionFoundBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "answer": {
+        "type": "String"
+      }
+    }
+  }
 }

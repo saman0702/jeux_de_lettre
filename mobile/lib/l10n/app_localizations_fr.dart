@@ -517,4 +517,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get languageAuto => 'Auto';
+
+  @override
+  String suggestionExample(String answer) {
+    return 'Réponse possible : $answer';
+  }
+
+  @override
+  String suggestionFoundBy(String name, String answer) {
+    return '$name a trouvé : $answer';
+  }
 }

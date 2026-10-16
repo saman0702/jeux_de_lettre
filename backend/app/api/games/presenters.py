@@ -33,6 +33,7 @@ def round_result_out(game_round: GameRound, submission: Submission) -> RoundResu
                 points=a.points,
                 matched_value=a.matched_value,
                 hinted=a.hinted,
+                suggestion=a.suggestion,
             )
             for a in submission.answers
         ],

@@ -91,6 +91,15 @@ void main() {
       final country = result.answers.firstWhere(
         (a) => a.category == Category.country,
       );
+      final city = result.answers.firstWhere(
+        (a) => a.category == Category.city,
+      );
+      expect(
+        city.suggestion,
+        isNotNull,
+        reason: 'ville vide : une réponse est proposée',
+      );
+      expect(city.suggestion![0].toUpperCase(), round.letter);
       expect(
         country.status,
         round.letter == 'F' ? AnswerStatus.valid : AnswerStatus.wrongLetter,

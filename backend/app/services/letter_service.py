@@ -50,7 +50,7 @@ def clear_cache() -> None:
 
 def eligible_letters(
     counts: LetterCounts, categories: Iterable[str], difficulty: Difficulty
-) -> set[str]:
+    ) -> set[str]:
     minimum = MIN_ANSWERS_PER_CATEGORY[difficulty]
     return {
         letter

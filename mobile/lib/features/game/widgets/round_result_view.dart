@@ -101,6 +101,13 @@ class _RoundResultViewState extends State<RoundResultView>
     return curve.transform(t);
   }
 
+  /// En solo : une réponse possible pour chaque catégorie ratée.
+  String? _correction(AppLocalizations l10n, AnswerResult answer) {
+    final suggestion = answer.suggestion;
+    if (answer.status == AnswerStatus.valid || suggestion == null) return null;
+    return l10n.suggestionExample(suggestion);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -171,6 +178,7 @@ class _RoundResultViewState extends State<RoundResultView>
                         child: AnswerCard(
                           answer: result.answers[i],
                           popScale: t,
+                          correction: _correction(l10n, result.answers[i]),
                         ),
                       ),
                     );
@@ -245,10 +253,19 @@ class _RoundResultViewState extends State<RoundResultView>
 }
 
 class AnswerCard extends StatelessWidget {
-  const AnswerCard({super.key, required this.answer, this.popScale = 1});
+  const AnswerCard({
+    super.key,
+    required this.answer,
+    this.popScale = 1,
+    this.correction,
+  });
 
   final AnswerResult answer;
   final double popScale;
+
+  /// Bonne réponse à montrer sous une réponse ratée
+  /// (« Réponse possible : Madrid », « Flore a trouvé : Madrid »).
+  final String? correction;
 
   @override
   Widget build(BuildContext context) {
@@ -333,6 +350,44 @@ class AnswerCard extends StatelessWidget {
                     ],
                   ],
                 ),
+                if (correction != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Container(
+                      key: const Key('answer_correction'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.green.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const GameIcon(
+                            GameIconKind.check,
+                            size: 14,
+                            color: Color(0xFF1E9E55),
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              correction!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: fredoka(
+                                size: 13,
+                                weight: FontWeight.w600,
+                                color: const Color(0xFF1E7A45),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

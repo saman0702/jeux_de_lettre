@@ -14,7 +14,7 @@ from app.core.game_rules import Category, Difficulty
 from app.models import Game, GameRound, Player, PlayerAnswer, Submission
 from app.models.base import utcnow
 from app.schemas.game import GameSettings
-from app.services import letter_service
+from app.services import letter_service, suggestion_service
 from app.services.scoring_service import score_round
 from app.services.validation_service import Status, ValidationResult, validate_answer
 
@@ -40,6 +40,8 @@ class RoundOutcome:
     number: int
     letter: str
     results: list[PlayerRoundResult] = field(default_factory=list)
+    # Une réponse valide par catégorie ratée par au moins un joueur.
+    examples: dict[str, str] = field(default_factory=dict)
 
 
 async def create_game(
@@ -128,7 +130,9 @@ async def close_round(
             validated[player_id][category] = result
 
     points = score_round(validated, {pid: set(h) for pid, h in hints.items()})
-    outcome = RoundOutcome(game_round.number, game_round.letter)
+    missed = sorted({c for by_cat in validated.values() for c, r in by_cat.items() if not r.is_valid})
+    examples = await suggestion_service.example_answers(session, game.language, missed, game_round.letter)
+    outcome = RoundOutcome(game_round.number, game_round.letter, examples=examples)
     for player_id in participants:
         submitted_at, answers = submissions.get(player_id, (game_round.ends_at, {}))
         answer_rows = [
@@ -139,6 +143,7 @@ async def close_round(
                 status=result.status,
                 points=points[player_id][category],
                 hinted=category in hints.get(player_id, {}),
+                suggestion=None if result.is_valid else examples.get(category),
             )
             for category, result in validated[player_id].items()
         ]
@@ -168,6 +173,7 @@ async def close_round(
                         "points": a.points,
                         "matched_value": a.matched_value,
                         "hinted": a.hinted,
+                        "suggestion": a.suggestion,
                     }
                     for a in answer_rows
                 ],

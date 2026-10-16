@@ -38,7 +38,7 @@ class NoHintAvailable(Exception):
     pass
 
 
-async def _popular(session: AsyncSession, category: str, language: str, letter: str) -> list[str]:
+async def popular_answers(session: AsyncSession, category: str, language: str, letter: str) -> list[str]:
     rows = await session.scalars(
         select(Answer.value)
         .where(
@@ -79,9 +79,9 @@ def _scramble(word: str, rng: random.Random) -> str:
 
 async def build_hint(
     session: AsyncSession, language: str, category: str, letter: str, rng: random.Random | None = None
-) -> Hint:
+    ) -> Hint:
     rng = rng or random.Random()
-    answers = await _popular(session, category, language, letter)
+    answers = await popular_answers(session, category, language, letter)
     if not answers:
         raise NoHintAvailable
     answer = rng.choice(answers[: _DECOY_POOL.get(category, 20)])
@@ -90,7 +90,7 @@ async def build_hint(
     others = [c.value for c in Category if c.value != category]
     rng.shuffle(others)
     for other in others:
-        candidates = (await _popular(session, other, language, letter))[
+        candidates = (await popular_answers(session, other, language, letter))[
             : _DECOY_POOL.get(other, _DEFAULT_DECOY_POOL)
         ]
         rng.shuffle(candidates)

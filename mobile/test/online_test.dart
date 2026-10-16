@@ -261,6 +261,7 @@ void main() {
     await pumpFor(tester, const Duration(seconds: 3));
     expect(find.text('Your answers'), findsOneWidget);
     expect(find.text('Leaderboard'), findsOneWidget);
+    expect(find.text('Kevin found: Melun'), findsNothing);
     expect(find.textContaining('Next round in'), findsOneWidget);
     expect(h.feedback.audio, isA<SilentGameAudio>());
     expect(
@@ -516,5 +517,63 @@ void main() {
     expect(h.socket.sent.last, {'type': 'leave_room'});
     expect(find.byType(RoomScreen), findsNothing);
     expect(find.text('Quick match'), findsOneWidget);
+  });
+
+  testWidgets('online results show what others found where I missed', (
+    tester,
+  ) async {
+    final h = Harness();
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+    await tester.tap(find.text('Quick match'));
+    await pumpFor(tester);
+
+    Map<String, dynamic> answer(String category, String value, bool valid) => {
+      'category': category,
+      'value': value,
+      'status': valid ? 'valid' : 'not_found',
+      'points': valid ? 10 : 0,
+      'matched_value': valid ? value : null,
+    };
+    h.socket.push(
+      roomEvent(
+        'results',
+        players: [player(me, 'Blaise'), player('flo', 'Flore', score: 10)],
+        results: {
+          'number': 1,
+          'letter': 'M',
+          'examples': {'city': 'Madrid'},
+          'players': [
+            {
+              'client_id': me,
+              'nickname': 'Blaise',
+              'round_score': 0,
+              'elapsed_ms': 4000,
+              'answers': [
+                answer('city', 'Mxx', false),
+                answer('fruit', '', false),
+              ],
+            },
+            {
+              'client_id': 'flo',
+              'nickname': 'Flore',
+              'round_score': 10,
+              'elapsed_ms': 3000,
+              'answers': [
+                answer('city', 'Mzz', false),
+                answer('fruit', 'Melon', true),
+              ],
+            },
+          ],
+        },
+      ),
+    );
+    await pumpFor(tester, const Duration(seconds: 3));
+
+    expect(find.text('Flore found: Melon'), findsOneWidget);
+    expect(
+      find.text('Possible answer: Madrid'),
+      findsOneWidget,
+      reason: 'personne n\'a trouvé la ville',
+    );
   });
 }

@@ -107,7 +107,6 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
           child: Scaffold(
             body: GameBackground(
               palette: _palette,
-              focusLetter: _focusLetter,
               child: SafeArea(
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 350),
@@ -148,13 +147,6 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
         ? (c.round?.number ?? 0) + 1
         : c.round?.number ?? 1;
     return BackgroundPalette.forRound(number);
-  }
-
-  String? get _focusLetter {
-    final c = _controller;
-    final playing =
-        c.phase == SoloPhase.playing || c.phase == SoloPhase.submitting;
-    return playing ? c.round?.letter : null;
   }
 
   Widget _buildPhase(BuildContext context) {

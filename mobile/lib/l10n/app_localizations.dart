@@ -1009,6 +1009,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Auto'**
   String get languageAuto;
+
+  /// No description provided for @suggestionExample.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réponse possible : {answer}'**
+  String suggestionExample(String answer);
+
+  /// No description provided for @suggestionFoundBy.
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} a trouvé : {answer}'**
+  String suggestionFoundBy(String name, String answer);
 }
 
 class _AppLocalizationsDelegate

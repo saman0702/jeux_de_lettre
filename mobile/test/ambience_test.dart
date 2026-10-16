@@ -8,21 +8,16 @@ import 'package:letter_battle/core/widgets/game_background.dart';
 import 'solo_game_test.dart' show FakeServer, pumpGame;
 
 void main() {
-  test('floating letters drift smoothly, with no jump ever', () {
+  test('les halos du fond bougent en continu, sans jamais sauter', () {
     const size = Size(400, 860);
-    const step = 1 / 60; // one frame
-    for (var i = 0; i < floatingLetterCount; i++) {
-      // Includes the old 40 s loop boundaries and a long session.
-      for (final start in [0.0, 39.9, 40.0, 79.95, 3600.0, 86400.0]) {
+    const step = 1 / 60; // une image
+    for (var i = 0; i < haloCount; i++) {
+      // Inclut une longue session et d'anciennes limites de boucle.
+      for (final start in [0.0, 39.9, 3600.0, 86400.0]) {
         for (var t = start; t < start + 0.5; t += step) {
-          final (x0, y0, a0) = floatingLetterPose(i, t, size);
-          final (x1, y1, a1) = floatingLetterPose(i, t + step, size);
-          final onScreen = y0 > -60 && y0 < size.height + 60;
-          if (onScreen) {
-            expect((y1 - y0).abs(), lessThan(2), reason: 'letter $i at ${t}s');
-          }
-          expect((x1 - x0).abs(), lessThan(1));
-          expect((a1 - a0).abs(), lessThan(0.01));
+          final a = haloCenter(i, t, size);
+          final b = haloCenter(i, t + step, size);
+          expect((b - a).distance, lessThan(1), reason: 'halo $i à ${t}s');
         }
       }
     }
@@ -51,7 +46,6 @@ void main() {
     GameBackground background() =>
         tester.widget<GameBackground>(find.byType(GameBackground));
     expect(background().palette, BackgroundPalette.forRound(1));
-    expect(background().focusLetter, 'M');
 
     await tester.tap(find.byKey(const Key('key_finish')));
     await tester.pumpAndSettle();

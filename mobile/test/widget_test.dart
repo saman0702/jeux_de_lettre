@@ -88,12 +88,18 @@ void main() {
 
   testWidgets('the language can be changed in the settings', (tester) async {
     final settings = AppSettings.inMemory();
-    final feedback = GameFeedback(audio: SilentGameAudio(), settings: settings, ambientMotion: false);
+    final feedback = GameFeedback(
+      audio: SilentGameAudio(),
+      settings: settings,
+      ambientMotion: false,
+    );
     tester.platformDispatcher.localesTestValue = const [Locale('fr')];
-    await tester.pumpWidget(LetterBattleApp(
-      feedback: feedback,
-      home: HomeScreen(apiClient: fakeApi(healthy: true)),
-    ));
+    await tester.pumpWidget(
+      LetterBattleApp(
+        feedback: feedback,
+        home: HomeScreen(apiClient: fakeApi(healthy: true)),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Partie rapide'), findsOneWidget);
 
@@ -108,6 +114,10 @@ void main() {
 
     settings.languageCode = null;
     await tester.pumpAndSettle();
-    expect(find.text('Partie rapide'), findsOneWidget, reason: 'Auto follows the phone again');
+    expect(
+      find.text('Partie rapide'),
+      findsOneWidget,
+      reason: 'Auto follows the phone again',
+    );
   });
 }

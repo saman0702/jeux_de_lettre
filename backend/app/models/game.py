@@ -107,5 +107,7 @@ class PlayerAnswer(Base):
     points: Mapped[int] = mapped_column(Integer, default=0)
     # Answered by picking among the four hint options.
     hinted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # Réponse valide montrée au joueur quand la sienne ne l'était pas.
+    suggestion: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
     submission: Mapped[Submission] = relationship(back_populates="answers")

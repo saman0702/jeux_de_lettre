@@ -739,7 +739,12 @@ class RoomManager:
                     "elapsed_ms": result.elapsed_ms,
                 }
             )
-        room.results = {"number": outcome.number, "letter": outcome.letter, "players": results}
+        room.results = {
+            "number": outcome.number,
+            "letter": outcome.letter,
+            "players": results,
+            "examples": outcome.examples,
+        }
         room.live_round = None
         room.phase = "results"
         await self._broadcast(room)

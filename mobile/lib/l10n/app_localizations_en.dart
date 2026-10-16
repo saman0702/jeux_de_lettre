@@ -515,4 +515,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageAuto => 'Auto';
+
+  @override
+  String suggestionExample(String answer) {
+    return 'Possible answer: $answer';
+  }
+
+  @override
+  String suggestionFoundBy(String name, String answer) {
+    return '$name found: $answer';
+  }
 }

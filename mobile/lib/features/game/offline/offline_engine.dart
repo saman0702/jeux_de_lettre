@@ -188,6 +188,9 @@ class OfflineSoloBackend implements SoloBackend {
               : 0,
           matchedValue: matched,
           hinted: hinted,
+          suggestion: valid
+              ? null
+              : _example(category, settings.language, letter),
         ),
       );
     }
@@ -207,6 +210,14 @@ class OfflineSoloBackend implements SoloBackend {
       ),
       _snapshot(game),
     );
+  }
+
+  /// Une réponse connue de la catégorie, montrée quand le joueur s'est trompé.
+  String? _example(Category category, String language, String letter) {
+    final answers = _dictionary.answers(category, language, letter, limit: 10);
+    return answers.isEmpty
+        ? null
+        : answers[_random.nextInt(answers.length)].value;
   }
 
   // -------------------------------------------------------------------- hints
