@@ -179,5 +179,6 @@
   "reportTitle": "Report this photo?",
   "reportMessage": "{name}'s photo is removed after several reports.",
   "reportConfirm": "REPORT",
-  "reportSent": "Thanks, report sent."
+  "reportSent": "Thanks, report sent.",
+  "musicCredits": "Music: “Monkeys Spinning Monkeys”, “Fluffing a Duck”, “Carefree”, “Pixel Peeker Polka” by Kevin MacLeod (incompetech.com), licensed under Creative Commons BY 4.0."
 }

@@ -1177,6 +1177,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Merci, signalement envoyé.'**
   String get reportSent;
+
+  /// No description provided for @musicCredits.
+  ///
+  /// In fr, this message translates to:
+  /// **'Musiques : « Monkeys Spinning Monkeys », « Fluffing a Duck », « Carefree », « Pixel Peeker Polka » de Kevin MacLeod (incompetech.com), licence Creative Commons BY 4.0.'**
+  String get musicCredits;
 }
 
 class _AppLocalizationsDelegate

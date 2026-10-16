@@ -116,6 +116,18 @@ class _SettingsSheet extends StatelessWidget {
                           ),
                         ),
                       ),
+                    const SizedBox(height: 4),
+                    // Mention exigée par la licence CC BY des musiques.
+                    Text(
+                      l10n.musicCredits,
+                      key: const Key('music_credits'),
+                      textAlign: TextAlign.center,
+                      style: fredoka(
+                        size: 11,
+                        weight: FontWeight.w500,
+                        color: AppColors.inkSoft,
+                      ),
+                    ),
                   ],
                 ),
               ),

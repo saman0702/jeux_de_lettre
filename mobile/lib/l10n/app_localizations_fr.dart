@@ -636,4 +636,8 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reportSent => 'Merci, signalement envoyé.';
+
+  @override
+  String get musicCredits =>
+      'Musiques : « Monkeys Spinning Monkeys », « Fluffing a Duck », « Carefree », « Pixel Peeker Polka » de Kevin MacLeod (incompetech.com), licence Creative Commons BY 4.0.';
 }

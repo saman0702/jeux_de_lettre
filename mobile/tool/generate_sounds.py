@@ -1,4 +1,4 @@
-"""Synthétise les effets sonores et la musique de menu du jeu.
+"""Synthétise les effets sonores du jeu (la musique de menu vient de Kevin MacLeod, voir CREDITS.md).
 
     python3 tool/generate_sounds.py
 
@@ -174,69 +174,7 @@ def typing_sounds() -> None:
                              for n in ["E6", "G6", "B6", "E7"]]), peak=0.4)
 
 
-def music_track(name, bpm, chords, roots, arps, melody, lead="bell", arp_kind="square", bass_kind="triangle",
-                swing=0.0) -> None:
-    """Une boucle de 8 mesures qui se termine pile sur le point de bouclage."""
-    beat = 60 / bpm
-    bar = 4 * beat
-    tracks = []
-    for i, chord in enumerate(chords):
-        start = i * bar
-        for b in range(4):
-            tracks.append((start + b * beat, tone(freq(roots[chord]), beat * 0.9, bass_kind, decay=3, volume=0.55)))
-            for step, note in enumerate(arps[chord]):
-                offset = step * beat / 4 + (swing * beat / 4 if step % 2 else 0)
-                tracks.append((start + b * beat + offset, tone(freq(note), beat / 4, arp_kind, decay=18, volume=0.08)))
-        tracks.append((start, noise(0.05, decay=80, volume=0.12)))
-        tracks.append((start + 2 * beat, noise(0.05, decay=80, volume=0.08)))
-        for b in range(4):
-            tracks.append((start + b * beat + beat / 2, noise(0.02, decay=200, volume=0.04)))
-    for note, at, length in melody:
-        tracks.append((at * beat, tone(freq(note), length * beat * 0.95, lead, decay=2.2, volume=0.45)))
-    write(name, mix(*tracks)[: int(8 * bar * RATE)], peak=0.35)
-
-
-def menu_music() -> None:
-    """Trois musiques de menu ; l'appli change de musique à chaque retour au menu."""
-    music_track(
-        "menu_1", 112,
-        ["C", "A", "F", "G", "C", "A", "F", "G"],
-        {"C": "C3", "A": "A2", "F": "F2", "G": "G2"},
-        {"C": ["C5", "E5", "G5", "E5"], "A": ["A4", "C5", "E5", "C5"],
-         "F": ["F4", "A4", "C5", "A4"], "G": ["G4", "B4", "D5", "B4"]},
-        [("E5", 0, 1), ("G5", 1, 1), ("A5", 2, 2), ("G5", 4, 1), ("E5", 5, 1), ("C5", 6, 2),
-         ("F5", 8, 1), ("A5", 9, 1), ("C6", 10, 1), ("A5", 11, 1), ("G5", 12, 3), ("D5", 15, 1),
-         ("E5", 16, 1), ("G5", 17, 1), ("C6", 18, 2), ("B5", 20, 1), ("A5", 21, 1), ("E5", 22, 2),
-         ("F5", 24, 1), ("E5", 25, 1), ("D5", 26, 1), ("F5", 27, 1), ("E5", 28, 2), ("D5", 30, 2)],
-    )
-    music_track(
-        "menu_2", 96,
-        ["Am", "F", "C", "G", "Am", "F", "C", "E"],
-        {"Am": "A2", "F": "F2", "C": "C3", "G": "G2", "E": "E2"},
-        {"Am": ["A4", "C5", "E5", "A5"], "F": ["F4", "A4", "C5", "F5"], "C": ["C5", "E5", "G5", "C6"],
-         "G": ["G4", "B4", "D5", "G5"], "E": ["E4", "G#4", "B4", "E5"]},
-        [("A5", 0, 2), ("C6", 2, 1), ("B5", 3, 1), ("A5", 4, 2), ("F5", 6, 2),
-         ("G5", 8, 1), ("E5", 9, 1), ("G5", 10, 2), ("D5", 12, 3), ("E5", 15, 1),
-         ("A5", 16, 1), ("B5", 17, 1), ("C6", 18, 2), ("A5", 20, 2), ("F5", 22, 2),
-         ("E5", 24, 1), ("G5", 25, 1), ("C6", 26, 2), ("B5", 28, 2), ("G#5", 30, 2)],
-        lead="triangle", arp_kind="sine", bass_kind="square", swing=0.25,
-    )
-    music_track(
-        "menu_3", 128,
-        ["F", "Bb", "C", "F", "Dm", "Bb", "C", "C"],
-        {"F": "F2", "Bb": "Bb2", "C": "C3", "Dm": "D3"},
-        {"F": ["F5", "A5", "C6", "A5"], "Bb": ["Bb4", "D5", "F5", "D5"],
-         "C": ["C5", "E5", "G5", "E5"], "Dm": ["D5", "F5", "A5", "F5"]},
-        [("C6", 0, 1), ("A5", 1, 1), ("F5", 2, 1), ("A5", 3, 1), ("Bb5", 4, 2), ("D6", 6, 2),
-         ("C6", 8, 1), ("G5", 9, 1), ("E5", 10, 2), ("F5", 12, 4),
-         ("A5", 16, 1), ("F5", 17, 1), ("D5", 18, 1), ("F5", 19, 1), ("Bb5", 20, 2), ("A5", 22, 2),
-         ("G5", 24, 2), ("C6", 26, 2), ("E6", 28, 2), ("C6", 30, 2)],
-        lead="square", arp_kind="triangle",
-    )
-
-
 if __name__ == "__main__":
     sound_effects()
     variant_effects()
     typing_sounds()
-    menu_music()

@@ -40,9 +40,14 @@ int pickOtherIndex(Random random, int count, int? last) {
   return last == null || pick < last ? pick : pick + 1;
 }
 
-/// Musiques de menu ; une autre démarre à chaque fois que la musique du menu
-/// revient.
-const _musicTracks = ['menu_1.wav', 'menu_2.wav', 'menu_3.wav'];
+/// Musiques de menu (Kevin MacLeod, CC BY 4.0, voir les crédits) : une autre
+/// démarre à chaque retour au menu et quand un morceau se termine.
+const musicTracks = [
+  'music_monkeys.mp3',
+  'music_duck.mp3',
+  'music_carefree.mp3',
+  'music_polka.mp3',
+];
 
 /// Joue les effets sonores et la musique du menu.
 abstract class GameAudio {
@@ -69,7 +74,7 @@ class SilentGameAudio implements GameAudio {
 class AudioplayersGameAudio implements GameAudio {
   AudioplayersGameAudio._();
 
-  static const _musicVolume = 0.45;
+  static const _musicVolume = 0.35;
 
   // Se mélange au son des autres applis et entre nos propres lecteurs, pour
   // qu'un effet sonore ne mette jamais la musique en pause.
@@ -106,8 +111,9 @@ class AudioplayersGameAudio implements GameAudio {
         ];
       }
       await audio._music.setAudioContext(_context);
-      await audio._music.setReleaseMode(ReleaseMode.loop);
+      await audio._music.setReleaseMode(ReleaseMode.release);
       await audio._music.setVolume(_musicVolume);
+      audio._music.onPlayerComplete.listen((_) => audio._nextTrack());
     } catch (error) {
       debugPrint('Audio unavailable: $error');
       return SilentGameAudio();
@@ -128,13 +134,18 @@ class AudioplayersGameAudio implements GameAudio {
   void startMusic() {
     if (_musicWanted) return;
     _musicWanted = true;
-    _track = _pickOther(_musicTracks.length, _track < 0 ? null : _track);
+    _nextTrack();
+  }
+
+  void _nextTrack() {
+    if (!_musicWanted) return;
+    _track = _pickOther(musicTracks.length, _track < 0 ? null : _track);
     _playTrack(_track);
   }
 
   Future<void> _playTrack(int track) async {
     try {
-      await _music.setSource(AssetSource('sounds/${_musicTracks[track]}'));
+      await _music.setSource(AssetSource('sounds/${musicTracks[track]}'));
       // Le menu a pu être quitté pendant le chargement de la musique.
       if (_musicWanted && _track == track) await _music.resume();
     } catch (error) {
