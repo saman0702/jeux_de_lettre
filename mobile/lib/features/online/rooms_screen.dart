@@ -8,6 +8,7 @@ import '../../animations/transitions/pop_route.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
+import '../../core/widgets/scroll_under_bars.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_card.dart';
 import '../../l10n/app_localizations.dart';
@@ -103,91 +104,90 @@ class _RoomsScreenState extends State<RoomsScreen> {
         child: SafeArea(
           child: ListenableBuilder(
             listenable: _online,
-            builder: (context, _) => Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                OnlineHeader(
-                  title: l10n.roomsTitle,
-                  onBack: () => Navigator.of(context).pop(),
-                  trailing: const OnlineCounter(),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      CandyButton(
-                        label: l10n.createRoom,
-                        icon: Icons.add_rounded,
-                        onPressed: _online.isOnline ? _create : null,
-                      ),
-                      const SizedBox(height: 12),
-                      CandyButton(
-                        label: l10n.joinWithCode,
-                        icon: Icons.vpn_key_rounded,
-                        color: AppColors.white,
-                        height: 54,
-                        fontSize: 19,
-                        onPressed: _online.isOnline ? _askCode : null,
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 22, 24, 8),
-                  child: Text(
-                    l10n.publicRoomsTitle,
-                    style: fredoka(
-                      size: 20,
-                      weight: FontWeight.w700,
-                      color: AppColors.white,
+            // Seul l'en-tête reste en place : boutons et salons défilent
+            // dessous, sans bord visible.
+            builder: (context, _) => ScrollUnderBars(
+              header: OnlineHeader(
+                title: l10n.roomsTitle,
+                onBack: () => Navigator.of(context).pop(),
+                trailing: const OnlineCounter(),
+              ),
+              builder: (context, padding) => ListView(
+                padding: padding.copyWith(bottom: padding.bottom + 12),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        CandyButton(
+                          label: l10n.createRoom,
+                          icon: Icons.add_rounded,
+                          onPressed: _online.isOnline ? _create : null,
+                        ),
+                        const SizedBox(height: 12),
+                        CandyButton(
+                          label: l10n.joinWithCode,
+                          icon: Icons.vpn_key_rounded,
+                          color: AppColors.white,
+                          height: 54,
+                          fontSize: 19,
+                          onPressed: _online.isOnline ? _askCode : null,
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                Expanded(
-                  child: _online.rooms.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(32),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const GameIconBadge(
-                                  GameIconKind.empty,
-                                  color: AppColors.purpleLight,
-                                  size: 72,
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  l10n.noPublicRooms,
-                                  textAlign: TextAlign.center,
-                                  style: fredoka(
-                                    size: 17,
-                                    color: AppColors.white.withValues(
-                                      alpha: 0.85,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 22, 24, 8),
+                    child: Text(
+                      l10n.publicRoomsTitle,
+                      style: fredoka(
+                        size: 20,
+                        weight: FontWeight.w700,
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ),
+                  if (_online.rooms.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const GameIconBadge(
+                              GameIconKind.empty,
+                              color: AppColors.purpleLight,
+                              size: 72,
                             ),
-                          ),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                          itemCount: _online.rooms.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, i) => BounceIn(
-                            key: ValueKey(_online.rooms[i].code),
-                            from: 0.8,
-                            child: _RoomTile(
-                              room: _online.rooms[i],
-                              onTap: () => _join(_online.rooms[i].code),
+                            const SizedBox(height: 12),
+                            Text(
+                              l10n.noPublicRooms,
+                              textAlign: TextAlign.center,
+                              style: fredoka(
+                                size: 17,
+                                color: AppColors.white.withValues(alpha: 0.85),
+                              ),
                             ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    for (final room in _online.rooms)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                        child: BounceIn(
+                          key: ValueKey(room.code),
+                          from: 0.8,
+                          child: _RoomTile(
+                            room: room,
+                            onTap: () => _join(room.code),
                           ),
                         ),
-                ),
-              ],
+                      ),
+                ],
+              ),
             ),
           ),
         ),

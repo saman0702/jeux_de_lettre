@@ -14,6 +14,8 @@ import '../../../l10n/app_localizations.dart';
 import '../../game/data/models.dart';
 import '../../game/widgets/round_result_view.dart';
 import '../data/room_models.dart';
+import '../../../core/widgets/outlined_text.dart';
+import '../../../core/widgets/scroll_under_bars.dart';
 import 'player_avatar.dart';
 import '../../../core/widgets/game_icon.dart';
 
@@ -118,83 +120,88 @@ class _RoomResultsViewState extends State<RoomResultsView> {
     final nextIn = (room.until(room.nextRoundAt).inMilliseconds / 1000).ceil();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      // Les cartes défilent sous l'en-tête et le compte à rebours, sans bord
+      // visible.
+      child: ScrollUnderBars(
+        header: Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 4),
+          child: Row(
             children: [
               LetterTile(letter: results.letter, size: 52),
               const SizedBox(width: 14),
-              Text(
-                l10n.roundProgress(results.number, room.settings.rounds),
-                style: fredoka(
-                  size: 22,
-                  weight: FontWeight.w700,
-                  color: AppColors.white,
+              Expanded(
+                child: OutlinedText(
+                  l10n.roundProgress(results.number, room.settings.rounds),
+                  style: fredoka(
+                    size: 22,
+                    weight: FontWeight.w700,
+                    color: AppColors.white,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: ListView(
-              children: [
-                if (mine != null) ...[
-                  _SectionTitle(l10n.yourAnswers),
-                  for (final (i, answer) in mine.answers.indexed)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: BounceIn(
-                        delay: Duration(milliseconds: 250 + i * _stepMs),
-                        from: 0.6,
-                        child: AnswerCard(
-                          answer: answer,
-                          correction: _correction(l10n, answer),
-                        ),
-                      ),
-                    ),
-                ],
-                _SectionTitle(l10n.leaderboard),
-                BounceIn(
-                  delay: Duration(
-                    milliseconds: 300 + (mine?.answers.length ?? 0) * _stepMs,
+        ),
+        footer: room.nextRoundAt == null
+            ? null
+            : Padding(
+                padding: const EdgeInsets.only(top: 10, bottom: 14),
+                child: OutlinedText(
+                  '⏳ ${l10n.nextRoundIn(nextIn)}',
+                  key: const Key('next_round_in'),
+                  textAlign: TextAlign.center,
+                  style: fredoka(
+                    size: 18,
+                    weight: FontWeight.w700,
+                    color: AppColors.white,
                   ),
-                  from: 0.8,
-                  slideY: 0.2,
-                  child: GameCard(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Column(
-                      children: [
-                        for (final (rank, p) in room.ranking.indexed)
-                          _LeaderboardRow(
-                            rank: rank + 1,
-                            player: p,
-                            gained: roundScores[p.clientId],
-                            isMe: p.clientId == widget.myId,
-                          ),
-                      ],
+                ),
+              ),
+        builder: (context, padding) => ListView(
+          padding: padding.copyWith(
+            bottom: padding.bottom + (room.nextRoundAt == null ? 6 : 0),
+          ),
+          children: [
+            if (mine != null) ...[
+              _SectionTitle(l10n.yourAnswers),
+              for (final (i, answer) in mine.answers.indexed)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: BounceIn(
+                    delay: Duration(milliseconds: 250 + i * _stepMs),
+                    from: 0.6,
+                    child: AnswerCard(
+                      answer: answer,
+                      correction: _correction(l10n, answer),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-          if (room.nextRoundAt != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Text(
-                '⏳ ${l10n.nextRoundIn(nextIn)}',
-                key: const Key('next_round_in'),
-                textAlign: TextAlign.center,
-                style: fredoka(
-                  size: 18,
-                  weight: FontWeight.w700,
-                  color: AppColors.white,
+            ],
+            _SectionTitle(l10n.leaderboard),
+            BounceIn(
+              delay: Duration(
+                milliseconds: 300 + (mine?.answers.length ?? 0) * _stepMs,
+              ),
+              from: 0.8,
+              slideY: 0.2,
+              child: GameCard(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Column(
+                  children: [
+                    for (final (rank, p) in room.ranking.indexed)
+                      _LeaderboardRow(
+                        rank: rank + 1,
+                        player: p,
+                        gained: roundScores[p.clientId],
+                        isMe: p.clientId == widget.myId,
+                      ),
+                  ],
                 ),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

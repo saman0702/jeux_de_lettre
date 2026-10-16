@@ -8,6 +8,7 @@ import '../../../core/feedback/game_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/candy_button.dart';
+import '../../../core/widgets/scroll_under_bars.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
 import '../hints/hint_controller.dart';
@@ -149,105 +150,122 @@ class _RoundViewState extends State<RoundView> {
         final compact =
             gameKeyboard || MediaQuery.viewInsetsOf(context).bottom > 0;
 
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: Row(
-                children: [
-                  // Rétrécit sur les téléphones étroits plutôt que de déborder.
-                  Expanded(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Row(
-                        children: [
-                          if (widget.onQuit != null) ...[
-                            QuitButton(onQuit: widget.onQuit!),
-                            const SizedBox(width: 8),
-                          ],
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  l10n.roundLabel,
-                                  style: fredoka(
-                                    size: 10,
-                                    weight: FontWeight.w700,
-                                    color: AppColors.white,
-                                  ),
-                                ),
-                                Text(
-                                  '${round.number}/${widget.totalRounds}',
-                                  style: fredoka(
-                                    size: 18,
-                                    weight: FontWeight.w700,
-                                    color: AppColors.white,
-                                    height: 1.1,
-                                  ),
-                                ),
-                              ],
-                            ),
+        final topBar = Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          child: Row(
+            children: [
+              // Rétrécit sur les téléphones étroits plutôt que de déborder.
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      if (widget.onQuit != null) ...[
+                        QuitButton(onQuit: widget.onQuit!),
+                        const SizedBox(width: 8),
+                      ],
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        // Pastille opaque : lisible quand les champs
+                        // défilent dessous.
+                        decoration: BoxDecoration(
+                          color: AppColors.purpleDeep.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: AppColors.white.withValues(alpha: 0.6),
+                            width: 1.5,
                           ),
-                        ],
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              l10n.roundLabel,
+                              style: fredoka(
+                                size: 10,
+                                weight: FontWeight.w700,
+                                color: AppColors.white,
+                              ),
+                            ),
+                            Text(
+                              '${round.number}/${widget.totalRounds}',
+                              style: fredoka(
+                                size: 18,
+                                weight: FontWeight.w700,
+                                color: AppColors.white,
+                                height: 1.1,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  if (compact)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: LetterReveal(
-                        key: ValueKey(round.number),
-                        letter: round.letter,
-                        size: 56,
-                      ),
-                    ),
-                  TimerBadge(
-                    remaining: widget.remaining,
-                    total: Duration(seconds: round.duration),
-                  ),
-                ],
-              ),
-            ),
-            if (!compact)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: LetterReveal(
-                  key: ValueKey(round.number),
-                  letter: round.letter,
-                  size: 110,
                 ),
               ),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                itemCount: categories.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final category = categories[index];
-                  return AnswerSlot(
-                    key: _slotKeys.putIfAbsent(category, GlobalKey.new),
-                    category: category,
-                    controller: widget.fields[category]!,
+              const SizedBox(width: 8),
+              if (compact)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: LetterReveal(
+                    key: ValueKey(round.number),
                     letter: round.letter,
-                    enabled: !widget.submitting,
-                    autofocus: index == 0,
-                    isLast: index == categories.length - 1,
-                    onDone: widget.onFinish,
-                    hints: widget.hints,
-                    focusNode: _node(category),
-                    systemKeyboard: !gameKeyboard,
-                  );
-                },
+                    size: 56,
+                  ),
+                ),
+              TimerBadge(
+                remaining: widget.remaining,
+                total: Duration(seconds: round.duration),
+              ),
+            ],
+          ),
+        );
+        // La grande lettre fait partie de la liste : elle défile avec les
+        // champs, sous la barre du haut transparente.
+        final offset = compact ? 0 : 1;
+
+        return Column(
+          children: [
+            Expanded(
+              child: ScrollUnderBars(
+                header: topBar,
+                builder: (context, padding) => ListView.separated(
+                  padding: padding.copyWith(left: 20, right: 20),
+                  itemCount: categories.length + offset,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (context, i) {
+                    if (i < offset) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Center(
+                          child: LetterReveal(
+                            key: ValueKey(round.number),
+                            letter: round.letter,
+                            size: 110,
+                          ),
+                        ),
+                      );
+                    }
+                    final index = i - offset;
+                    final category = categories[index];
+                    return AnswerSlot(
+                      key: _slotKeys.putIfAbsent(category, GlobalKey.new),
+                      category: category,
+                      controller: widget.fields[category]!,
+                      letter: round.letter,
+                      enabled: !widget.submitting,
+                      autofocus: index == 0,
+                      isLast: index == categories.length - 1,
+                      onDone: widget.onFinish,
+                      hints: widget.hints,
+                      focusNode: _node(category),
+                      systemKeyboard: !gameKeyboard,
+                    );
+                  },
+                ),
               ),
             ),
             if (gameKeyboard)

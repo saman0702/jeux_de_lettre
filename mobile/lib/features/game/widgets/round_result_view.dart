@@ -7,6 +7,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/voice/announcements.dart';
 import '../../../core/widgets/candy_button.dart';
 import '../../../core/widgets/game_card.dart';
+import '../../../core/widgets/outlined_text.dart';
+import '../../../core/widgets/scroll_under_bars.dart';
 import '../../../core/widgets/letter_tile.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
@@ -126,11 +128,12 @@ class _RoundResultViewState extends State<RoundResultView>
         final shownTotal = widget.totalScore - result.roundScore + shownScore;
 
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          // Les réponses défilent sous l'en-tête et le score, sans bord visible.
+          child: ScrollUnderBars(
+            header: Padding(
+              padding: const EdgeInsets.only(top: 16, bottom: 4),
+              child: Row(
                 children: [
                   LetterTile(letter: result.letter, size: 56),
                   const SizedBox(width: 14),
@@ -138,7 +141,7 @@ class _RoundResultViewState extends State<RoundResultView>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        OutlinedText(
                           l10n.roundProgress(result.number, widget.totalRounds),
                           style: fredoka(
                             size: 20,
@@ -150,12 +153,10 @@ class _RoundResultViewState extends State<RoundResultView>
                           children: [
                             const GameIcon(GameIconKind.timer, size: 18),
                             const SizedBox(width: 4),
-                            Text(
+                            OutlinedText(
                               l10n.finishedIn(seconds),
-                              style: fredoka(
-                                size: 15,
-                                color: AppColors.white.withValues(alpha: 0.85),
-                              ),
+                              strokeWidth: 3,
+                              style: fredoka(size: 15, color: AppColors.white),
                             ),
                           ],
                         ),
@@ -164,87 +165,101 @@ class _RoundResultViewState extends State<RoundResultView>
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.separated(
-                  itemCount: result.answers.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, i) {
-                    final t = _progress(_firstMs + i * _stepMs, _cardMs);
-                    return Opacity(
-                      opacity: t.clamp(0.0, 1.0),
-                      child: Transform.translate(
-                        offset: Offset(60 * (1 - t), 0),
-                        child: AnswerCard(
-                          answer: result.answers[i],
-                          popScale: t,
-                          correction: _correction(l10n, result.answers[i]),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 8),
-              GameCard(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.roundScore,
-                          style: fredoka(size: 14, color: AppColors.inkSoft),
-                        ),
-                        Transform.scale(
-                          alignment: Alignment.centerLeft,
-                          scale:
-                              1 +
-                              0.25 *
-                                  (1 - scoreProgress) *
-                                  (scoreProgress > 0 ? 1 : 0),
-                          child: Text(
-                            l10n.roundPoints(shownScore),
-                            style: fredoka(
-                              size: 34,
-                              weight: FontWeight.w700,
-                              color: AppColors.purple,
-                            ),
-                          ),
-                        ),
-                      ],
+            ),
+            footer: Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  GameCard(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
                     ),
-                    const Spacer(),
-                    Column(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          l10n.totalScore,
-                          style: fredoka(size: 14, color: AppColors.inkSoft),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.roundScore,
+                              style: fredoka(
+                                size: 14,
+                                color: AppColors.inkSoft,
+                              ),
+                            ),
+                            Transform.scale(
+                              alignment: Alignment.centerLeft,
+                              scale:
+                                  1 +
+                                  0.25 *
+                                      (1 - scoreProgress) *
+                                      (scoreProgress > 0 ? 1 : 0),
+                              child: Text(
+                                l10n.roundPoints(shownScore),
+                                style: fredoka(
+                                  size: 34,
+                                  weight: FontWeight.w700,
+                                  color: AppColors.purple,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          l10n.pointsShort(shownTotal),
-                          style: fredoka(size: 22, weight: FontWeight.w700),
+                        const Spacer(),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              l10n.totalScore,
+                              style: fredoka(
+                                size: 14,
+                                color: AppColors.inkSoft,
+                              ),
+                            ),
+                            Text(
+                              l10n.pointsShort(shownTotal),
+                              style: fredoka(size: 22, weight: FontWeight.w700),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 14),
+                  CandyButton(
+                    label: widget.isLastRound
+                        ? l10n.seeResults
+                        : l10n.nextRound,
+                    icon: widget.isLastRound
+                        ? Icons.emoji_events_rounded
+                        : Icons.arrow_forward_rounded,
+                    onPressed: widget.onContinue,
+                  ),
+                ],
               ),
-              const SizedBox(height: 14),
-              CandyButton(
-                label: widget.isLastRound ? l10n.seeResults : l10n.nextRound,
-                icon: widget.isLastRound
-                    ? Icons.emoji_events_rounded
-                    : Icons.arrow_forward_rounded,
-                onPressed: widget.onContinue,
-              ),
-            ],
+            ),
+            builder: (context, padding) => ListView.separated(
+              padding: padding,
+              itemCount: result.answers.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              itemBuilder: (context, i) {
+                final t = _progress(_firstMs + i * _stepMs, _cardMs);
+                return Opacity(
+                  opacity: t.clamp(0.0, 1.0),
+                  child: Transform.translate(
+                    offset: Offset(60 * (1 - t), 0),
+                    child: AnswerCard(
+                      answer: result.answers[i],
+                      popScale: t,
+                      correction: _correction(l10n, result.answers[i]),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         );
       },
