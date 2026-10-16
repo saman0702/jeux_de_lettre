@@ -15,6 +15,8 @@ class AppSettings extends ChangeNotifier {
     this._voice = true,
     this._nickname,
     this._languageCode,
+    this._avatarPreset = 0,
+    this._avatarPending = false,
   });
 
   /// Non persisté ; utilisé par les tests.
@@ -38,6 +40,8 @@ class AppSettings extends ChangeNotifier {
       voice: prefs.getBool(_voiceKey) ?? true,
       nickname: prefs.getString(_nicknameKey),
       languageCode: prefs.getString(_languageKey),
+      avatarPreset: prefs.getInt(_avatarPresetKey) ?? 0,
+      avatarPending: prefs.getBool(_avatarPendingKey) ?? false,
     );
   }
 
@@ -57,6 +61,8 @@ class AppSettings extends ChangeNotifier {
   static const _languageKey = 'settings.language';
   static const _nicknameKey = 'player.nickname';
   static const _clientIdKey = 'player.client_id';
+  static const _avatarPresetKey = 'player.avatar_preset';
+  static const _avatarPendingKey = 'player.avatar_pending';
 
   final SharedPreferences? _prefs;
 
@@ -70,6 +76,23 @@ class AppSettings extends ChangeNotifier {
   bool _voice;
   String? _nickname;
   String? _languageCode;
+  int _avatarPreset;
+  bool _avatarPending;
+
+  /// Personnage dessiné choisi, gardé sur le téléphone pour l'afficher hors
+  /// ligne.
+  int get avatarPreset => _avatarPreset;
+
+  /// Choisi hors ligne : à envoyer au serveur dès la reconnexion.
+  bool get avatarPending => _avatarPending;
+
+  void setAvatarPreset(int preset, {required bool pending}) {
+    _avatarPreset = preset;
+    _avatarPending = pending;
+    _prefs?.setInt(_avatarPresetKey, preset);
+    _prefs?.setBool(_avatarPendingKey, pending);
+    notifyListeners();
+  }
 
   bool get sound => _sound;
   bool get music => _music;

@@ -12,6 +12,7 @@ import 'features/game/offline/offline_dictionary.dart';
 import 'features/home/home_screen.dart';
 import 'features/online/online_controller.dart';
 import 'core/network/api_client.dart';
+import 'features/avatar/avatar_sync.dart';
 import 'features/shop/coin_store.dart';
 import 'features/shop/shop_controller.dart';
 import 'features/wallet/coin_counter.dart';
@@ -35,6 +36,7 @@ Future<void> main() async {
   // Une seule connexion pour toute l'appli : compteur en ligne, salons et
   // parties.
   online.client.connect();
+  AvatarSync(settings: settings, online: online, api: ApiClient());
   // Écoute le store dès le démarrage : un achat interrompu est repris.
   final shop = ShopController(
     store: DeviceCoinStore(),

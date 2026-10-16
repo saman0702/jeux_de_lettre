@@ -1243,6 +1243,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Paiement sécurisé par Google Play ou l\'App Store. Les pièces n\'ont aucune valeur monétaire : elles ne sont ni remboursables, ni échangeables, ni convertibles en argent.'**
   String get shopLegal;
+
+  /// No description provided for @avatarPhotoNeedsConnection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi pour utiliser une photo : elle est transformée en dessin sur le serveur.'**
+  String get avatarPhotoNeedsConnection;
+
+  /// No description provided for @avatarPickFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir l\'appareil photo ou la galerie. Vérifie les autorisations de l\'appli.'**
+  String get avatarPickFailed;
+
+  /// No description provided for @avatarSavedOffline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avatar choisi ! Il sera partagé dès que tu seras en ligne.'**
+  String get avatarSavedOffline;
 }
 
 class _AppLocalizationsDelegate

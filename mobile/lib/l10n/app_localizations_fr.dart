@@ -678,4 +678,16 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get shopLegal =>
       'Paiement sécurisé par Google Play ou l\'App Store. Les pièces n\'ont aucune valeur monétaire : elles ne sont ni remboursables, ni échangeables, ni convertibles en argent.';
+
+  @override
+  String get avatarPhotoNeedsConnection =>
+      'Connecte-toi pour utiliser une photo : elle est transformée en dessin sur le serveur.';
+
+  @override
+  String get avatarPickFailed =>
+      'Impossible d\'ouvrir l\'appareil photo ou la galerie. Vérifie les autorisations de l\'appli.';
+
+  @override
+  String get avatarSavedOffline =>
+      'Avatar choisi ! Il sera partagé dès que tu seras en ligne.';
 }

@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:letter_battle/core/network/api_client.dart';
 import 'package:letter_battle/features/avatar/avatar_screen.dart';
+import 'package:letter_battle/features/avatar/avatar_sync.dart';
 import 'package:letter_battle/features/avatar/drawn_avatar.dart';
 import 'package:letter_battle/features/online/room_screen.dart';
 
@@ -16,8 +17,12 @@ import 'online_test.dart' show Harness, me, player, pumpFor, roomEvent;
 class FakeProfiles {
   final List<http.Request> requests = [];
 
+  /// Simule un serveur injoignable.
+  bool down = false;
+
   late final api = ApiClient(
     client: MockClient((request) async {
+      if (down) throw Exception('offline');
       requests.add(request);
       final photo = request.url.path.endsWith('/avatar');
       final preset = photo
@@ -105,5 +110,77 @@ void main() {
     await pumpFor(tester);
     expect(h.socket.sent.last, {'type': 'report_player', 'client_id': 'kev'});
     expect(find.text('Thanks, report sent.'), findsOneWidget);
+  });
+
+  testWidgets('a character chosen without the server is kept, then sent', (
+    tester,
+  ) async {
+    final h = Harness();
+    final server = FakeProfiles()..down = true;
+    await h.start(tester, AvatarScreen(apiClient: server.api));
+
+    await tester.tap(find.byKey(const Key('preset_4')));
+    await tester.pumpAndSettle();
+    expect(h.online.avatarPreset, 4, reason: 'shown right away');
+    expect(h.settings.avatarPreset, 4);
+    expect(h.settings.avatarPending, isTrue);
+    expect(find.textContaining('as soon as you are online'), findsOneWidget);
+
+    // À la reconnexion, le choix part au serveur.
+    server.down = false;
+    final sync = AvatarSync(
+      settings: h.settings,
+      online: h.online,
+      api: server.api,
+    );
+    h.socket.close();
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(jsonDecode(server.requests.last.body), {'avatar_preset': 4});
+    expect(h.settings.avatarPending, isFalse);
+    sync.dispose();
+  });
+
+  testWidgets('the photo buttons explain why they need a connection', (
+    tester,
+  ) async {
+    final h = Harness();
+    var opened = false;
+    await h.start(
+      tester,
+      AvatarScreen(
+        apiClient: FakeProfiles().api,
+        pickPhoto: (_) async {
+          opened = true;
+          return null;
+        },
+      ),
+    );
+    h.refuseConnections = true;
+    h.socket.close();
+    await tester.pumpAndSettle();
+    expect(h.online.isOnline, isFalse);
+    await tester.tap(find.byKey(const Key('avatar_gallery')));
+    await tester.pumpAndSettle();
+    expect(opened, isFalse);
+    expect(find.textContaining('Go online to use a photo'), findsOneWidget);
+    // Le serveur revient : plus de reconnexion en attente à la fin du test.
+    h.refuseConnections = false;
+    await tester.pump(const Duration(seconds: 3));
+  });
+
+  testWidgets('a refused camera permission is reported', (tester) async {
+    final h = Harness();
+    await h.start(
+      tester,
+      AvatarScreen(
+        apiClient: FakeProfiles().api,
+        pickPhoto: (_) async => throw Exception('camera_access_denied'),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('avatar_camera')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Check the app permissions'), findsOneWidget);
+    expect(h.online.isOnline, isTrue);
   });
 }

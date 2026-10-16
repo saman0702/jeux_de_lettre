@@ -676,4 +676,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get shopLegal =>
       'Payment secured by Google Play or the App Store. Coins have no monetary value: they cannot be refunded, exchanged or converted into money.';
+
+  @override
+  String get avatarPhotoNeedsConnection =>
+      'Go online to use a photo: it is turned into a drawing on the server.';
+
+  @override
+  String get avatarPickFailed =>
+      'Could not open the camera or gallery. Check the app permissions.';
+
+  @override
+  String get avatarSavedOffline =>
+      'Avatar chosen! It will be shared as soon as you are online.';
 }

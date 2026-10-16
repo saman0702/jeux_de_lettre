@@ -81,14 +81,49 @@ class _AvatarScreenState extends State<AvatarScreen> {
   }
 
   Future<void> _photo(ImageSource source) async {
-    final picked = await widget.pickPhoto(source);
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    // La photo est transformée en dessin par le serveur : il faut le joindre.
+    if (!OnlineScope.of(context).isOnline) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.avatarPhotoNeedsConnection)),
+      );
+      return;
+    }
+    final PickedPhoto? picked;
+    try {
+      picked = await widget.pickPhoto(source);
+    } catch (error) {
+      // Accès à l'appareil photo ou à la galerie refusé, ou aucune appli
+      // disponible.
+      debugPrint('Photo picker failed: $error');
+      messenger.showSnackBar(SnackBar(content: Text(l10n.avatarPickFailed)));
+      return;
+    }
     if (picked == null || !mounted) return;
-    await _apply(() => _profile.uploadPhoto(picked.bytes, picked.name));
+    await _apply(() => _profile.uploadPhoto(picked!.bytes, picked.name));
   }
 
-  void _preset(int preset) {
-    GameFeedbackScope.of(context).play(Sfx.tap);
-    _apply(() => _profile.choosePreset(preset));
+  /// Le personnage est pris tout de suite, même hors ligne ; le serveur est
+  /// prévenu dès que possible.
+  Future<void> _preset(int preset) async {
+    final l10n = AppLocalizations.of(context);
+    final feedback = GameFeedbackScope.of(context);
+    final online = OnlineScope.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    feedback.play(Sfx.tap);
+    feedback.settings.setAvatarPreset(preset, pending: true);
+    online.setAvatar(preset, null);
+    try {
+      final avatar = await _profile.choosePreset(preset);
+      if (feedback.settings.avatarPreset == preset) {
+        feedback.settings.setAvatarPreset(preset, pending: false);
+        online.setAvatar(avatar.preset, avatar.url);
+      }
+      messenger.showSnackBar(SnackBar(content: Text(l10n.avatarUpdated)));
+    } on ApiException {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.avatarSavedOffline)));
+    }
   }
 
   @override
@@ -160,9 +195,7 @@ class _AvatarScreenState extends State<AvatarScreen> {
                           color: color,
                           height: 52,
                           fontSize: 17,
-                          onPressed: _busy || !online.isOnline
-                              ? null
-                              : () => _photo(source),
+                          onPressed: _busy ? null : () => _photo(source),
                         ),
                       ),
                     ],
@@ -200,9 +233,7 @@ class _AvatarScreenState extends State<AvatarScreen> {
                               selected:
                                   online.avatarUrl == null &&
                                   online.avatarPreset == i,
-                              onTap: _busy || !online.isOnline
-                                  ? null
-                                  : () => _preset(i),
+                              onTap: _busy ? null : () => _preset(i),
                             ),
                         ],
                       ),

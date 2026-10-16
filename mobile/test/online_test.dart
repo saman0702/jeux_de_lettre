@@ -58,6 +58,7 @@ class Harness {
       nickname: nickname ?? 'Joueur',
       pingInterval: null,
       connector: (uri) async {
+        if (refuseConnections) throw Exception('server unreachable');
         uris.add(uri);
         socket = FakeSocket();
         return socket;
@@ -72,6 +73,9 @@ class Harness {
   late final OnlineController online;
   late FakeSocket socket;
   final List<Uri> uris = [];
+
+  /// Simule un serveur injoignable pour les reconnexions.
+  bool refuseConnections = false;
 
   Future<void> start(
     WidgetTester tester,
