@@ -469,3 +469,25 @@ async def _spend(manager, client_id, amount):
     async with manager.session_factory() as session:
         await wallet_service.debit(session, client_id, amount, "bet_stake")
         await session.commit()
+
+
+def test_avatars_are_shared_and_photos_can_be_reported(client, manager):
+    async def set_photo():
+        async with manager.session_factory() as session:
+            profile = await wallet_service.get_profile(session, "bob-00001")
+            profile.avatar_file = "bob-00001-abcd.png"
+            profile.avatar_preset = 5
+            await session.commit()
+
+    asyncio.run(set_photo())
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice)
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        room = state(alice, check=lambda r: len(r["players"]) == 2)
+        assert room["players"][1]["avatar_url"] == "/media/avatars/bob-00001-abcd.png"
+
+        alice.send_json({"type": "report_player", "client_id": "bob-00001"})
+        assert wait_for(alice, lambda m: m["type"] == "reported")["client_id"] == "bob-00001"
+
+        alice.send_json({"type": "report_player", "client_id": "alice-0001"})
+        assert error(alice) == "invalid_message"

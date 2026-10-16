@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     redis_port: int = 6379
+    # Avatars dessinés à partir des photos (servis sous /media).
+    media_dir: str = "media"
 
     database_url_env: str | None = Field(default=None, validation_alias="DATABASE_URL")
     redis_url_env: str | None = Field(default=None, validation_alias="REDIS_URL")

@@ -45,6 +45,7 @@ services:
     volumes:
       - ./backend/app:/code/app
       - ./backend/migrations:/code/migrations
+      - avatars_data:/code/media
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     depends_on:
       postgres:
@@ -55,3 +56,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  avatars_data:

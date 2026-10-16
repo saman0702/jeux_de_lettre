@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.games.router import router as games_router
 from app.api.profiles.router import router as profiles_router
@@ -9,6 +10,7 @@ from app.api.health import router as health_router
 from app.core.config import settings
 from app.core.database import engine
 from app.core.redis import redis_client
+from app.services import avatar_service
 from app.services.game_service import GameError
 from app.services.room_service import room_manager
 from app.websocket.game_ws import router as ws_router
@@ -29,6 +31,8 @@ app.include_router(health_router)
 app.include_router(games_router)
 app.include_router(profiles_router)
 app.include_router(ws_router)
+avatar_service.avatars_dir()
+app.mount("/media", StaticFiles(directory=settings.media_dir), name="media")
 
 
 @app.exception_handler(GameError)

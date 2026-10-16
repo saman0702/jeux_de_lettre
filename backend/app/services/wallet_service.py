@@ -6,10 +6,11 @@ coin_transactions."""
 import re
 from dataclasses import dataclass
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.game_rules import POINTS_PER_COIN
-from app.models import CoinTransaction, Profile
+from app.models import AvatarReport, CoinTransaction, Profile
 
 CLIENT_ID = re.compile(r"^[A-Za-z0-9-]{8,64}$")
 
@@ -54,6 +55,29 @@ async def get_profile(session: AsyncSession, client_id: str, nickname: str | Non
 
 def avatar_url(profile: Profile) -> str | None:
     return f"/media/avatars/{profile.avatar_file}" if profile.avatar_file else None
+
+
+REPORTS_TO_HIDE = 3
+
+
+async def report_avatar(session: AsyncSession, reporter_id: str, reported_id: str) -> bool:
+    """Enregistre un signalement de la photo actuelle du joueur. Renvoie vrai quand la photo vient
+    d'être retirée (trop de signalements) : le joueur repasse alors sur son avatar dessiné."""
+    profile = await session.get(Profile, reported_id)
+    if profile is None or not profile.avatar_file or reporter_id == reported_id:
+        return False
+    file = profile.avatar_file
+    exists = await session.scalar(
+        select(AvatarReport.id).where(AvatarReport.reporter_id == reporter_id, AvatarReport.avatar_file == file)
+    )
+    if exists is None:
+        session.add(AvatarReport(reporter_id=reporter_id, reported_id=reported_id, avatar_file=file))
+        await session.flush()
+    count = await session.scalar(select(func.count()).where(AvatarReport.avatar_file == file))
+    if count >= REPORTS_TO_HIDE:
+        profile.avatar_file = None
+        return True
+    return False
 
 
 def snapshot(profile: Profile, gained: int = 0) -> WalletUpdate:

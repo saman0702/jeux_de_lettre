@@ -1,8 +1,12 @@
+import io
+
 import pytest
+from PIL import Image, ImageDraw
 from sqlalchemy import select
 
 from app.models import CoinTransaction
-from app.services import letter_service, wallet_service
+from app.core.config import settings
+from app.services import avatar_service, letter_service, wallet_service
 
 GAME = {"language": "fr", "rounds": 5, "round_duration": 30, "nickname": "Blaise"}
 CLIENT = "flore-0001"
@@ -68,3 +72,67 @@ async def test_solo_game_without_profile_has_no_wallet(client, monkeypatch):
     await client.post(f"/api/v1/solo/games/{game['id']}/rounds")
     body = (await client.post(f"/api/v1/solo/games/{game['id']}/rounds/1/submit", json={"answers": {}})).json()
     assert body["wallet"] is None
+
+
+# ------------------------------------------------------------------ avatars
+
+
+def photo_bytes(size=(640, 480), fmt="JPEG") -> bytes:
+    """Fausse photo : un dégradé avec un rond, comme un visage sur un fond."""
+    image = Image.new("RGB", size, (90, 140, 200))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((200, 100, 440, 380), fill=(235, 190, 150), outline=(60, 40, 30), width=6)
+    buffer = io.BytesIO()
+    image.save(buffer, format=fmt)
+    return buffer.getvalue()
+
+
+@pytest.fixture
+def media(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "media_dir", str(tmp_path))
+    return tmp_path / "avatars"
+
+
+async def test_photo_becomes_a_drawn_avatar(client, media):
+    response = await client.post(
+        f"/api/v1/profiles/{CLIENT}/avatar", files={"photo": ("me.jpg", photo_bytes(), "image/jpeg")}
+    )
+    assert response.status_code == 200, response.text
+    url = response.json()["avatar_url"]
+    assert url.startswith(f"/media/avatars/{CLIENT}-") and url.endswith(".png")
+
+    drawing = Image.open(media / url.rsplit("/", 1)[1])
+    assert drawing.size == (256, 256)
+    # Peu de couleurs : c'est un dessin, plus une photo.
+    assert len(drawing.getcolors(256 * 256)) <= 12
+
+    # Une nouvelle photo remplace l'ancienne ; un avatar dessiné retire la photo.
+    second = (
+        await client.post(f"/api/v1/profiles/{CLIENT}/avatar", files={"photo": ("b.png", photo_bytes(fmt="PNG"))})
+    ).json()["avatar_url"]
+    assert len(list(media.iterdir())) == 1
+    response = await client.put(f"/api/v1/profiles/{CLIENT}", json={"avatar_preset": 3})
+    assert response.json()["avatar_url"] is None
+    assert not (media / second.rsplit("/", 1)[1]).exists()
+
+
+async def test_bad_uploads_are_refused(client, media):
+    response = await client.post(f"/api/v1/profiles/{CLIENT}/avatar", files={"photo": ("x.jpg", b"not an image")})
+    assert response.status_code == 422
+    assert response.json()["detail"] == "invalid_image"
+
+    huge = b"\0" * (avatar_service.MAX_UPLOAD_BYTES + 10)
+    response = await client.post(f"/api/v1/profiles/{CLIENT}/avatar", files={"photo": ("x.jpg", huge)})
+    assert response.status_code == 413
+
+
+async def test_three_reports_remove_a_photo(session, media):
+    profile = await wallet_service.get_profile(session, CLIENT)
+    profile.avatar_file = avatar_service.save_avatar(CLIENT, photo_bytes(), None)
+    await session.flush()
+
+    assert not await wallet_service.report_avatar(session, "reporter-1", CLIENT)
+    assert not await wallet_service.report_avatar(session, "reporter-1", CLIENT), "one vote per player"
+    assert not await wallet_service.report_avatar(session, "reporter-2", CLIENT)
+    assert await wallet_service.report_avatar(session, "reporter-3", CLIENT)
+    assert profile.avatar_file is None

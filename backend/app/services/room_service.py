@@ -247,7 +247,13 @@ class RoomManager:
 
         await self.presence.touch([client_id])
         await self._send(
-            client_id, {"type": "welcome", "online_count": await self.presence.count(), "wallet": wallet}
+            client_id,
+            {
+                "type": "welcome",
+                "online_count": await self.presence.count(),
+                "wallet": wallet,
+                "avatar": {"preset": connection.avatar_preset, "url": connection.avatar_url},
+            },
         )
         await self._refresh_online_count()
 
@@ -301,6 +307,7 @@ class RoomManager:
             "hint_pick": self._on_hint_pick,
             "add_bot": self._on_add_bot,
             "remove_bot": self._on_remove_bot,
+            "report_player": self._on_report_player,
             "subscribe_rooms": self._on_subscribe_rooms,
             "unsubscribe_rooms": self._on_unsubscribe_rooms,
             "ping": self._on_ping,
@@ -517,6 +524,31 @@ class RoomManager:
         await self._notice(room, "left", bot.nickname)
         await self._broadcast(room)
         await self._rooms_changed()
+
+    async def _on_report_player(self, connection: Connection, message: dict) -> None:
+        """Signale la photo d'un autre joueur de la salle."""
+        room = self._require_room(connection.client_id)
+        reported = str(message.get("client_id", ""))
+        player = room.players.get(reported)
+        if player is None or player.bot or reported == connection.client_id:
+            raise RoomError("invalid_message")
+        async with self.session_factory() as session:
+            hidden = await wallet_service.report_avatar(session, connection.client_id, reported)
+            await session.commit()
+            preset = (await wallet_service.get_profile(session, reported)).avatar_preset
+        await self._send(connection.client_id, {"type": "reported", "client_id": reported})
+        if hidden:
+            await self.update_avatar(reported, preset, None)
+
+    async def update_avatar(self, client_id: str, preset: int, url: str | None) -> None:
+        """Nouvel avatar d'un joueur : mis à jour sur sa connexion et dans sa salle."""
+        if connection := self.connections.get(client_id):
+            connection.avatar_preset, connection.avatar_url = preset, url
+        room = self._current_room(client_id)
+        if room is not None and client_id in room.players:
+            room.players[client_id].avatar_preset = preset
+            room.players[client_id].avatar_url = url
+            await self._broadcast(room)
 
     async def _on_subscribe_rooms(self, connection: Connection, message: dict) -> None:
         language = message.get("language")
