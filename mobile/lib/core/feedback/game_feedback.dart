@@ -36,7 +36,8 @@ class GameFeedback {
   /// tests pour que `pumpAndSettle` puisse se stabiliser.
   final bool ambientMotion;
 
-  bool _musicWanted = false;
+  MusicMood? _mood;
+  bool _musicQuiet = false;
   bool _appInForeground = true;
 
   void play(Sfx sfx) {
@@ -51,9 +52,13 @@ class GameFeedback {
     if (settings.vibration) vibrator.vibrate(kind);
   }
 
-  /// Les menus veulent de la musique, l'écran de jeu non.
-  set musicWanted(bool value) {
-    _musicWanted = value;
+  /// Ambiance de l'écran affiché (null : pas de musique).
+  MusicMood? get music => _mood;
+
+  /// Change l'ambiance ; [quiet] baisse le volume pendant les manches.
+  void setMusic(MusicMood? mood, {bool quiet = false}) {
+    _mood = mood;
+    _musicQuiet = quiet;
     _syncMusic();
   }
 
@@ -63,8 +68,9 @@ class GameFeedback {
   }
 
   void _syncMusic() {
-    if (_musicWanted && _appInForeground && settings.music) {
-      audio.startMusic();
+    final mood = _mood;
+    if (mood != null && _appInForeground && settings.music) {
+      audio.startMusic(mood, quiet: _musicQuiet);
     } else {
       audio.stopMusic();
     }

@@ -639,5 +639,5 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get musicCredits =>
-      'Musiques : « Monkeys Spinning Monkeys », « Fluffing a Duck », « Carefree », « Pixel Peeker Polka » de Kevin MacLeod (incompetech.com), licence Creative Commons BY 4.0.';
+      'Musiques de Kevin MacLeod (incompetech.com), licence Creative Commons BY 4.0 : « Monkeys Spinning Monkeys », « Fluffing a Duck », « Carefree », « Pixel Peeker Polka », « Sneaky Snitch », « Investigations », « Run Amok », « Funkorama », « Itty Bitty 8 Bit », « Bit Quest ».';
 }

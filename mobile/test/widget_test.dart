@@ -53,6 +53,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(audio.musicPlaying, isTrue);
+    expect(audio.mood, MusicMood.menu);
 
     await tester.tap(find.byIcon(Icons.settings_rounded));
     await tester.pumpAndSettle();

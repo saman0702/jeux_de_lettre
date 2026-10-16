@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../animations/countdown/countdown_view.dart';
 import '../../animations/transitions/pop_route.dart';
+import '../../core/audio/game_audio.dart';
 import '../../core/feedback/game_feedback.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
@@ -51,20 +52,33 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
   @override
   void initState() {
     super.initState();
+    _controller.addListener(_syncMusic);
     _controller.start();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // La musique du menu s'arrête pendant le jeu pour que le compte à rebours
-    // et le tic-tac ressortent.
-    _feedback ??= GameFeedbackScope.of(context)..musicWanted = false;
+    if (_feedback == null) {
+      _feedback = GameFeedbackScope.of(context);
+      _syncMusic();
+    }
+  }
+
+  /// Musique du solo, plus basse pendant le décompte et la manche pour que le
+  /// tic-tac ressorte.
+  void _syncMusic() {
+    final phase = _controller.phase;
+    _feedback?.setMusic(
+      MusicMood.solo,
+      quiet: phase == SoloPhase.countdown || phase == SoloPhase.playing,
+    );
   }
 
   @override
   void dispose() {
-    _feedback?.musicWanted = true;
+    _controller.removeListener(_syncMusic);
+    _feedback?.setMusic(MusicMood.menu);
     _controller.dispose();
     super.dispose();
   }

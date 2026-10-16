@@ -415,6 +415,8 @@ void main() {
     );
     await pumpFor(tester);
     expect(find.text('Robo-Léa'), findsOneWidget);
+    // Avec un bot dans la salle, c'est la musique « bots ».
+    expect((h.feedback.audio as SilentGameAudio).mood, MusicMood.bots);
 
     await tester.tap(find.byKey(const Key('add_bot_button')));
     await pumpFor(tester, const Duration(seconds: 1));
@@ -645,6 +647,8 @@ void main() {
 
     h.socket.push(bet(roomEvent('waiting')));
     await pumpFor(tester);
+    final audio = h.feedback.audio as SilentGameAudio;
+    expect((audio.mood, audio.quiet), (MusicMood.room, false));
     expect(find.text('Stake 10 · Pot: 20'), findsOneWidget);
     expect(find.byKey(const Key('add_bot_button')), findsNothing);
 

@@ -190,7 +190,11 @@ void main() {
         Sfx.reveal,
       ]),
     );
-    expect(audio.musicPlaying, isFalse);
+    // Musique du solo, baissée pendant la manche.
+    expect(
+      (audio.musicPlaying, audio.mood, audio.quiet),
+      (true, MusicMood.solo, true),
+    );
 
     await tester.enterText(find.byKey(const Key('field_city')), 'Madrid');
     await tester.tap(find.byKey(const Key('key_finish')));
@@ -198,6 +202,7 @@ void main() {
 
     expect(server.submissions.single, {'city': 'Madrid', 'fruit': ''});
     expect(find.text('Valid'), findsOneWidget);
+    expect(audio.quiet, isFalse, reason: 'back to full volume on results');
     expect(find.text('+10'), findsWidgets);
     expect(find.text('Finished in 4.2s'), findsOneWidget);
     expect(

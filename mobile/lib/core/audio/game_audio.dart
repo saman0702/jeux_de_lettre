@@ -40,19 +40,30 @@ int pickOtherIndex(Random random, int count, int? last) {
   return last == null || pick < last ? pick : pick + 1;
 }
 
-/// Musiques de menu (Kevin MacLeod, CC BY 4.0, voir les crédits) : une autre
-/// démarre à chaque retour au menu et quand un morceau se termine.
-const musicTracks = [
-  'music_monkeys.mp3',
-  'music_duck.mp3',
-  'music_carefree.mp3',
-  'music_polka.mp3',
-];
+/// Ambiance musicale : chaque mode de jeu a ses propres morceaux.
+enum MusicMood { menu, solo, room, bots }
 
-/// Joue les effets sonores et la musique du menu.
+/// Morceaux de Kevin MacLeod (CC BY 4.0, voir les crédits). Un autre morceau
+/// de l'ambiance démarre quand on y revient et quand un morceau se termine.
+const musicTracks = {
+  MusicMood.menu: [
+    'music_monkeys.mp3',
+    'music_duck.mp3',
+    'music_carefree.mp3',
+    'music_polka.mp3',
+  ],
+  MusicMood.solo: ['music_solo_snitch.mp3', 'music_solo_investigations.mp3'],
+  MusicMood.room: ['music_room_amok.mp3', 'music_room_funkorama.mp3'],
+  MusicMood.bots: ['music_bots_itty_bitty.mp3', 'music_bots_bit_quest.mp3'],
+};
+
+/// Joue les effets sonores et la musique.
 abstract class GameAudio {
   void play(Sfx sfx);
-  void startMusic();
+
+  /// Lance (ou garde) la musique de [mood]. [quiet] baisse le volume pendant
+  /// les manches pour que le chrono et les effets ressortent.
+  void startMusic(MusicMood mood, {bool quiet = false});
   void stopMusic();
 }
 
@@ -60,12 +71,18 @@ abstract class GameAudio {
 class SilentGameAudio implements GameAudio {
   final List<Sfx> played = [];
   bool musicPlaying = false;
+  MusicMood? mood;
+  bool quiet = false;
 
   @override
   void play(Sfx sfx) => played.add(sfx);
 
   @override
-  void startMusic() => musicPlaying = true;
+  void startMusic(MusicMood mood, {bool quiet = false}) {
+    musicPlaying = true;
+    this.mood = mood;
+    this.quiet = quiet;
+  }
 
   @override
   void stopMusic() => musicPlaying = false;
@@ -75,6 +92,7 @@ class AudioplayersGameAudio implements GameAudio {
   AudioplayersGameAudio._();
 
   static const _musicVolume = 0.35;
+  static const _quietVolume = 0.16;
 
   // Se mélange au son des autres applis et entre nos propres lecteurs, pour
   // qu'un effet sonore ne mette jamais la musique en pause.
@@ -87,7 +105,10 @@ class AudioplayersGameAudio implements GameAudio {
   final _random = Random();
   final AudioPlayer _music = AudioPlayer();
   bool _musicWanted = false;
-  int _track = -1;
+  MusicMood? _mood;
+  bool _quiet = false;
+  final Map<MusicMood, int> _lastTrack = {};
+  String? _track;
 
   int _pickOther(int count, int? last) => pickOtherIndex(_random, count, last);
 
@@ -131,22 +152,38 @@ class AudioplayersGameAudio implements GameAudio {
   }
 
   @override
-  void startMusic() {
-    if (_musicWanted) return;
+  void startMusic(MusicMood mood, {bool quiet = false}) {
+    if (quiet != _quiet || !_musicWanted) {
+      _quiet = quiet;
+      _music.setVolume(quiet ? _quietVolume : _musicVolume);
+    }
+    if (_musicWanted && _mood == mood) return;
+    final resume = !_musicWanted && _mood == mood && _track != null;
     _musicWanted = true;
-    _nextTrack();
+    _mood = mood;
+    // Même ambiance après une courte pause (appli en arrière-plan,
+    // musique réactivée) : on reprend le morceau en cours.
+    if (resume) {
+      _music.resume();
+    } else {
+      _nextTrack();
+    }
   }
 
   void _nextTrack() {
-    if (!_musicWanted) return;
-    _track = _pickOther(musicTracks.length, _track < 0 ? null : _track);
-    _playTrack(_track);
+    final mood = _mood;
+    if (!_musicWanted || mood == null) return;
+    final tracks = musicTracks[mood]!;
+    final index = _pickOther(tracks.length, _lastTrack[mood]);
+    _lastTrack[mood] = index;
+    _playTrack(tracks[index]);
   }
 
-  Future<void> _playTrack(int track) async {
+  Future<void> _playTrack(String track) async {
+    _track = track;
     try {
-      await _music.setSource(AssetSource('sounds/${musicTracks[track]}'));
-      // Le menu a pu être quitté pendant le chargement de la musique.
+      await _music.setSource(AssetSource('sounds/$track'));
+      // L'ambiance a pu changer pendant le chargement du morceau.
       if (_musicWanted && _track == track) await _music.resume();
     } catch (error) {
       debugPrint('Music unavailable: $error');

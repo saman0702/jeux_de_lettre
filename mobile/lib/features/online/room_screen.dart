@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../animations/countdown/countdown_view.dart';
+import '../../core/audio/game_audio.dart';
 import '../../core/feedback/game_feedback.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/game_dialog.dart';
@@ -91,7 +92,7 @@ class _RoomScreenState extends State<RoomScreen> {
       f.dispose();
     }
     _hints?.dispose();
-    _feedback.musicWanted = true;
+    _feedback.setMusic(MusicMood.menu);
     if (!_left && _online.room != null) {
       // Pas pendant le démontage de l'arbre : quitter la salle prévient
       // d'autres écrans.
@@ -117,8 +118,12 @@ class _RoomScreenState extends State<RoomScreen> {
       _podiumStake = room.settings.stake;
       _podiumWinnings = room.winnings;
     }
-    _feedback.musicWanted =
-        room.phase == RoomPhase.waiting || room.phase == RoomPhase.finished;
+    // Contre des bots, musique électronique ; entre humains, musique de salon.
+    // Plus bas pendant le décompte et la manche.
+    _feedback.setMusic(
+      room.players.any((p) => p.bot) ? MusicMood.bots : MusicMood.room,
+      quiet: room.phase == RoomPhase.countdown || room.phase == RoomPhase.round,
+    );
     final round = room.round;
     if (room.phase == RoomPhase.round &&
         round != null &&

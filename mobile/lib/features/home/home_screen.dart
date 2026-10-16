@@ -5,6 +5,7 @@ import 'package:flutter/scheduler.dart';
 
 import '../../animations/bounce_in.dart';
 import '../../animations/transitions/pop_route.dart';
+import '../../core/audio/game_audio.dart';
 import '../../core/feedback/game_feedback.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
@@ -41,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) GameFeedbackScope.of(context).musicWanted = true;
+      if (mounted) GameFeedbackScope.of(context).setMusic(MusicMood.menu);
     });
   }
 
