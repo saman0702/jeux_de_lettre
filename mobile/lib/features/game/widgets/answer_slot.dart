@@ -13,6 +13,9 @@ import '../../../core/widgets/letter_tile.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
 import '../hints/hint_controller.dart';
+import '../../shop/cosmetics.dart';
+import '../../shop/look_styles.dart';
+import 'country_flag.dart';
 import 'labels.dart';
 
 /// Réponse la plus longue acceptée, utilisée aussi par le clavier de jeu.
@@ -104,10 +107,14 @@ class _AnswerSlotState extends State<AnswerSlot>
       !_locked && firstLetterOf(widget.controller.text) == widget.letter;
 
   void _onFocus() {
-    if (_focus.hasFocus && GameFeedbackScope.of(context).ambientMotion) {
+    if (_focus.hasFocus) {
+      // Pulsation même sans motion ambiant : on doit voir clairement le
+      // champ actif.
       _glow.repeat(reverse: true);
     } else {
-      _glow.stop();
+      _glow
+        ..stop()
+        ..value = 0;
     }
     setState(() {});
   }
@@ -156,39 +163,64 @@ class _AnswerSlotState extends State<AnswerSlot>
             : matches
             ? AppColors.green
             : category.color;
-        final glow = focused ? 0.35 + 0.35 * _glow.value : 0.0;
+        final glow = focused ? 0.4 + 0.35 * _glow.value : 0.0;
 
         return GestureDetector(
           onTap: widget.enabled && !locked ? _focus.requestFocus : null,
           child: Padding(
             padding: const EdgeInsets.only(top: 10),
-            child: Stack(
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 180),
+              opacity: focused || locked || !widget.enabled ? 1 : 0.72,
+              child: AnimatedScale(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutBack,
+                scale: focused ? 1.04 : 1,
+                alignment: Alignment.center,
+                child: Stack(
               clipBehavior: Clip.none,
               children: [
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  height: 74,
+                  height: focused ? 68 : 64,
                   decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: accent, width: focused ? 4 : 3),
+                    color: focused
+                        ? Color.lerp(AppColors.white, accent, 0.14)!
+                        : AppColors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: focused
+                          ? accent
+                          : accent.withValues(alpha: 0.55),
+                      width: focused ? 4 : 2,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.depthOf(accent),
-                        offset: const Offset(0, 6),
+                        offset: Offset(0, focused ? 6 : 4),
                       ),
-                      if (focused)
+                      if (focused) ...[
                         BoxShadow(
                           color: accent.withValues(alpha: glow),
-                          blurRadius: 18,
-                          spreadRadius: 2,
+                          blurRadius: 20,
+                          spreadRadius: 3,
                         ),
+                        BoxShadow(
+                          color: AppColors.white.withValues(alpha: 0.85),
+                          blurRadius: 0,
+                          spreadRadius: -1,
+                          offset: const Offset(0, 0),
+                        ),
+                      ],
                     ],
                   ),
                   child: Row(
                     children: [
                       const SizedBox(width: 10),
-                      _CategoryBadge(category: category),
+                      _CountryOrBadge(
+                        category: category,
+                        text: widget.controller.text,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Stack(
@@ -252,44 +284,84 @@ class _AnswerSlotState extends State<AnswerSlot>
                             hints != null &&
                             widget.enabled &&
                             hints.canHint(category),
+                        canBuyHint:
+                            hints != null &&
+                            widget.enabled &&
+                            hints.canBuyHint(category),
                         hintsLeft: hints?.hintsLeft ?? 0,
                         hintKey: Key('hint_${category.name}'),
                         onHint: () =>
                             hints!.use(context, category, widget.controller),
+                        onBuyHint: () => hints!.buyAndUse(
+                          context,
+                          category,
+                          widget.controller,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 // Étiquette façon affichage de jeu, posée sur le bord.
                 Positioned(
-                  top: -10,
+                  top: focused ? -12 : -10,
                   left: 18,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: accent,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.white, width: 2),
-                    ),
-                    child: Text(
-                      category.label(l10n).toUpperCase(),
-                      style: fredoka(
-                        size: 12,
-                        weight: FontWeight.w700,
-                        color: AppColors.white,
+                  child: AnimatedScale(
+                    duration: const Duration(milliseconds: 180),
+                    scale: focused ? 1.08 : 1,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: focused ? 10 : 8,
+                        vertical: focused ? 2 : 0,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.white,
+                          width: focused ? 2.5 : 2,
+                        ),
+                        boxShadow: focused
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.depthOf(accent),
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        category.label(l10n).toUpperCase(),
+                        style: fredoka(
+                          size: focused ? 12 : 11,
+                          weight: FontWeight.w700,
+                          color: AppColors.white,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ],
             ),
+              ),
+            ),
           ),
         );
       },
     );
+  }
+}
+
+class _CountryOrBadge extends StatelessWidget {
+  const _CountryOrBadge({required this.category, required this.text});
+
+  final Category category;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = category == Category.country ? flagSpecFor(text) : null;
+    if (spec == null) return _CategoryBadge(category: category);
+    return CountryFlag(spec: spec, width: 42);
   }
 }
 
@@ -300,7 +372,7 @@ class _CategoryBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GameIconBadge(category.icon, color: category.color);
+    return GameIconBadge(category.icon, color: category.color, size: 40);
   }
 }
 
@@ -323,7 +395,10 @@ class _Tiles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tileColor = Color.lerp(color, Colors.white, 0.6)!;
+    final tileStyle = GameFeedbackScope.of(context).settings.tileStyle;
+    final bought = cosmeticOf(tileStyle)?.color;
+    final tileColor = bought ?? Color.lerp(color, Colors.white, 0.6)!;
+    final pattern = tilePatternOf(tileStyle);
     final chars = text.characters.toList();
 
     if (chars.isEmpty && !focused) {
@@ -332,7 +407,12 @@ class _Tiles extends StatelessWidget {
         opacity: 0.35,
         child: Row(
           children: [
-            LetterTile(letter: letter, size: 32, color: tileColor),
+            LetterTile(
+              letter: letter,
+              size: 32,
+              color: tileColor,
+              pattern: pattern,
+            ),
             const SizedBox(width: 6),
             Text(
               '…',
@@ -379,6 +459,7 @@ class _Tiles extends StatelessWidget {
                           letter: char.toUpperCase(),
                           size: size,
                           color: tileColor,
+                          pattern: pattern,
                         ),
                       ),
                     ),
@@ -387,14 +468,20 @@ class _Tiles extends StatelessWidget {
                 Padding(
                   padding: EdgeInsets.only(top: (30 - size) / 2 + 4),
                   child: Opacity(
-                    opacity: 0.35 + 0.5 * (1 - (2 * blink - 1).abs()),
+                    opacity: 0.55 + 0.45 * (1 - (2 * blink - 1).abs()),
                     child: Container(
                       width: size - 2,
                       height: size,
                       decoration: BoxDecoration(
-                        color: tileColor.withValues(alpha: 0.4),
+                        color: Color.lerp(tileColor, color, 0.25),
                         borderRadius: BorderRadius.circular(7),
-                        border: Border.all(color: color, width: 2),
+                        border: Border.all(color: color, width: 2.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.35),
+                            blurRadius: 6,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -413,18 +500,22 @@ class _Trailing extends StatelessWidget {
     required this.correct,
     required this.matches,
     required this.canHint,
+    required this.canBuyHint,
     required this.hintsLeft,
     required this.hintKey,
     required this.onHint,
+    required this.onBuyHint,
   });
 
   final bool locked;
   final bool? correct;
   final bool matches;
   final bool canHint;
+  final bool canBuyHint;
   final int hintsLeft;
   final Key hintKey;
   final VoidCallback onHint;
+  final VoidCallback onBuyHint;
 
   @override
   Widget build(BuildContext context) {
@@ -462,6 +553,70 @@ class _Trailing extends StatelessWidget {
             Icons.check_circle_rounded,
             color: AppColors.green,
             size: 30,
+          ),
+        ),
+      );
+    }
+    if (canBuyHint) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 10),
+        child: GestureDetector(
+          key: Key('${hintKey}_buy'),
+          onTap: onBuyHint,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.orange,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.depthOf(AppColors.orange),
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const GameIcon(GameIconKind.hint, size: 22),
+              ),
+              Positioned(
+                top: -6,
+                right: -10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: AppColors.yellow,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.white, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.depthOf(AppColors.yellow),
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const GameIcon(GameIconKind.coin, size: 11),
+                      const SizedBox(width: 2),
+                      Text(
+                        '$extraHintPrice',
+                        style: fredoka(
+                          size: 11,
+                          weight: FontWeight.w700,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );

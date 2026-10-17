@@ -8,6 +8,7 @@ import '../../../core/widgets/letter_tile.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../game/widgets/round_view.dart';
 import '../data/room_models.dart';
+import '../../shop/look_styles.dart';
 import 'player_avatar.dart';
 import '../../../core/widgets/game_icon.dart';
 
@@ -95,9 +96,11 @@ class RoundWaitView extends StatelessWidget {
                   for (final p in playing)
                     ListTile(
                       leading: PlayerAvatar.of(p, size: 40),
-                      title: Text(
+                      title: StyledNickname(
                         p.nickname,
-                        style: fredoka(size: 17, weight: FontWeight.w600),
+                        styleId: p.nameStyle,
+                        size: 17,
+                        weight: FontWeight.w600,
                       ),
                       trailing: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),

@@ -3,11 +3,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # Dans Docker, DATABASE_URL / REDIS_URL sont fournis par docker-compose. En local, les URL sont
-    # construites à partir des valeurs POSTGRES_* / REDIS_PORT du .env du dépôt.
-    model_config = SettingsConfigDict(env_file=(".env", "../.env"), extra="ignore")
+    # Prod : backend/.env.production (ou variables injectées au `docker run`).
+    # Local : .env du dépôt / backend/.env.
+    model_config = SettingsConfigDict(
+        env_file=(".env.production", ".env", "../.env"),
+        extra="ignore",
+    )
 
-    app_name: str = "Letter Battle API"
+    app_name: str = "Letter Race API"
 
     postgres_user: str = "letterbattle"
     postgres_password: str = "letterbattle"
@@ -36,7 +39,14 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        return self.database_url_env or (
+        if self.database_url_env:
+            url = self.database_url_env
+            # Docker / hébergeurs donnent souvent postgresql:// ; SQLAlchemy async
+            # attend le driver asyncpg.
+            if url.startswith("postgresql://"):
+                return "postgresql+asyncpg://" + url.removeprefix("postgresql://")
+            return url
+        return (
             f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )

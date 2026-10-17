@@ -196,6 +196,7 @@ def test_public_rooms_are_listed(client):
         rooms = wait_for(bob, lambda m: m["type"] == "room_list" and m["rooms"])["rooms"]
         assert rooms[0]["code"] == public["code"]
         assert rooms[0]["host"] == "Alice" and rooms[0]["players"] == 1
+        assert rooms[0]["nicknames"] == ["Alice"]
 
         create_room(alice)  # privée : remplace la salle publique, désormais vide
         assert wait_for(bob, lambda m: m["type"] == "room_list")["rooms"] == []

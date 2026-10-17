@@ -16,6 +16,7 @@ import '../../../core/widgets/letter_tile.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
 import '../../../core/widgets/game_icon.dart';
+import '../../shop/cosmetics.dart';
 
 class GameOverView extends StatefulWidget {
   const GameOverView({
@@ -100,7 +101,10 @@ class _GameOverViewState extends State<GameOverView> {
           _ => l10n.gameOverTry,
         };
 
+    final victory = GameFeedbackScope.of(context).settings.victoryStyle;
     return ConfettiOverlay(
+      colors: victoryColors(victory),
+      shape: victoryShapeFor(victory),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
         child: Column(

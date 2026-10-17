@@ -19,6 +19,12 @@ class Game(TimestampMixin, Base):
     status: Mapped[str] = mapped_column(String(16), default="waiting")  # waiting | playing | finished
     # Joueur à créditer en pièces pour une partie solo (absent pour un invité sans profil).
     owner_client_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Lettres à ne pas retirer (revanche d'un niveau de carrière).
+    avoid_letters: Mapped[str] = mapped_column(String(26), default="")
+    # Mots déjà validés dans le même monde de carrière : catégorie → valeurs.
+    banned_answers: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
+    # Jokers achetés en pièces, en plus du quota gratuit HINTS_PER_GAME.
+    bonus_hints: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     players: Mapped[list["Player"]] = relationship(
         back_populates="game", order_by="Player.created_at", lazy="selectin"
@@ -107,7 +113,7 @@ class PlayerAnswer(Base):
     matched_value: Mapped[str | None] = mapped_column(String(200), nullable=True)
     status: Mapped[str] = mapped_column(String(16))  # valid | empty | wrong_letter | not_found | late | hint_wrong
     points: Mapped[int] = mapped_column(Integer, default=0)
-    # Réponse obtenue en choisissant parmi les quatre propositions du joker.
+    # Réponse obtenue en choisissant parmi les trois propositions du joker.
     hinted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     # Réponse valide montrée au joueur quand la sienne ne l'était pas.
     suggestion: Mapped[str | None] = mapped_column(String(200), nullable=True)

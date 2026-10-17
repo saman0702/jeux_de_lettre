@@ -176,29 +176,212 @@ const drawnAvatarCount = 16;
 Color drawnAvatarColor(int preset) => _looks[preset % _looks.length].background;
 
 /// Un personnage dessiné, rond, dans le style cartoon du jeu.
+/// [hairId] / [hatId] : équipements boutique (vides = style du preset).
 class DrawnAvatar extends StatelessWidget {
-  const DrawnAvatar({super.key, required this.preset, this.size = 52});
+  const DrawnAvatar({
+    super.key,
+    required this.preset,
+    this.size = 52,
+    this.hairId = '',
+    this.hatId = '',
+  });
 
   final int preset;
   final double size;
+  final String hairId;
+  final String hatId;
 
   @override
   Widget build(BuildContext context) => CustomPaint(
     size: Size.square(size),
-    painter: _AvatarPainter(_looks[preset % _looks.length]),
+    painter: _AvatarPainter(
+      _looks[preset % _looks.length],
+      hairId: hairId,
+      hatId: hatId,
+    ),
   );
 }
 
-class _AvatarPainter extends CustomPainter {
-  _AvatarPainter(this.look);
+/// Calque chapeau seul (photo ou aperçu boutique).
+class AvatarHatLayer extends StatelessWidget {
+  const AvatarHatLayer({super.key, required this.hatId, this.size = 52});
 
-  final _Look look;
+  final String hatId;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    if (hatId.isEmpty) return const SizedBox.shrink();
+    return CustomPaint(
+      size: Size.square(size),
+      painter: _HatOnlyPainter(hatId),
+    );
+  }
+}
+
+class _HatOnlyPainter extends CustomPainter {
+  _HatOnlyPainter(this.hatId);
+
+  final String hatId;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width);
+    _drawShopHat(canvas, hatId);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_HatOnlyPainter oldDelegate) => oldDelegate.hatId != hatId;
+}
+
+(_Hair, Color)? _shopHairOf(String id) => switch (id) {
+  'hair_spiky' => (_Hair.spiky, const Color(0xFF1C1C2E)),
+  'hair_bob' => (_Hair.bob, const Color(0xFFFF6FA8)),
+  'hair_curly' => (_Hair.curly, const Color(0xFF3FD0E0)),
+  'hair_bun' => (_Hair.bun, const Color(0xFFFFC93C)),
+  _ => null,
+};
+
+bool _isAccessoryHair(_Hair hair) => switch (hair) {
+  _Hair.cap ||
+  _Hair.bow ||
+  _Hair.headphones ||
+  _Hair.catEars ||
+  _Hair.bunnyEars => true,
+  _ => false,
+};
+
+void _drawShopHat(Canvas canvas, String hatId) {
+  switch (hatId) {
+    case 'hat_crown':
+      final gold = Paint()..color = const Color(0xFFFFC93C);
+      final dark = Paint()..color = const Color(0xFFE09A1A);
+      final jewel = Paint()..color = const Color(0xFFFF5FA2);
+      final band = Path()
+        ..moveTo(0.22, 0.28)
+        ..lineTo(0.28, 0.12)
+        ..lineTo(0.36, 0.24)
+        ..lineTo(0.5, 0.08)
+        ..lineTo(0.64, 0.24)
+        ..lineTo(0.72, 0.12)
+        ..lineTo(0.78, 0.28)
+        ..close();
+      canvas.drawPath(band, gold);
+      canvas.drawRect(const Rect.fromLTWH(0.22, 0.26, 0.56, 0.08), dark);
+      for (final x in [0.36, 0.5, 0.64]) {
+        canvas.drawCircle(Offset(x, 0.28), 0.035, jewel);
+      }
+    case 'hat_cap':
+      final red = Paint()..color = const Color(0xFFE5484D);
+      final brim = Paint()..color = const Color(0xFFB83238);
+      final cap = Path()
+        ..moveTo(0.22, 0.38)
+        ..quadraticBezierTo(0.22, 0.14, 0.5, 0.14)
+        ..quadraticBezierTo(0.78, 0.14, 0.78, 0.38)
+        ..close();
+      canvas.drawPath(cap, red);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          const Rect.fromLTWH(0.4, 0.34, 0.48, 0.08),
+          const Radius.circular(0.04),
+        ),
+        brim,
+      );
+      canvas.drawCircle(
+        const Offset(0.5, 0.16),
+        0.03,
+        Paint()..color = Colors.white,
+      );
+    case 'hat_wizard':
+      final purple = Paint()..color = const Color(0xFF6C4BD8);
+      final tip = Paint()..color = const Color(0xFFB79CFF);
+      canvas.drawPath(
+        Path()
+          ..moveTo(0.2, 0.36)
+          ..lineTo(0.5, 0.02)
+          ..lineTo(0.8, 0.36)
+          ..close(),
+        purple,
+      );
+      canvas.drawOval(
+        const Rect.fromLTWH(0.18, 0.32, 0.64, 0.1),
+        Paint()..color = const Color(0xFF4A2FA8),
+      );
+      canvas.drawCircle(const Offset(0.5, 0.04), 0.04, tip);
+      canvas.drawCircle(
+        const Offset(0.42, 0.2),
+        0.025,
+        Paint()..color = const Color(0xFFFFC93C),
+      );
+    case 'hat_party':
+      final pink = Paint()..color = const Color(0xFFFF6FA8);
+      final stripe = Paint()..color = const Color(0xFFFFC93C);
+      canvas.drawPath(
+        Path()
+          ..moveTo(0.28, 0.36)
+          ..lineTo(0.5, 0.04)
+          ..lineTo(0.72, 0.36)
+          ..close(),
+        pink,
+      );
+      canvas.drawPath(
+        Path()
+          ..moveTo(0.36, 0.36)
+          ..lineTo(0.5, 0.12)
+          ..lineTo(0.58, 0.36)
+          ..close(),
+        stripe,
+      );
+      canvas.drawCircle(
+        const Offset(0.5, 0.05),
+        0.05,
+        Paint()..color = const Color(0xFFFFC93C),
+      );
+    default:
+      break;
+  }
+}
+
+class _AvatarPainter extends CustomPainter {
+  _AvatarPainter(this.base, {this.hairId = '', this.hatId = ''});
+
+  final _Look base;
+  final String hairId;
+  final String hatId;
 
   static const _ink = Color(0xFF2A1B4A);
+
+  _Look get look {
+    final shop = _shopHairOf(hairId);
+    if (shop != null) {
+      return _Look(
+        base.background,
+        base.skin,
+        shop.$2,
+        shop.$1,
+        base.eyes,
+        base.mouth,
+      );
+    }
+    if (hatId.isNotEmpty && _isAccessoryHair(base.hair)) {
+      return _Look(
+        base.background,
+        base.skin,
+        base.hairColor,
+        _Hair.none,
+        base.eyes,
+        base.mouth,
+      );
+    }
+    return base;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
+    final look = this.look;
     canvas.save();
     canvas.clipPath(Path()..addOval(Offset.zero & size));
     canvas.scale(w);
@@ -243,6 +426,7 @@ class _AvatarPainter extends CustomPainter {
 
     _face(canvas);
     _onHead(canvas, hair);
+    if (hatId.isNotEmpty) _drawShopHat(canvas, hatId);
     canvas.restore();
   }
 
@@ -500,5 +684,8 @@ class _AvatarPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_AvatarPainter oldDelegate) => oldDelegate.look != look;
+  bool shouldRepaint(_AvatarPainter oldDelegate) =>
+      oldDelegate.base != base ||
+      oldDelegate.hairId != hairId ||
+      oldDelegate.hatId != hatId;
 }

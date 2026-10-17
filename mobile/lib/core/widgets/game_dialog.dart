@@ -84,14 +84,14 @@ class _GameConfirm extends StatelessWidget {
               children: [
                 // La boîte elle-même.
                 Container(
-                  margin: const EdgeInsets.only(top: 58),
-                  padding: const EdgeInsets.fromLTRB(20, 54, 20, 18),
+                  margin: const EdgeInsets.only(top: 48),
+                  padding: const EdgeInsets.fromLTRB(16, 22, 16, 12),
                   decoration: BoxDecoration(
                     color: AppColors.white,
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: Color.lerp(accent, Colors.white, 0.55)!,
-                      width: 4,
+                      width: 3,
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -145,15 +145,15 @@ class _GameConfirm extends StatelessWidget {
                 ),
                 // Titre en bandeau sur le bord supérieur.
                 Positioned(
-                  top: 40,
+                  top: 32,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 26,
-                      vertical: 9,
+                      horizontal: 14,
+                      vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: AppColors.white, width: 3),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.white, width: 2),
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -172,7 +172,7 @@ class _GameConfirm extends StatelessWidget {
                     child: Text(
                       title.toUpperCase(),
                       style: fredoka(
-                        size: 19,
+                        size: 14,
                         weight: FontWeight.w700,
                         color: AppColors.white,
                         shadows: textShadow,
@@ -187,13 +187,13 @@ class _GameConfirm extends StatelessWidget {
                     delay: const Duration(milliseconds: 120),
                     from: 0,
                     child: Container(
-                      width: 62,
-                      height: 62,
+                      width: 52,
+                      height: 52,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: AppColors.yellow,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.white, width: 4),
+                        border: Border.all(color: AppColors.white, width: 3),
                         boxShadow: [
                           BoxShadow(
                             color: AppColors.depthOf(AppColors.yellow),
@@ -201,7 +201,7 @@ class _GameConfirm extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: GameIcon(icon, size: 34, color: AppColors.ink),
+                      child: GameIcon(icon, size: 28, color: AppColors.ink),
                     ),
                   ),
                 ),

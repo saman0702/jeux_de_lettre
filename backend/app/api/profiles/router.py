@@ -3,23 +3,30 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.models import Profile
-from app.schemas.game import ProfileOut, ProfileUpdate
+from app.schemas.game import CosmeticIn, CosmeticResult, LookOut, ProfileOut, ProfileUpdate, UnequipIn
 from app.services import avatar_service, wallet_service
 
 router = APIRouter(prefix="/api/v1/profiles", tags=["profiles"])
 
 
 def profile_out(profile: Profile) -> ProfileOut:
+    snap = wallet_service.snapshot(profile)
     return ProfileOut(
         client_id=profile.client_id,
         nickname=profile.nickname,
         coins=profile.coins,
         total_points=profile.total_points,
-        points_to_next_coin=wallet_service.snapshot(profile).points_to_next_coin,
-        level=wallet_service.snapshot(profile).level,
+        points_to_next_coin=snap.points_to_next_coin,
+        level=snap.level,
         avatar_preset=profile.avatar_preset,
         avatar_url=wallet_service.avatar_url(profile),
+        look=LookOut(**wallet_service.look_of(profile)),
     )
+
+
+def _cosmetic_result(profile: Profile) -> CosmeticResult:
+    snap = wallet_service.snapshot(profile)
+    return CosmeticResult(**snap.as_dict(), look=LookOut(**wallet_service.look_of(profile)))
 
 
 async def _profile(session: AsyncSession, client_id: str) -> Profile:
@@ -81,3 +88,58 @@ async def upload_avatar(
     await session.commit()
     await _avatar_changed(request, profile)
     return profile_out(profile)
+
+
+async def _apply_look(request: Request, profile: Profile) -> None:
+    """Le salon affiche tout de suite les apparences équipées."""
+    await request.app.state.room_manager.update_look(
+        profile.client_id,
+        hair=profile.cosmetic_hair,
+        hat=profile.cosmetic_hat,
+        frame=profile.cosmetic_frame,
+        name_style=profile.cosmetic_name,
+    )
+
+
+@router.post("/{client_id}/cosmetics/buy", response_model=CosmeticResult)
+async def buy_cosmetic(
+    client_id: str, data: CosmeticIn, request: Request, session: AsyncSession = Depends(get_session)
+):
+    """Achète une apparence avec des pièces et l'équipe."""
+    try:
+        profile = await wallet_service.buy_cosmetic(session, client_id, data.item_id)
+    except wallet_service.WalletError as error:
+        await session.rollback()
+        status = 402 if error.code == "not_enough_coins" else 422
+        raise HTTPException(status_code=status, detail=error.code) from None
+    await session.commit()
+    await _apply_look(request, profile)
+    return _cosmetic_result(profile)
+
+
+@router.post("/{client_id}/cosmetics/equip", response_model=CosmeticResult)
+async def equip_cosmetic(
+    client_id: str, data: CosmeticIn, request: Request, session: AsyncSession = Depends(get_session)
+):
+    """Équipe une apparence déjà achetée."""
+    try:
+        profile = await wallet_service.equip_cosmetic(session, client_id, data.item_id)
+    except wallet_service.WalletError as error:
+        raise HTTPException(status_code=422, detail=error.code) from None
+    await session.commit()
+    await _apply_look(request, profile)
+    return _cosmetic_result(profile)
+
+
+@router.post("/{client_id}/cosmetics/unequip", response_model=CosmeticResult)
+async def unequip_cosmetic(
+    client_id: str, data: UnequipIn, request: Request, session: AsyncSession = Depends(get_session)
+):
+    """Retire l'apparence équipée d'un emplacement."""
+    try:
+        profile = await wallet_service.unequip_cosmetic(session, client_id, data.kind)
+    except wallet_service.WalletError as error:
+        raise HTTPException(status_code=422, detail=error.code) from None
+    await session.commit()
+    await _apply_look(request, profile)
+    return _cosmetic_result(profile)

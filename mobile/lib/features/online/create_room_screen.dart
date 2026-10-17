@@ -28,7 +28,6 @@ class CreateRoomScreen extends StatefulWidget {
 
 class _CreateRoomScreenState extends State<CreateRoomScreen> {
   RoomKind _kind = RoomKind.classic;
-  RoomFormat _format = RoomFormat.rounds;
   int _stake = 10;
   int _maxPlayers = 8;
   bool _public = true;
@@ -89,7 +88,6 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         public: _public,
         kind: _kind,
         stake: _kind == RoomKind.bet ? _stake : 0,
-        format: _format,
       ),
     );
     Navigator.of(context).pop(true);
@@ -132,35 +130,6 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                   icon: (k) =>
                       k == RoomKind.bet ? GameIconKind.bet : GameIconKind.smile,
                   onTap: (k) => setState(() => _kind = k),
-                ),
-              ),
-              OptionSection(
-                index: 0,
-                title: l10n.roomFormat,
-                icon: GameIconKind.flag,
-                color: AppColors.pink,
-                child: Column(
-                  children: [
-                    PillSelector<RoomFormat>(
-                      options: RoomFormat.values,
-                      isSelected: (f) => f == _format,
-                      label: (f) => f == RoomFormat.elimination
-                          ? l10n.formatElimination
-                          : l10n.formatRounds,
-                      icon: (f) => f == RoomFormat.elimination
-                          ? GameIconKind.flag
-                          : GameIconKind.layers,
-                      onTap: (f) => setState(() => _format = f),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _format == RoomFormat.elimination
-                          ? l10n.formatEliminationHelp
-                          : l10n.formatRoundsHelp,
-                      textAlign: TextAlign.center,
-                      style: fredoka(size: 13, color: AppColors.inkSoft),
-                    ),
-                  ],
                 ),
               ),
               if (_kind == RoomKind.bet)

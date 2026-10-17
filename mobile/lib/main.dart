@@ -36,6 +36,10 @@ Future<void> main() async {
   // Une seule connexion pour toute l'appli : compteur en ligne, salons et
   // parties.
   online.client.connect();
+  online.onLook = (look) {
+    // applyLook appelle déjà onLook : on ne mémorise que tuiles / confettis.
+    settings.setStyles(tiles: look.tiles, victory: look.victory);
+  };
   AvatarSync(settings: settings, online: online, api: ApiClient());
   // Écoute le store dès le démarrage : un achat interrompu est repris.
   final shop = ShopController(

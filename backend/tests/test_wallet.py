@@ -34,6 +34,48 @@ async def test_debit_needs_enough_coins(session):
     assert profile.coins == 0
 
 
+async def test_cosmetics_are_bought_once_and_equipped(session):
+    await wallet_service.credit(session, CLIENT, 80, "purchase")
+    profile = await wallet_service.buy_cosmetic(session, CLIENT, "frame_gold")
+    assert profile.coins == 65
+    assert profile.cosmetic_frame == "frame_gold"
+    assert wallet_service.look_of(profile)["owned"] == ["frame_gold"]
+
+    profile = await wallet_service.buy_cosmetic(session, CLIENT, "hat_crown")
+    assert profile.coins == 25
+    assert profile.cosmetic_hat == "hat_crown"
+    profile = await wallet_service.buy_cosmetic(session, CLIENT, "hair_spiky")
+    assert profile.cosmetic_hair == "hair_spiky"
+
+    with pytest.raises(wallet_service.WalletError, match="already_owned"):
+        await wallet_service.buy_cosmetic(session, CLIENT, "frame_gold")
+    with pytest.raises(wallet_service.WalletError, match="not_enough_coins"):
+        await wallet_service.buy_cosmetic(session, CLIENT, "tiles_sunset")
+
+    profile = await wallet_service.unequip_cosmetic(session, CLIENT, "frame")
+    assert profile.cosmetic_frame == ""
+    profile = await wallet_service.equip_cosmetic(session, CLIENT, "frame_gold")
+    assert profile.cosmetic_frame == "frame_gold"
+    profile = await wallet_service.unequip_cosmetic(session, CLIENT, "hat")
+    assert profile.cosmetic_hat == ""
+
+
+async def test_cosmetic_pack_unlocks_bundle(session):
+    await wallet_service.credit(session, CLIENT, 50, "purchase")
+    profile = await wallet_service.buy_cosmetic(session, CLIENT, "pack_ocean")
+    assert profile.coins == 10
+    owned = wallet_service.look_of(profile)["owned"]
+    assert "pack_ocean" in owned
+    assert "frame_cyan" in owned
+    assert "tiles_ocean" in owned
+    assert "victory_bubbles" in owned
+    assert profile.cosmetic_frame == "frame_cyan"
+    assert profile.cosmetic_tiles == "tiles_ocean"
+    assert profile.cosmetic_victory == "victory_bubbles"
+    with pytest.raises(wallet_service.WalletError, match="already_owned"):
+        await wallet_service.buy_cosmetic(session, CLIENT, "pack_ocean")
+
+
 async def test_invalid_client_id_is_rejected(session):
     with pytest.raises(wallet_service.WalletError):
         await wallet_service.get_profile(session, "a b")

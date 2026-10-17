@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../core/audio/game_audio.dart';
 import '../../../core/feedback/game_feedback.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/game_dialog.dart';
+import '../../../core/widgets/game_icon.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
 import '../offline/offline_engine.dart';
@@ -13,6 +16,10 @@ import 'hint_picker.dart';
 abstract class HintSource {
   Future<HintOptions> request(Category category);
   Future<HintPick> pick(Category category, String choice);
+
+  /// Faux hors ligne : pas d'achat de joker.
+  bool get canBuyExtra;
+  Future<BuyHintResult> buyExtra();
 }
 
 class HintFieldState {
@@ -51,6 +58,53 @@ class HintController extends ChangeNotifier {
     final state = _fields[category];
     if (state != null) return !state.locked;
     return _hintsLeft > 0;
+  }
+
+  /// Achat d'un joker quand le quota gratuit est épuisé.
+  bool canBuyHint(Category category) {
+    if (_fields[category] != null) return false;
+    return _hintsLeft <= 0 && source.canBuyExtra;
+  }
+
+  /// Achète un joker puis ouvre le sélecteur pour [category].
+  Future<void> buyAndUse(
+    BuildContext context,
+    Category category,
+    TextEditingController controller,
+  ) async {
+    if (_busy || !canBuyHint(category)) return;
+    final l10n = AppLocalizations.of(context);
+    final ok = await showGameConfirm(
+      context,
+      icon: GameIconKind.hint,
+      title: l10n.buyHintTitle,
+      message: l10n.buyHintMessage(extraHintPrice),
+      confirmLabel: l10n.buyHintConfirm(extraHintPrice),
+      cancelLabel: l10n.cancel,
+      accent: AppColors.yellow,
+    );
+    if (!ok || !context.mounted) return;
+    _busy = true;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final result = await source.buyExtra();
+      _hintsLeft = result.hintsLeft;
+      notifyListeners();
+    } on ApiException catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(hintErrorMessage(l10n, e.code))),
+      );
+      return;
+    } on OfflineError catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(hintErrorMessage(l10n, e.code))),
+      );
+      return;
+    } finally {
+      _busy = false;
+    }
+    if (!context.mounted) return;
+    await use(context, category, controller);
   }
 
   /// Demande les propositions, laisse le joueur choisir et remplit

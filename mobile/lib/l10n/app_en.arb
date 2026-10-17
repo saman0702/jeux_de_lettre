@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "Letter Battle",
+  "appTitle": "Letter Race",
   "tagline": "One letter. Four categories. Fastest wins.",
   "modeSolo": "Solo",
   "modeDuel": "Duel",
@@ -87,6 +87,8 @@
   "roomCode": "Room code",
   "copyCode": "Copy",
   "codeCopied": "Code copied!",
+  "shareInvite": "Invite",
+  "inviteMessage": "Join my Letter Race game! Code: {code}",
   "waitingForPlayers": "Waiting for players…",
   "readyButton": "I'M READY!",
   "notReadyButton": "NOT YET",
@@ -123,9 +125,54 @@
   "hintTitle": "Hint: {category} starting with {letter}",
   "hintSubtitle": "Only one of these words is right!",
   "statusHintWrong": "Wrong pick",
+  "statusAlreadyUsed": "Already used in this world",
   "hintedBadge": "Hint",
   "hintNoneLeft": "No hints left this game.",
   "hintUnavailable": "No hint available here.",
+  "buyHintTitle": "Extra hint",
+  "buyHintMessage": "Buy one hint for {count} coins?",
+  "@buyHintMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyHintConfirm": "{count} coins",
+  "@buyHintConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyInfoTitle": "Facts",
+  "buyInfoMessage": "Unlock the facts for {count} coins?",
+  "@buyInfoMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyInfoConfirm": "{count} coins",
+  "@buyInfoConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyInfoButton": "Facts · {count} coins",
+  "@buyInfoButton": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyInfoFree": "Facts",
+  "notOnlineForPurchase": "Go online to spend coins.",
   "offlineModeNotice": "No connection: playing solo offline",
   "settingsGameKeyboard": "Game keyboard",
   "keyNext": "Next",
@@ -216,9 +263,19 @@
   "eliminationRecord": "Best: {rounds} rounds",
   "eliminationNewRecord": "New record: {rounds} rounds!",
   "careerTitle": "Career",
+  "careerRulesIntro": "60 levels of 5 rounds, in 4 worlds of 15. One star opens the next level.",
+  "careerRulesFromConfirmed": "In the Beginner world, the categories increase: City and Country, then Animal, then Fruit. From the Confirmed world on, first names are added. After that, the letters get harder and the score goal climbs.",
+  "careerRulesStars": "1 star at the goal, then 2 and 3 stars as you get closer to a perfect score.",
+  "careerRulesBeginner": "Easy letters, 60 then 45 then 30 seconds. City and Country, then Animal, then Fruit.",
+  "careerRulesConfirmed": "Normal letters. The four categories, then a girl's name too.",
+  "careerRulesExpert": "Every letter, including the rare ones. A boy's name is added too.",
+  "careerRulesMaster": "Same six categories, higher score goals. Finding new words gets harder.",
+  "careerRulesReuse": "In the same world, a word you already got right cannot be reused when that letter comes back.",
+  "gotIt": "GOT IT",
   "worldBeginner": "Beginner",
   "worldConfirmed": "Confirmed",
   "worldExpert": "Expert",
+  "worldMaster": "Master",
   "levelTitle": "Level {level}",
   "levelGoal": "Goal: {target} points",
   "play": "PLAY",
@@ -241,5 +298,68 @@
   "categoryFemaleName": "Girl's name",
   "categoryMaleName": "Boy's name",
   "manyCategoriesHint": "{count} categories or more: at least 45 seconds per round.",
-  "preparingGame": "Getting the game ready…"
+  "preparingGame": "Getting the game ready…",
+  "playAlone": "PLAY ALONE",
+  "withFriends": "With friends",
+  "withFriendsHelp": "A room opens right away, with a code to share just like any other room. The lowest score each round is knocked out.",
+  "inviteFriends": "INVITE FRIENDS",
+  "looksTitle": "Style shop",
+  "looksSubtitle": "Try a look, then buy it with your coins.",
+  "looksPreview": "Your preview",
+  "looksPacks": "Packs",
+  "looksHair": "Hair",
+  "looksHat": "Hats",
+  "looksFrame": "Frames",
+  "looksName": "Names",
+  "looksTiles": "Tiles",
+  "looksVictory": "Victory",
+  "looksPacksHint": "Matching styles cheaper as a bundle.",
+  "looksHairHint": "Swap hairstyles without changing your character.",
+  "looksHatHint": "Crowns, caps and wizard hats.",
+  "looksFrameHint": "Rings, ornaments, flames or stars.",
+  "looksNameHint": "Color, gradient, outline or badge by your name.",
+  "looksTilesHint": "Colors and patterns on letter tiles.",
+  "looksVictoryHint": "Confetti, stars, bubbles or letter rain.",
+  "looksHairSpiky": "Spiky",
+  "looksHairBob": "Pink bob",
+  "looksHairCurly": "Blue curls",
+  "looksHairBun": "Gold bun",
+  "looksHatCrown": "Crown",
+  "looksHatCap": "Cap",
+  "looksHatWizard": "Wizard hat",
+  "looksHatParty": "Party",
+  "looksFrameOrnament": "Ornament",
+  "looksFrameFlames": "Flames",
+  "looksFrameStars": "Stars",
+  "looksNameGradient": "Gradient",
+  "looksNameOutline": "Outline",
+  "looksNameBadge": "Badge",
+  "looksTilesStripes": "Stripes",
+  "looksTilesDots": "Dots",
+  "looksTilesMetal": "Metal",
+  "looksVictoryStars": "Stars",
+  "looksVictoryBubbles": "Bubbles",
+  "looksVictoryLetters": "Letters",
+  "looksPackOcean": "Ocean pack",
+  "looksPackCandy": "Candy pack",
+  "looksPackRoyal": "Royal pack",
+  "looksPackContents": "{count} styles",
+  "@looksPackContents": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "looksOwned": "OWNED",
+  "looksEquip": "EQUIP",
+  "looksEquipped": "EQUIPPED",
+  "looksPrice": "{count} coins",
+  "looksNotEnough": "Not enough coins.",
+  "looksGold": "Gold",
+  "looksPink": "Pink",
+  "looksCyan": "Cyan",
+  "looksViolet": "Violet",
+  "looksOrange": "Orange",
+  "looksMint": "Mint"
 }

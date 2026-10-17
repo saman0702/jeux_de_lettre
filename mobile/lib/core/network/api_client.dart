@@ -103,9 +103,14 @@ class ApiClient {
       throw ApiException('network_error');
     }
 
-    final decoded = response.body.isEmpty
-        ? <String, dynamic>{}
-        : jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    Map<String, dynamic> decoded;
+    try {
+      decoded = response.body.isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    } on FormatException {
+      throw ApiException('http_${response.statusCode}', response.statusCode);
+    }
     if (response.statusCode >= 400) {
       final detail = decoded['detail'];
       throw ApiException(

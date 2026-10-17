@@ -82,11 +82,8 @@ class _RoomsScreenState extends State<RoomsScreen> {
   }
 
   Future<void> _askCode() async {
-    final code = await showDialog<String>(
-      context: context,
-      builder: (_) => const _JoinCodeDialog(),
-    );
-    if (code != null && code.isNotEmpty) _join(code);
+    final code = await askRoomCode(context);
+    if (code != null) _join(code);
   }
 
   Future<void> _create() async {
@@ -227,7 +224,6 @@ class _RoomTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: GameCard(
-        padding: const EdgeInsets.all(14),
         child: Row(
           children: [
             if (room.quick)
@@ -249,6 +245,18 @@ class _RoomTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: fredoka(size: 18, weight: FontWeight.w700),
                   ),
+                  if (room.nicknames.isNotEmpty)
+                    Text(
+                      room.nicknames.join(', '),
+                      key: ValueKey('with_${room.code}'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: fredoka(
+                        size: 14,
+                        weight: FontWeight.w600,
+                        color: AppColors.inkSoft,
+                      ),
+                    ),
                   Wrap(
                     children: [
                       chip(l10n.roundsCount(room.rounds)),
@@ -314,14 +322,23 @@ class _RoomTile extends StatelessWidget {
   }
 }
 
-class _JoinCodeDialog extends StatefulWidget {
-  const _JoinCodeDialog();
-
-  @override
-  State<_JoinCodeDialog> createState() => _JoinCodeDialogState();
+/// Demande le code d'une salle ; null si le joueur annule.
+Future<String?> askRoomCode(BuildContext context) async {
+  final code = await showDialog<String>(
+    context: context,
+    builder: (_) => const JoinCodeDialog(),
+  );
+  return code == null || code.isEmpty ? null : code;
 }
 
-class _JoinCodeDialogState extends State<_JoinCodeDialog> {
+class JoinCodeDialog extends StatefulWidget {
+  const JoinCodeDialog();
+
+  @override
+  State<JoinCodeDialog> createState() => _JoinCodeDialogState();
+}
+
+class _JoinCodeDialogState extends State<JoinCodeDialog> {
   final _controller = TextEditingController();
 
   @override

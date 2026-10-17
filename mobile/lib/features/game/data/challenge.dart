@@ -26,7 +26,7 @@ class CareerLevel extends SoloChallenge {
 
   final int number;
 
-  /// 0 : débutant, 1 : confirmé, 2 : expert.
+  /// 0 : débutant, 1 : confirmé, 2 : expert, 3 : maître.
   final int world;
   final Difficulty difficulty;
   final List<Category> categories;
@@ -54,16 +54,23 @@ class CareerLevel extends SoloChallenge {
       ? 1
       : 0;
 
-  SoloGameSettings settings(String language, String nickname, String? id) =>
-      SoloGameSettings(
-        language: language,
-        difficulty: difficulty,
-        categories: categories,
-        rounds: rounds,
-        roundDuration: roundDuration,
-        nickname: nickname,
-        clientId: id,
-      );
+  SoloGameSettings settings(
+    String language,
+    String nickname,
+    String? id, {
+    String avoidLetters = '',
+    Map<Category, List<String>> bannedAnswers = const {},
+  }) => SoloGameSettings(
+    language: language,
+    difficulty: difficulty,
+    categories: categories,
+    rounds: rounds,
+    roundDuration: roundDuration,
+    nickname: nickname,
+    clientId: id,
+    avoidLetters: avoidLetters,
+    bannedAnswers: bannedAnswers,
+  );
 }
 
 /// Éliminatoires en solo : il faut marquer un minimum à chaque manche, de plus
@@ -82,15 +89,20 @@ class EliminationChallenge extends SoloChallenge {
     _ => 40,
   };
 
-  SoloGameSettings settings(String language, String nickname, String? id) =>
-      SoloGameSettings(
-        language: language,
-        categories: Category.classic,
-        rounds: rounds,
-        roundDuration: roundDuration,
-        nickname: nickname,
-        clientId: id,
-      );
+  SoloGameSettings settings(
+    String language,
+    String nickname,
+    String? id, {
+    Difficulty difficulty = Difficulty.normal,
+  }) => SoloGameSettings(
+    language: language,
+    difficulty: difficulty,
+    categories: Category.classic,
+    rounds: rounds,
+    roundDuration: roundDuration,
+    nickname: nickname,
+    clientId: id,
+  );
 }
 
 int _roundTen(double value) => (value / 10).round() * 10;

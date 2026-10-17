@@ -23,7 +23,7 @@ abstract final class OfflineRules {
   static const hintPoints = 5;
   static const hintsPerGame = 3;
   static const submitGrace = Duration(seconds: 2);
-  static const hintOptions = 4;
+  static const hintOptions = 3;
 }
 
 class _Game {
@@ -33,6 +33,9 @@ class _Game {
   final SoloGameSettings settings;
   final List<String> letters = [];
   final Map<Category, _Hint> hints = {};
+
+  /// Clés normalisées validées pendant cette partie.
+  final Map<Category, Set<String>> usedKeys = {};
   int hintsUsed = 0;
   int totalScore = 0;
   int roundsPlayed = 0;
@@ -105,7 +108,11 @@ class OfflineSoloBackend implements SoloBackend {
           letter,
     ];
     if (eligible.isEmpty) throw StateError('no letter available');
-    final fresh = eligible.where((l) => !game.letters.contains(l)).toList();
+    final blocked = {
+      ...game.letters,
+      ...game.settings.avoidLetters.split(''),
+    };
+    final fresh = eligible.where((l) => !blocked.contains(l)).toList();
     final pool = fresh.isEmpty ? eligible : fresh;
     return pool[_random.nextInt(pool.length)];
   }
@@ -131,20 +138,33 @@ class OfflineSoloBackend implements SoloBackend {
 
   // ---------------------------------------------------------------- validation
 
+  Set<String> _bannedKeys(_Game game, Category category) {
+    final keys = <String>{...?game.usedKeys[category]};
+    for (final word in game.settings.bannedAnswers[category] ?? const []) {
+      keys.add(_norm.normalize(word));
+      keys.addAll(_norm.lookupKeys(word, category));
+    }
+    return keys;
+  }
+
   /// Portage de validation_service.validate_answer.
   (AnswerStatus, String?) validate(
     Category category,
     String language,
     String letter,
-    String raw,
-  ) {
+    String raw, {
+    Set<String> banned = const {},
+  }) {
     final keys = _norm.lookupKeys(raw, category);
     if (keys.isEmpty) return (AnswerStatus.empty, null);
     for (final key in keys) {
       final value = _dictionary.find(category, language, key);
       if (value != null) {
         if (!Normalizer.startsWithLetter(key, letter)) {
-          return (AnswerStatus.wrongLetter, null);
+          return (AnswerStatus.wrongLetter, value);
+        }
+        if (banned.contains(key)) {
+          return (AnswerStatus.alreadyUsed, value);
         }
         return (AnswerStatus.valid, value);
       }
@@ -172,12 +192,24 @@ class OfflineSoloBackend implements SoloBackend {
       final hint = game.hints[category];
       final raw = hint?.picked ?? answers[category] ?? '';
       final hinted = hint?.picked != null;
+      final banned = _bannedKeys(game, category);
       final (status, matched) = late
           ? (AnswerStatus.late, null)
           : (hinted && hint!.picked != hint.answer)
           ? (AnswerStatus.hintWrong, null)
-          : validate(category, settings.language, letter, raw);
+          : validate(
+              category,
+              settings.language,
+              letter,
+              raw,
+              banned: banned,
+            );
       final valid = status == AnswerStatus.valid;
+      if (valid && matched != null) {
+        game.usedKeys.putIfAbsent(category, () => {}).addAll(
+          _norm.lookupKeys(matched, category),
+        );
+      }
       results.add(
         AnswerResult(
           category: category,
@@ -264,6 +296,20 @@ class OfflineSoloBackend implements SoloBackend {
       correct: choice == hint.answer,
       answer: hint.answer,
     );
+  }
+
+  @override
+  Future<BuyHintResult> buyHint(String gameId) async {
+    throw const OfflineError('not_online');
+  }
+
+  @override
+  Future<CategoryInfo> buyCategoryInfo(
+    String gameId,
+    int roundNumber,
+    Category category,
+  ) async {
+    throw const OfflineError('not_online');
   }
 
   /// Portage de hint_service.build_hint.

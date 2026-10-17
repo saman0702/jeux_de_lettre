@@ -56,6 +56,45 @@ class SoloGameCreate(GameSettings):
     nickname: str = Field(default="Player", min_length=1, max_length=32)
     # Identifiant de l'appli : les points de la partie vont dans son porte-monnaie.
     client_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9-]{8,64}$")
+    # Lettres de la dernière partie de ce niveau : une revanche les évite.
+    avoid_letters: str = ""
+    # Mots déjà validés dans le même monde de carrière (catégorie → valeurs).
+    banned_answers: dict[Category, list[str]] = Field(default_factory=dict)
+
+    @field_validator("avoid_letters")
+    @classmethod
+    def uppercase_letters(cls, value: str) -> str:
+        seen: set[str] = set()
+        letters = []
+        for char in value.upper():
+            if "A" <= char <= "Z" and char not in seen:
+                seen.add(char)
+                letters.append(char)
+        return "".join(letters)[:26]
+
+    @field_validator("banned_answers")
+    @classmethod
+    def clean_banned_answers(
+        cls, value: dict[Category, list[str]]
+    ) -> dict[Category, list[str]]:
+        cleaned: dict[Category, list[str]] = {}
+        for category, words in value.items():
+            seen: set[str] = set()
+            unique: list[str] = []
+            for raw in words:
+                word = raw.strip()[:100]
+                if not word:
+                    continue
+                key = word.casefold()
+                if key in seen:
+                    continue
+                seen.add(key)
+                unique.append(word)
+                if len(unique) >= 500:
+                    break
+            if unique:
+                cleaned[category] = unique
+        return cleaned
 
 
 class SubmitAnswers(BaseModel):
@@ -86,6 +125,13 @@ class AnswerResultOut(BaseModel):
     hinted: bool = False
     # Réponse valide proposée quand celle du joueur ne l'était pas.
     suggestion: str | None = None
+    # True s'il existe une fiche info achetable pour ce mot.
+    info_available: bool = False
+    # Prix en pièces (1 si réponse juste, 2 sinon) ; 0 si déjà débloqué / pas d'info.
+    info_price: int = 0
+    # Déjà débloqué pour ce joueur : les lignes peuvent être renvoyées tout de suite.
+    info_unlocked: bool = False
+    info_lines: list[str] | None = None
 
 
 class RoundResultOut(BaseModel):
@@ -127,6 +173,16 @@ class SubmitResultOut(BaseModel):
     wallet: WalletOut | None = None
 
 
+class LookOut(BaseModel):
+    owned: list[str]
+    hair: str = ""
+    hat: str = ""
+    frame: str
+    name: str
+    tiles: str
+    victory: str
+
+
 class ProfileOut(BaseModel):
     client_id: str
     nickname: str
@@ -136,6 +192,19 @@ class ProfileOut(BaseModel):
     level: int
     avatar_preset: int
     avatar_url: str | None
+    look: LookOut
+
+
+class CosmeticIn(BaseModel):
+    item_id: str = Field(max_length=32)
+
+
+class UnequipIn(BaseModel):
+    kind: str = Field(max_length=16)
+
+
+class CosmeticResult(WalletOut):
+    look: LookOut
 
 
 class ProfileUpdate(BaseModel):
@@ -168,9 +237,30 @@ class HintPickOut(BaseModel):
     answer: str
 
 
+class BuyHintOut(BaseModel):
+    hints_left: int
+    price: int
+    wallet: WalletOut
+
+
+class CategoryInfoIn(BaseModel):
+    category: Category
+
+
+class CategoryInfoOut(BaseModel):
+    category: Category
+    word: str
+    lines: list[str]
+    price: int
+    wallet: WalletOut
+
+
 class GameConfigOut(BaseModel):
     languages: list[Language]
     categories: list[Category]
     difficulties: list[Difficulty]
     round_options: list[int]
     duration_options: list[int]
+    category_info_price_found: int
+    category_info_price_missed: int
+    extra_hint_price: int

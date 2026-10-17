@@ -83,21 +83,38 @@ class _QuitButtonState extends State<QuitButton> {
 }
 
 /// Place un [QuitButton] au-dessus des écrans qui n'ont pas d'en-tête (compte à
-/// rebours, résultats, attente).
+/// rebours, résultats, attente). [trailing] s'aligne à droite sur la même ligne
+/// (manche, score…).
 class WithQuitButton extends StatelessWidget {
-  const WithQuitButton({super.key, required this.onQuit, required this.child});
+  const WithQuitButton({
+    super.key,
+    required this.onQuit,
+    required this.child,
+    this.trailing,
+  });
 
   final VoidCallback onQuit;
   final Widget child;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) => Column(
     children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: QuitButton(onQuit: onQuit),
+        child: Row(
+          children: [
+            QuitButton(onQuit: onQuit),
+            if (trailing != null) ...[
+              const SizedBox(width: 10),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: trailing!,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
       Expanded(child: child),

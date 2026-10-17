@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../animations/bounce_in.dart';
 import '../../../core/theme/app_colors.dart';
@@ -14,6 +15,7 @@ import '../data/room_models.dart';
 import '../../wallet/bet_banner.dart';
 import '../../wallet/level_badge.dart';
 import 'player_avatar.dart';
+import '../../shop/look_styles.dart';
 import '../../../core/widgets/game_icon.dart';
 
 /// Salle d'attente : code à partager, joueurs, bouton « prêt » (ou minuteur de
@@ -249,7 +251,7 @@ class _CodeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return GameCard(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       child: Column(
         children: [
           Text(
@@ -265,7 +267,11 @@ class _CodeCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 3),
                   child: LetterTile(letter: char, size: 42),
                 ),
-              const SizedBox(width: 8),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
               IconButton.filledTonal(
                 tooltip: l10n.copyCode,
                 onPressed: () {
@@ -274,6 +280,16 @@ class _CodeCard extends StatelessWidget {
                       .showSnackBar(SnackBar(content: Text(l10n.codeCopied)));
                 },
                 icon: const Icon(Icons.copy_rounded),
+              ),
+              IconButton.filledTonal(
+                key: const Key('share_code'),
+                tooltip: l10n.shareInvite,
+                onPressed: () {
+                  SharePlus.instance.share(
+                    ShareParams(text: l10n.inviteMessage(code)),
+                  );
+                },
+                icon: const Icon(Icons.share_rounded),
               ),
             ],
           ),
@@ -389,14 +405,11 @@ class _PlayerSeat extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        Text(
+        StyledNickname(
           isMe ? l10n.youBadge : player.nickname,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: fredoka(
-            size: 13,
-            weight: isMe ? FontWeight.w700 : FontWeight.w600,
-          ),
+          styleId: player.nameStyle,
+          size: 13,
+          weight: isMe ? FontWeight.w700 : FontWeight.w600,
         ),
       ],
     );
@@ -441,7 +454,7 @@ class _QuickStatus extends StatelessWidget {
         ? l10n.waitingForPlayers
         : l10n.quickStartsIn(startsIn);
     return GameCard(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

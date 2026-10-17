@@ -324,6 +324,9 @@ void main() {
   });
 
   testWidgets('rooms screen lists public rooms and joins one', (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final h = Harness();
     await h.start(tester, const RoomsScreen());
     expect(h.socket.sent.first, {'type': 'subscribe_rooms', 'language': 'en'});
@@ -335,6 +338,7 @@ void main() {
           'code': 'AB234',
           'quick': false,
           'host': 'Serge',
+          'nicknames': ['Serge', 'Kevin', 'Flore'],
           'players': 3,
           'max_players': 8,
           'language': 'en',
@@ -346,6 +350,7 @@ void main() {
     });
     await tester.pumpAndSettle();
     expect(find.text("Serge's room"), findsOneWidget);
+    expect(find.text('Serge, Kevin, Flore'), findsOneWidget);
     expect(find.text('3/8'), findsOneWidget);
 
     await tester.tap(find.text("Serge's room"));
@@ -354,6 +359,7 @@ void main() {
 
     h.socket.push(roomEvent('waiting'));
     await pumpFor(tester);
+    expect(find.byKey(const Key('share_code')), findsOneWidget);
     await tester.tap(find.byKey(const Key('ready_button')));
     await tester.pump();
     expect(h.socket.sent.last, {'type': 'set_ready', 'ready': true});
@@ -492,7 +498,7 @@ void main() {
       'round': 1,
       'category': 'fruit',
       'hints_left': 2,
-      'options': ['Mangue', 'Madrid', 'Maroc', 'Mouton'],
+      'options': ['Mangue', 'Madrid', 'Maroc'],
     });
     await pumpFor(tester, const Duration(seconds: 1));
 
@@ -780,5 +786,37 @@ void main() {
       find.text('You are out: watch the end of the game!'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('during a round, the players strip shows who is playing', (
+    tester,
+  ) async {
+    final h = Harness();
+    await h.start(tester, const RoomScreen());
+    h.socket.push(
+      roomEvent(
+        'round',
+        players: [
+          player(me, 'Blaise', score: 15),
+          player('kev', 'Kevin', score: 20, finished: true),
+          player('flo', 'Flore', score: 5),
+        ],
+        round: round1(),
+      ),
+    );
+    await pumpFor(tester);
+    final strip = find.byKey(const Key('players_strip'));
+    expect(strip, findsOneWidget);
+    for (final name in ['You', 'Kevin', 'Flore']) {
+      expect(
+        find.descendant(of: strip, matching: find.text(name)),
+        findsOneWidget,
+      );
+    }
+    expect(
+      find.descendant(of: strip, matching: find.text('20 pts')),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(seconds: 1));
   });
 }

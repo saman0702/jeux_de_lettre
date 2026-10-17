@@ -96,6 +96,10 @@ class RoomPlayer {
     this.avatarUrl,
     this.level = 1,
     this.eliminatedRound,
+    this.hair = '',
+    this.hat = '',
+    this.frame = '',
+    this.nameStyle = '',
   });
 
   factory RoomPlayer.fromJson(Map<String, dynamic> json) => RoomPlayer(
@@ -114,6 +118,10 @@ class RoomPlayer {
     avatarUrl: json['avatar_url'] as String?,
     level: json['level'] as int? ?? 1,
     eliminatedRound: json['eliminated_round'] as int?,
+    hair: json['hair'] as String? ?? '',
+    hat: json['hat'] as String? ?? '',
+    frame: json['frame'] as String? ?? '',
+    nameStyle: json['name_style'] as String? ?? '',
   );
 
   final String clientId;
@@ -147,6 +155,18 @@ class RoomPlayer {
   /// Éliminatoires : manche où le joueur est sorti.
   final int? eliminatedRound;
   bool get eliminated => eliminatedRound != null;
+
+  /// Coiffure boutique, ou vide.
+  final String hair;
+
+  /// Chapeau / couronne boutique, ou vide.
+  final String hat;
+
+  /// Cadre d'avatar acheté, ou vide.
+  final String frame;
+
+  /// Couleur de pseudo achetée, ou vide.
+  final String nameStyle;
 }
 
 class PlayerRoundResult {
@@ -345,6 +365,7 @@ class RoomSummary {
     required this.language,
     required this.rounds,
     required this.roundDuration,
+    this.nicknames = const [],
     this.kind = RoomKind.classic,
     this.stake = 0,
     this.format = RoomFormat.rounds,
@@ -354,6 +375,10 @@ class RoomSummary {
     code: json['code'] as String,
     quick: json['quick'] as bool,
     host: json['host'] as String,
+    nicknames: [
+      for (final name in (json['nicknames'] as List?) ?? const [])
+        name as String,
+    ],
     players: json['players'] as int,
     maxPlayers: json['max_players'] as int,
     language: json['language'] as String,
@@ -367,6 +392,9 @@ class RoomSummary {
   final String code;
   final bool quick;
   final String host;
+
+  /// Pseudos des joueurs déjà dans la salle, hôte en premier.
+  final List<String> nicknames;
   final RoomFormat format;
   final RoomKind kind;
   final int stake;

@@ -21,6 +21,17 @@ class Profile(TimestampMixin, Base):
     # Avatar : un avatar dessiné (avatar_preset) ou une photo transformée (avatar_file).
     avatar_preset: Mapped[int] = mapped_column(Integer, default=0)
     avatar_file: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Apparences achetées (identifiants séparés par des virgules) et celle
+    # équipée pour chaque emplacement.
+    cosmetics_owned: Mapped[str] = mapped_column(String(512), default="", server_default="")
+    cosmetic_hair: Mapped[str] = mapped_column(String(32), default="", server_default="")
+    cosmetic_hat: Mapped[str] = mapped_column(String(32), default="", server_default="")
+    cosmetic_frame: Mapped[str] = mapped_column(String(32), default="", server_default="")
+    cosmetic_name: Mapped[str] = mapped_column(String(32), default="", server_default="")
+    cosmetic_tiles: Mapped[str] = mapped_column(String(32), default="", server_default="")
+    cosmetic_victory: Mapped[str] = mapped_column(String(32), default="", server_default="")
+    # Infos catégories débloquées une fois pour toutes (`country:france,city:paris`…).
+    facts_unlocked: Mapped[str] = mapped_column(String(8192), default="", server_default="")
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
 
@@ -35,7 +46,8 @@ class CoinTransaction(TimestampMixin, Base):
     client_id: Mapped[str] = mapped_column(ForeignKey("profiles.client_id", ondelete="CASCADE"), index=True)
     # Positif pour un gain, négatif pour une dépense.
     amount: Mapped[int] = mapped_column(Integer)
-    # points | bet_stake | bet_win | bet_refund | purchase
+    # points | bet_stake | bet_win | bet_refund | purchase | cosmetic |
+    # category_info | extra_hint
     reason: Mapped[str] = mapped_column(String(32))
     reference: Mapped[str | None] = mapped_column(String(64), nullable=True)
 

@@ -17,6 +17,7 @@ class Status:
     NOT_FOUND = "not_found"
     LATE = "late"
     HINT_WRONG = "hint_wrong"
+    ALREADY_USED = "already_used"
 
 
 @dataclass(frozen=True)

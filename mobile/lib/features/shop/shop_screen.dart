@@ -16,6 +16,7 @@ import '../../l10n/app_localizations.dart';
 import '../online/online_controller.dart';
 import '../online/widgets/online_header.dart';
 import 'shop_controller.dart';
+import 'looks_section.dart';
 
 /// Boutique : packs de pièces payés par le store du téléphone.
 class ShopScreen extends StatefulWidget {
@@ -107,7 +108,7 @@ class _ShopScreenState extends State<ShopScreen> {
                     ),
                   ),
                   ShopStatus.unavailable => GameCard(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
                         const GameIcon(
@@ -148,6 +149,8 @@ class _ShopScreenState extends State<ShopScreen> {
                     ],
                   ),
                 },
+                const SizedBox(height: 18),
+                LooksSection(api: shop.api, clientId: shop.clientId),
                 const SizedBox(height: 14),
                 Text(
                   l10n.shopLegal,

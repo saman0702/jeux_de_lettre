@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.database import SessionLocal
 from app.core.game_rules import (
+    EXTRA_HINT_PRICE,
     HINTS_PER_GAME,
     MAX_ROOM_PLAYERS,
     MAX_STAKE,
@@ -32,7 +33,8 @@ from app.core.game_rules import (
 )
 from app.models.base import utcnow
 from app.schemas.game import GameSettings
-from app.services import bot_service, hint_service, multiplayer_service, wallet_service
+from app.api.games.presenters import enrich_answer_dict
+from app.services import bot_service, fact_service, hint_service, multiplayer_service, wallet_service
 from app.services.presence_service import PresenceStore, RedisPresence
 
 logger = logging.getLogger(__name__)
@@ -95,11 +97,17 @@ class RoomPlayer:
     db_player_id: str | None = None
     bot_level: Difficulty | None = None
     hints_used: int = 0
+    bonus_hints: int = 0
     # Éliminatoires : manche où le joueur a été éliminé (il regarde la suite).
     eliminated_round: int | None = None
     avatar_preset: int = 0
     avatar_url: str | None = None
     level: int = 1
+    # Apparences visibles par la salle (identifiants du catalogue, ou vide).
+    hair: str = ""
+    hat: str = ""
+    frame: str = ""
+    name_style: str = ""
 
     @property
     def bot(self) -> bool:
@@ -174,12 +182,25 @@ class Connection:
     avatar_preset: int = 0
     avatar_url: str | None = None
     level: int = 1
+    hair: str = ""
+    hat: str = ""
+    frame: str = ""
+    name_style: str = ""
 
 
 class RoomError(Exception):
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
+
+
+def _nicknames_host_first(room: Room) -> list[str]:
+    """L'hôte d'abord, puis les autres dans l'ordre d'arrivée."""
+    players = list(room.players.values())
+    host = room.players.get(room.host_id)
+    if host is not None:
+        players = [host, *[player for player in players if player is not host]]
+    return [player.nickname for player in players]
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -244,14 +265,20 @@ class RoomManager:
         connection = Connection(client_id, nickname, websocket)
         # Profil lu avant d'enregistrer la connexion : « welcome » reste ainsi le premier message.
         wallet = None
+        look = None
         try:
             async with self.session_factory() as session:
                 profile = await wallet_service.get_profile(session, client_id, nickname)
                 await session.commit()
             wallet = wallet_service.snapshot(profile).as_dict()
+            look = wallet_service.look_of(profile)
             connection.avatar_preset = profile.avatar_preset
             connection.avatar_url = wallet_service.avatar_url(profile)
             connection.level = wallet_service.snapshot(profile).level
+            connection.hair = profile.cosmetic_hair
+            connection.hat = profile.cosmetic_hat
+            connection.frame = profile.cosmetic_frame
+            connection.name_style = profile.cosmetic_name
         except Exception:
             logger.exception("profile lookup failed for %s", client_id)
         self.connections[client_id] = connection
@@ -266,6 +293,7 @@ class RoomManager:
                 "online_count": await self.presence.count(),
                 "wallet": wallet,
                 "avatar": {"preset": connection.avatar_preset, "url": connection.avatar_url},
+                "look": look,
             },
         )
         await self._refresh_online_count()
@@ -274,6 +302,10 @@ class RoomManager:
         if room is not None:
             player = room.players[client_id]
             player.connected = True
+            player.hair = connection.hair
+            player.hat = connection.hat
+            player.frame = connection.frame
+            player.name_style = connection.name_style
             await self._notice(room, "reconnected", player.nickname, exclude=client_id)
             await self._broadcast(room)
         return connection
@@ -318,6 +350,8 @@ class RoomManager:
             "submit": self._on_submit,
             "hint": self._on_hint,
             "hint_pick": self._on_hint_pick,
+            "buy_hint": self._on_buy_hint,
+            "category_info": self._on_category_info,
             "add_bot": self._on_add_bot,
             "remove_bot": self._on_remove_bot,
             "report_player": self._on_report_player,
@@ -464,7 +498,7 @@ class RoomManager:
 
         hint = mine.get(category)
         if hint is None:
-            if player.hints_used >= HINTS_PER_GAME:
+            if player.hints_used >= HINTS_PER_GAME + player.bonus_hints:
                 raise RoomError("no_hints_left")
             try:
                 async with self.session_factory() as session:
@@ -482,7 +516,100 @@ class RoomManager:
                 "round": live.number,
                 "category": category,
                 "options": hint.options,
-                "hints_left": HINTS_PER_GAME - player.hints_used,
+                "hints_left": HINTS_PER_GAME + player.bonus_hints - player.hints_used,
+            },
+        )
+
+    async def _on_buy_hint(self, connection: Connection, message: dict) -> None:
+        """Achète un joker supplémentaire avec des pièces (pendant la manche)."""
+        room = self._require_room(connection.client_id)
+        live = room.live_round
+        if room.phase != "round" or live is None or connection.client_id not in live.participants:
+            raise RoomError("round_not_current")
+        if connection.client_id in live.submissions:
+            raise RoomError("round_not_current")
+        player = room.players[connection.client_id]
+        if player.bot:
+            raise RoomError("invalid_message")
+        async with self.session_factory() as session:
+            try:
+                profile = await wallet_service.debit(
+                    session, connection.client_id, EXTRA_HINT_PRICE, "extra_hint", room.code
+                )
+            except wallet_service.WalletError as error:
+                raise RoomError(error.code) from None
+            await session.commit()
+            wallet = wallet_service.snapshot(profile)
+        player.bonus_hints += 1
+        await self._send(
+            connection.client_id,
+            {
+                "type": "hint_bought",
+                "hints_left": HINTS_PER_GAME + player.bonus_hints - player.hints_used,
+                "price": EXTRA_HINT_PRICE,
+                "wallet": wallet.as_dict(),
+            },
+        )
+        await self._broadcast(room)
+
+    async def _on_category_info(self, connection: Connection, message: dict) -> None:
+        """Infos payantes sur une catégorie après la manche."""
+        room = self._require_room(connection.client_id)
+        if room.phase != "results" or room.results is None:
+            raise RoomError("round_not_finished")
+        category = message.get("category")
+        if category not in [c.value for c in room.settings.categories]:
+            raise RoomError("invalid_category")
+        if category not in {c.value for c in fact_service.INFO_CATEGORIES}:
+            raise RoomError("no_info_available")
+        mine = next(
+            (p for p in room.results["players"] if p["client_id"] == connection.client_id),
+            None,
+        )
+        if mine is None:
+            raise RoomError("round_not_finished")
+        answer = next((a for a in mine["answers"] if a["category"] == category), None)
+        if answer is None:
+            raise RoomError("invalid_category")
+        word = fact_service.info_word(
+            answer.get("matched_value"), answer.get("suggestion"), answer.get("value") or ""
+        )
+        lines = fact_service.lookup_lines(category, word, room.settings.language)
+        unlock = fact_service.unlock_id(category, word)
+        if not lines or unlock is None:
+            raise RoomError("no_info_available")
+        async with self.session_factory() as session:
+            profile = await wallet_service.get_profile(session, connection.client_id)
+            if wallet_service.has_fact_unlocked(profile, unlock):
+                price = 0
+            else:
+                price = fact_service.info_price(answer.get("status") or "")
+                try:
+                    profile = await wallet_service.debit(
+                        session,
+                        connection.client_id,
+                        price,
+                        "category_info",
+                        unlock[:64],
+                    )
+                except wallet_service.WalletError as error:
+                    raise RoomError(error.code) from None
+                wallet_service.unlock_fact(profile, unlock)
+            await session.commit()
+            wallet = wallet_service.snapshot(profile)
+        # Met à jour le résultat en mémoire pour ce joueur.
+        answer["info_unlocked"] = True
+        answer["info_price"] = 0
+        answer["info_lines"] = lines
+        await self._send(
+            connection.client_id,
+            {
+                "type": "category_info",
+                "category": category,
+                "word": word,
+                "lines": lines,
+                "price": price,
+                "wallet": wallet.as_dict(),
             },
         )
 
@@ -563,6 +690,30 @@ class RoomManager:
             room.players[client_id].avatar_url = url
             await self._broadcast(room)
 
+    async def update_look(
+        self,
+        client_id: str,
+        *,
+        hair: str,
+        hat: str,
+        frame: str,
+        name_style: str,
+    ) -> None:
+        """Apparences visibles tout de suite par la salle."""
+        if connection := self.connections.get(client_id):
+            connection.hair = hair
+            connection.hat = hat
+            connection.frame = frame
+            connection.name_style = name_style
+        room = self._current_room(client_id)
+        if room is not None and client_id in room.players:
+            player = room.players[client_id]
+            player.hair = hair
+            player.hat = hat
+            player.frame = frame
+            player.name_style = name_style
+            await self._broadcast(room)
+
     async def _on_subscribe_rooms(self, connection: Connection, message: dict) -> None:
         language = message.get("language")
         self._room_list_subscribers[connection.client_id] = language if language in list(Language) else None
@@ -600,6 +751,10 @@ class RoomManager:
             avatar_preset=connection.avatar_preset,
             avatar_url=connection.avatar_url,
             level=connection.level,
+            hair=connection.hair,
+            hat=connection.hat,
+            frame=connection.frame,
+            name_style=connection.name_style,
         )
         self._room_of[connection.client_id] = room.code
         if room.quick:
@@ -652,6 +807,7 @@ class RoomManager:
             player.ready = room.quick or player.bot
             player.db_player_id = None
             player.hints_used = 0
+            player.bonus_hints = 0
             player.eliminated_round = None
 
     def _current_room(self, client_id: str) -> Room | None:
@@ -841,16 +997,33 @@ class RoomManager:
 
         by_player_id = {p.db_player_id: p for p in room.players.values()}
         client_of = {db_id: cid for cid, db_id in live.participants.items()}
+        unlocked_by_client: dict[str, set[str]] = {}
+        async with self.session_factory() as session:
+            for cid in live.participants:
+                if room.players[cid].bot:
+                    unlocked_by_client[cid] = set()
+                    continue
+                try:
+                    profile = await wallet_service.get_profile(session, cid)
+                    unlocked_by_client[cid] = wallet_service.unlocked_facts(profile)
+                except wallet_service.WalletError:
+                    unlocked_by_client[cid] = set()
+        language = room.settings.language
         results = []
         for result in outcome.results:
             player = by_player_id.get(result.player_id)
             if player is not None:
                 player.score += result.round_score
+            cid = client_of[result.player_id]
+            unlocked = unlocked_by_client.get(cid, set())
             results.append(
                 {
-                    "client_id": client_of[result.player_id],
+                    "client_id": cid,
                     "nickname": player.nickname if player else "",
-                    "answers": result.answers,
+                    "answers": [
+                        enrich_answer_dict(a, language=language, unlocked=unlocked)
+                        for a in result.answers
+                    ],
                     "round_score": result.round_score,
                     "elapsed_ms": result.elapsed_ms,
                 }
@@ -1071,11 +1244,15 @@ class RoomManager:
                     "playing": bool(live and p.client_id in live.participants) or not room.in_game,
                     "bot": p.bot,
                     "bot_level": p.bot_level,
-                    "hints_left": HINTS_PER_GAME - p.hints_used,
+                    "hints_left": HINTS_PER_GAME + p.bonus_hints - p.hints_used,
                     "avatar_preset": p.avatar_preset,
                     "avatar_url": p.avatar_url,
                     "level": p.level,
                     "eliminated_round": p.eliminated_round,
+                    "hair": p.hair,
+                    "hat": p.hat,
+                    "frame": p.frame,
+                    "name_style": p.name_style,
                 }
                 for p in room.players.values()
             ],
@@ -1111,6 +1288,7 @@ class RoomManager:
                 "code": r.code,
                 "quick": r.quick,
                 "host": r.players[r.host_id].nickname if r.host_id in r.players else "",
+                "nicknames": _nicknames_host_first(r),
                 "players": len(r.players),
                 "max_players": r.settings.max_players,
                 "language": r.settings.language,

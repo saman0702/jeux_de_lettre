@@ -2,7 +2,7 @@
 
 ## 1. Présentation du projet
 
-**Nom provisoire :** Letter Battle (nom à définir définitivement).
+**Nom :** Letter Race.
 
 **Concept :** application mobile de rapidité et de réflexion. Une lettre est donnée aux joueurs. Chaque joueur doit trouver le plus rapidement possible un élément correspondant à cette lettre dans différentes catégories.
 

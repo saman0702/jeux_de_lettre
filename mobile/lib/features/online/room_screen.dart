@@ -21,6 +21,7 @@ import 'widgets/lobby_view.dart';
 import 'widgets/online_header.dart';
 import 'widgets/podium_view.dart';
 import 'widgets/room_results_view.dart';
+import 'widgets/players_strip.dart';
 import 'widgets/round_wait_view.dart';
 import 'widgets/searching_view.dart';
 import '../../core/widgets/game_icon.dart';
@@ -361,7 +362,22 @@ class _RoomScreenState extends State<RoomScreen> {
             (room.until(room.goAt, widget.now()).inMilliseconds / 1000).ceil();
         return WithQuitButton(
           onQuit: _confirmLeave,
-          child: CountdownView(value: seconds.clamp(0, 3)),
+          child: Stack(
+            children: [
+              CountdownView(value: seconds.clamp(0, 3)),
+              // Avec qui on va jouer, pendant le décompte.
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 24,
+                child: PlayersStrip(
+                  room: room,
+                  myId: _online.clientId,
+                  showProgress: false,
+                ),
+              ),
+            ],
+          ),
         );
       case RoomPhase.round:
         final round = room.round!;
@@ -375,20 +391,41 @@ class _RoomScreenState extends State<RoomScreen> {
             onFinish: _submit,
             hints: _hints,
             onQuit: _confirmLeave,
+            players: PlayersStrip(room: room, myId: _online.clientId),
           );
         }
         return WithQuitButton(
           onQuit: _confirmLeave,
-          child: RoundWaitView(
-            room: room,
-            spectating: !(me?.playing ?? false),
-            eliminated: me?.eliminated ?? false,
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              PlayersStrip(room: room, myId: _online.clientId),
+              Expanded(
+                child: RoundWaitView(
+                  room: room,
+                  spectating: !(me?.playing ?? false),
+                  eliminated: me?.eliminated ?? false,
+                ),
+              ),
+            ],
           ),
         );
       case RoomPhase.results:
         return WithQuitButton(
           onQuit: _confirmLeave,
-          child: RoomResultsView(room: room, myId: _online.clientId),
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              PlayersStrip(
+                room: room,
+                myId: _online.clientId,
+                showProgress: false,
+              ),
+              Expanded(
+                child: RoomResultsView(room: room, myId: _online.clientId),
+              ),
+            ],
+          ),
         );
     }
   }
@@ -435,10 +472,16 @@ class _OnlineHintSource implements HintSource {
   final int _round;
 
   @override
+  bool get canBuyExtra => true;
+
+  @override
   Future<HintOptions> request(Category category) =>
       _online.requestHint(_round, category);
 
   @override
   Future<HintPick> pick(Category category, String choice) =>
       _online.pickHint(_round, category, choice);
+
+  @override
+  Future<BuyHintResult> buyExtra() => _online.buyHint();
 }

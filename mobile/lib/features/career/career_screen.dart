@@ -21,9 +21,14 @@ import '../online/widgets/online_header.dart';
 import 'career_levels.dart';
 
 /// Couleur de chaque monde de la carrière.
-const worldColors = [AppColors.green, AppColors.cyan, AppColors.pink];
+const worldColors = [
+  AppColors.green,
+  AppColors.cyan,
+  AppColors.pink,
+  AppColors.orange,
+];
 
-/// Carte des niveaux : 3 mondes de 10 niveaux. Chaque niveau réussi (au moins
+/// Carte des niveaux : 4 mondes de 15 niveaux. Chaque niveau réussi (au moins
 /// une étoile) ouvre le suivant.
 class CareerScreen extends StatefulWidget {
   const CareerScreen({super.key, required this.apiClient});
@@ -38,12 +43,37 @@ class _CareerScreenState extends State<CareerScreen> {
   /// Partie en préparation : un voile de chargement montre que ça démarre.
   bool _launching = false;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final settings = GameFeedbackScope.of(context).settings;
+      if (!settings.careerRulesSeen) _showRules(context, automatic: true);
+    });
+  }
+
+  void _showRules(BuildContext context, {bool automatic = false}) {
+    if (!automatic) GameFeedbackScope.of(context).play(Sfx.tap);
+    final settings = GameFeedbackScope.of(context).settings;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const _CareerRulesSheet(),
+    ).whenComplete(settings.markCareerRulesSeen);
+  }
+
   Future<void> _open(BuildContext context, CareerLevel level) async {
     GameFeedbackScope.of(context).play(Sfx.tap);
+    final played =
+        (GameFeedbackScope.of(context).settings.careerStars[level.number] ??
+            0) >
+        0;
     final play = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => _LevelSheet(level: level),
+      builder: (_) => _LevelSheet(level: level, replay: played),
     );
     if (play != true || !context.mounted) return;
     final l10n = AppLocalizations.of(context);
@@ -56,6 +86,8 @@ class _CareerScreenState extends State<CareerScreen> {
         Localizations.localeOf(context).languageCode,
         settings.nickname ?? l10n.defaultNickname,
         OnlineScope.of(context).clientId,
+        avoidLetters: settings.careerLettersOf(level.number),
+        bannedAnswers: settings.careerBannedAnswers(level.world),
       ),
       challenge: level,
       // La carte reste dessous : on y revient après la partie.
@@ -68,7 +100,18 @@ class _CareerScreenState extends State<CareerScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final settings = GameFeedbackScope.of(context).settings;
-    final worlds = [l10n.worldBeginner, l10n.worldConfirmed, l10n.worldExpert];
+    final worlds = [
+      l10n.worldBeginner,
+      l10n.worldConfirmed,
+      l10n.worldExpert,
+      l10n.worldMaster,
+    ];
+    const worldIcons = [
+      GameIconKind.smile,
+      GameIconKind.flame,
+      GameIconKind.trophy,
+      GameIconKind.crown,
+    ];
 
     return Scaffold(
       body: GameBackground(
@@ -84,9 +127,16 @@ class _CareerScreenState extends State<CareerScreen> {
                     header: OnlineHeader(
                       title: l10n.careerTitle,
                       onBack: () => Navigator.of(context).pop(),
-                      trailing: _StarCount(
-                        total: total,
-                        max: careerLevels.length * 3,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _RulesButton(onPressed: () => _showRules(context)),
+                          const SizedBox(width: 8),
+                          _StarCount(
+                            total: total,
+                            max: careerLevels.length * 3,
+                          ),
+                        ],
                       ),
                     ),
                     builder: (context, padding) => ListView(
@@ -100,11 +150,7 @@ class _CareerScreenState extends State<CareerScreen> {
                           OptionSection(
                             index: w,
                             title: worlds[w],
-                            icon: [
-                              GameIconKind.smile,
-                              GameIconKind.flame,
-                              GameIconKind.trophy,
-                            ][w],
+                            icon: worldIcons[w],
                             color: worldColors[w],
                             child: Wrap(
                               spacing: 10,
@@ -288,11 +334,192 @@ class _LevelTile extends StatelessWidget {
   }
 }
 
+/// Bouton « Règles », écrit en toutes lettres.
+class _RulesButton extends StatelessWidget {
+  const _RulesButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      key: const Key('career_rules'),
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.purpleDeep.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.white, width: 2),
+        ),
+        child: Text(
+          AppLocalizations.of(context).eliminationRulesTitle,
+          style: gameFont(size: 14, color: AppColors.white),
+        ),
+      ),
+    );
+  }
+}
+
+/// Règles de la carrière : mondes, catégories qui s'ajoutent, étoiles.
+class _CareerRulesSheet extends StatelessWidget {
+  const _CareerRulesSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return SafeArea(
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+          ),
+          child: SingleChildScrollView(
+            child: Container(
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: AppColors.yellow, width: 4),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.depthOf(AppColors.yellow),
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.eliminationRulesTitle.toUpperCase(),
+                    textAlign: TextAlign.center,
+                    style: gameFont(size: 26, color: AppColors.ink),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.careerRulesIntro,
+                    textAlign: TextAlign.center,
+                    style: fredoka(size: 15, weight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.careerRulesFromConfirmed,
+                    textAlign: TextAlign.center,
+                    style: fredoka(size: 15, weight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 14),
+                  _RuleBlock(
+                    title: l10n.worldBeginner,
+                    color: worldColors[0],
+                    text: l10n.careerRulesBeginner,
+                  ),
+                  _RuleBlock(
+                    title: l10n.worldConfirmed,
+                    color: worldColors[1],
+                    text: l10n.careerRulesConfirmed,
+                  ),
+                  _RuleBlock(
+                    title: l10n.worldExpert,
+                    color: worldColors[2],
+                    text: l10n.careerRulesExpert,
+                  ),
+                  _RuleBlock(
+                    title: l10n.worldMaster,
+                    color: worldColors[3],
+                    text: l10n.careerRulesMaster,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.careerRulesReuse,
+                    textAlign: TextAlign.center,
+                    style: fredoka(size: 14, color: AppColors.inkSoft),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.careerRulesStars,
+                    textAlign: TextAlign.center,
+                    style: fredoka(size: 14, color: AppColors.inkSoft),
+                  ),
+                  const SizedBox(height: 14),
+                  CandyButton(
+                    label: l10n.gotIt,
+                    icon: Icons.check_rounded,
+                    color: AppColors.green,
+                    textColor: AppColors.white,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RuleBlock extends StatelessWidget {
+  const _RuleBlock({
+    required this.title,
+    required this.color,
+    required this.text,
+  });
+
+  final String title;
+  final Color color;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 14,
+            height: 14,
+            margin: const EdgeInsets.only(top: 3),
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.depthOf(color),
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: gameFont(size: 16, color: AppColors.ink)),
+                Text(text, style: fredoka(size: 14, color: AppColors.inkSoft)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Détails d'un niveau avant de le lancer.
 class _LevelSheet extends StatelessWidget {
-  const _LevelSheet({required this.level});
+  const _LevelSheet({required this.level, required this.replay});
 
   final CareerLevel level;
+
+  /// Le niveau a déjà au moins une étoile : on propose une revanche.
+  final bool replay;
 
   @override
   Widget build(BuildContext context) {
@@ -373,8 +600,8 @@ class _LevelSheet extends StatelessWidget {
             const SizedBox(height: 16),
             CandyButton(
               key: const Key('play_level'),
-              label: l10n.play,
-              icon: Icons.play_arrow_rounded,
+              label: replay ? l10n.playAgain : l10n.play,
+              icon: replay ? Icons.replay_rounded : Icons.play_arrow_rounded,
               color: AppColors.green,
               textColor: AppColors.white,
               onPressed: () => Navigator.of(context).pop(true),

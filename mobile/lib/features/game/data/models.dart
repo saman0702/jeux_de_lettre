@@ -24,7 +24,15 @@ enum Category {
 
 enum Difficulty { easy, normal, hard }
 
-enum AnswerStatus { valid, empty, wrongLetter, notFound, late, hintWrong }
+enum AnswerStatus {
+  valid,
+  empty,
+  wrongLetter,
+  notFound,
+  late,
+  hintWrong,
+  alreadyUsed,
+}
 
 AnswerStatus _parseStatus(String value) => switch (value) {
   'valid' => AnswerStatus.valid,
@@ -32,6 +40,7 @@ AnswerStatus _parseStatus(String value) => switch (value) {
   'wrong_letter' => AnswerStatus.wrongLetter,
   'not_found' => AnswerStatus.notFound,
   'hint_wrong' => AnswerStatus.hintWrong,
+  'already_used' => AnswerStatus.alreadyUsed,
   _ => AnswerStatus.late,
 };
 
@@ -44,6 +53,8 @@ class SoloGameSettings {
     this.roundDuration = 30,
     this.nickname = 'Player',
     this.clientId,
+    this.avoidLetters = '',
+    this.bannedAnswers = const {},
   });
 
   static const roundOptions = [5, 10, 15];
@@ -59,6 +70,12 @@ class SoloGameSettings {
   /// Profil à créditer en pièces (parties sur le serveur uniquement).
   final String? clientId;
 
+  /// Lettres à ne pas retirer (revanche d'un niveau déjà joué).
+  final String avoidLetters;
+
+  /// Mots déjà validés dans le même monde de carrière (catégorie → valeurs).
+  final Map<Category, List<String>> bannedAnswers;
+
   Map<String, dynamic> toJson() => {
     'language': language,
     'difficulty': difficulty.name,
@@ -67,6 +84,12 @@ class SoloGameSettings {
     'round_duration': roundDuration,
     'nickname': nickname,
     if (clientId != null) 'client_id': clientId,
+    if (avoidLetters.isNotEmpty) 'avoid_letters': avoidLetters,
+    if (bannedAnswers.isNotEmpty)
+      'banned_answers': {
+        for (final e in bannedAnswers.entries)
+          if (e.value.isNotEmpty) e.key.wire: e.value,
+      },
   };
 }
 
@@ -146,6 +169,11 @@ class GameRound {
   }
 }
 
+/// Prix en pièces (alignés sur le serveur).
+const categoryInfoPriceFound = 1;
+const categoryInfoPriceMissed = 2;
+const extraHintPrice = 5;
+
 class AnswerResult {
   const AnswerResult({
     required this.category,
@@ -155,17 +183,40 @@ class AnswerResult {
     this.matchedValue,
     this.hinted = false,
     this.suggestion,
+    this.infoAvailable = false,
+    this.infoPrice = 0,
+    this.infoUnlocked = false,
+    this.infoLines,
   });
 
-  factory AnswerResult.fromJson(Map<String, dynamic> json) => AnswerResult(
-    category: Category.fromWire(json['category'] as String),
-    value: json['value'] as String,
-    status: _parseStatus(json['status'] as String),
-    points: json['points'] as int,
-    matchedValue: json['matched_value'] as String?,
-    hinted: json['hinted'] as bool? ?? false,
-    suggestion: json['suggestion'] as String?,
-  );
+  factory AnswerResult.fromJson(Map<String, dynamic> json) {
+    final status = _parseStatus(json['status'] as String);
+    final available = json['info_available'] as bool? ?? false;
+    final unlocked = json['info_unlocked'] as bool? ?? false;
+    final lines = json['info_lines'] as List?;
+    final price =
+        json['info_price'] as int? ??
+        (available && !unlocked
+            ? (status == AnswerStatus.valid
+                  ? categoryInfoPriceFound
+                  : categoryInfoPriceMissed)
+            : 0);
+    return AnswerResult(
+      category: Category.fromWire(json['category'] as String),
+      value: json['value'] as String,
+      status: status,
+      points: json['points'] as int,
+      matchedValue: json['matched_value'] as String?,
+      hinted: json['hinted'] as bool? ?? false,
+      suggestion: json['suggestion'] as String?,
+      infoAvailable: available,
+      infoPrice: price,
+      infoUnlocked: unlocked,
+      infoLines: lines == null
+          ? null
+          : [for (final line in lines) line as String],
+    );
+  }
 
   final Category category;
   final String value;
@@ -178,9 +229,56 @@ class AnswerResult {
 
   /// Réponse valide proposée quand celle du joueur ne l'était pas.
   final String? suggestion;
+
+  /// Une fiche info est achetable pour ce mot.
+  final bool infoAvailable;
+
+  /// Prix affiché : 1 si trouvé, 2 sinon ; 0 si déjà débloqué.
+  final int infoPrice;
+
+  /// Infos déjà débloquées pour ce joueur (permanentes).
+  final bool infoUnlocked;
+
+  /// Lignes déjà connues (si débloqué).
+  final List<String>? infoLines;
 }
 
-/// Les quatre propositions d'un joker ; la bonne reste sur le serveur.
+/// Infos pédagogiques débloquées avec des pièces.
+class CategoryInfo {
+  const CategoryInfo({
+    required this.category,
+    required this.word,
+    required this.lines,
+    required this.price,
+  });
+
+  factory CategoryInfo.fromJson(Map<String, dynamic> json) => CategoryInfo(
+    category: Category.fromWire(json['category'] as String),
+    word: json['word'] as String,
+    lines: [for (final line in json['lines'] as List) line as String],
+    price: json['price'] as int? ?? categoryInfoPriceMissed,
+  );
+
+  final Category category;
+  final String word;
+  final List<String> lines;
+  final int price;
+}
+
+/// Résultat d'un achat de joker.
+class BuyHintResult {
+  const BuyHintResult({required this.hintsLeft, required this.price});
+
+  factory BuyHintResult.fromJson(Map<String, dynamic> json) => BuyHintResult(
+    hintsLeft: json['hints_left'] as int,
+    price: json['price'] as int? ?? extraHintPrice,
+  );
+
+  final int hintsLeft;
+  final int price;
+}
+
+/// Les trois propositions d'un joker ; la bonne reste sur le serveur.
 class HintOptions {
   const HintOptions({
     required this.category,

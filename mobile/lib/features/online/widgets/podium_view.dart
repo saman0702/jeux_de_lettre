@@ -15,6 +15,8 @@ import '../../../l10n/app_localizations.dart';
 import '../data/room_models.dart';
 import '../../wallet/bet_banner.dart';
 import 'player_avatar.dart';
+import '../../shop/cosmetics.dart';
+import '../../shop/look_styles.dart';
 import '../../../core/widgets/game_icon.dart';
 
 /// Fin de partie : podium avec médailles, confettis, puis rejouer ou quitter.
@@ -86,7 +88,10 @@ class _PodiumViewState extends State<PodiumView> {
       if (ranking.length > 2) (ranking[2], 3, 80.0, AppColors.orange),
     ];
 
+    final victory = GameFeedbackScope.of(context).settings.victoryStyle;
     return ConfettiOverlay(
+      colors: victoryColors(victory),
+      shape: victoryShapeFor(victory),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
         child: Column(
@@ -169,12 +174,11 @@ class _PodiumViewState extends State<PodiumView> {
                                     weight: FontWeight.w700,
                                   ),
                                 ),
-                                title: Text(
+                                title: StyledNickname(
                                   p.nickname,
-                                  style: fredoka(
-                                    size: 17,
-                                    weight: FontWeight.w600,
-                                  ),
+                                  styleId: p.nameStyle,
+                                  size: 17,
+                                  weight: FontWeight.w600,
                                 ),
                                 trailing: Text(
                                   l10n.pointsShort(p.score),
@@ -235,15 +239,10 @@ class _PodiumStep extends StatelessWidget {
         children: [
           PlayerAvatar.of(player, size: place == 1 ? 64 : 52),
           const SizedBox(height: 6),
-          Text(
+          StyledNickname(
             isMe ? l10n.youBadge : player.nickname,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: fredoka(
-              size: 15,
-              weight: FontWeight.w700,
-              color: AppColors.white,
-            ),
+            styleId: player.nameStyle,
+            size: 15,
           ),
           Text(
             l10n.pointsShort(player.score),

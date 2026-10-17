@@ -1,4 +1,4 @@
-/// URL de base de l'API Letter Battle.
+/// URL de base de l'API Letter Race.
 ///
 /// À changer à la compilation : `flutter run
 /// --dart-define=API_BASE_URL=http://192.168.1.88:8010`

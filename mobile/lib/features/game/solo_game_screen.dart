@@ -86,6 +86,19 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
           level.number,
           level.starsFor(_controller.game.totalScore),
         );
+        settings.recordCareerLetters(level.number, [
+          for (final result in _controller.results) result.letter,
+        ]);
+        final used = <Category, List<String>>{};
+        for (final result in _controller.results) {
+          for (final answer in result.answers) {
+            if (answer.status != AnswerStatus.valid) continue;
+            final word = answer.matchedValue ?? answer.value;
+            if (word.trim().isEmpty) continue;
+            used.putIfAbsent(answer.category, () => []).add(word);
+          }
+        }
+        settings.recordCareerAnswers(level.world, used);
       case EliminationChallenge():
         _newRecord = settings.recordElimination(_controller.roundsSurvived);
       case null:
@@ -371,16 +384,21 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
           goal: _goal(l10n),
         );
       case SoloPhase.roundResult:
-        return WithQuitButton(
+        return RoundResultView(
+          result: c.lastResult!,
+          totalRounds: c.game.totalRounds,
+          totalScore: c.game.totalScore,
+          isLastRound: c.isOver,
+          onContinue: c.nextRound,
           onQuit: _quit,
-          child: RoundResultView(
-            result: c.lastResult!,
-            totalRounds: c.game.totalRounds,
-            totalScore: c.game.totalScore,
-            isLastRound: c.isOver,
-            onContinue: c.nextRound,
-            goal: _resultGoal(l10n),
-          ),
+          goal: _resultGoal(l10n),
+          onBuyInfo: widget.api.offline
+              ? null
+              : (category) => widget.api.buyCategoryInfo(
+                  c.game.id,
+                  c.lastResult!.number,
+                  category,
+                ),
         );
       case SoloPhase.finished:
         return _gameOver(context, l10n);
@@ -389,7 +407,7 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: GameCard(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(18),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

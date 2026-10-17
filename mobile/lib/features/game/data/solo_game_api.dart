@@ -78,4 +78,29 @@ class SoloGameApi implements SoloBackend {
       {'category': category.wire, 'choice': choice},
     ),
   );
+
+  @override
+  Future<BuyHintResult> buyHint(String gameId) async {
+    final body = await _api.postJson('/api/v1/solo/games/$gameId/hint/buy');
+    if (body['wallet'] case final Map<String, dynamic> wallet) {
+      onWallet?.call(WalletSnapshot.fromJson(wallet));
+    }
+    return BuyHintResult.fromJson(body);
+  }
+
+  @override
+  Future<CategoryInfo> buyCategoryInfo(
+    String gameId,
+    int roundNumber,
+    Category category,
+  ) async {
+    final body = await _api.postJson(
+      '/api/v1/solo/games/$gameId/rounds/$roundNumber/info',
+      {'category': category.wire},
+    );
+    if (body['wallet'] case final Map<String, dynamic> wallet) {
+      onWallet?.call(WalletSnapshot.fromJson(wallet));
+    }
+    return CategoryInfo.fromJson(body);
+  }
 }

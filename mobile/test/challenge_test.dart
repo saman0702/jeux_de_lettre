@@ -5,6 +5,8 @@ import 'package:letter_battle/core/feedback/game_feedback.dart';
 import 'package:letter_battle/core/settings/app_settings.dart';
 import 'package:letter_battle/features/career/career_levels.dart';
 import 'package:letter_battle/features/career/career_screen.dart';
+import 'package:letter_battle/features/career/elimination_screen.dart';
+import 'package:letter_battle/features/online/room_screen.dart';
 import 'package:letter_battle/features/game/data/challenge.dart';
 import 'package:letter_battle/features/game/data/models.dart';
 import 'package:letter_battle/features/game/data/solo_game_api.dart';
@@ -24,13 +26,18 @@ GameFeedback feedbackWith(AppSettings settings) => GameFeedback(
 
 /// Joue une manche : réponse [city] puis « Terminer ».
 Future<void> playRound(WidgetTester tester, String city) async {
-  for (var i = 0; i < 5; i++) {
+  final field = find.byKey(const Key('field_city'));
+  // Compte à rebours (3 pas) + startRound async. Éviter pumpAndSettle : le
+  // glow du champ actif tourne en boucle.
+  for (var i = 0; i < 10; i++) {
+    if (field.evaluate().isNotEmpty) break;
     await tester.pump(const Duration(milliseconds: 10));
   }
-  await tester.pumpAndSettle();
-  await tester.enterText(find.byKey(const Key('field_city')), city);
+  expect(field, findsOneWidget);
+  await tester.enterText(field, city);
   await tester.tap(find.byKey(const Key('key_finish')));
-  await tester.pumpAndSettle();
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
 }
 
 Future<SoloGameController> pumpChallenge(
@@ -41,12 +48,15 @@ Future<SoloGameController> pumpChallenge(
 ) async {
   final api = SoloGameApi(server.api);
   final game = SoloGame.fromJson(server.game());
+  // Horloge figée : le chrono de manche ne dépend pas du temps réel du test.
+  final clock = DateTime(2026, 1, 1, 12);
   final controller = SoloGameController(
     api: api,
     game: game,
     challenge: challenge,
     countdownStep: const Duration(milliseconds: 10),
     tick: const Duration(milliseconds: 50),
+    now: () => clock,
   );
   tester.platformDispatcher.localesTestValue = const [Locale('en')];
   await tester.pumpWidget(
@@ -68,8 +78,9 @@ void main() {
   // Chargé une fois, hors du temps simulé des tests (décompression réelle).
   setUpAll(OfflineDictionary.load);
 
-  test('career has 30 levels that get harder', () {
-    expect(careerLevels, hasLength(30));
+  test('career has 60 levels that get harder', () {
+    expect(careerLevels, hasLength(60));
+    expect(careerWorldCount * levelsPerWorld, 60);
     for (final level in careerLevels) {
       expect(SoloGameSettings.durationOptions, contains(level.roundDuration));
       expect(SoloGameSettings.roundOptions, contains(level.rounds));
@@ -77,10 +88,25 @@ void main() {
       expect(level.twoStars, lessThan(level.threeStars));
       expect(level.threeStars, lessThanOrEqualTo(level.maxScore));
     }
-    expect(careerLevels.first.categories, hasLength(2));
+    expect(careerLevels.first.categories, [Category.city, Category.country]);
+    expect(careerLevels[9].categories, hasLength(4));
+    expect(careerLevels[levelsPerWorld].categories, Category.classic);
+    expect(careerLevels[levelsPerWorld + 5].categories, [
+      ...Category.classic,
+      Category.femaleName,
+    ]);
+    expect(careerLevels[levelsPerWorld * 2].categories, careerCategoryOrder);
+    expect(careerLevels.last.categories, careerCategoryOrder);
     expect(careerLevels.first.difficulty, Difficulty.easy);
+    expect(careerLevels[levelsPerWorld].difficulty, Difficulty.normal);
     expect(careerLevels.last.difficulty, Difficulty.hard);
-    expect(careerLevels.last.roundDuration, 15);
+    expect(careerLevels.last.world, 3);
+    expect(careerLevels.last.roundDuration, 45);
+    for (final level in careerLevels) {
+      if (level.categories.length >= Category.many) {
+        expect(level.roundDuration, greaterThanOrEqualTo(45));
+      }
+    }
     final level = careerLevels.first;
     expect(level.starsFor(level.target - 10), 0);
     expect(level.starsFor(level.target), 1);
@@ -94,6 +120,23 @@ void main() {
     settings.recordCareer(1, 2);
     settings.recordCareer(1, 1);
     expect(settings.careerStars[1], 2, reason: 'best result kept');
+    settings.recordCareer(1, 3);
+    expect(settings.careerStars[1], 3, reason: 'a better replay replaces it');
+    settings.recordCareerLetters(1, ['M', 'A', 'm']);
+    expect(settings.careerLettersOf(1), 'MA');
+    settings.recordCareerAnswers(0, {
+      Category.country: ['Sénégal', 'Espagne'],
+      Category.city: ['Paris'],
+    });
+    settings.recordCareerAnswers(0, {
+      Category.country: ['Sénégal', 'Suisse'],
+    });
+    expect(settings.careerBannedAnswers(0)[Category.country], [
+      'Sénégal',
+      'Espagne',
+      'Suisse',
+    ]);
+    expect(settings.careerBannedAnswers(1), isEmpty);
     expect(settings.careerUnlocked(2), isTrue);
     expect(settings.recordElimination(4), isTrue);
     expect(settings.recordElimination(3), isFalse);
@@ -115,14 +158,15 @@ void main() {
     await playRound(tester, 'Madrid');
     expect(find.text('10 PTS MINIMUM: PASSED!'), findsOneWidget);
     await tester.tap(find.text('NEXT ROUND'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Manche 2 : rien trouvé, éliminé.
     await playRound(tester, '');
     expect(find.text('ELIMINATED! You needed 10 pts'), findsOneWidget);
     expect(controller.eliminatedAt, 2);
     await tester.tap(find.text('SEE RESULTS'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
     expect(find.text('Eliminated!'), findsOneWidget);
     expect(find.text('You lasted 1 round out of 15'), findsOneWidget);
     expect(find.text('New record: 1 rounds!'), findsOneWidget);
@@ -148,7 +192,8 @@ void main() {
     await playRound(tester, 'Madrid');
     expect(find.text('Goal: 10 / 10 pts'), findsOneWidget);
     await tester.tap(find.text('SEE RESULTS'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
     expect(find.text('Level 1 cleared!'), findsOneWidget);
     expect(find.byKey(const Key('next_level_button')), findsOneWidget);
     expect(settings.careerStars[1], 1);
@@ -166,10 +211,31 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('3 / 90'), findsOneWidget);
+    expect(find.text('RULES'), findsOneWidget, reason: 'shown on first visit');
+    expect(find.textContaining('60 levels'), findsOneWidget);
+    expect(find.textContaining('same world'), findsOneWidget);
+    await tester.ensureVisible(find.text('GOT IT'));
+    await tester.tap(find.text('GOT IT'));
+    await tester.pumpAndSettle();
+    expect(find.text('3 / 180'), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
     expect(find.text('2'), findsOneWidget, reason: 'level 2 is open');
     expect(find.text('3'), findsNothing, reason: 'level 3 shows a lock');
+
+    await tester.tap(find.byKey(const Key('career_rules')));
+    await tester.pumpAndSettle();
+    expect(find.text('RULES'), findsOneWidget);
+    expect(find.textContaining("girl's name"), findsOneWidget);
+    expect(find.textContaining("boy's name"), findsOneWidget);
+    await tester.ensureVisible(find.text('GOT IT'));
+    await tester.tap(find.text('GOT IT'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('career_level_1')));
+    await tester.pumpAndSettle();
+    expect(find.text('PLAY AGAIN'), findsOneWidget);
+    Navigator.of(tester.element(find.text('PLAY AGAIN'))).pop();
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('career_level_2')));
     await tester.pumpAndSettle();
@@ -183,6 +249,9 @@ void main() {
     final h = Harness();
     final server = FakeServer();
     await h.start(tester, CareerScreen(apiClient: server.api));
+    await tester.ensureVisible(find.text('GOT IT'));
+    await tester.tap(find.text('GOT IT'));
+    await tester.pumpAndSettle();
     h.refuseConnections = true;
     h.socket.close();
     await tester.pumpAndSettle();
@@ -205,5 +274,24 @@ void main() {
     h.refuseConnections = false;
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 3));
+  });
+
+  testWidgets('knockout: invite friends opens a knockout room', (tester) async {
+    final h = Harness();
+    await h.start(tester, EliminationScreen(apiClient: FakeServer().api));
+    await tester.ensureVisible(find.text('Hard'));
+    await tester.tap(find.text('Hard'));
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('invite_friends')));
+    await tester.tap(find.byKey(const Key('invite_friends')));
+    await tester.pump();
+    final settings = h.socket.sent.last['settings'] as Map<String, dynamic>;
+    expect(settings['format'], 'elimination');
+    expect(settings['difficulty'], 'hard');
+    expect(settings['rounds'], 15);
+    expect(settings['round_duration'], 30);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(RoomScreen), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
   });
 }

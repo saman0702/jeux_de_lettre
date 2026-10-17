@@ -24,4 +24,14 @@ abstract class SoloBackend {
     Category category,
     String choice,
   );
+
+  /// Achète un joker avec des pièces (serveur uniquement).
+  Future<BuyHintResult> buyHint(String gameId);
+
+  /// Dévoile les infos d'une catégorie après la manche (serveur uniquement).
+  Future<CategoryInfo> buyCategoryInfo(
+    String gameId,
+    int roundNumber,
+    Category category,
+  );
 }

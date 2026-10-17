@@ -64,15 +64,82 @@ SUBMIT_GRACE_SECONDS = 2.0
 MIN_ROOM_PLAYERS = 2
 MAX_ROOM_PLAYERS = 8
 
-# Jokers : quatre mots, un seul valide pour la catégorie ; un bon choix rapporte la moitié des
+# Jokers : trois mots, un seul valide pour la catégorie ; un bon choix rapporte la moitié des
 # points.
 HINTS_PER_GAME = 3
-HINT_OPTIONS = 4
+HINT_OPTIONS = 3
 HINT_POINTS_UNIQUE = 5
 HINT_POINTS_SHARED = 2
 
 # Pièces : les points validés par le serveur se convertissent en pièces.
 POINTS_PER_COIN = 20
+
+# Achats en pièces pendant / après une manche (ne changent pas le score).
+# Infos : 1 pièce si la réponse était juste, 2 sinon.
+CATEGORY_INFO_PRICE_FOUND = 1
+CATEGORY_INFO_PRICE_MISSED = 2
+EXTRA_HINT_PRICE = 5
+
+# Apparences achetées avec des pièces (pas d'avantage de jeu).
+# hair/hat : calques sur l'avatar ; frame/name : visibles en salon ;
+# tiles/victory : chez soi (tuiles de saisie / confettis).
+
+COSMETICS = (
+    {"id": "hair_spiky", "kind": "hair", "price": 25, "color": "ink"},
+    {"id": "hair_bob", "kind": "hair", "price": 25, "color": "pink"},
+    {"id": "hair_curly", "kind": "hair", "price": 25, "color": "cyan"},
+    {"id": "hair_bun", "kind": "hair", "price": 25, "color": "yellow"},
+    {"id": "hat_crown", "kind": "hat", "price": 40, "color": "yellow"},
+    {"id": "hat_cap", "kind": "hat", "price": 30, "color": "red"},
+    {"id": "hat_wizard", "kind": "hat", "price": 35, "color": "purple"},
+    {"id": "hat_party", "kind": "hat", "price": 30, "color": "pink"},
+    {"id": "frame_gold", "kind": "frame", "price": 15, "color": "yellow"},
+    {"id": "frame_pink", "kind": "frame", "price": 15, "color": "pink"},
+    {"id": "frame_cyan", "kind": "frame", "price": 15, "color": "cyan"},
+    {"id": "frame_ornament", "kind": "frame", "price": 25, "color": "yellow"},
+    {"id": "frame_flames", "kind": "frame", "price": 25, "color": "orange"},
+    {"id": "frame_stars", "kind": "frame", "price": 25, "color": "purple"},
+    {"id": "name_rose", "kind": "name", "price": 10, "color": "pink"},
+    {"id": "name_violet", "kind": "name", "price": 10, "color": "purple"},
+    {"id": "name_orange", "kind": "name", "price": 10, "color": "orange"},
+    {"id": "name_gradient", "kind": "name", "price": 18, "color": "pink"},
+    {"id": "name_outline", "kind": "name", "price": 18, "color": "yellow"},
+    {"id": "name_badge", "kind": "name", "price": 18, "color": "orange"},
+    {"id": "tiles_sunset", "kind": "tiles", "price": 20, "color": "orange"},
+    {"id": "tiles_ocean", "kind": "tiles", "price": 20, "color": "cyan"},
+    {"id": "tiles_candy", "kind": "tiles", "price": 20, "color": "pink"},
+    {"id": "tiles_stripes", "kind": "tiles", "price": 25, "color": "cyan"},
+    {"id": "tiles_dots", "kind": "tiles", "price": 25, "color": "pink"},
+    {"id": "tiles_metal", "kind": "tiles", "price": 25, "color": "ink"},
+    {"id": "victory_gold", "kind": "victory", "price": 15, "color": "yellow"},
+    {"id": "victory_pink", "kind": "victory", "price": 15, "color": "pink"},
+    {"id": "victory_mint", "kind": "victory", "price": 15, "color": "green"},
+    {"id": "victory_stars", "kind": "victory", "price": 22, "color": "yellow"},
+    {"id": "victory_bubbles", "kind": "victory", "price": 22, "color": "cyan"},
+    {"id": "victory_letters", "kind": "victory", "price": 22, "color": "orange"},
+)
+COSMETIC_BY_ID = {item["id"]: item for item in COSMETICS}
+COSMETIC_KINDS = ("hair", "hat", "frame", "name", "tiles", "victory")
+
+# Packs thématiques : moins cher que d'acheter chaque pièce séparément.
+COSMETIC_PACKS = (
+    {
+        "id": "pack_ocean",
+        "price": 40,
+        "items": ("frame_cyan", "tiles_ocean", "victory_bubbles"),
+    },
+    {
+        "id": "pack_candy",
+        "price": 40,
+        "items": ("frame_pink", "tiles_candy", "victory_stars"),
+    },
+    {
+        "id": "pack_royal",
+        "price": 50,
+        "items": ("frame_ornament", "name_outline", "victory_stars"),
+    },
+)
+COSMETIC_PACK_BY_ID = {pack["id"]: pack for pack in COSMETIC_PACKS}
 # Mise maximale d'un salon de paris.
 MAX_STAKE = 1000
 

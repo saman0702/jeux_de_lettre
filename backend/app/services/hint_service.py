@@ -1,8 +1,8 @@
-"""Jokers : quatre mots commençant par la lettre de la manche, dont un seul appartient à la catégorie.
+"""Jokers : trois mots commençant par la lettre de la manche, dont un seul appartient à la catégorie.
 Les leurres viennent des autres catégories (un fruit proposé pour « Animal ») : il faut savoir
 lequel convient.
 
-Le serveur garde la bonne réponse ; les clients ne voient que les quatre propositions.
+Le serveur garde la bonne réponse ; les clients ne voient que les trois propositions.
 """
 
 import random

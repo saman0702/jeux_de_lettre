@@ -66,7 +66,7 @@ class FakeServer {
       hintsLeft--;
       return _json({
         'category': body['category'],
-        'options': ['Mangue', 'Madrid', 'Maroc', 'Mouton'],
+        'options': ['Mangue', 'Madrid', 'Maroc'],
         'hints_left': hintsLeft,
       });
     }
@@ -313,7 +313,7 @@ void main() {
     expect(find.byType(SoloGameScreen), findsOneWidget);
   });
 
-  testWidgets('a hint shows four options and locks the field', (tester) async {
+  testWidgets('a hint shows three options and locks the field', (tester) async {
     final server = FakeServer();
     final feedback = testFeedback();
     await pumpGame(tester, server, feedback: feedback);

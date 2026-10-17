@@ -85,7 +85,7 @@ class _SettingsSheet extends StatelessWidget {
             child: SafeArea(
               top: false,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 46, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -158,10 +158,10 @@ class _SettingsSheet extends StatelessWidget {
           Positioned(
             top: 0,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.white, width: 3),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.white, width: 2),
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -177,12 +177,12 @@ class _SettingsSheet extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const GameIcon(GameIconKind.settings, size: 24),
-                  const SizedBox(width: 8),
+                  const GameIcon(GameIconKind.settings, size: 18),
+                  const SizedBox(width: 6),
                   Text(
                     l10n.settingsTitle.toUpperCase(),
                     style: fredoka(
-                      size: 20,
+                      size: 16,
                       weight: FontWeight.w700,
                       color: AppColors.white,
                       shadows: textShadow,
@@ -193,7 +193,7 @@ class _SettingsSheet extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 34,
+            top: 8,
             right: 14,
             child: RoundIconButton(
               key: const Key('settings_close'),

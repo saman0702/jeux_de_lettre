@@ -29,10 +29,14 @@ class RoundView extends StatefulWidget {
     this.hints,
     this.onQuit,
     this.goal,
+    this.players,
   });
 
   /// Objectif affiché en haut (carrière, éliminatoires).
   final String? goal;
+
+  /// En ligne : les autres joueurs, sous la barre du haut.
+  final Widget? players;
 
   final GameRound round;
   final int totalRounds;
@@ -240,7 +244,16 @@ class _RoundViewState extends State<RoundView> {
           children: [
             Expanded(
               child: ScrollUnderBars(
-                header: topBar,
+                header: widget.players == null
+                    ? topBar
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          topBar,
+                          const SizedBox(height: 8),
+                          widget.players!,
+                        ],
+                      ),
                 builder: (context, padding) => ListView.separated(
                   padding: padding.copyWith(left: 20, right: 20),
                   itemCount: categories.length + offset,

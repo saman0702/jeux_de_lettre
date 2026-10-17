@@ -58,6 +58,21 @@ async def test_full_round(client, letter_m):
     assert body["game"]["rounds_played"] == 1
 
 
+async def test_banned_answers_are_rejected(client, letter_m):
+    game = await create_game(
+        client,
+        categories=["city", "country"],
+        banned_answers={"city": ["Marseille"], "country": ["Maroc"]},
+    )
+    await client.post(f"/api/v1/solo/games/{game['id']}/rounds")
+    response = await client.post(
+        f"/api/v1/solo/games/{game['id']}/rounds/1/submit",
+        json={"answers": {"city": "Marseille", "country": "Mali"}},
+    )
+    statuses = {a["category"]: a["status"] for a in response.json()["round"]["answers"]}
+    assert statuses == {"city": "already_used", "country": "valid"}
+
+
 async def test_cannot_start_a_round_while_one_is_running(client, letter_m):
     game = await create_game(client)
     await client.post(f"/api/v1/solo/games/{game['id']}/rounds")

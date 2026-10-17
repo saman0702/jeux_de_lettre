@@ -76,6 +76,45 @@ class FakeShopServer {
           200,
         );
       }
+      if (request.url.path.contains('/cosmetics/buy')) {
+        return http.Response(
+          jsonEncode({
+            'coins': 65,
+            'coins_gained': 0,
+            'points_to_next_coin': 20,
+            'level': 1,
+            'level_xp': 0,
+            'level_xp_needed': 100,
+            'look': {
+              'owned': ['frame_gold'],
+              'hair': '',
+              'hat': '',
+              'frame': 'frame_gold',
+              'name': '',
+              'tiles': '',
+              'victory': '',
+            },
+          }),
+          200,
+        );
+      }
+      if (request.method == 'GET' && request.url.path.contains('/profiles/')) {
+        return http.Response(
+          jsonEncode({
+            'coins': 80,
+            'look': {
+              'owned': <String>[],
+              'hair': '',
+              'hat': '',
+              'frame': '',
+              'name': '',
+              'tiles': '',
+              'victory': '',
+            },
+          }),
+          200,
+        );
+      }
       if (failWith == 'network') throw Exception('offline');
       if (failWith != null) {
         return http.Response(jsonEncode({'detail': failWith}), failStatus);
@@ -174,6 +213,21 @@ void main() {
   testWidgets('without a store the shop says so', (tester) async {
     await openShop(tester, available: false);
     expect(find.byKey(const Key('shop_unavailable')), findsOneWidget);
+  });
+
+  testWidgets('a look is bought with coins', (tester) async {
+    tester.view.physicalSize = const Size(800, 5000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final (h, _, _) = await openShop(tester);
+    await tester.tap(find.byKey(const Key('shop_aisle_frame')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('cosmetic_frame_gold')));
+    await tester.pump();
+    await pumpFor(tester, const Duration(seconds: 1));
+    expect(h.online.wallet!.coins, 65);
+    expect(find.text('EQUIPPED'), findsWidgets);
   });
 
   testWidgets('the coin counter opens the shop', (tester) async {

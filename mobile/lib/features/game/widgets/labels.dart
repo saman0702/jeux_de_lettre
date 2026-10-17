@@ -51,6 +51,7 @@ extension AnswerStatusLabel on AnswerStatus {
     AnswerStatus.notFound => l10n.statusNotFound,
     AnswerStatus.late => l10n.statusLate,
     AnswerStatus.hintWrong => l10n.statusHintWrong,
+    AnswerStatus.alreadyUsed => l10n.statusAlreadyUsed,
   };
 
   Color get color =>
@@ -63,6 +64,9 @@ extension AnswerStatusLabel on AnswerStatus {
 String hintErrorMessage(AppLocalizations l10n, String code) => switch (code) {
   'no_hints_left' => l10n.hintNoneLeft,
   'no_hint_available' => l10n.hintUnavailable,
+  'not_online' => l10n.notOnlineForPurchase,
+  'not_enough_coins' => l10n.looksNotEnough,
+  'no_info_available' => l10n.hintUnavailable,
   _ => errorMessage(l10n, code),
 };
 

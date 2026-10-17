@@ -28,7 +28,7 @@ class OptionSection extends StatelessWidget {
   final Widget child;
 
   /// Hauteur du ruban qui dépasse au-dessus de la boîte.
-  static const _bannerOverlap = 16.0;
+  static const _bannerOverlap = 10.0;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +38,7 @@ class OptionSection extends StatelessWidget {
     final ink = light ? AppColors.ink : AppColors.white;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 8),
       child: BounceIn(
         delay: Duration(milliseconds: 60 * index),
         from: 0.85,
@@ -53,22 +53,22 @@ class OptionSection extends StatelessWidget {
               width: double.infinity,
               margin: const EdgeInsets.only(top: _bannerOverlap),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(16),
                 color: color,
                 boxShadow: [
-                  BoxShadow(color: depth, offset: const Offset(0, 6)),
+                  BoxShadow(color: depth, offset: const Offset(0, 4)),
                   const BoxShadow(
                     color: Color(0x33140744),
-                    offset: Offset(0, 10),
-                    blurRadius: 12,
+                    offset: Offset(0, 6),
+                    blurRadius: 8,
                   ),
                 ],
               ),
-              padding: const EdgeInsets.all(3),
+              padding: const EdgeInsets.all(2),
               child: Container(
-                padding: const EdgeInsets.fromLTRB(12, 26, 12, 14),
+                padding: const EdgeInsets.fromLTRB(10, 22, 10, 8),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: BorderRadius.circular(14),
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -138,7 +138,7 @@ class _Ribbon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget tail(bool left) => CustomPaint(
-      size: const Size(22, 24),
+      size: const Size(12, 12),
       painter: _TailPainter(depth, left: left),
     );
 
@@ -146,13 +146,13 @@ class _Ribbon extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Positioned(left: -12, top: 8, child: tail(true)),
-        Positioned(right: -12, top: 8, child: tail(false)),
+        Positioned(left: -7, top: 3, child: tail(true)),
+        Positioned(right: -7, top: 3, child: tail(false)),
         Container(
-          padding: const EdgeInsets.fromLTRB(12, 5, 16, 5),
+          padding: const EdgeInsets.fromLTRB(8, 1, 10, 1),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.white, width: 2.5),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.white, width: 1.5),
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -163,12 +163,12 @@ class _Ribbon extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              GameIcon(icon, size: 21, color: ink),
-              const SizedBox(width: 6),
+              GameIcon(icon, size: 14, color: ink),
+              const SizedBox(width: 4),
               Text(
                 title.toUpperCase(),
                 style: fredoka(
-                  size: 15,
+                  size: 12,
                   weight: FontWeight.w700,
                   color: ink,
                   shadows: light ? null : textShadow,

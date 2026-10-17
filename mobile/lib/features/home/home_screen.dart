@@ -282,6 +282,9 @@ class _MyAvatarButton extends StatelessWidget {
                 size: 46,
                 preset: online.avatarPreset,
                 photoUrl: online.avatarUrl,
+                frame: online.look.frame,
+                hair: online.look.hair,
+                hat: online.look.hat,
               ),
               Positioned(
                 right: -6,
@@ -413,12 +416,12 @@ class _LogoState extends State<_Logo> with SingleTickerProviderStateMixin {
     );
 
     return Semantics(
-      label: 'Letter Battle',
+      label: 'Letter Race',
       child: Column(
         children: [
           row('LETTER', 0),
           const SizedBox(height: 8),
-          row('BATTLE', 6),
+          row('RACE', 6),
         ],
       ),
     );

@@ -16,7 +16,7 @@ const _optionColors = [
   AppColors.orange,
 ];
 
-/// Les quatre propositions du joker ; renvoie celle choisie, ou null si on
+/// Les trois propositions du joker ; renvoie celle choisie, ou null si on
 /// ferme.
 Future<String?> showHintPicker(
   BuildContext context, {

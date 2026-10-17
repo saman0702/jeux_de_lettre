@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Letter Battle'**
+  /// **'Letter Race'**
   String get appTitle;
 
   /// No description provided for @tagline.
@@ -620,6 +620,18 @@ abstract class AppLocalizations {
   /// **'Code copié !'**
   String get codeCopied;
 
+  /// No description provided for @shareInvite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inviter'**
+  String get shareInvite;
+
+  /// No description provided for @inviteMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoins ma partie Letter Race ! Code : {code}'**
+  String inviteMessage(String code);
+
   /// No description provided for @waitingForPlayers.
   ///
   /// In fr, this message translates to:
@@ -836,6 +848,12 @@ abstract class AppLocalizations {
   /// **'Mauvais choix'**
   String get statusHintWrong;
 
+  /// No description provided for @statusAlreadyUsed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déjà utilisé dans ce monde'**
+  String get statusAlreadyUsed;
+
   /// No description provided for @hintedBadge.
   ///
   /// In fr, this message translates to:
@@ -853,6 +871,60 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Pas de joker possible ici.'**
   String get hintUnavailable;
+
+  /// No description provided for @buyHintTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joker en plus'**
+  String get buyHintTitle;
+
+  /// No description provided for @buyHintMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Acheter un joker pour {count} pièces ?'**
+  String buyHintMessage(int count);
+
+  /// No description provided for @buyHintConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} pièces'**
+  String buyHintConfirm(int count);
+
+  /// No description provided for @buyInfoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Infos'**
+  String get buyInfoTitle;
+
+  /// No description provided for @buyInfoMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dévoiler les infos pour {count} pièces ?'**
+  String buyInfoMessage(int count);
+
+  /// No description provided for @buyInfoConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} pièces'**
+  String buyInfoConfirm(int count);
+
+  /// No description provided for @buyInfoButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Infos · {count} pièces'**
+  String buyInfoButton(int count);
+
+  /// No description provided for @buyInfoFree.
+  ///
+  /// In fr, this message translates to:
+  /// **'Infos'**
+  String get buyInfoFree;
+
+  /// No description provided for @notOnlineForPurchase.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi pour dépenser des pièces.'**
+  String get notOnlineForPurchase;
 
   /// No description provided for @offlineModeNotice.
   ///
@@ -1394,6 +1466,60 @@ abstract class AppLocalizations {
   /// **'Carrière'**
   String get careerTitle;
 
+  /// No description provided for @careerRulesIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'60 niveaux de 5 manches, en 4 mondes de 15. Une étoile ouvre le niveau suivant.'**
+  String get careerRulesIntro;
+
+  /// No description provided for @careerRulesFromConfirmed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Au monde Débutant, les catégories montent : Ville et Pays, puis Animal, puis Fruit. À partir du Confirmé, les prénoms s\'ajoutent. Ensuite les lettres durcissent et l\'objectif de points grimpe.'**
+  String get careerRulesFromConfirmed;
+
+  /// No description provided for @careerRulesStars.
+  ///
+  /// In fr, this message translates to:
+  /// **'1 étoile à l\'objectif, puis 2 et 3 étoiles en t\'approchant du score parfait.'**
+  String get careerRulesStars;
+
+  /// No description provided for @careerRulesBeginner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lettres faciles, 60 puis 45 puis 30 secondes. Ville et Pays, puis Animal, puis Fruit.'**
+  String get careerRulesBeginner;
+
+  /// No description provided for @careerRulesConfirmed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lettres normales. Les quatre catégories, puis un prénom féminin en plus.'**
+  String get careerRulesConfirmed;
+
+  /// No description provided for @careerRulesExpert.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les lettres, même les plus rares. Un prénom masculin en plus.'**
+  String get careerRulesExpert;
+
+  /// No description provided for @careerRulesMaster.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les six catégories, objectifs plus hauts. Il faut trouver de nouveaux mots.'**
+  String get careerRulesMaster;
+
+  /// No description provided for @careerRulesReuse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dans le même monde, un mot déjà validé ne peut plus servir si la lettre revient.'**
+  String get careerRulesReuse;
+
+  /// No description provided for @gotIt.
+  ///
+  /// In fr, this message translates to:
+  /// **'COMPRIS'**
+  String get gotIt;
+
   /// No description provided for @worldBeginner.
   ///
   /// In fr, this message translates to:
@@ -1411,6 +1537,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Expert'**
   String get worldExpert;
+
+  /// No description provided for @worldMaster.
+  ///
+  /// In fr, this message translates to:
+  /// **'Maître'**
+  String get worldMaster;
 
   /// No description provided for @levelTitle.
   ///
@@ -1549,6 +1681,342 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Préparation de la partie…'**
   String get preparingGame;
+
+  /// No description provided for @playAlone.
+  ///
+  /// In fr, this message translates to:
+  /// **'JOUER SEUL'**
+  String get playAlone;
+
+  /// No description provided for @withFriends.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avec tes amis'**
+  String get withFriends;
+
+  /// No description provided for @withFriendsHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une salle s\'ouvre tout de suite, avec un code à partager comme dans un salon. Le plus petit score de chaque manche est éliminé.'**
+  String get withFriendsHelp;
+
+  /// No description provided for @inviteFriends.
+  ///
+  /// In fr, this message translates to:
+  /// **'INVITER DES AMIS'**
+  String get inviteFriends;
+
+  /// No description provided for @looksTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Boutique style'**
+  String get looksTitle;
+
+  /// No description provided for @looksSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Essaie un look, puis achète-le avec tes pièces.'**
+  String get looksSubtitle;
+
+  /// No description provided for @looksPreview.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton aperçu'**
+  String get looksPreview;
+
+  /// No description provided for @looksPacks.
+  ///
+  /// In fr, this message translates to:
+  /// **'Packs'**
+  String get looksPacks;
+
+  /// No description provided for @looksHair.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coiffures'**
+  String get looksHair;
+
+  /// No description provided for @looksHat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chapeaux'**
+  String get looksHat;
+
+  /// No description provided for @looksFrame.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cadres'**
+  String get looksFrame;
+
+  /// No description provided for @looksName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pseudos'**
+  String get looksName;
+
+  /// No description provided for @looksTiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tuiles'**
+  String get looksTiles;
+
+  /// No description provided for @looksVictory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Victoire'**
+  String get looksVictory;
+
+  /// No description provided for @looksPacksHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plusieurs styles assortis, moins cher en lot.'**
+  String get looksPacksHint;
+
+  /// No description provided for @looksHairHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Change de coupe sans toucher à ton personnage.'**
+  String get looksHairHint;
+
+  /// No description provided for @looksHatHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couronnes, casquettes et chapeaux magiques.'**
+  String get looksHatHint;
+
+  /// No description provided for @looksFrameHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Anneaux, ornements, flammes ou étoiles.'**
+  String get looksFrameHint;
+
+  /// No description provided for @looksNameHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleur, dégradé, contour ou badge devant le pseudo.'**
+  String get looksNameHint;
+
+  /// No description provided for @looksTilesHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleurs et motifs des cases quand tu joues.'**
+  String get looksTilesHint;
+
+  /// No description provided for @looksVictoryHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confettis, étoiles, bulles ou pluie de lettres.'**
+  String get looksVictoryHint;
+
+  /// No description provided for @looksHairSpiky.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hérisson'**
+  String get looksHairSpiky;
+
+  /// No description provided for @looksHairBob.
+  ///
+  /// In fr, this message translates to:
+  /// **'Carré rose'**
+  String get looksHairBob;
+
+  /// No description provided for @looksHairCurly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Boucles bleues'**
+  String get looksHairCurly;
+
+  /// No description provided for @looksHairBun.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chignon or'**
+  String get looksHairBun;
+
+  /// No description provided for @looksHatCrown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couronne'**
+  String get looksHatCrown;
+
+  /// No description provided for @looksHatCap.
+  ///
+  /// In fr, this message translates to:
+  /// **'Casquette'**
+  String get looksHatCap;
+
+  /// No description provided for @looksHatWizard.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chapeau mage'**
+  String get looksHatWizard;
+
+  /// No description provided for @looksHatParty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fête'**
+  String get looksHatParty;
+
+  /// No description provided for @looksFrameOrnament.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ornement'**
+  String get looksFrameOrnament;
+
+  /// No description provided for @looksFrameFlames.
+  ///
+  /// In fr, this message translates to:
+  /// **'Flammes'**
+  String get looksFrameFlames;
+
+  /// No description provided for @looksFrameStars.
+  ///
+  /// In fr, this message translates to:
+  /// **'Étoiles'**
+  String get looksFrameStars;
+
+  /// No description provided for @looksNameGradient.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dégradé'**
+  String get looksNameGradient;
+
+  /// No description provided for @looksNameOutline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contour'**
+  String get looksNameOutline;
+
+  /// No description provided for @looksNameBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Badge'**
+  String get looksNameBadge;
+
+  /// No description provided for @looksTilesStripes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rayures'**
+  String get looksTilesStripes;
+
+  /// No description provided for @looksTilesDots.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pois'**
+  String get looksTilesDots;
+
+  /// No description provided for @looksTilesMetal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Métal'**
+  String get looksTilesMetal;
+
+  /// No description provided for @looksVictoryStars.
+  ///
+  /// In fr, this message translates to:
+  /// **'Étoiles'**
+  String get looksVictoryStars;
+
+  /// No description provided for @looksVictoryBubbles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bulles'**
+  String get looksVictoryBubbles;
+
+  /// No description provided for @looksVictoryLetters.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lettres'**
+  String get looksVictoryLetters;
+
+  /// No description provided for @looksPackOcean.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pack Océan'**
+  String get looksPackOcean;
+
+  /// No description provided for @looksPackCandy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pack Bonbon'**
+  String get looksPackCandy;
+
+  /// No description provided for @looksPackRoyal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pack Royal'**
+  String get looksPackRoyal;
+
+  /// No description provided for @looksPackContents.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} styles'**
+  String looksPackContents(int count);
+
+  /// No description provided for @looksOwned.
+  ///
+  /// In fr, this message translates to:
+  /// **'POSSEDÉ'**
+  String get looksOwned;
+
+  /// No description provided for @looksEquip.
+  ///
+  /// In fr, this message translates to:
+  /// **'ÉQUIPER'**
+  String get looksEquip;
+
+  /// No description provided for @looksEquipped.
+  ///
+  /// In fr, this message translates to:
+  /// **'ÉQUIPÉ'**
+  String get looksEquipped;
+
+  /// No description provided for @looksPrice.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} pièces'**
+  String looksPrice(int count);
+
+  /// No description provided for @looksNotEnough.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas assez de pièces.'**
+  String get looksNotEnough;
+
+  /// No description provided for @looksGold.
+  ///
+  /// In fr, this message translates to:
+  /// **'Or'**
+  String get looksGold;
+
+  /// No description provided for @looksPink.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rose'**
+  String get looksPink;
+
+  /// No description provided for @looksCyan.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cyan'**
+  String get looksCyan;
+
+  /// No description provided for @looksViolet.
+  ///
+  /// In fr, this message translates to:
+  /// **'Violet'**
+  String get looksViolet;
+
+  /// No description provided for @looksOrange.
+  ///
+  /// In fr, this message translates to:
+  /// **'Orange'**
+  String get looksOrange;
+
+  /// No description provided for @looksMint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Menthe'**
+  String get looksMint;
 }
 
 class _AppLocalizationsDelegate

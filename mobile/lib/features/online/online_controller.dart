@@ -6,6 +6,7 @@ import '../../core/network/api_client.dart';
 import '../../core/network/realtime_client.dart';
 import '../game/data/models.dart';
 import '../wallet/wallet.dart';
+import '../shop/cosmetics.dart';
 import 'data/room_models.dart';
 
 enum NoticeKind { joined, left, disconnected, reconnected, botsJoined, error }
@@ -44,6 +45,8 @@ class OnlineController extends ChangeNotifier {
 
   final Map<Category, Completer<HintOptions>> _hintRequests = {};
   final Map<Category, Completer<HintPick>> _hintPicks = {};
+  Completer<BuyHintResult>? _buyHint;
+  Completer<CategoryInfo>? _categoryInfo;
 
   int _onlineCount = 0;
   List<RoomSummary> _rooms = const [];
@@ -52,6 +55,10 @@ class OnlineController extends ChangeNotifier {
   WalletSnapshot? _wallet;
   int _avatarPreset = 0;
   String? _avatarUrl;
+  PlayerLook _look = const PlayerLook();
+
+  /// Tuiles et confettis achetés : l'appli les garde pour les parties solo.
+  void Function(PlayerLook look)? onLook;
 
   String get clientId => client.clientId;
   bool get isOnline => client.isOnline;
@@ -70,9 +77,18 @@ class OnlineController extends ChangeNotifier {
   int get avatarPreset => _avatarPreset;
   String? get avatarUrl => _avatarUrl;
 
+  /// Apparences équipées (coiffure, chapeau, cadre…).
+  PlayerLook get look => _look;
+
   void setAvatar(int preset, String? url) {
     _avatarPreset = preset;
     _avatarUrl = url;
+    notifyListeners();
+  }
+
+  void applyLook(PlayerLook look) {
+    _look = look;
+    onLook?.call(look);
     notifyListeners();
   }
 
@@ -149,7 +165,7 @@ class OnlineController extends ChangeNotifier {
 
   void unwatchRooms() => client.send({'type': 'unsubscribe_rooms'});
 
-  /// Demande au serveur les quatre propositions d'une catégorie (consomme un
+  /// Demande au serveur les trois propositions d'une catégorie (consomme un
   /// joker).
   Future<HintOptions> requestHint(int round, Category category) {
     final completer = _hintRequests[category] = Completer<HintOptions>();
@@ -168,6 +184,18 @@ class OnlineController extends ChangeNotifier {
     return _withTimeout(completer.future);
   }
 
+  Future<BuyHintResult> buyHint() {
+    final completer = _buyHint = Completer<BuyHintResult>();
+    client.send({'type': 'buy_hint'});
+    return _withTimeout(completer.future);
+  }
+
+  Future<CategoryInfo> buyCategoryInfo(Category category) {
+    final completer = _categoryInfo = Completer<CategoryInfo>();
+    client.send({'type': 'category_info', 'category': category.wire});
+    return _withTimeout(completer.future);
+  }
+
   Future<T> _withTimeout<T>(Future<T> future) => future.timeout(
     const Duration(seconds: 8),
     onTimeout: () => throw ApiException('network_error'),
@@ -179,6 +207,14 @@ class OnlineController extends ChangeNotifier {
     }
     _hintRequests.clear();
     _hintPicks.clear();
+    if (_buyHint case final c? when !c.isCompleted) {
+      c.completeError(ApiException(code));
+    }
+    _buyHint = null;
+    if (_categoryInfo case final c? when !c.isCompleted) {
+      c.completeError(ApiException(code));
+    }
+    _categoryInfo = null;
   }
 
   void _request(Map<String, dynamic> message) {
@@ -197,6 +233,9 @@ class OnlineController extends ChangeNotifier {
         if (event['avatar'] case final Map<String, dynamic> avatar) {
           _avatarPreset = avatar['preset'] as int? ?? 0;
           _avatarUrl = avatar['url'] as String?;
+        }
+        if (event['look'] case final Map<String, dynamic> look) {
+          applyLook(PlayerLook.fromJson(look));
         }
       case 'reported':
         // Accusé de réception : le message est affiché dès l'envoi.
@@ -231,11 +270,28 @@ class OnlineController extends ChangeNotifier {
         final pick = HintPick.fromJson(event);
         _hintPicks.remove(pick.category)?.complete(pick);
         return;
+      case 'hint_bought':
+        if (event['wallet'] case final Map<String, dynamic> wallet) {
+          applyWallet(WalletSnapshot.fromJson(wallet));
+        }
+        _buyHint?.complete(BuyHintResult.fromJson(event));
+        _buyHint = null;
+        return;
+      case 'category_info':
+        if (event['wallet'] case final Map<String, dynamic> wallet) {
+          applyWallet(WalletSnapshot.fromJson(wallet));
+        }
+        _categoryInfo?.complete(CategoryInfo.fromJson(event));
+        _categoryInfo = null;
+        return;
       case 'error':
         final code = event['code'] as String? ?? 'error';
-        if (_hintRequests.isNotEmpty || _hintPicks.isNotEmpty) {
-          // Les erreurs de joker sont affichées par le bouton joker, pas comme
-          // des erreurs de salle.
+        if (_hintRequests.isNotEmpty ||
+            _hintPicks.isNotEmpty ||
+            _buyHint != null ||
+            _categoryInfo != null) {
+          // Les erreurs de joker / infos sont affichées par le bouton, pas
+          // comme des erreurs de salle.
           _failPendingHints(code);
           return;
         }

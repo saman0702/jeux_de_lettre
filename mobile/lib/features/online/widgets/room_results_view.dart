@@ -5,19 +5,24 @@ import 'package:flutter/material.dart';
 import '../../../animations/bounce_in.dart';
 import '../../../core/audio/game_audio.dart';
 import '../../../core/feedback/game_feedback.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/voice/announcements.dart';
 import '../../../core/widgets/game_card.dart';
+import '../../../core/widgets/game_dialog.dart';
 import '../../../core/widgets/letter_tile.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../game/data/models.dart';
+import '../../game/widgets/labels.dart';
 import '../../game/widgets/round_result_view.dart';
 import '../data/room_models.dart';
+import '../online_controller.dart';
 import '../../../core/widgets/outlined_text.dart';
 import '../../../core/widgets/scroll_under_bars.dart';
 import '../../game/widgets/challenge_banner.dart';
 import 'player_avatar.dart';
+import '../../shop/look_styles.dart';
 import '../../../core/widgets/game_icon.dart';
 
 /// Résultats de la manche : tes réponses apparaissent une à une, puis le
@@ -35,6 +40,8 @@ class RoomResultsView extends StatefulWidget {
 class _RoomResultsViewState extends State<RoomResultsView> {
   static const _stepMs = 380;
   final List<Timer> _timers = [];
+  final Map<Category, List<String>> _infoLines = {};
+  bool _infoBusy = false;
 
   PlayerRoundResult? get _mine {
     for (final p in widget.room.results!.players) {
@@ -46,7 +53,48 @@ class _RoomResultsViewState extends State<RoomResultsView> {
   @override
   void initState() {
     super.initState();
+    final mine = _mine;
+    if (mine != null) {
+      for (final answer in mine.answers) {
+        final lines = answer.infoLines;
+        if (lines != null && lines.isNotEmpty) {
+          _infoLines[answer.category] = lines;
+        }
+      }
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _playReveal());
+  }
+
+  Future<void> _unlockInfo(AnswerResult answer) async {
+    final category = answer.category;
+    if (_infoBusy || _infoLines.containsKey(category)) return;
+    final price = answer.infoPrice;
+    final l10n = AppLocalizations.of(context);
+    if (price > 0) {
+      final ok = await showGameConfirm(
+        context,
+        icon: GameIconKind.eyes,
+        title: l10n.buyInfoTitle,
+        message: l10n.buyInfoMessage(price),
+        confirmLabel: l10n.buyInfoConfirm(price),
+        cancelLabel: l10n.cancel,
+        accent: AppColors.cyan,
+      );
+      if (!ok || !mounted) return;
+    }
+    _infoBusy = true;
+    try {
+      final info = await OnlineScope.of(context).buyCategoryInfo(category);
+      if (mounted) setState(() => _infoLines[category] = info.lines);
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(hintErrorMessage(l10n, e.code))),
+        );
+      }
+    } finally {
+      _infoBusy = false;
+    }
   }
 
   void _playReveal() {
@@ -187,6 +235,12 @@ class _RoomResultsViewState extends State<RoomResultsView> {
                     child: AnswerCard(
                       answer: answer,
                       correction: _correction(l10n, answer),
+                      infoLines: _infoLines[answer.category],
+                      onBuyInfo:
+                          answer.infoAvailable &&
+                              !_infoLines.containsKey(answer.category)
+                          ? () => _unlockInfo(answer)
+                          : null,
                     ),
                   ),
                 ),
@@ -278,13 +332,13 @@ class _LeaderboardRow extends StatelessWidget {
             PlayerAvatar.of(player, size: 36),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
+              child: StyledNickname(
                 isMe
                     ? '${player.nickname} (${l10n.youBadge})'
                     : player.nickname,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: fredoka(size: 17, weight: FontWeight.w600),
+                styleId: player.nameStyle,
+                size: 17,
+                weight: FontWeight.w600,
               ),
             ),
             if (gained != null)

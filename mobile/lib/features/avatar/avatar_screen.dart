@@ -158,6 +158,9 @@ class _AvatarScreenState extends State<AvatarScreen> {
                         size: 128,
                         preset: online.avatarPreset,
                         photoUrl: online.avatarUrl,
+                        frame: online.look.frame,
+                        hair: online.look.hair,
+                        hat: online.look.hat,
                       ),
                       if (_busy)
                         const SizedBox(

@@ -1,6 +1,6 @@
 {
   "@@locale": "fr",
-  "appTitle": "Letter Battle",
+  "appTitle": "Letter Race",
   "tagline": "Une lettre. Quatre catégories. Le plus rapide gagne.",
   "modeSolo": "Solo",
   "modeDuel": "Duel",
@@ -125,6 +125,15 @@
   "roomCode": "Code de la salle",
   "copyCode": "Copier",
   "codeCopied": "Code copié !",
+  "shareInvite": "Inviter",
+  "inviteMessage": "Rejoins ma partie Letter Race ! Code : {code}",
+  "@inviteMessage": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "waitingForPlayers": "En attente de joueurs…",
   "readyButton": "JE SUIS PRÊT !",
   "notReadyButton": "PAS ENCORE",
@@ -234,9 +243,54 @@
   "hintTitle": "Joker : {category} en {letter}",
   "hintSubtitle": "Un seul de ces mots est juste !",
   "statusHintWrong": "Mauvais choix",
+  "statusAlreadyUsed": "Déjà utilisé dans ce monde",
   "hintedBadge": "Joker",
   "hintNoneLeft": "Plus de joker pour cette partie.",
   "hintUnavailable": "Pas de joker possible ici.",
+  "buyHintTitle": "Joker en plus",
+  "buyHintMessage": "Acheter un joker pour {count} pièces ?",
+  "@buyHintMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyHintConfirm": "{count} pièces",
+  "@buyHintConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyInfoTitle": "Infos",
+  "buyInfoMessage": "Dévoiler les infos pour {count} pièces ?",
+  "@buyInfoMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyInfoConfirm": "{count} pièces",
+  "@buyInfoConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyInfoButton": "Infos · {count} pièces",
+  "@buyInfoButton": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyInfoFree": "Infos",
+  "notOnlineForPurchase": "Connecte-toi pour dépenser des pièces.",
   "@hintTitle": {
     "placeholders": {
       "category": {
@@ -613,9 +667,19 @@
     }
   },
   "careerTitle": "Carrière",
+  "careerRulesIntro": "60 niveaux de 5 manches, en 4 mondes de 15. Une étoile ouvre le niveau suivant.",
+  "careerRulesFromConfirmed": "Au monde Débutant, les catégories montent : Ville et Pays, puis Animal, puis Fruit. À partir du Confirmé, les prénoms s'ajoutent. Ensuite les lettres durcissent et l'objectif de points grimpe.",
+  "careerRulesStars": "1 étoile à l'objectif, puis 2 et 3 étoiles en t'approchant du score parfait.",
+  "careerRulesBeginner": "Lettres faciles, 60 puis 45 puis 30 secondes. Ville et Pays, puis Animal, puis Fruit.",
+  "careerRulesConfirmed": "Lettres normales. Les quatre catégories, puis un prénom féminin en plus.",
+  "careerRulesExpert": "Toutes les lettres, même les plus rares. Un prénom masculin en plus.",
+  "careerRulesMaster": "Les six catégories, objectifs plus hauts. Il faut trouver de nouveaux mots.",
+  "careerRulesReuse": "Dans le même monde, un mot déjà validé ne peut plus servir si la lettre revient.",
+  "gotIt": "COMPRIS",
   "worldBeginner": "Débutant",
   "worldConfirmed": "Confirmé",
   "worldExpert": "Expert",
+  "worldMaster": "Maître",
   "levelTitle": "Niveau {level}",
   "@levelTitle": {
     "placeholders": {
@@ -683,5 +747,75 @@
       }
     }
   },
-  "preparingGame": "Préparation de la partie…"
+  "preparingGame": "Préparation de la partie…",
+  "playAlone": "JOUER SEUL",
+  "withFriends": "Avec tes amis",
+  "withFriendsHelp": "Une salle s'ouvre tout de suite, avec un code à partager comme dans un salon. Le plus petit score de chaque manche est éliminé.",
+  "inviteFriends": "INVITER DES AMIS",
+  "looksTitle": "Boutique style",
+  "looksSubtitle": "Essaie un look, puis achète-le avec tes pièces.",
+  "looksPreview": "Ton aperçu",
+  "looksPacks": "Packs",
+  "looksHair": "Coiffures",
+  "looksHat": "Chapeaux",
+  "looksFrame": "Cadres",
+  "looksName": "Pseudos",
+  "looksTiles": "Tuiles",
+  "looksVictory": "Victoire",
+  "looksPacksHint": "Plusieurs styles assortis, moins cher en lot.",
+  "looksHairHint": "Change de coupe sans toucher à ton personnage.",
+  "looksHatHint": "Couronnes, casquettes et chapeaux magiques.",
+  "looksFrameHint": "Anneaux, ornements, flammes ou étoiles.",
+  "looksNameHint": "Couleur, dégradé, contour ou badge devant le pseudo.",
+  "looksTilesHint": "Couleurs et motifs des cases quand tu joues.",
+  "looksVictoryHint": "Confettis, étoiles, bulles ou pluie de lettres.",
+  "looksHairSpiky": "Hérisson",
+  "looksHairBob": "Carré rose",
+  "looksHairCurly": "Boucles bleues",
+  "looksHairBun": "Chignon or",
+  "looksHatCrown": "Couronne",
+  "looksHatCap": "Casquette",
+  "looksHatWizard": "Chapeau mage",
+  "looksHatParty": "Fête",
+  "looksFrameOrnament": "Ornement",
+  "looksFrameFlames": "Flammes",
+  "looksFrameStars": "Étoiles",
+  "looksNameGradient": "Dégradé",
+  "looksNameOutline": "Contour",
+  "looksNameBadge": "Badge",
+  "looksTilesStripes": "Rayures",
+  "looksTilesDots": "Pois",
+  "looksTilesMetal": "Métal",
+  "looksVictoryStars": "Étoiles",
+  "looksVictoryBubbles": "Bulles",
+  "looksVictoryLetters": "Lettres",
+  "looksPackOcean": "Pack Océan",
+  "looksPackCandy": "Pack Bonbon",
+  "looksPackRoyal": "Pack Royal",
+  "looksPackContents": "{count} styles",
+  "@looksPackContents": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "looksOwned": "POSSEDÉ",
+  "looksEquip": "ÉQUIPER",
+  "looksEquipped": "ÉQUIPÉ",
+  "looksPrice": "{count} pièces",
+  "@looksPrice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "looksNotEnough": "Pas assez de pièces.",
+  "looksGold": "Or",
+  "looksPink": "Rose",
+  "looksCyan": "Cyan",
+  "looksViolet": "Violet",
+  "looksOrange": "Orange",
+  "looksMint": "Menthe"
 }

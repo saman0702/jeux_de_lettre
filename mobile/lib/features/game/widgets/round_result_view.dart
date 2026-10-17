@@ -2,18 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../../../core/audio/game_audio.dart';
 import '../../../core/feedback/game_feedback.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/voice/announcements.dart';
 import '../../../core/widgets/candy_button.dart';
 import '../../../core/widgets/game_card.dart';
+import '../../../core/widgets/game_dialog.dart';
+import '../../../core/widgets/game_icon.dart';
 import '../../../core/widgets/outlined_text.dart';
 import '../../../core/widgets/scroll_under_bars.dart';
 import '../../../core/widgets/letter_tile.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
+import 'country_flag.dart';
 import 'labels.dart';
-import '../../../core/widgets/game_icon.dart';
+import 'quit_button.dart';
 
 /// Les réponses sont dévoilées une à une (ding si juste, buzz si faux), puis le
 /// score de la manche défile.
@@ -27,6 +31,8 @@ class RoundResultView extends StatefulWidget {
     required this.onContinue,
     this.goal,
     this.continueLabel,
+    this.onBuyInfo,
+    this.onQuit,
   });
 
   /// Bandeau de défi sous l'en-tête (minimum atteint, éliminé…).
@@ -38,6 +44,12 @@ class RoundResultView extends StatefulWidget {
   final int totalScore;
   final bool isLastRound;
   final VoidCallback onContinue;
+
+  /// Achète les infos d'une catégorie (null hors ligne).
+  final Future<CategoryInfo?> Function(Category category)? onBuyInfo;
+
+  /// Si fourni : Quitter, manche et score sur la même ligne en haut.
+  final VoidCallback? onQuit;
 
   @override
   State<RoundResultView> createState() => _RoundResultViewState();
@@ -58,12 +70,55 @@ class _RoundResultViewState extends State<RoundResultView>
   );
   int _revealed = 0;
   bool _scoreAnnounced = false;
+  final Map<Category, List<String>> _infoLines = {};
+  bool _infoBusy = false;
 
   @override
   void initState() {
     super.initState();
+    for (final answer in widget.result.answers) {
+      final lines = answer.infoLines;
+      if (lines != null && lines.isNotEmpty) {
+        _infoLines[answer.category] = lines;
+      }
+    }
     _controller.addListener(_onTick);
     _controller.forward();
+  }
+
+  Future<void> _unlockInfo(AnswerResult answer) async {
+    final buy = widget.onBuyInfo;
+    final category = answer.category;
+    if (buy == null || _infoBusy || _infoLines.containsKey(category)) return;
+    final price = answer.infoPrice;
+    final l10n = AppLocalizations.of(context);
+    if (price > 0) {
+      final ok = await showGameConfirm(
+        context,
+        icon: GameIconKind.eyes,
+        title: l10n.buyInfoTitle,
+        message: l10n.buyInfoMessage(price),
+        confirmLabel: l10n.buyInfoConfirm(price),
+        cancelLabel: l10n.cancel,
+        accent: AppColors.cyan,
+      );
+      if (!ok || !mounted) return;
+    }
+    _infoBusy = true;
+    try {
+      final info = await buy(category);
+      if (info != null && mounted) {
+        setState(() => _infoLines[category] = info.lines);
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(hintErrorMessage(l10n, e.code))),
+        );
+      }
+    } finally {
+      _infoBusy = false;
+    }
   }
 
   double _at(int ms) => ms / _totalMs;
@@ -133,47 +188,69 @@ class _RoundResultViewState extends State<RoundResultView>
         final shownScore = (result.roundScore * scoreProgress).round();
         final shownTotal = widget.totalScore - result.roundScore + shownScore;
 
+        final topBar = widget.onQuit == null
+            ? null
+            : Padding(
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 4),
+                child: Row(
+                  children: [
+                    QuitButton(onQuit: widget.onQuit!),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedText(
+                        l10n.roundProgress(result.number, widget.totalRounds),
+                        textAlign: TextAlign.center,
+                        style: fredoka(
+                          size: 16,
+                          weight: FontWeight.w700,
+                          color: AppColors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedText(
+                      l10n.pointsShort(shownTotal),
+                      style: fredoka(
+                        size: 16,
+                        weight: FontWeight.w700,
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           // Les réponses défilent sous l'en-tête et le score, sans bord visible.
           child: ScrollUnderBars(
             header: Padding(
-              padding: const EdgeInsets.only(top: 16, bottom: 4),
+              padding: EdgeInsets.only(
+                top: topBar == null ? 16 : 8,
+                bottom: 4,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  ?topBar,
                   Row(
                     children: [
                       LetterTile(letter: result.letter, size: 56),
                       const SizedBox(width: 14),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            OutlinedText(
-                              l10n.roundProgress(
-                                result.number,
-                                widget.totalRounds,
-                              ),
-                              style: fredoka(
-                                size: 20,
-                                weight: FontWeight.w700,
-                                color: AppColors.white,
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                const GameIcon(GameIconKind.timer, size: 18),
-                                const SizedBox(width: 4),
-                                OutlinedText(
-                                  l10n.finishedIn(seconds),
-                                  strokeWidth: 3,
-                                  style: fredoka(
-                                    size: 15,
-                                    color: AppColors.white,
-                                  ),
+                            const GameIcon(GameIconKind.timer, size: 18),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: OutlinedText(
+                                l10n.finishedIn(seconds),
+                                strokeWidth: 3,
+                                style: fredoka(
+                                  size: 15,
+                                  color: AppColors.white,
                                 ),
-                              ],
+                              ),
                             ),
                           ],
                         ),
@@ -189,79 +266,15 @@ class _RoundResultViewState extends State<RoundResultView>
             ),
             footer: Padding(
               padding: const EdgeInsets.only(top: 8, bottom: 14),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  GameCard(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.roundScore.toUpperCase(),
-                              style: gameFont(
-                                size: 12,
-                                color: AppColors.inkSoft,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                            Transform.scale(
-                              alignment: Alignment.centerLeft,
-                              scale:
-                                  1 +
-                                  0.25 *
-                                      (1 - scoreProgress) *
-                                      (scoreProgress > 0 ? 1 : 0),
-                              child: Text(
-                                l10n.roundPoints(shownScore),
-                                style: fredoka(
-                                  size: 34,
-                                  weight: FontWeight.w700,
-                                  color: AppColors.purple,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              l10n.totalScore.toUpperCase(),
-                              style: gameFont(
-                                size: 12,
-                                color: AppColors.inkSoft,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                            Text(
-                              l10n.pointsShort(shownTotal),
-                              style: fredoka(size: 22, weight: FontWeight.w700),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  CandyButton(
-                    label:
-                        widget.continueLabel ??
-                        (widget.isLastRound ? l10n.seeResults : l10n.nextRound),
-                    icon: widget.isLastRound
-                        ? Icons.emoji_events_rounded
-                        : Icons.arrow_forward_rounded,
-                    onPressed: widget.onContinue,
-                  ),
-                ],
+              child: CandyButton(
+                label:
+                    widget.continueLabel ??
+                    (widget.isLastRound ? l10n.seeResults : l10n.nextRound),
+                icon: widget.isLastRound
+                    ? Icons.emoji_events_rounded
+                    : Icons.arrow_forward_rounded,
+                badge: l10n.roundPoints(shownScore),
+                onPressed: widget.onContinue,
               ),
             ),
             builder: (context, padding) => ListView.separated(
@@ -278,6 +291,15 @@ class _RoundResultViewState extends State<RoundResultView>
                       answer: result.answers[i],
                       popScale: t,
                       correction: _correction(l10n, result.answers[i]),
+                      infoLines: _infoLines[result.answers[i].category],
+                      onBuyInfo:
+                          widget.onBuyInfo != null &&
+                              result.answers[i].infoAvailable &&
+                              !_infoLines.containsKey(
+                                result.answers[i].category,
+                              )
+                          ? () => _unlockInfo(result.answers[i])
+                          : null,
                     ),
                   ),
                 );
@@ -296,6 +318,8 @@ class AnswerCard extends StatelessWidget {
     required this.answer,
     this.popScale = 1,
     this.correction,
+    this.infoLines,
+    this.onBuyInfo,
   });
 
   final AnswerResult answer;
@@ -305,6 +329,12 @@ class AnswerCard extends StatelessWidget {
   /// (« Réponse possible : Madrid », « Flore a trouvé : Madrid »).
   final String? correction;
 
+  /// Infos déjà débloquées (après achat).
+  final List<String>? infoLines;
+
+  /// Bouton pour acheter les infos (null si indisponible / déjà acheté).
+  final VoidCallback? onBuyInfo;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -312,25 +342,30 @@ class AnswerCard extends StatelessWidget {
     final color = answer.status.color;
     final shown =
         answer.matchedValue ?? (answer.value.isEmpty ? '—' : answer.value);
+    final flag = answer.category == Category.country
+        ? flagSpecFor(shown == '—' ? answer.value : shown)
+        : null;
 
     return GameCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: GameIcon(
-              answer.category.icon,
-              size: 26,
-              color: answer.category.color,
-            ),
-          ),
+          flag != null
+              ? CountryFlag(spec: flag, width: 46)
+              : Container(
+                  width: 48,
+                  height: 48,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: GameIcon(
+                    answer.category.icon,
+                    size: 26,
+                    color: answer.category.color,
+                  ),
+                ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -427,6 +462,49 @@ class AnswerCard extends StatelessWidget {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                if (infoLines != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Column(
+                      key: Key('answer_info_${answer.category.name}'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final line in infoLines!)
+                          Text(
+                            line,
+                            style: fredoka(
+                              size: 13,
+                              weight: FontWeight.w600,
+                              color: AppColors.inkSoft,
+                            ),
+                          ),
+                      ],
+                    ),
+                  )
+                else if (onBuyInfo != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: SizedBox(
+                        width: answer.infoPrice > 0 ? 176 : 120,
+                        child: CandyButton(
+                          key: Key('buy_info_${answer.category.name}'),
+                          label: answer.infoPrice > 0
+                              ? AppLocalizations.of(
+                                  context,
+                                ).buyInfoButton(answer.infoPrice)
+                              : AppLocalizations.of(context).buyInfoFree,
+                          gameIcon: GameIconKind.eyes,
+                          color: AppColors.cyan,
+                          textColor: AppColors.ink,
+                          fontSize: 14,
+                          height: 40,
+                          onPressed: onBuyInfo,
+                        ),
                       ),
                     ),
                   ),
