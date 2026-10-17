@@ -682,5 +682,6 @@
         "type": "int"
       }
     }
-  }
+  },
+  "preparingGame": "Préparation de la partie…"
 }

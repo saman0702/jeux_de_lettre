@@ -8,10 +8,12 @@ import 'package:letter_battle/features/career/career_screen.dart';
 import 'package:letter_battle/features/game/data/challenge.dart';
 import 'package:letter_battle/features/game/data/models.dart';
 import 'package:letter_battle/features/game/data/solo_game_api.dart';
+import 'package:letter_battle/features/game/offline/offline_dictionary.dart';
 import 'package:letter_battle/features/game/solo_game_controller.dart';
 import 'package:letter_battle/features/game/solo_game_screen.dart';
 import 'package:letter_battle/main.dart';
 
+import 'online_test.dart' show Harness;
 import 'solo_game_test.dart' show FakeServer;
 
 GameFeedback feedbackWith(AppSettings settings) => GameFeedback(
@@ -63,6 +65,9 @@ Future<SoloGameController> pumpChallenge(
 }
 
 void main() {
+  // Chargé une fois, hors du temps simulé des tests (décompression réelle).
+  setUpAll(OfflineDictionary.load);
+
   test('career has 30 levels that get harder', () {
     expect(careerLevels, hasLength(30));
     for (final level in careerLevels) {
@@ -170,5 +175,35 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('LEVEL 2'), findsOneWidget);
     expect(find.byKey(const Key('play_level')), findsOneWidget);
+  });
+
+  testWidgets('without a server, a career level starts offline at once', (
+    tester,
+  ) async {
+    final h = Harness();
+    final server = FakeServer();
+    await h.start(tester, CareerScreen(apiClient: server.api));
+    h.refuseConnections = true;
+    h.socket.close();
+    await tester.pumpAndSettle();
+    expect(h.client.unreachable, isTrue);
+
+    await tester.tap(find.byKey(const Key('career_level_1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('play_level')));
+    await tester.pump();
+    expect(find.byKey(const Key('career_launching')), findsOneWidget);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(SoloGameScreen), findsOneWidget);
+    expect(server.createdWith, isNull, reason: 'no wait on the server');
+
+    // Le serveur revient : plus de reconnexion en attente à la fin du test.
+    h.refuseConnections = false;
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 3));
   });
 }

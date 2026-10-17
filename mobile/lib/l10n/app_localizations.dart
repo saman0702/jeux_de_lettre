@@ -1543,6 +1543,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{count} catégories ou plus : 45 secondes minimum par manche.'**
   String manyCategoriesHint(int count);
+
+  /// No description provided for @preparingGame.
+  ///
+  /// In fr, this message translates to:
+  /// **'Préparation de la partie…'**
+  String get preparingGame;
 }
 
 class _AppLocalizationsDelegate

@@ -72,6 +72,10 @@ class RealtimeClient extends ChangeNotifier {
   RealtimeStatus get status => _status;
   bool get isOnline => _status == RealtimeStatus.online;
 
+  /// Le serveur n'a pas répondu à la dernière tentative de connexion (et pas
+  /// seulement « pas encore connecté »).
+  bool get unreachable => !isOnline && _attempt > 0;
+
   Uri get _uri {
     final base = Uri.parse(baseUrl);
     return base.replace(

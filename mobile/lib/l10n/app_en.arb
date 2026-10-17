@@ -240,5 +240,6 @@
   "playerIsOut": "{name} is out!",
   "categoryFemaleName": "Girl's name",
   "categoryMaleName": "Boy's name",
-  "manyCategoriesHint": "{count} categories or more: at least 45 seconds per round."
+  "manyCategoriesHint": "{count} categories or more: at least 45 seconds per round.",
+  "preparingGame": "Getting the game ready…"
 }

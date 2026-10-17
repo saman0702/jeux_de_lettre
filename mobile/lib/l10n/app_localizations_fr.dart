@@ -883,4 +883,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String manyCategoriesHint(int count) {
     return '$count catégories ou plus : 45 secondes minimum par manche.';
   }
+
+  @override
+  String get preparingGame => 'Préparation de la partie…';
 }

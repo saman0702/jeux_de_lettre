@@ -57,12 +57,14 @@ class ApiClient {
   Future<Map<String, dynamic>> postJson(
     String path, [
     Map<String, dynamic>? body,
+    Duration timeout = _timeout,
   ]) => _send(
     () => _client.post(
       Uri.parse('$baseUrl$path'),
       headers: {'content-type': 'application/json'},
       body: jsonEncode(body ?? {}),
     ),
+    timeout: timeout,
   );
 
   Future<Map<String, dynamic>> putJson(

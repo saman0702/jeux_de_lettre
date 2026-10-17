@@ -878,4 +878,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String manyCategoriesHint(int count) {
     return '$count categories or more: at least 45 seconds per round.';
   }
+
+  @override
+  String get preparingGame => 'Getting the game ready…';
 }

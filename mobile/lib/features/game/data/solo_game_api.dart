@@ -20,7 +20,13 @@ class SoloGameApi implements SoloBackend {
   @override
   Future<SoloGame> createGame(SoloGameSettings settings) async =>
       SoloGame.fromJson(
-        await _api.postJson('/api/v1/solo/games', settings.toJson()),
+        // Délai court : sans réponse, la partie se joue hors ligne sans faire
+        // attendre le joueur.
+        await _api.postJson(
+          '/api/v1/solo/games',
+          settings.toJson(),
+          const Duration(seconds: 4),
+        ),
       );
 
   @override
