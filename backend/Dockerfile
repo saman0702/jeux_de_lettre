@@ -42,5 +42,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
     CMD curl -fsS http://127.0.0.1:8000/health || exit 1
 
-# Vérifie Postgres, migrations, puis uvicorn (logs clairs si DATABASE_URL faux).
+# Lance automatiquement : check DB → alembic → uvicorn :8000
 CMD ["./entrypoint.sh"]
