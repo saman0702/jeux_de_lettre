@@ -5,6 +5,8 @@ import 'package:flutter/widgets.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/realtime_client.dart';
 import '../game/data/models.dart';
+import '../wallet/wallet.dart';
+import '../shop/cosmetics.dart';
 import 'data/room_models.dart';
 
 enum NoticeKind { joined, left, disconnected, reconnected, botsJoined, error }
@@ -25,9 +27,9 @@ class RoomNotice {
   final String nickname;
 }
 
-/// Online state shared by the whole app: player count, open rooms and the
-/// room the player is in. The server pushes the full room state on every
-/// change, so this mostly keeps the latest copy.
+/// État en ligne partagé par toute l'appli : nombre de joueurs, salons ouverts
+/// et salle où se trouve le joueur. Le serveur envoie l'état complet de la
+/// salle à chaque changement : on garde surtout la dernière copie.
 class OnlineController extends ChangeNotifier {
   OnlineController(this.client) {
     _subscription = client.events.listen(_onEvent);
@@ -38,14 +40,25 @@ class OnlineController extends ChangeNotifier {
   late final StreamSubscription<Map<String, dynamic>> _subscription;
   final _notices = StreamController<RoomNotice>.broadcast();
   final _errors = StreamController<String>.broadcast();
+  final _coinGains = StreamController<int>.broadcast();
+  final _levelUps = StreamController<int>.broadcast();
 
   final Map<Category, Completer<HintOptions>> _hintRequests = {};
   final Map<Category, Completer<HintPick>> _hintPicks = {};
+  Completer<BuyHintResult>? _buyHint;
+  Completer<CategoryInfo>? _categoryInfo;
 
   int _onlineCount = 0;
   List<RoomSummary> _rooms = const [];
   RoomState? _room;
   bool _searching = false;
+  WalletSnapshot? _wallet;
+  int _avatarPreset = 0;
+  String? _avatarUrl;
+  PlayerLook _look = const PlayerLook();
+
+  /// Tuiles et confettis achetés : l'appli les garde pour les parties solo.
+  void Function(PlayerLook look)? onLook;
 
   String get clientId => client.clientId;
   bool get isOnline => client.isOnline;
@@ -54,7 +67,54 @@ class OnlineController extends ChangeNotifier {
   RoomState? get room => _room;
   RoomPlayer? get me => _room?.player(clientId);
 
-  /// Waiting for the server to put us in a room (quick match, create, join).
+  /// Solde de pièces connu (null tant que le serveur ne l'a pas envoyé).
+  WalletSnapshot? get wallet => _wallet;
+
+  /// Pièces gagnées, pour l'animation « +1 pièce ».
+  Stream<int> get coinGains => _coinGains.stream;
+
+  /// Mon avatar : personnage dessiné, ou photo dessinée si [avatarUrl].
+  int get avatarPreset => _avatarPreset;
+  String? get avatarUrl => _avatarUrl;
+
+  /// Apparences équipées (coiffure, chapeau, cadre…).
+  PlayerLook get look => _look;
+
+  void setAvatar(int preset, String? url) {
+    _avatarPreset = preset;
+    _avatarUrl = url;
+    notifyListeners();
+  }
+
+  void applyLook(PlayerLook look) {
+    _look = look;
+    onLook?.call(look);
+    notifyListeners();
+  }
+
+  /// Signale la photo d'un autre joueur de la salle.
+  void reportPlayer(String clientId) =>
+      client.send({'type': 'report_player', 'client_id': clientId});
+
+  /// Nouveaux niveaux atteints, pour la célébration « NIVEAU N ! ».
+  Stream<int> get levelUps => _levelUps.stream;
+
+  /// Niveau du joueur (1 tant que le serveur ne l'a pas envoyé).
+  int get level => _wallet?.level ?? 1;
+
+  /// Nouveau solde reçu par la socket ou par l'API solo.
+  void applyWallet(WalletSnapshot wallet) {
+    final previous = _wallet;
+    _wallet = wallet;
+    if (wallet.coinsGained > 0) _coinGains.add(wallet.coinsGained);
+    if (previous != null && wallet.level > previous.level) {
+      _levelUps.add(wallet.level);
+    }
+    notifyListeners();
+  }
+
+  /// En attente que le serveur nous place dans une salle (partie rapide,
+  /// création, rejoindre).
   bool get searching => _searching;
 
   Stream<RoomNotice> get notices => _notices.stream;
@@ -63,8 +123,8 @@ class OnlineController extends ChangeNotifier {
   void quickMatch(String language) =>
       _request({'type': 'quick_match', 'language': language});
 
-  /// With [bots] > 0 the room is filled with computer opponents and the
-  /// game starts at once.
+  /// Avec [bots] > 0, la salle est complétée par des adversaires ordinateur et
+  /// la partie démarre aussitôt.
   void createRoom(
     RoomSettings settings, {
     int bots = 0,
@@ -97,7 +157,7 @@ class OnlineController extends ChangeNotifier {
   void submit(int round, Map<Category, String> answers) => client.send({
     'type': 'submit',
     'round': round,
-    'answers': {for (final e in answers.entries) e.key.name: e.value},
+    'answers': {for (final e in answers.entries) e.key.wire: e.value},
   });
 
   void watchRooms(String language) =>
@@ -105,10 +165,11 @@ class OnlineController extends ChangeNotifier {
 
   void unwatchRooms() => client.send({'type': 'unsubscribe_rooms'});
 
-  /// Asks the server for the four options of a category (uses a joker).
+  /// Demande au serveur les trois propositions d'une catégorie (consomme un
+  /// joker).
   Future<HintOptions> requestHint(int round, Category category) {
     final completer = _hintRequests[category] = Completer<HintOptions>();
-    client.send({'type': 'hint', 'round': round, 'category': category.name});
+    client.send({'type': 'hint', 'round': round, 'category': category.wire});
     return _withTimeout(completer.future);
   }
 
@@ -117,9 +178,21 @@ class OnlineController extends ChangeNotifier {
     client.send({
       'type': 'hint_pick',
       'round': round,
-      'category': category.name,
+      'category': category.wire,
       'choice': choice,
     });
+    return _withTimeout(completer.future);
+  }
+
+  Future<BuyHintResult> buyHint() {
+    final completer = _buyHint = Completer<BuyHintResult>();
+    client.send({'type': 'buy_hint'});
+    return _withTimeout(completer.future);
+  }
+
+  Future<CategoryInfo> buyCategoryInfo(Category category) {
+    final completer = _categoryInfo = Completer<CategoryInfo>();
+    client.send({'type': 'category_info', 'category': category.wire});
     return _withTimeout(completer.future);
   }
 
@@ -134,6 +207,14 @@ class OnlineController extends ChangeNotifier {
     }
     _hintRequests.clear();
     _hintPicks.clear();
+    if (_buyHint case final c? when !c.isCompleted) {
+      c.completeError(ApiException(code));
+    }
+    _buyHint = null;
+    if (_categoryInfo case final c? when !c.isCompleted) {
+      c.completeError(ApiException(code));
+    }
+    _categoryInfo = null;
   }
 
   void _request(Map<String, dynamic> message) {
@@ -146,6 +227,22 @@ class OnlineController extends ChangeNotifier {
     switch (event['type']) {
       case 'welcome':
         _onlineCount = event['online_count'] as int;
+        if (event['wallet'] case final Map<String, dynamic> wallet) {
+          _wallet = WalletSnapshot.fromJson(wallet);
+        }
+        if (event['avatar'] case final Map<String, dynamic> avatar) {
+          _avatarPreset = avatar['preset'] as int? ?? 0;
+          _avatarUrl = avatar['url'] as String?;
+        }
+        if (event['look'] case final Map<String, dynamic> look) {
+          applyLook(PlayerLook.fromJson(look));
+        }
+      case 'reported':
+        // Accusé de réception : le message est affiché dès l'envoi.
+        return;
+      case 'wallet':
+        applyWallet(WalletSnapshot.fromJson(event));
+        return;
       case 'online_count':
         _onlineCount = event['count'] as int;
       case 'room_list':
@@ -173,10 +270,28 @@ class OnlineController extends ChangeNotifier {
         final pick = HintPick.fromJson(event);
         _hintPicks.remove(pick.category)?.complete(pick);
         return;
+      case 'hint_bought':
+        if (event['wallet'] case final Map<String, dynamic> wallet) {
+          applyWallet(WalletSnapshot.fromJson(wallet));
+        }
+        _buyHint?.complete(BuyHintResult.fromJson(event));
+        _buyHint = null;
+        return;
+      case 'category_info':
+        if (event['wallet'] case final Map<String, dynamic> wallet) {
+          applyWallet(WalletSnapshot.fromJson(wallet));
+        }
+        _categoryInfo?.complete(CategoryInfo.fromJson(event));
+        _categoryInfo = null;
+        return;
       case 'error':
         final code = event['code'] as String? ?? 'error';
-        if (_hintRequests.isNotEmpty || _hintPicks.isNotEmpty) {
-          // Hint errors are shown by the hint button, not as room errors.
+        if (_hintRequests.isNotEmpty ||
+            _hintPicks.isNotEmpty ||
+            _buyHint != null ||
+            _categoryInfo != null) {
+          // Les erreurs de joker / infos sont affichées par le bouton, pas
+          // comme des erreurs de salle.
           _failPendingHints(code);
           return;
         }
@@ -194,6 +309,8 @@ class OnlineController extends ChangeNotifier {
     client.removeListener(notifyListeners);
     _notices.close();
     _errors.close();
+    _coinGains.close();
+    _levelUps.close();
     super.dispose();
   }
 }

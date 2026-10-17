@@ -1,7 +1,8 @@
-/// Base URL of the Letter Battle API.
+/// URL de base de l'API Letter Race.
 ///
-/// Override at build time: `flutter run --dart-define=API_BASE_URL=http://192.168.1.88:8010`
-/// Default targets the host machine from the Android emulator.
+/// À changer à la compilation : `flutter run
+/// --dart-define=API_BASE_URL=http://192.168.1.88:8010`
+/// Par défaut, vise la machine hôte depuis l'émulateur Android.
 const String apiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
   defaultValue: 'http://10.0.2.2:8010',

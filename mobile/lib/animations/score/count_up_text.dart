@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Animates an integer from [from] to [value].
+/// Anime un entier de [from] à [value].
 class CountUpText extends StatelessWidget {
   const CountUpText({
     super.key,

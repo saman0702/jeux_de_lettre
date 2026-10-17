@@ -1,7 +1,7 @@
-"""Persistence and scoring of multiplayer games (duel, rooms, quick match).
+"""Persistance et score des parties multijoueur (duel, salons, partie rapide).
 
-The live orchestration lives in room_service; this module only talks to the
-database, reusing the models of solo games.
+L'orchestration en direct se trouve dans room_service ; ce module ne fait que dialoguer avec la base
+de données, en réutilisant les modèles des parties solo.
 """
 
 from dataclasses import dataclass, field
@@ -14,7 +14,7 @@ from app.core.game_rules import Category, Difficulty
 from app.models import Game, GameRound, Player, PlayerAnswer, Submission
 from app.models.base import utcnow
 from app.schemas.game import GameSettings
-from app.services import letter_service
+from app.services import letter_service, suggestion_service
 from app.services.scoring_service import score_round
 from app.services.validation_service import Status, ValidationResult, validate_answer
 
@@ -32,7 +32,7 @@ class PlayerRoundResult:
     player_id: str
     answers: list[dict]
     round_score: int
-    elapsed_ms: int | None  # None when the player did not submit
+    elapsed_ms: int | None  # None quand le joueur n'a rien envoyé
 
 
 @dataclass
@@ -40,12 +40,16 @@ class RoundOutcome:
     number: int
     letter: str
     results: list[PlayerRoundResult] = field(default_factory=list)
+    # Une réponse valide par catégorie ratée par au moins un joueur.
+    examples: dict[str, str] = field(default_factory=dict)
 
 
 async def create_game(
     session: AsyncSession, mode: str, settings: GameSettings, nicknames: dict[str, str]
-) -> tuple[str, dict[str, str]]:
-    """Create the game and its players. Returns the game id and client id -> player id."""
+    ) -> tuple[str, dict[str, str]]:
+    """Crée la partie et ses joueurs. Renvoie l'id de la partie et la correspondance id client -> id
+    joueur.
+    """
     players = {client_id: Player(nickname=name) for client_id, name in nicknames.items()}
     game = Game(
         mode=mode,
@@ -99,12 +103,11 @@ async def close_round(
     participants: list[str],
     submissions: dict[str, tuple[datetime, dict[Category, str]]],
     hints: dict[str, dict[str, bool]] | None = None,
-) -> RoundOutcome:
-    """Validate and score everyone's answers for the current round.
+    ) -> RoundOutcome:
+    """Valide et note les réponses de tous les joueurs pour la manche en cours.
 
-    `participants` are the player ids that played the round; those missing
-    from `submissions` score zero. `hints` maps player id -> category ->
-    whether the picked hint option was the right one.
+    `participants` sont les ids des joueurs qui ont joué la manche ; ceux absents de `submissions`
+    marquent zéro. `hints` associe id joueur -> catégorie -> si le joker choisi était le bon.
     """
     hints = hints or {}
     game = await _game(session, game_id)
@@ -128,7 +131,9 @@ async def close_round(
             validated[player_id][category] = result
 
     points = score_round(validated, {pid: set(h) for pid, h in hints.items()})
-    outcome = RoundOutcome(game_round.number, game_round.letter)
+    missed = sorted({c for by_cat in validated.values() for c, r in by_cat.items() if not r.is_valid})
+    examples = await suggestion_service.example_answers(session, game.language, missed, game_round.letter)
+    outcome = RoundOutcome(game_round.number, game_round.letter, examples=examples)
     for player_id in participants:
         submitted_at, answers = submissions.get(player_id, (game_round.ends_at, {}))
         answer_rows = [
@@ -139,6 +144,7 @@ async def close_round(
                 status=result.status,
                 points=points[player_id][category],
                 hinted=category in hints.get(player_id, {}),
+                suggestion=None if result.is_valid else examples.get(category),
             )
             for category, result in validated[player_id].items()
         ]
@@ -168,6 +174,7 @@ async def close_round(
                         "points": a.points,
                         "matched_value": a.matched_value,
                         "hinted": a.hinted,
+                        "suggestion": a.suggestion,
                     }
                     for a in answer_rows
                 ],

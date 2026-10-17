@@ -8,11 +8,11 @@ import 'package:flutter/services.dart' show AssetBundle, rootBundle;
 import '../data/models.dart';
 import 'normalization.dart';
 
-/// One known answer: its lookup key and how to display it.
+/// Une réponse connue : sa clé de recherche et son affichage.
 typedef Entry = ({String key, String value});
 
-/// The answer knowledge base bundled in the app for offline solo games
-/// (exported from the server by backend/app/data/export_offline.py).
+/// La base de réponses embarquée dans l'appli pour les parties solo hors ligne
+/// (exportée depuis le serveur par backend/app/data/export_offline.py).
 class OfflineDictionary {
   OfflineDictionary._(this.normalizer, this._byKey, this._byLetter);
 
@@ -21,13 +21,14 @@ class OfflineDictionary {
 
   final Normalizer normalizer;
 
-  /// "category|language" -> normalized -> display value.
+  /// "catégorie|langue" -> forme normalisée -> valeur affichée.
   final Map<String, Map<String, String>> _byKey;
 
-  /// "category|language|letter" -> entries, best-known first.
+  /// "catégorie|langue|lettre" -> entrées, les plus connues d'abord.
   final Map<String, List<Entry>> _byLetter;
 
-  /// Loads once in the background; later calls share the same future.
+  /// Se charge une seule fois en arrière-plan ; les appels suivants partagent
+  /// le même future.
   static Future<OfflineDictionary> load([AssetBundle? bundle]) =>
       _loading ??= _load(bundle ?? rootBundle);
 
@@ -65,12 +66,12 @@ class OfflineDictionary {
     return (byKey, byLetter);
   }
 
-  /// Display value of a known answer, or null.
+  /// Valeur affichée d'une réponse connue, ou null.
   String? find(Category category, String language, String key) =>
-      _byKey['${category.name}|$language']?[key] ??
-      _byKey['${category.name}|$_anyLanguage']?[key];
+      _byKey['${category.wire}|$language']?[key] ??
+      _byKey['${category.wire}|$_anyLanguage']?[key];
 
-  /// Known answers for a letter, best-known first.
+  /// Réponses connues pour une lettre, les plus connues d'abord.
   List<Entry> answers(
     Category category,
     String language,
@@ -78,14 +79,14 @@ class OfflineDictionary {
     int? limit,
   }) {
     final own =
-        _byLetter['${category.name}|$language|$letter'] ?? const <Entry>[];
+        _byLetter['${category.wire}|$language|$letter'] ?? const <Entry>[];
     final any =
-        _byLetter['${category.name}|$_anyLanguage|$letter'] ?? const <Entry>[];
+        _byLetter['${category.wire}|$_anyLanguage|$letter'] ?? const <Entry>[];
     final all = own.isEmpty ? any : (any.isEmpty ? own : [...own, ...any]);
     return limit == null || all.length <= limit ? all : all.sublist(0, limit);
   }
 
   int count(Category category, String language, String letter) =>
-      (_byLetter['${category.name}|$language|$letter']?.length ?? 0) +
-      (_byLetter['${category.name}|$_anyLanguage|$letter']?.length ?? 0);
+      (_byLetter['${category.wire}|$language|$letter']?.length ?? 0) +
+      (_byLetter['${category.wire}|$_anyLanguage|$letter']?.length ?? 0);
 }

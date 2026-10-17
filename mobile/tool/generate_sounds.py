@@ -1,9 +1,9 @@
-"""Synthesize the game's sound effects and menu music.
+"""Synthétise les effets sonores du jeu (la musique de menu vient de Kevin MacLeod, voir CREDITS.md).
 
     python3 tool/generate_sounds.py
 
-Everything is generated from scratch (no third-party samples), so the files
-are free to use. Output: assets/sounds/*.wav (16-bit mono, 44.1 kHz).
+Tout est généré de zéro (aucun échantillon tiers), donc les fichiers sont libres d'utilisation.
+Sortie : assets/sounds/*.wav (mono 16 bits, 44,1 kHz).
 """
 
 import math
@@ -33,7 +33,7 @@ def osc(kind: str, phase: float) -> float:
         return 1.0 if p < 0.5 else -1.0
     if kind == "triangle":
         return 4 * abs(p - 0.5) - 1
-    if kind == "bell":  # sine with soft harmonics
+    if kind == "bell":  # sinusoïde avec des harmoniques douces
         return (
             math.sin(2 * math.pi * p)
             + 0.35 * math.sin(4 * math.pi * p)
@@ -51,7 +51,9 @@ def tone(
     decay: float = 6.0,
     volume: float = 1.0,
 ) -> list[float]:
-    """A note with a short attack and exponential decay; optional pitch glide f0 -> f1."""
+    """Une note à l'attaque brève et à la décroissance exponentielle ; glissement de hauteur f0 -> f1
+    facultatif.
+    """
     n = int(RATE * duration)
     out, phase = [], 0.0
     for i in range(n):
@@ -59,7 +61,7 @@ def tone(
         f = f0 if f1 is None else f0 + (f1 - f0) * (i / n)
         phase += f / RATE
         env = min(1.0, t / attack) * math.exp(-decay * t)
-        release = min(1.0, (n - i) / (RATE * 0.01))  # avoid clicks at the end
+        release = min(1.0, (n - i) / (RATE * 0.01))  # évite les clics à la fin
         out.append(osc(kind, phase) * env * release * volume)
     return out
 
@@ -75,7 +77,7 @@ def silence(duration: float) -> list[float]:
 
 
 def mix(*tracks: tuple[float, list[float]]) -> list[float]:
-    """Mix (start_seconds, samples) tracks together."""
+    """Mixe ensemble des pistes (début_en_secondes, échantillons)."""
     length = max(int(start * RATE) + len(samples) for start, samples in tracks)
     out = [0.0] * length
     for start, samples in tracks:
@@ -104,36 +106,54 @@ def write(name: str, samples: list[float], peak: float = 0.8) -> None:
 def sound_effects() -> None:
     write("tap", tone(700, 0.07, "sine", f1=1200, decay=40), peak=0.5)
     write("countdown", tone(freq("A5"), 0.18, "bell", decay=14), peak=0.6)
-    write(
-        "go",
-        mix(
-            *[(i * 0.06, tone(freq(n), 0.25, "square", decay=12, volume=0.4))
-              for i, n in enumerate(["C5", "E5", "G5"])],
-            (0.18, tone(freq("C6"), 0.5, "bell", decay=5)),
-            (0.18, tone(freq("G5"), 0.5, "bell", decay=5, volume=0.6)),
-        ),
-    )
     write("tick", mix((0, noise(0.03, decay=150, volume=0.6)), (0, tone(1800, 0.03, decay=120))), peak=0.45)
     write("reveal", seq(*[tone(freq(n), 0.045, "triangle", decay=30)
                           for n in ["C5", "E5", "G5", "C6", "E6", "G6"]]), peak=0.5)
-    write("valid", mix((0, tone(freq("E6"), 0.2, "bell", decay=12)),
-                       (0.08, tone(freq("B6"), 0.3, "bell", decay=10))), peak=0.6)
-    write("invalid", tone(260, 0.28, "square", f1=150, decay=8, volume=0.5), peak=0.4)
-    write("points", seq(tone(freq("B5"), 0.07, "square", decay=10, volume=0.5),
-                        tone(freq("E6"), 0.3, "square", decay=9, volume=0.5)), peak=0.45)
+
+
+def variant_effects() -> None:
+    """Les effets fréquents existent en plusieurs versions, jouées à tour de rôle, pour que le jeu ne
+    répète pas toujours exactement le même son.
+    """
+    # GO ! — trois courtes fanfares.
+    for i, (arp, top) in enumerate([
+        (["C5", "E5", "G5"], ["C6", "G5"]),
+        (["D5", "F#5", "A5"], ["D6", "A5"]),
+        (["G4", "B4", "D5", "G5"], ["G5", "D6"]),
+    ], start=1):
+        write(f"go_{i}", mix(
+            *[(j * 0.06, tone(freq(n), 0.25, "square", decay=12, volume=0.4)) for j, n in enumerate(arp)],
+            *[(0.06 * len(arp), tone(freq(n), 0.5, "bell", decay=5, volume=v)) for n, v in zip(top, (1, 0.6))],
+        ))
+    # Bonne réponse — carillons montants sur différents intervalles.
+    for i, (a, b) in enumerate([("E6", "B6"), ("C6", "G6"), ("G6", "D7")], start=1):
+        write(f"valid_{i}", mix((0, tone(freq(a), 0.2, "bell", decay=12)),
+                                (0.08, tone(freq(b), 0.3, "bell", decay=10))), peak=0.6)
+    # Mauvaise réponse — un « bwop » doux et un double « buzz ».
+    write("invalid_1", tone(260, 0.28, "square", f1=150, decay=8, volume=0.5), peak=0.4)
+    write("invalid_2", seq(tone(220, 0.1, "triangle", decay=20), tone(170, 0.18, "triangle", f1=130, decay=12)), peak=0.4)
+    # Points — bruits de pièces.
+    write("points_1", seq(tone(freq("B5"), 0.07, "square", decay=10, volume=0.5),
+                          tone(freq("E6"), 0.3, "square", decay=9, volume=0.5)), peak=0.45)
+    write("points_2", seq(*[tone(freq(n), 0.05, "square", decay=14, volume=0.5) for n in ["C6", "E6", "G6"]],
+                          tone(freq("C7"), 0.25, "bell", decay=9)), peak=0.45)
+    # Victoire — deux fanfares.
     fanfare = [("C5", 0.0), ("E5", 0.12), ("G5", 0.24), ("C6", 0.36), ("G5", 0.6), ("C6", 0.72)]
-    write(
-        "victory",
-        mix(
-            *[(t, tone(freq(n), 0.3, "square", decay=6, volume=0.35)) for n, t in fanfare],
-            *[(0.9, tone(freq(n), 1.2, "bell", decay=2.5, volume=0.5)) for n in ["C5", "E5", "G5", "C6"]],
-        ),
-    )
+    write("victory_1", mix(
+        *[(t, tone(freq(n), 0.3, "square", decay=6, volume=0.35)) for n, t in fanfare],
+        *[(0.9, tone(freq(n), 1.2, "bell", decay=2.5, volume=0.5)) for n in ["C5", "E5", "G5", "C6"]],
+    ))
+    fanfare2 = [("G4", 0.0), ("G4", 0.1), ("G4", 0.2), ("C5", 0.32), ("E5", 0.5), ("D5", 0.62), ("G5", 0.74)]
+    write("victory_2", mix(
+        *[(t, tone(freq(n), 0.25, "triangle", decay=6, volume=0.5)) for n, t in fanfare2],
+        *[(0.95, tone(freq(n), 1.2, "bell", decay=2.4, volume=0.5)) for n in ["G4", "B4", "D5", "G5"]],
+    ))
 
 
 def typing_sounds() -> None:
-    """Soft wooden "tock" when a letter tile lands, in three pitches so fast
-    typing does not sound mechanical."""
+    """« Toc » boisé et doux quand une tuile-lettre se pose, sur trois hauteurs pour qu'une frappe
+    rapide ne sonne pas mécanique.
+    """
     for i, pitch in enumerate([880, 990, 1110], start=1):
         write(
             f"key_{i}",
@@ -154,46 +174,7 @@ def typing_sounds() -> None:
                              for n in ["E6", "G6", "B6", "E7"]]), peak=0.4)
 
 
-def menu_music() -> None:
-    """A short, cheerful loop: 8 bars at 112 BPM, loops seamlessly."""
-    beat = 60 / 112
-    bar = 4 * beat
-    chords = ["C", "A", "F", "G", "C", "A", "F", "G"]
-    roots = {"C": "C3", "A": "A2", "F": "F2", "G": "G2"}
-    arps = {
-        "C": ["C5", "E5", "G5", "E5"],
-        "A": ["A4", "C5", "E5", "C5"],
-        "F": ["F4", "A4", "C5", "A4"],
-        "G": ["G4", "B4", "D5", "B4"],
-    }
-    melody = [
-        ("E5", 0, 1), ("G5", 1, 1), ("A5", 2, 2),
-        ("G5", 4, 1), ("E5", 5, 1), ("C5", 6, 2),
-        ("F5", 8, 1), ("A5", 9, 1), ("C6", 10, 1), ("A5", 11, 1),
-        ("G5", 12, 3), ("D5", 15, 1),
-        ("E5", 16, 1), ("G5", 17, 1), ("C6", 18, 2),
-        ("B5", 20, 1), ("A5", 21, 1), ("E5", 22, 2),
-        ("F5", 24, 1), ("E5", 25, 1), ("D5", 26, 1), ("F5", 27, 1),
-        ("E5", 28, 2), ("D5", 30, 2),
-    ]
-    tracks = []
-    for i, chord in enumerate(chords):
-        start = i * bar
-        for b in range(4):
-            tracks.append((start + b * beat, tone(freq(roots[chord]), beat * 0.9, "triangle", decay=3, volume=0.55)))
-            for s, note in enumerate(arps[chord]):
-                t = start + b * beat + s * beat / 4
-                tracks.append((t, tone(freq(note), beat / 4, "square", decay=18, volume=0.08)))
-        tracks.append((start, noise(0.05, decay=80, volume=0.12)))
-        tracks.append((start + 2 * beat, noise(0.05, decay=80, volume=0.08)))
-    for note, at, length in melody:
-        tracks.append((at * beat, tone(freq(note), length * beat * 0.95, "bell", decay=2.2, volume=0.45)))
-
-    samples = mix(*tracks)[: int(8 * bar * RATE)]  # cut exactly at the loop point
-    write("menu_music", samples, peak=0.35)
-
-
 if __name__ == "__main__":
     sound_effects()
+    variant_effects()
     typing_sounds()
-    menu_music()

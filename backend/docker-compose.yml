@@ -1,0 +1,44 @@
+# Déploiement Dokploy (Application → Docker Compose)
+# Contexte = dossier backend/ (ce fichier + Dockerfile).
+#
+# Variables obligatoires dans Dokploy (Environment) :
+#   DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DB
+#   REDIS_URL=redis://redis:6379/0
+#
+# Le service redis est inclus ; pointer REDIS_URL vers le hostname "redis".
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL requis}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      MEDIA_DIR: ${MEDIA_DIR:-media}
+      GOOGLE_SERVICE_ACCOUNT_FILE: ${GOOGLE_SERVICE_ACCOUNT_FILE:-}
+      APPLE_ISSUER_ID: ${APPLE_ISSUER_ID:-}
+      APPLE_KEY_ID: ${APPLE_KEY_ID:-}
+      APPLE_PRIVATE_KEY_FILE: ${APPLE_PRIVATE_KEY_FILE:-}
+      APPLE_ENVIRONMENT: ${APPLE_ENVIRONMENT:-production}
+    ports:
+      - "8000:8000"
+    volumes:
+      - media_data:/code/media
+
+volumes:
+  redis_data:
+  media_data:

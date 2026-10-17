@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// White rounded card with a soft purple "depth" underneath.
+/// Carte blanche arrondie avec un léger relief violet en dessous.
 class GameCard extends StatelessWidget {
   const GameCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.all(11),
     this.color,
   });
 
@@ -21,9 +21,9 @@ class GameCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: color ?? AppColors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: const [
-          BoxShadow(color: Color(0x40250E6B), offset: Offset(0, 6)),
+          BoxShadow(color: Color(0x40250E6B), offset: Offset(0, 3)),
         ],
       ),
       child: child,

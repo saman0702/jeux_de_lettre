@@ -1,22 +1,26 @@
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../audio/game_audio.dart';
 import '../settings/app_settings.dart';
+import '../voice/announcer.dart';
+import 'vibrator.dart';
 
-enum Haptic { light, medium, heavy }
+export 'vibrator.dart' show Haptic;
 
-/// Sound, music and vibrations, filtered by the player's settings.
+/// Sons, musique et vibrations, filtrés selon les réglages du joueur.
 class GameFeedback {
   GameFeedback({
     required this.audio,
     required this.settings,
+    Vibrator? vibrator,
+    Announcer? announcer,
     this.ambientMotion = true,
-  }) {
+  }) : vibrator = vibrator ?? SilentVibrator(),
+       announcer = announcer ?? SilentAnnouncer() {
     settings.addListener(_syncMusic);
   }
 
-  /// No sound and no looping background animation; used by tests.
+  /// Aucun son ni animation de fond en boucle ; utilisé par les tests.
   factory GameFeedback.silent() => GameFeedback(
     audio: SilentGameAudio(),
     settings: AppSettings.inMemory(),
@@ -25,33 +29,36 @@ class GameFeedback {
 
   final GameAudio audio;
   final AppSettings settings;
+  final Vibrator vibrator;
+  final Announcer announcer;
 
-  /// Endless decorative animations (floating letters...). Disabled in tests so
-  /// `pumpAndSettle` can settle.
+  /// Animations décoratives sans fin (fond animé...). Désactivées dans les
+  /// tests pour que `pumpAndSettle` puisse se stabiliser.
   final bool ambientMotion;
 
-  bool _musicWanted = false;
+  MusicMood? _mood;
+  bool _musicQuiet = false;
   bool _appInForeground = true;
 
   void play(Sfx sfx) {
     if (settings.sound) audio.play(sfx);
   }
 
-  void haptic(Haptic kind) {
-    if (!settings.vibration) return;
-    switch (kind) {
-      case Haptic.light:
-        HapticFeedback.lightImpact();
-      case Haptic.medium:
-        HapticFeedback.mediumImpact();
-      case Haptic.heavy:
-        HapticFeedback.heavyImpact();
-    }
+  void announce(String text, String languageCode) {
+    if (settings.voice && settings.sound) announcer.say(text, languageCode);
   }
 
-  /// Menus want music; the game screen does not.
-  set musicWanted(bool value) {
-    _musicWanted = value;
+  void haptic(Haptic kind) {
+    if (settings.vibration) vibrator.vibrate(kind);
+  }
+
+  /// Ambiance de l'écran affiché (null : pas de musique).
+  MusicMood? get music => _mood;
+
+  /// Change l'ambiance ; [quiet] baisse le volume pendant les manches.
+  void setMusic(MusicMood? mood, {bool quiet = false}) {
+    _mood = mood;
+    _musicQuiet = quiet;
     _syncMusic();
   }
 
@@ -61,8 +68,9 @@ class GameFeedback {
   }
 
   void _syncMusic() {
-    if (_musicWanted && _appInForeground && settings.music) {
-      audio.startMusic();
+    final mood = _mood;
+    if (mood != null && _appInForeground && settings.music) {
+      audio.startMusic(mood, quiet: _musicQuiet);
     } else {
       audio.stopMusic();
     }

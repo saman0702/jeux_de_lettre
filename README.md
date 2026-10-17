@@ -1,4 +1,4 @@
-# Letter Battle
+# Letter Race
 
 Jeu mobile de rapidité par lettres, inspiré du Petit Bac, en solo ou multijoueur temps réel.
 

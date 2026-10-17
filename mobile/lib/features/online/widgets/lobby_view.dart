@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../animations/bounce_in.dart';
 import '../../../core/theme/app_colors.dart';
@@ -11,9 +12,14 @@ import '../../../l10n/app_localizations.dart';
 import '../../game/data/models.dart';
 import '../../game/widgets/labels.dart';
 import '../data/room_models.dart';
+import '../../wallet/bet_banner.dart';
+import '../../wallet/level_badge.dart';
 import 'player_avatar.dart';
+import '../../shop/look_styles.dart';
+import '../../../core/widgets/game_icon.dart';
 
-/// Waiting room: code to share, players, ready button (or quick match timer).
+/// Salle d'attente : code à partager, joueurs, bouton « prêt » (ou minuteur de
+/// partie rapide).
 class LobbyView extends StatelessWidget {
   const LobbyView({
     super.key,
@@ -22,15 +28,19 @@ class LobbyView extends StatelessWidget {
     required this.onReady,
     this.onAddBot,
     this.onRemoveBot,
+    this.onReport,
   });
 
   final RoomState room;
   final String myId;
   final ValueChanged<bool> onReady;
 
-  /// Host only: add or remove computer opponents.
+  /// Hôte uniquement : ajouter ou retirer des adversaires ordinateur.
   final ValueChanged<Difficulty>? onAddBot;
   final ValueChanged<String>? onRemoveBot;
+
+  /// Signaler la photo d'un autre joueur.
+  final ValueChanged<RoomPlayer>? onReport;
 
   Future<void> _pickBotLevel(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
@@ -46,9 +56,19 @@ class LobbyView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '🤖 ${l10n.botLevel}',
-                style: fredoka(size: 22, weight: FontWeight.w700),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const GameIconBadge(
+                    GameIconKind.bot,
+                    color: AppColors.purpleLight,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    l10n.botLevel,
+                    style: fredoka(size: 22, weight: FontWeight.w700),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               for (final (level, color) in [
@@ -110,9 +130,30 @@ class LobbyView extends StatelessWidget {
               chip(l10n.roundsCount(settings.rounds)),
               chip(l10n.secondsShort(settings.roundDuration)),
               chip(settings.difficulty.label(l10n)),
-              for (final c in settings.categories) chip(c.emoji),
+              if (settings.elimination) chip(l10n.formatElimination),
+              for (final c in settings.categories)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: GameIcon(c.icon, size: 20),
+                ),
             ],
           ),
+          if (settings.betting) ...[
+            const SizedBox(height: 10),
+            Center(
+              child: BetBanner(
+                text:
+                    '${l10n.stakeShort(settings.stake)} · ${l10n.potLabel(settings.stake * room.players.length)}',
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Expanded(
             child: Align(
@@ -136,6 +177,12 @@ class LobbyView extends StatelessWidget {
                           showReady: !room.quick,
                           onRemove: p.bot && onRemoveBot != null
                               ? () => onRemoveBot!(p.clientId)
+                              : null,
+                          onReport:
+                              p.avatarUrl != null &&
+                                  p.clientId != myId &&
+                                  onReport != null
+                              ? () => onReport!(p)
                               : null,
                         ),
                       ),
@@ -167,7 +214,8 @@ class LobbyView extends StatelessWidget {
                 room.players.length < settings.maxPlayers) ...[
               CandyButton(
                 key: const Key('add_bot_button'),
-                label: '🤖 ${l10n.addBot}',
+                label: l10n.addBot,
+                gameIcon: GameIconKind.bot,
                 color: AppColors.white,
                 height: 48,
                 fontSize: 17,
@@ -203,7 +251,7 @@ class _CodeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return GameCard(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       child: Column(
         children: [
           Text(
@@ -219,7 +267,11 @@ class _CodeCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 3),
                   child: LetterTile(letter: char, size: 42),
                 ),
-              const SizedBox(width: 8),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
               IconButton.filledTonal(
                 tooltip: l10n.copyCode,
                 onPressed: () {
@@ -228,6 +280,16 @@ class _CodeCard extends StatelessWidget {
                       .showSnackBar(SnackBar(content: Text(l10n.codeCopied)));
                 },
                 icon: const Icon(Icons.copy_rounded),
+              ),
+              IconButton.filledTonal(
+                key: const Key('share_code'),
+                tooltip: l10n.shareInvite,
+                onPressed: () {
+                  SharePlus.instance.share(
+                    ShareParams(text: l10n.inviteMessage(code)),
+                  );
+                },
+                icon: const Icon(Icons.share_rounded),
               ),
             ],
           ),
@@ -244,6 +306,7 @@ class _PlayerSeat extends StatelessWidget {
     required this.isMe,
     required this.showReady,
     this.onRemove,
+    this.onReport,
   });
 
   final RoomPlayer player;
@@ -251,8 +314,11 @@ class _PlayerSeat extends StatelessWidget {
   final bool isMe;
   final bool showReady;
 
-  /// Shown on bots for the host.
+  /// Affiché sur les bots, pour l'hôte.
   final VoidCallback? onRemove;
+
+  /// Affiché sur les joueurs qui ont une photo.
+  final VoidCallback? onReport;
 
   @override
   Widget build(BuildContext context) {
@@ -262,17 +328,12 @@ class _PlayerSeat extends StatelessWidget {
         Stack(
           clipBehavior: Clip.none,
           children: [
-            PlayerAvatar(
-              nickname: player.nickname,
-              seed: player.clientId,
-              connected: player.connected,
-              bot: player.bot,
-            ),
+            PlayerAvatar.of(player),
             if (isHost)
               const Positioned(
                 top: -12,
                 left: 14,
-                child: Text('👑', style: TextStyle(fontSize: 18)),
+                child: GameIcon(GameIconKind.crown, size: 22),
               ),
             if (showReady && player.ready)
               const Positioned(
@@ -292,7 +353,36 @@ class _PlayerSeat extends StatelessWidget {
               const Positioned(
                 bottom: -4,
                 right: -6,
-                child: Text('📡', style: TextStyle(fontSize: 18)),
+                child: GameIcon(
+                  GameIconKind.offline,
+                  size: 18,
+                  color: AppColors.red,
+                ),
+              ),
+            if (!player.bot)
+              Positioned(
+                top: -6,
+                right: -8,
+                child: LevelBadge(level: player.level, size: 19),
+              ),
+            if (onReport != null)
+              // Dans les limites de l'avatar pour rester touchable.
+              Positioned(
+                bottom: 0,
+                left: 0,
+                child: GestureDetector(
+                  key: Key('report_${player.clientId}'),
+                  onTap: onReport,
+                  child: const CircleAvatar(
+                    radius: 11,
+                    backgroundColor: AppColors.white,
+                    child: GameIcon(
+                      GameIconKind.flag,
+                      size: 15,
+                      color: AppColors.red,
+                    ),
+                  ),
+                ),
               ),
             if (onRemove != null)
               Positioned(
@@ -315,14 +405,11 @@ class _PlayerSeat extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        Text(
+        StyledNickname(
           isMe ? l10n.youBadge : player.nickname,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: fredoka(
-            size: 13,
-            weight: isMe ? FontWeight.w700 : FontWeight.w600,
-          ),
+          styleId: player.nameStyle,
+          size: 13,
+          weight: isMe ? FontWeight.w700 : FontWeight.w600,
         ),
       ],
     );
@@ -367,16 +454,22 @@ class _QuickStatus extends StatelessWidget {
         ? l10n.waitingForPlayers
         : l10n.quickStartsIn(startsIn);
     return GameCard(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Text(
-        '⚡ $text',
-        key: const Key('quick_status'),
-        textAlign: TextAlign.center,
-        style: fredoka(
-          size: 20,
-          weight: FontWeight.w700,
-          color: AppColors.purple,
-        ),
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const GameIcon(GameIconKind.bolt, size: 26, color: AppColors.orange),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            key: const Key('quick_status'),
+            style: fredoka(
+              size: 20,
+              weight: FontWeight.w700,
+              color: AppColors.purple,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,11 +1,11 @@
-"""Live multiplayer rooms: lobby, quick match, synchronized rounds.
+"""Salons multijoueur en direct : salle d'attente, partie rapide, manches synchronisées.
 
-Each client keeps one WebSocket open. Whenever a room changes, every member
-receives the full `room_state`, so a client (or a reconnecting one) only
-ever needs the latest state to render the right screen.
+Chaque client garde une WebSocket ouverte. À chaque changement d'une salle, chaque membre reçoit le
+`room_state` complet : un client (ou un client qui se reconnecte) n'a besoin que du dernier état
+pour afficher le bon écran.
 
-Rooms live in this process's memory (one API worker for the MVP); games,
-rounds and answers are persisted through multiplayer_service.
+Les salles vivent dans la mémoire de ce processus (un seul worker d'API pour le MVP) ; les parties,
+manches et réponses sont enregistrées via multiplayer_service.
 """
 
 import asyncio
@@ -16,13 +16,15 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
 from fastapi import WebSocket
-from pydantic import Field, ValidationError
+from pydantic import Field, ValidationError, model_validator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.database import SessionLocal
 from app.core.game_rules import (
+    EXTRA_HINT_PRICE,
     HINTS_PER_GAME,
     MAX_ROOM_PLAYERS,
+    MAX_STAKE,
     MIN_ROOM_PLAYERS,
     SUBMIT_GRACE_SECONDS,
     Category,
@@ -31,18 +33,41 @@ from app.core.game_rules import (
 )
 from app.models.base import utcnow
 from app.schemas.game import GameSettings
-from app.services import bot_service, hint_service, multiplayer_service
+from app.api.games.presenters import enrich_answer_dict
+from app.services import bot_service, fact_service, hint_service, multiplayer_service, wallet_service
 from app.services.presence_service import PresenceStore, RedisPresence
 
 logger = logging.getLogger(__name__)
 
-CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no O/0 or I/1 confusion
+CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # pas de confusion O/0 ni I/1
 CODE_LENGTH = 5
 
 
 class RoomSettings(GameSettings):
     public: bool = False
     max_players: int = Field(default=MAX_ROOM_PLAYERS, ge=MIN_ROOM_PLAYERS, le=MAX_ROOM_PLAYERS)
+    # « classic » : partie normale ; « bet » : chaque joueur mise `stake` pièces, le premier rafle le pot.
+    kind: str = Field(default="classic", pattern="^(classic|bet)$")
+    stake: int = Field(default=0, ge=0, le=MAX_STAKE)
+    # « rounds » : toutes les manches, le meilleur total gagne ; « elimination » : à chaque manche,
+    # le plus petit score de la manche est éliminé, le dernier en lice gagne.
+    format: str = Field(default="rounds", pattern="^(rounds|elimination)$")
+
+    @model_validator(mode="after")
+    def _check_stake(self) -> "RoomSettings":
+        if self.kind == "bet" and self.stake < 1:
+            raise ValueError("a betting room needs a stake")
+        if self.kind == "classic":
+            self.stake = 0
+        return self
+
+    @property
+    def betting(self) -> bool:
+        return self.kind == "bet"
+
+    @property
+    def elimination(self) -> bool:
+        return self.format == "elimination"
 
 
 @dataclass
@@ -53,10 +78,10 @@ class Timings:
     reconnect_grace: float = 30.0
     presence_interval: float = 5.0
     submit_grace: float = SUBMIT_GRACE_SECONDS
-    # A lone quick-match player gets bots after this wait.
+    # Un joueur seul en partie rapide reçoit des bots après cette attente.
     quick_bot_fill: float = 12.0
     quick_bot_count: int = 2
-    # Multiplies bot answer delays (tests use a tiny value).
+    # Multiplie les délais de réponse des bots (les tests utilisent une toute petite valeur).
     bot_speed: float = 1.0
 
 
@@ -67,10 +92,22 @@ class RoomPlayer:
     ready: bool = False
     connected: bool = True
     score: int = 0
-    # Set once the player takes part in the game (late joiners get it at the next round).
+    # Renseigné dès que le joueur participe à la partie (ceux qui arrivent en retard l'obtiennent à
+    # la manche suivante).
     db_player_id: str | None = None
     bot_level: Difficulty | None = None
     hints_used: int = 0
+    bonus_hints: int = 0
+    # Éliminatoires : manche où le joueur a été éliminé (il regarde la suite).
+    eliminated_round: int | None = None
+    avatar_preset: int = 0
+    avatar_url: str | None = None
+    level: int = 1
+    # Apparences visibles par la salle (identifiants du catalogue, ou vide).
+    hair: str = ""
+    hat: str = ""
+    frame: str = ""
+    name_style: str = ""
 
     @property
     def bot(self) -> bool:
@@ -83,11 +120,11 @@ class LiveRound:
     letter: str
     started_at: datetime
     ends_at: datetime
-    participants: dict[str, str]  # client id -> db player id
+    participants: dict[str, str]  # id client -> id joueur en base
     submissions: dict[str, tuple[datetime, dict[Category, str]]] = field(default_factory=dict)
     all_in: asyncio.Event = field(default_factory=asyncio.Event)
     bot_tasks: list[asyncio.Task] = field(default_factory=list)
-    hints: dict[str, dict[str, hint_service.Hint]] = field(default_factory=dict)  # client -> category
+    hints: dict[str, dict[str, hint_service.Hint]] = field(default_factory=dict)  # client -> catégorie
 
 
 @dataclass
@@ -103,12 +140,16 @@ class Room:
     round_number: int = 0
     live_round: LiveRound | None = None
     results: dict | None = None
-    starts_at: datetime | None = None  # quick match automatic start
+    starts_at: datetime | None = None  # démarrage automatique de la partie rapide
     go_at: datetime | None = None
     next_round_at: datetime | None = None
     game_task: asyncio.Task | None = None
     quick_timer: asyncio.Task | None = None
     bot_fill_timer: asyncio.Task | None = None
+    # Salon de paris : joueurs qui ont payé leur mise pour la partie en cours, et ce que chacun a
+    # gagné une fois la partie terminée.
+    stakers: list[str] = field(default_factory=list)
+    winnings: dict[str, int] = field(default_factory=dict)
 
     @property
     def in_game(self) -> bool:
@@ -116,7 +157,15 @@ class Room:
 
     @property
     def joinable(self) -> bool:
+        # On ne rejoint pas en cours de partie un salon de paris (mise payée au départ) ni des
+        # éliminatoires (tout le monde part à égalité).
+        if (self.settings.betting or self.settings.elimination) and self.in_game:
+            return False
         return len(self.players) < self.settings.max_players
+
+    @property
+    def pot(self) -> int:
+        return self.settings.stake * len(self.stakers)
 
     def connected_players(self) -> list[RoomPlayer]:
         return [p for p in self.players.values() if p.connected]
@@ -130,12 +179,28 @@ class Connection:
     client_id: str
     nickname: str
     websocket: WebSocket
+    avatar_preset: int = 0
+    avatar_url: str | None = None
+    level: int = 1
+    hair: str = ""
+    hat: str = ""
+    frame: str = ""
+    name_style: str = ""
 
 
 class RoomError(Exception):
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
+
+
+def _nicknames_host_first(room: Room) -> list[str]:
+    """L'hôte d'abord, puis les autres dans l'ordre d'arrivée."""
+    players = list(room.players.values())
+    host = room.players.get(room.host_id)
+    if host is not None:
+        players = [host, *[player for player in players if player is not host]]
+    return [player.nickname for player in players]
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -154,13 +219,13 @@ class RoomManager:
         self.timings = timings or Timings()
         self.connections: dict[str, Connection] = {}
         self.rooms: dict[str, Room] = {}
-        self._room_of: dict[str, str] = {}  # client id -> room code
-        self._room_list_subscribers: dict[str, str | None] = {}  # client id -> language filter
+        self._room_of: dict[str, str] = {}  # id client -> code de salle
+        self._room_list_subscribers: dict[str, str | None] = {}  # id client -> filtre de langue
         self._expiry_tasks: dict[str, asyncio.Task] = {}
         self._online_count = 0
         self._presence_task: asyncio.Task | None = None
 
-    # ------------------------------------------------------------------ lifecycle
+    # ------------------------------------------------------------- cycle de vie
 
     def start(self) -> None:
         self._presence_task = asyncio.create_task(self._presence_loop())
@@ -189,7 +254,7 @@ class RoomManager:
             for client_id in list(self.connections):
                 await self._send(client_id, {"type": "online_count", "count": count})
 
-    # ---------------------------------------------------------------- connections
+    # ---------------------------------------------------------------- connexions
 
     async def connect(self, websocket: WebSocket, client_id: str, nickname: str) -> Connection:
         previous = self.connections.get(client_id)
@@ -198,18 +263,49 @@ class RoomManager:
                 await previous.websocket.close(code=4000, reason="replaced")
 
         connection = Connection(client_id, nickname, websocket)
+        # Profil lu avant d'enregistrer la connexion : « welcome » reste ainsi le premier message.
+        wallet = None
+        look = None
+        try:
+            async with self.session_factory() as session:
+                profile = await wallet_service.get_profile(session, client_id, nickname)
+                await session.commit()
+            wallet = wallet_service.snapshot(profile).as_dict()
+            look = wallet_service.look_of(profile)
+            connection.avatar_preset = profile.avatar_preset
+            connection.avatar_url = wallet_service.avatar_url(profile)
+            connection.level = wallet_service.snapshot(profile).level
+            connection.hair = profile.cosmetic_hair
+            connection.hat = profile.cosmetic_hat
+            connection.frame = profile.cosmetic_frame
+            connection.name_style = profile.cosmetic_name
+        except Exception:
+            logger.exception("profile lookup failed for %s", client_id)
         self.connections[client_id] = connection
         if task := self._expiry_tasks.pop(client_id, None):
             task.cancel()
 
         await self.presence.touch([client_id])
-        await self._send(client_id, {"type": "welcome", "online_count": await self.presence.count()})
+        await self._send(
+            client_id,
+            {
+                "type": "welcome",
+                "online_count": await self.presence.count(),
+                "wallet": wallet,
+                "avatar": {"preset": connection.avatar_preset, "url": connection.avatar_url},
+                "look": look,
+            },
+        )
         await self._refresh_online_count()
 
         room = self._current_room(client_id)
         if room is not None:
             player = room.players[client_id]
             player.connected = True
+            player.hair = connection.hair
+            player.hat = connection.hat
+            player.frame = connection.frame
+            player.name_style = connection.name_style
             await self._notice(room, "reconnected", player.nickname, exclude=client_id)
             await self._broadcast(room)
         return connection
@@ -217,7 +313,7 @@ class RoomManager:
     async def disconnect(self, connection: Connection) -> None:
         client_id = connection.client_id
         if self.connections.get(client_id) is not connection:
-            return  # replaced by a newer connection
+            return  # remplacée par une connexion plus récente
         del self.connections[client_id]
         self._room_list_subscribers.pop(client_id, None)
         with contextlib.suppress(Exception):
@@ -235,14 +331,14 @@ class RoomManager:
         self._expiry_tasks[client_id] = asyncio.create_task(self._expire(client_id))
 
     async def _expire(self, client_id: str) -> None:
-        """Players who do not come back in time leave their room."""
+        """Les joueurs qui ne reviennent pas à temps quittent leur salle."""
         await asyncio.sleep(self.timings.reconnect_grace)
         self._expiry_tasks.pop(client_id, None)
         room = self._current_room(client_id)
         if room is not None and not room.players[client_id].connected:
             await self._leave(client_id)
 
-    # ------------------------------------------------------------------- messages
+    # ------------------------------------------------------------------ messages
 
     async def handle(self, connection: Connection, message: dict) -> None:
         handlers = {
@@ -254,8 +350,11 @@ class RoomManager:
             "submit": self._on_submit,
             "hint": self._on_hint,
             "hint_pick": self._on_hint_pick,
+            "buy_hint": self._on_buy_hint,
+            "category_info": self._on_category_info,
             "add_bot": self._on_add_bot,
             "remove_bot": self._on_remove_bot,
+            "report_player": self._on_report_player,
             "subscribe_rooms": self._on_subscribe_rooms,
             "unsubscribe_rooms": self._on_unsubscribe_rooms,
             "ping": self._on_ping,
@@ -283,12 +382,16 @@ class RoomManager:
             bot_level = Difficulty(bots.get("level", Difficulty.NORMAL))
         except (TypeError, ValueError):
             raise RoomError("invalid_settings") from None
+        if settings.betting:
+            if bot_count > 0:
+                raise RoomError("bots_not_allowed")
+            await self._require_coins(connection.client_id, settings.stake)
 
         await self._leave(connection.client_id)
         room = self._new_room(settings, quick=False, host=connection)
         await self._add_player(room, connection)
         if bot_count > 0:
-            # Playing against the computer: start right away.
+            # Partie contre l'ordinateur : on démarre tout de suite.
             for _ in range(bot_count):
                 self._add_bot(room, bot_level)
             room.players[connection.client_id].ready = True
@@ -304,7 +407,9 @@ class RoomManager:
             await self._broadcast(room)
             return
         if not room.joinable:
-            raise RoomError("room_full")
+            raise RoomError("game_in_progress" if room.in_game else "room_full")
+        if room.settings.betting:
+            await self._require_coins(connection.client_id, room.settings.stake)
         await self._leave(connection.client_id)
         await self._add_player(room, connection)
 
@@ -320,7 +425,7 @@ class RoomManager:
             for r in self.rooms.values()
             if r.quick and r.phase == "waiting" and r.joinable and r.settings.language == language
         ]
-        # Join the fullest room so games start sooner.
+        # Rejoint la salle la plus remplie pour que la partie démarre plus vite.
         room = max(candidates, key=lambda r: len(r.players), default=None)
         if room is None:
             room = self._new_room(RoomSettings(language=language, public=True), quick=True, host=connection)
@@ -393,7 +498,7 @@ class RoomManager:
 
         hint = mine.get(category)
         if hint is None:
-            if player.hints_used >= HINTS_PER_GAME:
+            if player.hints_used >= HINTS_PER_GAME + player.bonus_hints:
                 raise RoomError("no_hints_left")
             try:
                 async with self.session_factory() as session:
@@ -411,7 +516,100 @@ class RoomManager:
                 "round": live.number,
                 "category": category,
                 "options": hint.options,
-                "hints_left": HINTS_PER_GAME - player.hints_used,
+                "hints_left": HINTS_PER_GAME + player.bonus_hints - player.hints_used,
+            },
+        )
+
+    async def _on_buy_hint(self, connection: Connection, message: dict) -> None:
+        """Achète un joker supplémentaire avec des pièces (pendant la manche)."""
+        room = self._require_room(connection.client_id)
+        live = room.live_round
+        if room.phase != "round" or live is None or connection.client_id not in live.participants:
+            raise RoomError("round_not_current")
+        if connection.client_id in live.submissions:
+            raise RoomError("round_not_current")
+        player = room.players[connection.client_id]
+        if player.bot:
+            raise RoomError("invalid_message")
+        async with self.session_factory() as session:
+            try:
+                profile = await wallet_service.debit(
+                    session, connection.client_id, EXTRA_HINT_PRICE, "extra_hint", room.code
+                )
+            except wallet_service.WalletError as error:
+                raise RoomError(error.code) from None
+            await session.commit()
+            wallet = wallet_service.snapshot(profile)
+        player.bonus_hints += 1
+        await self._send(
+            connection.client_id,
+            {
+                "type": "hint_bought",
+                "hints_left": HINTS_PER_GAME + player.bonus_hints - player.hints_used,
+                "price": EXTRA_HINT_PRICE,
+                "wallet": wallet.as_dict(),
+            },
+        )
+        await self._broadcast(room)
+
+    async def _on_category_info(self, connection: Connection, message: dict) -> None:
+        """Infos payantes sur une catégorie après la manche."""
+        room = self._require_room(connection.client_id)
+        if room.phase != "results" or room.results is None:
+            raise RoomError("round_not_finished")
+        category = message.get("category")
+        if category not in [c.value for c in room.settings.categories]:
+            raise RoomError("invalid_category")
+        if category not in {c.value for c in fact_service.INFO_CATEGORIES}:
+            raise RoomError("no_info_available")
+        mine = next(
+            (p for p in room.results["players"] if p["client_id"] == connection.client_id),
+            None,
+        )
+        if mine is None:
+            raise RoomError("round_not_finished")
+        answer = next((a for a in mine["answers"] if a["category"] == category), None)
+        if answer is None:
+            raise RoomError("invalid_category")
+        word = fact_service.info_word(
+            answer.get("matched_value"), answer.get("suggestion"), answer.get("value") or ""
+        )
+        lines = fact_service.lookup_lines(category, word, room.settings.language)
+        unlock = fact_service.unlock_id(category, word)
+        if not lines or unlock is None:
+            raise RoomError("no_info_available")
+        async with self.session_factory() as session:
+            profile = await wallet_service.get_profile(session, connection.client_id)
+            if wallet_service.has_fact_unlocked(profile, unlock):
+                price = 0
+            else:
+                price = fact_service.info_price(answer.get("status") or "")
+                try:
+                    profile = await wallet_service.debit(
+                        session,
+                        connection.client_id,
+                        price,
+                        "category_info",
+                        unlock[:64],
+                    )
+                except wallet_service.WalletError as error:
+                    raise RoomError(error.code) from None
+                wallet_service.unlock_fact(profile, unlock)
+            await session.commit()
+            wallet = wallet_service.snapshot(profile)
+        # Met à jour le résultat en mémoire pour ce joueur.
+        answer["info_unlocked"] = True
+        answer["info_price"] = 0
+        answer["info_lines"] = lines
+        await self._send(
+            connection.client_id,
+            {
+                "type": "category_info",
+                "category": category,
+                "word": word,
+                "lines": lines,
+                "price": price,
+                "wallet": wallet.as_dict(),
             },
         )
 
@@ -441,6 +639,8 @@ class RoomManager:
         room = self._require_host(connection.client_id)
         if room.quick or room.phase != "waiting":
             raise RoomError("game_in_progress")
+        if room.settings.betting:
+            raise RoomError("bots_not_allowed")
         if not room.joinable:
             raise RoomError("room_full")
         try:
@@ -465,6 +665,55 @@ class RoomManager:
         await self._broadcast(room)
         await self._rooms_changed()
 
+    async def _on_report_player(self, connection: Connection, message: dict) -> None:
+        """Signale la photo d'un autre joueur de la salle."""
+        room = self._require_room(connection.client_id)
+        reported = str(message.get("client_id", ""))
+        player = room.players.get(reported)
+        if player is None or player.bot or reported == connection.client_id:
+            raise RoomError("invalid_message")
+        async with self.session_factory() as session:
+            hidden = await wallet_service.report_avatar(session, connection.client_id, reported)
+            await session.commit()
+            preset = (await wallet_service.get_profile(session, reported)).avatar_preset
+        await self._send(connection.client_id, {"type": "reported", "client_id": reported})
+        if hidden:
+            await self.update_avatar(reported, preset, None)
+
+    async def update_avatar(self, client_id: str, preset: int, url: str | None) -> None:
+        """Nouvel avatar d'un joueur : mis à jour sur sa connexion et dans sa salle."""
+        if connection := self.connections.get(client_id):
+            connection.avatar_preset, connection.avatar_url = preset, url
+        room = self._current_room(client_id)
+        if room is not None and client_id in room.players:
+            room.players[client_id].avatar_preset = preset
+            room.players[client_id].avatar_url = url
+            await self._broadcast(room)
+
+    async def update_look(
+        self,
+        client_id: str,
+        *,
+        hair: str,
+        hat: str,
+        frame: str,
+        name_style: str,
+    ) -> None:
+        """Apparences visibles tout de suite par la salle."""
+        if connection := self.connections.get(client_id):
+            connection.hair = hair
+            connection.hat = hat
+            connection.frame = frame
+            connection.name_style = name_style
+        room = self._current_room(client_id)
+        if room is not None and client_id in room.players:
+            player = room.players[client_id]
+            player.hair = hair
+            player.hat = hat
+            player.frame = frame
+            player.name_style = name_style
+            await self._broadcast(room)
+
     async def _on_subscribe_rooms(self, connection: Connection, message: dict) -> None:
         language = message.get("language")
         self._room_list_subscribers[connection.client_id] = language if language in list(Language) else None
@@ -473,7 +722,7 @@ class RoomManager:
     async def _on_unsubscribe_rooms(self, connection: Connection, message: dict) -> None:
         self._room_list_subscribers.pop(connection.client_id, None)
 
-    # ---------------------------------------------------------------------- rooms
+    # --------------------------------------------------------------------- salles
 
     def _new_room(self, settings: RoomSettings, quick: bool, host: Connection) -> Room:
         code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(CODE_LENGTH))
@@ -496,7 +745,16 @@ class RoomManager:
 
     async def _add_player(self, room: Room, connection: Connection) -> None:
         room.players[connection.client_id] = RoomPlayer(
-            client_id=connection.client_id, nickname=connection.nickname, ready=room.quick
+            client_id=connection.client_id,
+            nickname=connection.nickname,
+            ready=room.quick,
+            avatar_preset=connection.avatar_preset,
+            avatar_url=connection.avatar_url,
+            level=connection.level,
+            hair=connection.hair,
+            hat=connection.hat,
+            frame=connection.frame,
+            name_style=connection.name_style,
         )
         self._room_of[connection.client_id] = room.code
         if room.quick:
@@ -542,11 +800,15 @@ class RoomManager:
         room.live_round = None
         room.results = None
         room.go_at = room.next_round_at = None
+        room.stakers = []
+        room.winnings = {}
         for player in room.players.values():
             player.score = 0
             player.ready = room.quick or player.bot
             player.db_player_id = None
             player.hints_used = 0
+            player.bonus_hints = 0
+            player.eliminated_round = None
 
     def _current_room(self, client_id: str) -> Room | None:
         code = self._room_of.get(client_id)
@@ -564,7 +826,7 @@ class RoomManager:
             raise RoomError("not_host")
         return room
 
-    # ---------------------------------------------------------------- game start
+    # ------------------------------------------------------- démarrage de partie
 
     async def _maybe_start(self, room: Room) -> None:
         if room.quick or room.phase != "waiting":
@@ -599,7 +861,8 @@ class RoomManager:
         room.starts_at = None
 
     async def _fill_with_bots_later(self, room: Room) -> None:
-        """Nobody else online: bots join so the player is not left waiting."""
+        """Personne d'autre en ligne : des bots rejoignent la partie pour que le joueur n'attende pas.
+        """
         await asyncio.sleep(self.timings.quick_bot_fill)
         room.bot_fill_timer = None
         if room.phase != "waiting" or len(room.players) != 1 or room.code not in self.rooms:
@@ -621,11 +884,13 @@ class RoomManager:
         room.phase = "countdown"
         room.game_task = asyncio.create_task(self._run_game(room))
 
-    # ----------------------------------------------------------------- game loop
+    # ------------------------------------------------------- boucle de la partie
 
     async def _run_game(self, room: Room) -> None:
         try:
             await self._rooms_changed()
+            if room.settings.betting and not await self._collect_stakes(room):
+                return
             mode = "duel" if room.settings.max_players == 2 else "multiplayer"
             async with self.session_factory() as session:
                 room.game_id, ids = await multiplayer_service.create_game(
@@ -641,17 +906,22 @@ class RoomManager:
                 await self._play_round(room, number)
                 if number == room.settings.rounds:
                     break
+                # Éliminatoires : la partie s'arrête quand il ne reste qu'un joueur en lice.
+                if room.settings.elimination and len(self._alive(room)) <= 1:
+                    break
                 room.next_round_at = utcnow() + timedelta(seconds=self.timings.results)
                 await self._broadcast(room)
                 await asyncio.sleep(self.timings.results)
 
             async with self.session_factory() as session:
                 await multiplayer_service.finish_game(session, room.game_id)
+            await self._pay_winners(room)
         except asyncio.CancelledError:
             raise
         except Exception:
             logger.exception("game loop failed in room %s", room.code)
             await self._notice(room, "error", "")
+            await self._refund_stakes(room)
         finally:
             room.game_task = None
 
@@ -687,7 +957,9 @@ class RoomManager:
             letter=info.letter,
             started_at=info.started_at,
             ends_at=info.ends_at,
-            participants={cid: p.db_player_id for cid, p in room.players.items()},
+            participants={
+                cid: p.db_player_id for cid, p in room.players.items() if p.eliminated_round is None
+            },
         )
         room.phase = "round"
         room.go_at = None
@@ -701,7 +973,7 @@ class RoomManager:
         live = room.live_round
         for task in live.bot_tasks:
             task.cancel()
-        # Picked hint options replace whatever was typed in those categories.
+        # Les propositions de joker choisies remplacent ce qui a été tapé dans ces catégories.
         hints: dict[str, dict[str, bool]] = {}
         for cid, by_category in live.hints.items():
             picked = {c: h for c, h in by_category.items() if h.picked is not None}
@@ -725,24 +997,177 @@ class RoomManager:
 
         by_player_id = {p.db_player_id: p for p in room.players.values()}
         client_of = {db_id: cid for cid, db_id in live.participants.items()}
+        unlocked_by_client: dict[str, set[str]] = {}
+        async with self.session_factory() as session:
+            for cid in live.participants:
+                if room.players[cid].bot:
+                    unlocked_by_client[cid] = set()
+                    continue
+                try:
+                    profile = await wallet_service.get_profile(session, cid)
+                    unlocked_by_client[cid] = wallet_service.unlocked_facts(profile)
+                except wallet_service.WalletError:
+                    unlocked_by_client[cid] = set()
+        language = room.settings.language
         results = []
         for result in outcome.results:
             player = by_player_id.get(result.player_id)
             if player is not None:
                 player.score += result.round_score
+            cid = client_of[result.player_id]
+            unlocked = unlocked_by_client.get(cid, set())
             results.append(
                 {
-                    "client_id": client_of[result.player_id],
+                    "client_id": cid,
                     "nickname": player.nickname if player else "",
-                    "answers": result.answers,
+                    "answers": [
+                        enrich_answer_dict(a, language=language, unlocked=unlocked)
+                        for a in result.answers
+                    ],
                     "round_score": result.round_score,
                     "elapsed_ms": result.elapsed_ms,
                 }
             )
-        room.results = {"number": outcome.number, "letter": outcome.letter, "players": results}
+        eliminated = self._eliminate(room, outcome.number, {r["client_id"]: r["round_score"] for r in results})
+        room.results = {
+            "number": outcome.number,
+            "letter": outcome.letter,
+            "players": results,
+            "examples": outcome.examples,
+            "eliminated": eliminated,
+        }
         room.live_round = None
         room.phase = "results"
         await self._broadcast(room)
+        await self._award_round_points(room, outcome.results, client_of)
+
+    def _alive(self, room: Room) -> list[RoomPlayer]:
+        return [p for p in room.players.values() if p.eliminated_round is None]
+
+    def _eliminate(self, room: Room, number: int, round_scores: dict[str, int]) -> list[str]:
+        """Éliminatoires : le plus petit score de la manche sort (tous ceux à égalité). Personne ne
+        sort si tous les joueurs en lice ont le même score."""
+        if not room.settings.elimination:
+            return []
+        alive = [p for p in self._alive(room) if p.client_id in round_scores]
+        if len(alive) < 2:
+            return []
+        lowest = min(round_scores[p.client_id] for p in alive)
+        losers = [p for p in alive if round_scores[p.client_id] == lowest]
+        if len(losers) == len(alive):
+            return []
+        for player in losers:
+            player.eliminated_round = number
+        return [p.client_id for p in losers]
+
+    # ------------------------------------------------------------- pièces
+
+    async def _require_coins(self, client_id: str, amount: int) -> None:
+        async with self.session_factory() as session:
+            try:
+                profile = await wallet_service.get_profile(session, client_id)
+            except wallet_service.WalletError as error:
+                raise RoomError(error.code) from None
+            await session.commit()
+        if profile.coins < amount:
+            raise RoomError("not_enough_coins")
+
+    async def _send_wallets(self, updates: dict[str, wallet_service.WalletUpdate]) -> None:
+        for client_id, update in updates.items():
+            # Le niveau affiché dans la salle suit les points gagnés.
+            if connection := self.connections.get(client_id):
+                connection.level = update.level
+            room = self._current_room(client_id)
+            if room is not None and client_id in room.players:
+                room.players[client_id].level = update.level
+            await self._send(client_id, {"type": "wallet", **update.as_dict()})
+
+    async def _award_round_points(self, room: Room, results: list, client_of: dict[str, str]) -> None:
+        """Les points de la manche reviennent aux joueurs humains : 20 points font une pièce."""
+        updates = {}
+        async with self.session_factory() as session:
+            for result in results:
+                client_id = client_of[result.player_id]
+                player = room.players.get(client_id)
+                if player is None or player.bot or not wallet_service.is_client_id(client_id):
+                    continue
+                updates[client_id] = await wallet_service.award_points(
+                    session, client_id, result.round_score, reference=room.game_id
+                )
+            await session.commit()
+        await self._send_wallets(updates)
+
+    async def _collect_stakes(self, room: Room) -> bool:
+        """Prélève la mise de chaque joueur au départ d'un salon de paris.
+
+        Tout ou rien : si un joueur n'a plus assez de pièces, personne n'est débité, il est renvoyé
+        de la salle et les autres reviennent en attente.
+        """
+        stake = room.settings.stake
+        humans = [p.client_id for p in room.humans()]
+        broke = []
+        async with self.session_factory() as session:
+            for client_id in humans:
+                try:
+                    await wallet_service.debit(session, client_id, stake, "bet_stake", reference=room.code)
+                except wallet_service.WalletError:
+                    broke.append(client_id)
+            if broke:
+                await session.rollback()
+            else:
+                await session.commit()
+                updates = {
+                    cid: wallet_service.snapshot(await wallet_service.get_profile(session, cid))
+                    for cid in humans
+                }
+        if broke:
+            # Retour en attente : chacun doit se redéclarer prêt.
+            room.phase = "waiting"
+            for player in room.players.values():
+                player.ready = False
+            for client_id in broke:
+                await self._error(client_id, "not_enough_coins")
+                await self._leave(client_id)
+                await self._send(client_id, {"type": "left_room"})
+            if room.code in self.rooms:
+                await self._broadcast(room)
+                await self._rooms_changed()
+            return False
+        room.stakers = humans
+        await self._send_wallets(updates)
+        return True
+
+    async def _pay_winners(self, room: Room) -> None:
+        """Le meilleur score parmi les joueurs restés jusqu'au bout rafle le pot (partagé en cas
+        d'égalité). Celui qui quitte la partie perd sa mise."""
+        if not room.stakers:
+            return
+        remaining = [room.players[cid] for cid in room.stakers if cid in room.players]
+        if room.settings.elimination:
+            # Seuls les joueurs encore en lice peuvent gagner.
+            remaining = [p for p in remaining if p.eliminated_round is None] or remaining
+        if not remaining:
+            return
+        best = max(p.score for p in remaining)
+        winners = [p.client_id for p in remaining if p.score == best]
+        share, rest = divmod(room.pot, len(winners))
+        room.winnings = {cid: share + (1 if i < rest else 0) for i, cid in enumerate(winners)}
+        await self._credit_all(room, room.winnings, "bet_win")
+
+    async def _refund_stakes(self, room: Room) -> None:
+        """Partie interrompue par une erreur : chacun récupère sa mise."""
+        if room.stakers and not room.winnings:
+            await self._credit_all(room, {cid: room.settings.stake for cid in room.stakers}, "bet_refund")
+            room.stakers = []
+
+    async def _credit_all(self, room: Room, amounts: dict[str, int], reason: str) -> None:
+        updates = {}
+        async with self.session_factory() as session:
+            for client_id, amount in amounts.items():
+                profile = await wallet_service.credit(session, client_id, amount, reason, reference=room.game_id)
+                updates[client_id] = wallet_service.snapshot(profile, amount)
+            await session.commit()
+        await self._send_wallets(updates)
 
     async def _launch_bots(self, room: Room, live: LiveRound) -> None:
         bots = [p for p in room.players.values() if p.bot and p.client_id in live.participants]
@@ -772,7 +1197,7 @@ class RoomManager:
         self._check_all_in(room)
 
     def _check_all_in(self, room: Room) -> None:
-        """Ends the round early once every connected participant has answered."""
+        """Termine la manche plus tôt dès que chaque participant connecté a répondu."""
         live = room.live_round
         if live is None or room.phase != "round":
             return
@@ -784,7 +1209,7 @@ class RoomManager:
         if not waiting_for:
             live.all_in.set()
 
-    # -------------------------------------------------------------- serialization
+    # ------------------------------------------------------------- sérialisation
 
     def room_state(self, room: Room) -> dict:
         live = room.live_round
@@ -795,7 +1220,12 @@ class RoomManager:
             "quick": room.quick,
             "host_id": room.host_id,
             "phase": room.phase,
+            "pot": room.pot,
+            "winnings": room.winnings,
             "settings": {
+                "kind": settings.kind,
+                "stake": settings.stake,
+                "format": settings.format,
                 "language": settings.language,
                 "difficulty": settings.difficulty,
                 "categories": [c.value for c in settings.categories],
@@ -814,7 +1244,15 @@ class RoomManager:
                     "playing": bool(live and p.client_id in live.participants) or not room.in_game,
                     "bot": p.bot,
                     "bot_level": p.bot_level,
-                    "hints_left": HINTS_PER_GAME - p.hints_used,
+                    "hints_left": HINTS_PER_GAME + p.bonus_hints - p.hints_used,
+                    "avatar_preset": p.avatar_preset,
+                    "avatar_url": p.avatar_url,
+                    "level": p.level,
+                    "eliminated_round": p.eliminated_round,
+                    "hair": p.hair,
+                    "hat": p.hat,
+                    "frame": p.frame,
+                    "name_style": p.name_style,
                 }
                 for p in room.players.values()
             ],
@@ -850,17 +1288,21 @@ class RoomManager:
                 "code": r.code,
                 "quick": r.quick,
                 "host": r.players[r.host_id].nickname if r.host_id in r.players else "",
+                "nicknames": _nicknames_host_first(r),
                 "players": len(r.players),
                 "max_players": r.settings.max_players,
                 "language": r.settings.language,
                 "difficulty": r.settings.difficulty,
                 "rounds": r.settings.rounds,
                 "round_duration": r.settings.round_duration,
+                "kind": r.settings.kind,
+                "stake": r.settings.stake,
+                "format": r.settings.format,
             }
             for r in rooms[:50]
         ]
 
-    # -------------------------------------------------------------------- sending
+    # ---------------------------------------------------------------------- envoi
 
     async def _send(self, client_id: str, message: dict) -> None:
         connection = self.connections.get(client_id)

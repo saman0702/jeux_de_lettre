@@ -1,6 +1,6 @@
 {
   "@@locale": "fr",
-  "appTitle": "Letter Battle",
+  "appTitle": "Letter Race",
   "tagline": "Une lettre. Quatre catégories. Le plus rapide gagne.",
   "modeSolo": "Solo",
   "modeDuel": "Duel",
@@ -116,15 +116,24 @@
   "playersCount": "{count}/{max}",
   "createRoomTitle": "Nouvelle salle",
   "roomType": "Type de partie",
-  "roomTypeDuel": "⚔️ Duel",
-  "roomTypeGroup": "👥 Groupe (8 max)",
+  "roomTypeDuel": "Duel",
+  "roomTypeGroup": "Groupe (8 max)",
   "visibility": "Visibilité",
-  "visibilityPublic": "🌐 Publique",
-  "visibilityPrivate": "🔒 Privée",
+  "visibilityPublic": "Publique",
+  "visibilityPrivate": "Privée",
   "create": "CRÉER",
   "roomCode": "Code de la salle",
   "copyCode": "Copier",
   "codeCopied": "Code copié !",
+  "shareInvite": "Inviter",
+  "inviteMessage": "Rejoins ma partie Letter Race ! Code : {code}",
+  "@inviteMessage": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "waitingForPlayers": "En attente de joueurs…",
   "readyButton": "JE SUIS PRÊT !",
   "notReadyButton": "PAS ENCORE",
@@ -145,7 +154,7 @@
   "leaveRoomMessage": "Tu vas quitter la salle.",
   "noticeJoined": "{name} a rejoint la salle",
   "noticeLeft": "{name} a quitté la salle",
-  "noticeDisconnected": "⚠️ {name} s'est déconnecté",
+  "noticeDisconnected": "{name} s'est déconnecté",
   "noticeReconnected": "{name} est de retour",
   "connectionLost": "Connexion perdue… reconnexion",
   "errorRoomNotFound": "Salle introuvable.",
@@ -228,15 +237,60 @@
   "opponentsNone": "Aucun",
   "botLevel": "Niveau des bots",
   "addBot": "Ajouter un bot",
-  "noticeBotsJoined": "Personne en ligne : des bots te rejoignent 🤖",
+  "noticeBotsJoined": "Personne en ligne : des bots te rejoignent !",
   "errorNotHost": "Seul l'hôte peut faire ça.",
   "botTag": "Bot",
-  "hintTitle": "💡 Joker : {category} en {letter}",
+  "hintTitle": "Joker : {category} en {letter}",
   "hintSubtitle": "Un seul de ces mots est juste !",
   "statusHintWrong": "Mauvais choix",
+  "statusAlreadyUsed": "Déjà utilisé dans ce monde",
   "hintedBadge": "Joker",
   "hintNoneLeft": "Plus de joker pour cette partie.",
   "hintUnavailable": "Pas de joker possible ici.",
+  "buyHintTitle": "Joker en plus",
+  "buyHintMessage": "Acheter un joker pour {count} pièces ?",
+  "@buyHintMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyHintConfirm": "{count} pièces",
+  "@buyHintConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyInfoTitle": "Infos",
+  "buyInfoMessage": "Dévoiler les infos pour {count} pièces ?",
+  "@buyInfoMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyInfoConfirm": "{count} pièces",
+  "@buyInfoConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyInfoButton": "Infos · {count} pièces",
+  "@buyInfoButton": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "buyInfoFree": "Infos",
+  "notOnlineForPurchase": "Connecte-toi pour dépenser des pièces.",
   "@hintTitle": {
     "placeholders": {
       "category": {
@@ -247,5 +301,521 @@
       }
     }
   },
-  "offlineModeNotice": "📴 Pas de connexion : partie solo hors ligne"
+  "offlineModeNotice": "Pas de connexion : partie solo hors ligne",
+  "settingsGameKeyboard": "Clavier du jeu",
+  "keyNext": "Suivant",
+  "keySpace": "espace",
+  "settingsVoice": "Voix du présentateur",
+  "voiceYouWinRound1": "Bravo {name}, tu remportes la manche !",
+  "voiceYouWinRound2": "Excellent {name} ! Manche gagnée !",
+  "voiceOtherWinsRound1": "{name} remporte la manche !",
+  "voiceOtherWinsRound2": "Cette manche est pour {name} !",
+  "voiceEncourage1": "Courage, tu vas te rattraper !",
+  "voiceEncourage2": "Pas de panique, la prochaine est pour toi !",
+  "voiceEncourage3": "Allez, on lâche rien !",
+  "voiceTie": "Égalité sur cette manche ! Tout reste à jouer !",
+  "voiceNobodyScored": "Personne n'a marqué ! Concentrez-vous, ça repart !",
+  "voiceSoloGreat": "Superbe ! {points} points !",
+  "voiceSoloGood": "Bien joué, {points} points !",
+  "voiceSoloLow": "Allez, tu peux faire mieux à la prochaine !",
+  "voiceSoloZero": "Aïe, aucun point ! Respire, tu vas y arriver !",
+  "voiceYouWinGame": "Victoire ! Bravo {name}, tu gagnes la partie !",
+  "voiceOtherWinsGame": "{name} gagne la partie ! Bien joué à tous. Une revanche ?",
+  "voiceSoloGameEnd": "Partie terminée ! {points} points au total !",
+  "dialogStay": "RESTER",
+  "@voiceYouWinRound1": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@voiceYouWinRound2": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@voiceOtherWinsRound1": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@voiceOtherWinsRound2": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@voiceSoloGreat": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "@voiceSoloGood": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "@voiceYouWinGame": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@voiceOtherWinsGame": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@voiceSoloGameEnd": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "roundLabel": "MANCHE",
+  "onlineLabel": "EN LIGNE",
+  "settingsLanguage": "Langue",
+  "languageAuto": "Auto",
+  "suggestionExample": "Réponse possible : {answer}",
+  "suggestionFoundBy": "{name} a trouvé : {answer}",
+  "@suggestionExample": {
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
+  },
+  "@suggestionFoundBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "answer": {
+        "type": "String"
+      }
+    }
+  },
+  "coinsCount": "{count, plural, =0{0 pièce} =1{1 pièce} other{{count} pièces}}",
+  "@coinsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coinsGained": "+{count, plural, =1{1 pièce} other{{count} pièces}}",
+  "@coinsGained": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "roomKind": "Salon",
+  "roomKindClassic": "Classique",
+  "roomKindBet": "Paris",
+  "stake": "Mise par joueur",
+  "stakeShort": "Mise {count}",
+  "@stakeShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "potLabel": "Pot : {count}",
+  "@potLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "betRules": "Chaque joueur mise la même somme. Le premier rafle tout, le pot est partagé en cas d'égalité. Pas de bots.",
+  "yourCoins": "Ton solde : {count}",
+  "@yourCoins": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "betWon": "Tu rafles {count} pièces !",
+  "@betWon": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "betLost": "Mise perdue : {count} pièces",
+  "@betLost": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorNotEnoughCoins": "Pas assez de pièces pour cette mise.",
+  "errorBotsNotAllowed": "Pas de bots dans un salon de paris.",
+  "avatarTitle": "Mon avatar",
+  "avatarCamera": "PHOTO",
+  "avatarGallery": "GALERIE",
+  "avatarPhotoInfo": "Ta photo est transformée en dessin avant d'être montrée aux autres joueurs.",
+  "avatarCharacters": "Personnages",
+  "avatarUpdated": "Avatar mis à jour !",
+  "errorInvalidImage": "Cette image n'a pas pu être lue.",
+  "errorFileTooLarge": "Image trop lourde.",
+  "reportTitle": "Signaler la photo ?",
+  "reportMessage": "La photo de {name} est retirée après plusieurs signalements.",
+  "@reportMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reportConfirm": "SIGNALER",
+  "reportSent": "Merci, signalement envoyé.",
+  "musicCredits": "Musiques de Kevin MacLeod (incompetech.com), licence Creative Commons BY 4.0 : « Monkeys Spinning Monkeys », « Fluffing a Duck », « Carefree », « Pixel Peeker Polka », « Sneaky Snitch », « Investigations », « Run Amok », « Funkorama », « Itty Bitty 8 Bit », « Bit Quest ».",
+  "shopTitle": "Boutique",
+  "shopCoinsLabel": "pièces",
+  "shopBonus": "+{percent} %",
+  "@shopBonus": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "shopBought": "+{count} pièces, merci !",
+  "@shopBought": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopPending": "Paiement en attente : tes pièces arriveront dès qu'il sera confirmé.",
+  "shopInvalid": "Cet achat n'a pas pu être validé.",
+  "shopStoreError": "L'achat n'a pas abouti.",
+  "shopRetryLater": "Achat reçu : tes pièces seront ajoutées dès que le serveur sera joignable.",
+  "shopUnavailable": "La boutique n'est pas disponible sur cet appareil pour le moment.",
+  "shopLegal": "Paiement sécurisé par Google Play ou l'App Store. Les pièces n'ont aucune valeur monétaire : elles ne sont ni remboursables, ni échangeables, ni convertibles en argent.",
+  "avatarPhotoNeedsConnection": "Connecte-toi pour utiliser une photo : elle est transformée en dessin sur le serveur.",
+  "avatarPickFailed": "Impossible d'ouvrir l'appareil photo ou la galerie. Vérifie les autorisations de l'appli.",
+  "avatarSavedOffline": "Avatar choisi ! Il sera partagé dès que tu seras en ligne.",
+  "credits": "Crédits",
+  "levelUp": "NIVEAU {level} !",
+  "@levelUp": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "levelLabel": "Niveau {level}",
+  "@levelLabel": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "levelProgress": "{xp} / {needed} points avant le niveau suivant",
+  "@levelProgress": {
+    "placeholders": {
+      "xp": {
+        "type": "int"
+      },
+      "needed": {
+        "type": "int"
+      }
+    }
+  },
+  "goalMinimum": "Min. {points} pts",
+  "@goalMinimum": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "goalProgress": "{score} / {target} pts",
+  "@goalProgress": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "challengePassed": "MINIMUM {points} PTS : RÉUSSI !",
+  "@challengePassed": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "challengeEliminated": "ÉLIMINÉ ! Il fallait {points} pts",
+  "@challengeEliminated": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "careerProgressBanner": "Objectif : {score} / {target} pts",
+  "@careerProgressBanner": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "careerWon": "Niveau {level} réussi !",
+  "@careerWon": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "careerLost": "Niveau {level} raté",
+  "@careerLost": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "careerMessage": "Objectif {target} pts · tu as marqué {score} pts",
+  "@careerMessage": {
+    "placeholders": {
+      "target": {
+        "type": "int"
+      },
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "careerStarsInfo": "Étoiles à {one}, {two} et {three} pts",
+  "@careerStarsInfo": {
+    "placeholders": {
+      "one": {
+        "type": "int"
+      },
+      "two": {
+        "type": "int"
+      },
+      "three": {
+        "type": "int"
+      }
+    }
+  },
+  "nextLevel": "NIVEAU SUIVANT",
+  "replayLevel": "REJOUER LE NIVEAU",
+  "levelsMap": "CARTE DES NIVEAUX",
+  "eliminationChampion": "Champion !",
+  "eliminationOut": "Éliminé !",
+  "eliminationMessage": "Tu as tenu {rounds, plural, =0{0 manche} =1{1 manche} other{{rounds} manches}} sur {total}",
+  "@eliminationMessage": {
+    "placeholders": {
+      "rounds": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "eliminationRecord": "Record : {rounds} manches",
+  "@eliminationRecord": {
+    "placeholders": {
+      "rounds": {
+        "type": "int"
+      }
+    }
+  },
+  "eliminationNewRecord": "Nouveau record : {rounds} manches !",
+  "@eliminationNewRecord": {
+    "placeholders": {
+      "rounds": {
+        "type": "int"
+      }
+    }
+  },
+  "careerTitle": "Carrière",
+  "careerRulesIntro": "60 niveaux de 5 manches, en 4 mondes de 15. Une étoile ouvre le niveau suivant.",
+  "careerRulesFromConfirmed": "Au monde Débutant, les catégories montent : Ville et Pays, puis Animal, puis Fruit. À partir du Confirmé, les prénoms s'ajoutent. Ensuite les lettres durcissent et l'objectif de points grimpe.",
+  "careerRulesStars": "1 étoile à l'objectif, puis 2 et 3 étoiles en t'approchant du score parfait.",
+  "careerRulesBeginner": "Lettres faciles, 60 puis 45 puis 30 secondes. Ville et Pays, puis Animal, puis Fruit.",
+  "careerRulesConfirmed": "Lettres normales. Les quatre catégories, puis un prénom féminin en plus.",
+  "careerRulesExpert": "Toutes les lettres, même les plus rares. Un prénom masculin en plus.",
+  "careerRulesMaster": "Les six catégories, objectifs plus hauts. Il faut trouver de nouveaux mots.",
+  "careerRulesReuse": "Dans le même monde, un mot déjà validé ne peut plus servir si la lettre revient.",
+  "gotIt": "COMPRIS",
+  "worldBeginner": "Débutant",
+  "worldConfirmed": "Confirmé",
+  "worldExpert": "Expert",
+  "worldMaster": "Maître",
+  "levelTitle": "Niveau {level}",
+  "@levelTitle": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "levelGoal": "Objectif : {target} points",
+  "@levelGoal": {
+    "placeholders": {
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "play": "JOUER",
+  "modeCareer": "Carrière",
+  "modeElimination": "Éliminatoires",
+  "modeFreeSolo": "Solo libre",
+  "eliminationRulesTitle": "Règles",
+  "eliminationRules": "Toutes les catégories, 30 secondes par manche. Marque au moins le minimum à chaque manche, sinon tu es éliminé. Tiens les {rounds} manches pour devenir champion !",
+  "@eliminationRules": {
+    "placeholders": {
+      "rounds": {
+        "type": "int"
+      }
+    }
+  },
+  "roundsRange": "Manches {from} à {to}",
+  "@roundsRange": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "eliminationBestTitle": "Ton record",
+  "eliminationNoRecord": "Pas encore de record",
+  "roomFormat": "Format",
+  "formatRounds": "Par manches",
+  "formatElimination": "Éliminatoires",
+  "formatRoundsHelp": "Toutes les manches sont jouées : le meilleur total gagne.",
+  "formatEliminationHelp": "À chaque manche, le plus petit score est éliminé. Le dernier en lice gagne.",
+  "youAreEliminated": "Tu es éliminé : regarde la fin de la partie !",
+  "youAreOut": "Tu es éliminé !",
+  "playerIsOut": "{name} est éliminé !",
+  "@playerIsOut": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryFemaleName": "Prénom féminin",
+  "categoryMaleName": "Prénom masculin",
+  "manyCategoriesHint": "{count} catégories ou plus : 45 secondes minimum par manche.",
+  "@manyCategoriesHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "preparingGame": "Préparation de la partie…",
+  "playAlone": "JOUER SEUL",
+  "withFriends": "Avec tes amis",
+  "withFriendsHelp": "Une salle s'ouvre tout de suite, avec un code à partager comme dans un salon. Le plus petit score de chaque manche est éliminé.",
+  "inviteFriends": "INVITER DES AMIS",
+  "looksTitle": "Boutique style",
+  "looksSubtitle": "Essaie un look, puis achète-le avec tes pièces.",
+  "looksPreview": "Ton aperçu",
+  "looksPacks": "Packs",
+  "looksHair": "Coiffures",
+  "looksHat": "Chapeaux",
+  "looksFrame": "Cadres",
+  "looksName": "Pseudos",
+  "looksTiles": "Tuiles",
+  "looksVictory": "Victoire",
+  "looksPacksHint": "Plusieurs styles assortis, moins cher en lot.",
+  "looksHairHint": "Change de coupe sans toucher à ton personnage.",
+  "looksHatHint": "Couronnes, casquettes et chapeaux magiques.",
+  "looksFrameHint": "Anneaux, ornements, flammes ou étoiles.",
+  "looksNameHint": "Couleur, dégradé, contour ou badge devant le pseudo.",
+  "looksTilesHint": "Couleurs et motifs des cases quand tu joues.",
+  "looksVictoryHint": "Confettis, étoiles, bulles ou pluie de lettres.",
+  "looksHairSpiky": "Hérisson",
+  "looksHairBob": "Carré rose",
+  "looksHairCurly": "Boucles bleues",
+  "looksHairBun": "Chignon or",
+  "looksHatCrown": "Couronne",
+  "looksHatCap": "Casquette",
+  "looksHatWizard": "Chapeau mage",
+  "looksHatParty": "Fête",
+  "looksFrameOrnament": "Ornement",
+  "looksFrameFlames": "Flammes",
+  "looksFrameStars": "Étoiles",
+  "looksNameGradient": "Dégradé",
+  "looksNameOutline": "Contour",
+  "looksNameBadge": "Badge",
+  "looksTilesStripes": "Rayures",
+  "looksTilesDots": "Pois",
+  "looksTilesMetal": "Métal",
+  "looksVictoryStars": "Étoiles",
+  "looksVictoryBubbles": "Bulles",
+  "looksVictoryLetters": "Lettres",
+  "looksPackOcean": "Pack Océan",
+  "looksPackCandy": "Pack Bonbon",
+  "looksPackRoyal": "Pack Royal",
+  "looksPackContents": "{count} styles",
+  "@looksPackContents": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "looksOwned": "POSSEDÉ",
+  "looksEquip": "ÉQUIPER",
+  "looksEquipped": "ÉQUIPÉ",
+  "looksPrice": "{count} pièces",
+  "@looksPrice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "looksNotEnough": "Pas assez de pièces.",
+  "looksGold": "Or",
+  "looksPink": "Rose",
+  "looksCyan": "Cyan",
+  "looksViolet": "Violet",
+  "looksOrange": "Orange",
+  "looksMint": "Menthe"
 }

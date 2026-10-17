@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/candy_button.dart';
+import '../../../core/widgets/outlined_text.dart';
 
-/// Back button + white title used at the top of online screens.
+/// Bouton retour + titre blanc en haut des écrans en ligne.
 class OnlineHeader extends StatelessWidget {
   const OnlineHeader({
     super.key,
@@ -25,10 +26,12 @@ class OnlineHeader extends StatelessWidget {
         children: [
           RoundIconButton(icon: Icons.arrow_back_rounded, onPressed: onBack),
           const SizedBox(width: 12),
+          // Titre cerné de violet foncé : lisible quand le contenu défile
+          // dessous.
           Expanded(
-            child: Text(
+            child: OutlinedText(
               title,
-              overflow: TextOverflow.ellipsis,
+              strokeWidth: 3.5,
               style: fredoka(
                 size: 26,
                 weight: FontWeight.w700,

@@ -11,14 +11,18 @@ import 'package:letter_battle/features/game/solo_setup_screen.dart';
 import 'package:letter_battle/features/home/home_screen.dart';
 import 'package:letter_battle/features/online/room_screen.dart';
 import 'package:letter_battle/features/online/online_controller.dart';
+import 'package:letter_battle/features/online/create_room_screen.dart';
 import 'package:letter_battle/features/online/rooms_screen.dart';
+import 'package:letter_battle/features/shop/shop_controller.dart';
+import 'package:letter_battle/features/wallet/wallet.dart';
 import 'package:letter_battle/main.dart';
 
 import 'widget_test.dart' show fakeApi;
 
 const me = 'me-client-id';
 
-/// Fake WebSocket server: records what the app sends, pushes server events.
+/// Faux serveur WebSocket : enregistre ce que l'appli envoie et pousse des
+/// événements du serveur.
 class FakeSocket implements RealtimeConnection {
   final _incoming = StreamController<String>();
   final List<Map<String, dynamic>> sent = [];
@@ -32,7 +36,7 @@ class FakeSocket implements RealtimeConnection {
 
   @override
   Future<void> close() async {
-    // Not awaited: the app already cancelled its subscription.
+    // Sans await : l'appli a déjà annulé son abonnement.
     _incoming.close();
   }
 
@@ -54,6 +58,7 @@ class Harness {
       nickname: nickname ?? 'Joueur',
       pingInterval: null,
       connector: (uri) async {
+        if (refuseConnections) throw Exception('server unreachable');
         uris.add(uri);
         socket = FakeSocket();
         return socket;
@@ -69,10 +74,22 @@ class Harness {
   late FakeSocket socket;
   final List<Uri> uris = [];
 
-  Future<void> start(WidgetTester tester, Widget home) async {
+  /// Simule un serveur injoignable pour les reconnexions.
+  bool refuseConnections = false;
+
+  Future<void> start(
+    WidgetTester tester,
+    Widget home, {
+    ShopController? shop,
+  }) async {
     tester.platformDispatcher.localesTestValue = const [Locale('en')];
     await tester.pumpWidget(
-      LetterBattleApp(feedback: feedback, online: online, home: home),
+      LetterBattleApp(
+        feedback: feedback,
+        online: online,
+        shop: shop,
+        home: home,
+      ),
     );
     await client.connect();
     socket.push({'type': 'welcome', 'online_count': 7});
@@ -80,8 +97,9 @@ class Harness {
   }
 }
 
-/// The room screen refreshes its countdowns continuously, so it never
-/// "settles": advance time explicitly instead of pumpAndSettle.
+/// L'écran de salle rafraîchit ses comptes à rebours en continu, il ne se «
+/// stabilise » donc jamais : on avance le temps explicitement au lieu
+/// d'utiliser pumpAndSettle.
 Future<void> pumpFor(
   WidgetTester tester, [
   Duration duration = const Duration(seconds: 2),
@@ -170,10 +188,11 @@ void main() {
     final h = Harness();
     await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
 
-    expect(find.text('7 online'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+    expect(find.text('ONLINE'), findsOneWidget);
     h.socket.push({'type': 'online_count', 'count': 12});
     await tester.pumpAndSettle();
-    expect(find.text('12 online'), findsOneWidget);
+    expect(find.text('12'), findsOneWidget);
     expect(h.uris.single.queryParameters, {
       'client_id': me,
       'nickname': 'Blaise',
@@ -204,7 +223,7 @@ void main() {
     expect(find.byKey(const Key('letter')), findsOneWidget);
 
     await tester.enterText(find.byKey(const Key('field_city')), 'Madrid');
-    await tester.tap(find.text('FINISH'));
+    await tester.tap(find.byKey(const Key('key_finish')));
     await tester.pump();
     expect(h.socket.sent.last, {
       'type': 'submit',
@@ -220,7 +239,7 @@ void main() {
       ),
     );
     await pumpFor(tester);
-    expect(find.text('✅\nAnswers sent!'), findsOneWidget);
+    expect(find.text('Answers sent!'), findsOneWidget);
 
     Map<String, dynamic> result(
       String id,
@@ -260,6 +279,7 @@ void main() {
     await pumpFor(tester, const Duration(seconds: 3));
     expect(find.text('Your answers'), findsOneWidget);
     expect(find.text('Leaderboard'), findsOneWidget);
+    expect(find.text('Kevin found: Melun'), findsNothing);
     expect(find.textContaining('Next round in'), findsOneWidget);
     expect(h.feedback.audio, isA<SilentGameAudio>());
     expect(
@@ -277,7 +297,7 @@ void main() {
       ),
     );
     await pumpFor(tester, const Duration(seconds: 4));
-    expect(find.text('🏆 PODIUM'), findsOneWidget);
+    expect(find.text('PODIUM'), findsOneWidget);
     expect(find.text('42 pts'), findsOneWidget);
 
     await tester.tap(find.text('PLAY AGAIN'));
@@ -304,6 +324,9 @@ void main() {
   });
 
   testWidgets('rooms screen lists public rooms and joins one', (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final h = Harness();
     await h.start(tester, const RoomsScreen());
     expect(h.socket.sent.first, {'type': 'subscribe_rooms', 'language': 'en'});
@@ -315,6 +338,7 @@ void main() {
           'code': 'AB234',
           'quick': false,
           'host': 'Serge',
+          'nicknames': ['Serge', 'Kevin', 'Flore'],
           'players': 3,
           'max_players': 8,
           'language': 'en',
@@ -326,7 +350,8 @@ void main() {
     });
     await tester.pumpAndSettle();
     expect(find.text("Serge's room"), findsOneWidget);
-    expect(find.text('👤 3/8'), findsOneWidget);
+    expect(find.text('Serge, Kevin, Flore'), findsOneWidget);
+    expect(find.text('3/8'), findsOneWidget);
 
     await tester.tap(find.text("Serge's room"));
     await tester.pump();
@@ -334,6 +359,7 @@ void main() {
 
     h.socket.push(roomEvent('waiting'));
     await pumpFor(tester);
+    expect(find.byKey(const Key('share_code')), findsOneWidget);
     await tester.tap(find.byKey(const Key('ready_button')));
     await tester.pump();
     expect(h.socket.sent.last, {'type': 'set_ready', 'ready': true});
@@ -366,10 +392,10 @@ void main() {
     await h.start(tester, SoloSetupScreen(apiClient: fakeApi(healthy: true)));
 
     final list = find.byType(Scrollable).first;
-    await tester.scrollUntilVisible(find.text('🤖 2'), 150, scrollable: list);
+    await tester.scrollUntilVisible(find.text('2'), 150, scrollable: list);
     await tester.drag(list, const Offset(0, -300));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('🤖 2'));
+    await tester.tap(find.text('2'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.text('Bot level'),
@@ -409,6 +435,8 @@ void main() {
     );
     await pumpFor(tester);
     expect(find.text('Robo-Léa'), findsOneWidget);
+    // Avec un bot dans la salle, c'est la musique « bots ».
+    expect((h.feedback.audio as SilentGameAudio).mood, MusicMood.bots);
 
     await tester.tap(find.byKey(const Key('add_bot_button')));
     await pumpFor(tester, const Duration(seconds: 1));
@@ -437,7 +465,7 @@ void main() {
     await pumpFor(tester, const Duration(milliseconds: 500));
     h.socket.push({'type': 'notice', 'kind': 'bots_joined', 'nickname': ''});
     await pumpFor(tester, const Duration(milliseconds: 500));
-    expect(find.text('Nobody online: bots are joining you 🤖'), findsOneWidget);
+    expect(find.text('Nobody online: bots are joining you!'), findsOneWidget);
     await pumpFor(tester, const Duration(seconds: 3));
   });
 
@@ -470,7 +498,7 @@ void main() {
       'round': 1,
       'category': 'fruit',
       'hints_left': 2,
-      'options': ['Mangue', 'Madrid', 'Maroc', 'Mouton'],
+      'options': ['Mangue', 'Madrid', 'Maroc'],
     });
     await pumpFor(tester, const Duration(seconds: 1));
 
@@ -497,5 +525,298 @@ void main() {
       findsOneWidget,
       reason: 'wrong pick shown in red',
     );
+  });
+
+  testWidgets('leaving an online game warns the server', (tester) async {
+    final h = Harness();
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+    await tester.tap(find.text('Quick match'));
+    await pumpFor(tester);
+    h.socket.push(roomEvent('round', round: round1()));
+    await pumpFor(tester);
+
+    await tester.tap(find.byKey(const Key('quit_button')));
+    await pumpFor(tester, const Duration(milliseconds: 500));
+    await tester.tap(find.byKey(const Key('dialog_confirm')));
+    await pumpFor(tester);
+
+    expect(h.socket.sent.last, {'type': 'leave_room'});
+    expect(find.byType(RoomScreen), findsNothing);
+    expect(find.text('Quick match'), findsOneWidget);
+  });
+
+  testWidgets('online results show what others found where I missed', (
+    tester,
+  ) async {
+    final h = Harness();
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+    await tester.tap(find.text('Quick match'));
+    await pumpFor(tester);
+
+    Map<String, dynamic> answer(String category, String value, bool valid) => {
+      'category': category,
+      'value': value,
+      'status': valid ? 'valid' : 'not_found',
+      'points': valid ? 10 : 0,
+      'matched_value': valid ? value : null,
+    };
+    h.socket.push(
+      roomEvent(
+        'results',
+        players: [player(me, 'Blaise'), player('flo', 'Flore', score: 10)],
+        results: {
+          'number': 1,
+          'letter': 'M',
+          'examples': {'city': 'Madrid'},
+          'players': [
+            {
+              'client_id': me,
+              'nickname': 'Blaise',
+              'round_score': 0,
+              'elapsed_ms': 4000,
+              'answers': [
+                answer('city', 'Mxx', false),
+                answer('fruit', '', false),
+              ],
+            },
+            {
+              'client_id': 'flo',
+              'nickname': 'Flore',
+              'round_score': 10,
+              'elapsed_ms': 3000,
+              'answers': [
+                answer('city', 'Mzz', false),
+                answer('fruit', 'Melon', true),
+              ],
+            },
+          ],
+        },
+      ),
+    );
+    await pumpFor(tester, const Duration(seconds: 3));
+
+    expect(find.text('Flore found: Melon'), findsOneWidget);
+    expect(
+      find.text('Possible answer: Madrid'),
+      findsOneWidget,
+      reason: 'personne n\'a trouvé la ville',
+    );
+  });
+
+  testWidgets('home shows the coins and celebrates a gain', (tester) async {
+    final h = Harness();
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+    h.socket.push({
+      'type': 'wallet',
+      'coins': 4,
+      'coins_gained': 0,
+      'points_to_next_coin': 10,
+    });
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('coin_counter')),
+        matching: find.text('4'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('coin_gain')), findsNothing);
+
+    h.socket.push({
+      'type': 'wallet',
+      'coins': 5,
+      'coins_gained': 1,
+      'points_to_next_coin': 20,
+    });
+    await pumpFor(tester, const Duration(milliseconds: 600));
+    expect(find.byKey(const Key('coin_gain')), findsOneWidget);
+    expect(find.text('+1 coin'), findsOneWidget);
+    await pumpFor(tester, const Duration(seconds: 3));
+    expect(find.byKey(const Key('coin_gain')), findsNothing);
+    expect(h.online.wallet!.coins, 5);
+  });
+
+  testWidgets('creating a betting room sends the stake', (tester) async {
+    final h = Harness();
+    await h.start(tester, const CreateRoomScreen());
+    h.online.applyWallet(const WalletSnapshot(coins: 30));
+    await tester.pump();
+
+    await tester.tap(find.text('Bets'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('25'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Your balance: 30'), findsOneWidget);
+    await tester.tap(find.text('CREATE'));
+    await tester.pump();
+    final settings = h.socket.sent.last['settings'] as Map<String, dynamic>;
+    expect((settings['kind'], settings['stake']), ('bet', 25));
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('a betting room shows the pot, then what I won', (tester) async {
+    final h = Harness();
+    await h.start(tester, const RoomScreen());
+    Map<String, dynamic> bet(Map<String, dynamic> event) {
+      final room = event['room'] as Map<String, dynamic>;
+      (room['settings'] as Map<String, dynamic>)
+        ..['kind'] = 'bet'
+        ..['stake'] = 10;
+      return event;
+    }
+
+    h.socket.push(bet(roomEvent('waiting')));
+    await pumpFor(tester);
+    final audio = h.feedback.audio as SilentGameAudio;
+    expect((audio.mood, audio.quiet), (MusicMood.room, false));
+    expect(find.text('Stake 10 · Pot: 20'), findsOneWidget);
+    expect(find.byKey(const Key('add_bot_button')), findsNothing);
+
+    final finished = bet(
+      roomEvent(
+        'finished',
+        players: [
+          player(me, 'Blaise', score: 30),
+          player('kev', 'Kevin', score: 10),
+        ],
+      ),
+    );
+    (finished['room'] as Map<String, dynamic>)
+      ..['pot'] = 20
+      ..['winnings'] = {me: 20};
+    h.socket.push(finished);
+    await pumpFor(tester, const Duration(seconds: 3));
+    expect(find.text('You win 20 coins!'), findsOneWidget);
+  });
+
+  testWidgets('a new level is celebrated', (tester) async {
+    final h = Harness();
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+    h.socket.push({
+      'type': 'wallet',
+      'coins': 1,
+      'coins_gained': 0,
+      'points_to_next_coin': 20,
+      'level': 1,
+      'level_xp': 90,
+      'level_xp_needed': 100,
+    });
+    await pumpFor(tester, const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('level_up')), findsNothing);
+
+    h.socket.push({
+      'type': 'wallet',
+      'coins': 2,
+      'coins_gained': 1,
+      'points_to_next_coin': 20,
+      'level': 2,
+      'level_xp': 10,
+      'level_xp_needed': 200,
+    });
+    await pumpFor(tester, const Duration(milliseconds: 600));
+    expect(find.text('LEVEL 2!'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('avatar_button')),
+        matching: find.text('2'),
+      ),
+      findsOneWidget,
+    );
+    await pumpFor(tester, const Duration(seconds: 3));
+  });
+
+  testWidgets('knockout room: the eliminated player is shown and watches', (
+    tester,
+  ) async {
+    final h = Harness();
+    await h.start(tester, const RoomScreen());
+    Map<String, dynamic> knockout(Map<String, dynamic> event) {
+      ((event['room'] as Map<String, dynamic>)['settings']
+              as Map<String, dynamic>)['format'] =
+          'elimination';
+      return event;
+    }
+
+    h.socket.push(
+      knockout(
+        roomEvent(
+          'results',
+          players: [
+            player(me, 'Blaise', score: 0),
+            {...player('kev', 'Kevin', score: 10)},
+          ],
+          results: {
+            'number': 1,
+            'letter': 'M',
+            'players': [
+              {
+                'client_id': me,
+                'nickname': 'Blaise',
+                'answers': [],
+                'round_score': 0,
+              },
+              {
+                'client_id': 'kev',
+                'nickname': 'Kevin',
+                'answers': [],
+                'round_score': 10,
+              },
+            ],
+            'eliminated': [me],
+          },
+        ),
+      ),
+    );
+    await pumpFor(tester);
+    expect(find.text('You are out!'), findsOneWidget);
+
+    final round = knockout(
+      roomEvent(
+        'round',
+        players: [
+          {...player(me, 'Blaise'), 'playing': false, 'eliminated_round': 1},
+          player('kev', 'Kevin'),
+        ],
+        round: round1(),
+      ),
+    );
+    h.socket.push(round);
+    await pumpFor(tester);
+    expect(
+      find.text('You are out: watch the end of the game!'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('during a round, the players strip shows who is playing', (
+    tester,
+  ) async {
+    final h = Harness();
+    await h.start(tester, const RoomScreen());
+    h.socket.push(
+      roomEvent(
+        'round',
+        players: [
+          player(me, 'Blaise', score: 15),
+          player('kev', 'Kevin', score: 20, finished: true),
+          player('flo', 'Flore', score: 5),
+        ],
+        round: round1(),
+      ),
+    );
+    await pumpFor(tester);
+    final strip = find.byKey(const Key('players_strip'));
+    expect(strip, findsOneWidget);
+    for (final name in ['You', 'Kevin', 'Flore']) {
+      expect(
+        find.descendant(of: strip, matching: find.text(name)),
+        findsOneWidget,
+      );
+    }
+    expect(
+      find.descendant(of: strip, matching: find.text('20 pts')),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(seconds: 1));
   });
 }

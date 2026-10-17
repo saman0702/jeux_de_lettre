@@ -2,3 +2,11 @@ __pycache__/
 .venv/
 .pytest_cache/
 tests/
+*.pyc
+*.pyo
+.env
+.env.*
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/

@@ -21,10 +21,10 @@ async def game_socket(
     client_id: str = Query(...),
     nickname: str = Query("Joueur"),
 ):
-    """One persistent connection per app: presence, lobby and live games.
+    """Une connexion persistante par appli : présence, salle d'attente et parties en direct.
 
-    `client_id` is a random id the app generates once and keeps, so a player
-    who loses the connection gets their seat back on reconnect.
+    `client_id` est un identifiant aléatoire que l'appli génère une fois et conserve : un joueur qui
+    perd la connexion retrouve sa place en se reconnectant.
     """
     if not _CLIENT_ID.match(client_id):
         await websocket.close(code=4400, reason="invalid client_id")

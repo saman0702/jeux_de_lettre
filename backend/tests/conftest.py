@@ -19,6 +19,8 @@ TEST_DB = f"{settings.postgres_db}_test"
 TEST_DATABASE_URL = settings.database_url.rsplit("/", 1)[0] + f"/{TEST_DB}"
 
 TEST_CITIES = ["Marseille", "Mbandaka", "Madrid", "Montréal", "Le Havre", "Abidjan", "Paris"]
+TEST_FEMALE_NAMES = ["Marie", "Mariam", "Manon", "Awa", "Camille"]
+TEST_MALE_NAMES = ["Mamadou", "Marc", "Moussa", "Kofi", "Camille"]
 
 
 async def _prepare_database() -> None:
@@ -41,7 +43,12 @@ async def _prepare_database() -> None:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
         cities = ((Category.CITY, ANY_LANGUAGE, city) for city in TEST_CITIES)
-        await conn.execute(insert(Answer), build_rows(curated_entries()) + build_rows(cities))
+        names = [(Category.FEMALE_NAME, ANY_LANGUAGE, n) for n in TEST_FEMALE_NAMES] + [
+            (Category.MALE_NAME, ANY_LANGUAGE, n) for n in TEST_MALE_NAMES
+        ]
+        await conn.execute(
+            insert(Answer), build_rows(curated_entries()) + build_rows(cities) + build_rows(iter(names))
+        )
     await engine.dispose()
 
 
@@ -54,7 +61,7 @@ def database():
 async def session_factory():
     engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
     async with engine.begin() as conn:
-        await conn.execute(text("TRUNCATE games CASCADE"))
+        await conn.execute(text("TRUNCATE games, profiles CASCADE"))
     letter_service.clear_cache()
     yield async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     await engine.dispose()

@@ -8,19 +8,25 @@ import '../../../core/audio/game_audio.dart';
 import '../../../core/feedback/game_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/game_icon.dart';
 import '../../../core/widgets/letter_tile.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
 import '../hints/hint_controller.dart';
+import '../../shop/cosmetics.dart';
+import '../../shop/look_styles.dart';
+import 'country_flag.dart';
 import 'labels.dart';
 
-const _maxLength = 24;
+/// Réponse la plus longue acceptée, utilisée aussi par le clavier de jeu.
+const answerMaxLength = 24;
 
-/// Game-style answer input: typed letters become tiles that pop in with a
-/// "tock", the category shows as a coloured badge, and the active slot glows.
+/// Saisie des réponses façon jeu : les lettres tapées deviennent des tuiles qui
+/// apparaissent avec un « toc », la catégorie s'affiche en badge coloré et le
+/// champ actif brille.
 ///
-/// A real (invisible) TextField still handles the keyboard, IME and
-/// accessibility; only its rendering is replaced.
+/// Un vrai TextField (invisible) gère toujours le clavier, la saisie et
+/// l'accessibilité ; seul son affichage est remplacé.
 class AnswerSlot extends StatefulWidget {
   const AnswerSlot({
     super.key,
@@ -32,6 +38,8 @@ class AnswerSlot extends StatefulWidget {
     required this.isLast,
     required this.onDone,
     this.hints,
+    this.focusNode,
+    this.systemKeyboard = true,
   });
 
   final Category category;
@@ -43,13 +51,20 @@ class AnswerSlot extends StatefulWidget {
   final VoidCallback onDone;
   final HintController? hints;
 
+  /// Fourni quand l'écran de manche pilote le focus (clavier de jeu).
+  final FocusNode? focusNode;
+
+  /// Faux avec le clavier de jeu : le champ garde le focus mais le clavier du
+  /// téléphone reste caché.
+  final bool systemKeyboard;
+
   @override
   State<AnswerSlot> createState() => _AnswerSlotState();
 }
 
 class _AnswerSlotState extends State<AnswerSlot>
     with SingleTickerProviderStateMixin {
-  final _focus = FocusNode();
+  late final FocusNode _focus = widget.focusNode ?? FocusNode();
   final _scroll = ScrollController();
   late final AnimationController _glow = AnimationController(
     vsync: this,
@@ -80,7 +95,8 @@ class _AnswerSlotState extends State<AnswerSlot>
   @override
   void dispose() {
     widget.controller.removeListener(_onText);
-    _focus.dispose();
+    _focus.removeListener(_onFocus);
+    if (widget.focusNode == null) _focus.dispose();
     _scroll.dispose();
     _glow.dispose();
     super.dispose();
@@ -91,10 +107,14 @@ class _AnswerSlotState extends State<AnswerSlot>
       !_locked && firstLetterOf(widget.controller.text) == widget.letter;
 
   void _onFocus() {
-    if (_focus.hasFocus && GameFeedbackScope.of(context).ambientMotion) {
+    if (_focus.hasFocus) {
+      // Pulsation même sans motion ambiant : on doit voir clairement le
+      // champ actif.
       _glow.repeat(reverse: true);
     } else {
-      _glow.stop();
+      _glow
+        ..stop()
+        ..value = 0;
     }
     setState(() {});
   }
@@ -113,7 +133,7 @@ class _AnswerSlotState extends State<AnswerSlot>
     }
     _matched = _matches;
     _previous = text;
-    // Keep the newest tile in view.
+    // Garde la dernière tuile visible.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
         _scroll.animateTo(
@@ -143,45 +163,71 @@ class _AnswerSlotState extends State<AnswerSlot>
             : matches
             ? AppColors.green
             : category.color;
-        final glow = focused ? 0.35 + 0.35 * _glow.value : 0.0;
+        final glow = focused ? 0.4 + 0.35 * _glow.value : 0.0;
 
         return GestureDetector(
           onTap: widget.enabled && !locked ? _focus.requestFocus : null,
           child: Padding(
             padding: const EdgeInsets.only(top: 10),
-            child: Stack(
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 180),
+              opacity: focused || locked || !widget.enabled ? 1 : 0.72,
+              child: AnimatedScale(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutBack,
+                scale: focused ? 1.04 : 1,
+                alignment: Alignment.center,
+                child: Stack(
               clipBehavior: Clip.none,
               children: [
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  height: 74,
+                  height: focused ? 68 : 64,
                   decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: accent, width: focused ? 4 : 3),
+                    color: focused
+                        ? Color.lerp(AppColors.white, accent, 0.14)!
+                        : AppColors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: focused
+                          ? accent
+                          : accent.withValues(alpha: 0.55),
+                      width: focused ? 4 : 2,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.depthOf(accent),
-                        offset: const Offset(0, 6),
+                        offset: Offset(0, focused ? 6 : 4),
                       ),
-                      if (focused)
+                      if (focused) ...[
                         BoxShadow(
                           color: accent.withValues(alpha: glow),
-                          blurRadius: 18,
-                          spreadRadius: 2,
+                          blurRadius: 20,
+                          spreadRadius: 3,
                         ),
+                        BoxShadow(
+                          color: AppColors.white.withValues(alpha: 0.85),
+                          blurRadius: 0,
+                          spreadRadius: -1,
+                          offset: const Offset(0, 0),
+                        ),
+                      ],
                     ],
                   ),
                   child: Row(
                     children: [
                       const SizedBox(width: 10),
-                      _CategoryBadge(category: category),
+                      _CountryOrBadge(
+                        category: category,
+                        text: widget.controller.text,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Stack(
                           alignment: Alignment.centerLeft,
                           children: [
-                            // The real input, invisible: tiles below show its text.
+                            // La vraie saisie, invisible : les tuiles en
+                            // dessous affichent son texte.
                             Opacity(
                               opacity: 0,
                               child: TextField(
@@ -194,10 +240,15 @@ class _AnswerSlotState extends State<AnswerSlot>
                                 enableSuggestions: false,
                                 enableInteractiveSelection: false,
                                 showCursor: false,
+                                keyboardType: widget.systemKeyboard
+                                    ? TextInputType.text
+                                    : TextInputType.none,
                                 textCapitalization:
                                     TextCapitalization.characters,
                                 inputFormatters: [
-                                  LengthLimitingTextInputFormatter(_maxLength),
+                                  LengthLimitingTextInputFormatter(
+                                    answerMaxLength,
+                                  ),
                                 ],
                                 textInputAction: widget.isLast
                                     ? TextInputAction.done
@@ -233,44 +284,84 @@ class _AnswerSlotState extends State<AnswerSlot>
                             hints != null &&
                             widget.enabled &&
                             hints.canHint(category),
+                        canBuyHint:
+                            hints != null &&
+                            widget.enabled &&
+                            hints.canBuyHint(category),
                         hintsLeft: hints?.hintsLeft ?? 0,
                         hintKey: Key('hint_${category.name}'),
                         onHint: () =>
                             hints!.use(context, category, widget.controller),
+                        onBuyHint: () => hints!.buyAndUse(
+                          context,
+                          category,
+                          widget.controller,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                // Game-HUD style label sitting on the border.
+                // Étiquette façon affichage de jeu, posée sur le bord.
                 Positioned(
-                  top: -10,
+                  top: focused ? -12 : -10,
                   left: 18,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: accent,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.white, width: 2),
-                    ),
-                    child: Text(
-                      category.label(l10n).toUpperCase(),
-                      style: fredoka(
-                        size: 12,
-                        weight: FontWeight.w700,
-                        color: AppColors.white,
+                  child: AnimatedScale(
+                    duration: const Duration(milliseconds: 180),
+                    scale: focused ? 1.08 : 1,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: focused ? 10 : 8,
+                        vertical: focused ? 2 : 0,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.white,
+                          width: focused ? 2.5 : 2,
+                        ),
+                        boxShadow: focused
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.depthOf(accent),
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        category.label(l10n).toUpperCase(),
+                        style: fredoka(
+                          size: focused ? 12 : 11,
+                          weight: FontWeight.w700,
+                          color: AppColors.white,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ],
             ),
+              ),
+            ),
           ),
         );
       },
     );
+  }
+}
+
+class _CountryOrBadge extends StatelessWidget {
+  const _CountryOrBadge({required this.category, required this.text});
+
+  final Category category;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = category == Category.country ? flagSpecFor(text) : null;
+    if (spec == null) return _CategoryBadge(category: category);
+    return CountryFlag(spec: spec, width: 42);
   }
 }
 
@@ -281,27 +372,7 @@ class _CategoryBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = category.color;
-    return Container(
-      width: 46,
-      height: 46,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color.lerp(color, Colors.white, 0.35)!, color],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.depthOf(color),
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Text(category.emoji, style: const TextStyle(fontSize: 24)),
-    );
+    return GameIconBadge(category.icon, color: category.color, size: 40);
   }
 }
 
@@ -324,16 +395,24 @@ class _Tiles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tileColor = Color.lerp(color, Colors.white, 0.6)!;
+    final tileStyle = GameFeedbackScope.of(context).settings.tileStyle;
+    final bought = cosmeticOf(tileStyle)?.color;
+    final tileColor = bought ?? Color.lerp(color, Colors.white, 0.6)!;
+    final pattern = tilePatternOf(tileStyle);
     final chars = text.characters.toList();
 
     if (chars.isEmpty && !focused) {
-      // Ghost hint: the letter to start with.
+      // Indice fantôme : la lettre par laquelle commencer.
       return Opacity(
         opacity: 0.35,
         child: Row(
           children: [
-            LetterTile(letter: letter, size: 32, color: tileColor),
+            LetterTile(
+              letter: letter,
+              size: 32,
+              color: tileColor,
+              pattern: pattern,
+            ),
             const SizedBox(width: 6),
             Text(
               '…',
@@ -348,7 +427,8 @@ class _Tiles extends StatelessWidget {
       );
     }
 
-    // Tiles shrink so the whole word stays visible, down to a readable size.
+    // Les tuiles rétrécissent pour que le mot entier reste visible, jusqu'à une
+    // taille encore lisible.
     return LayoutBuilder(
       builder: (context, constraints) {
         final slots = chars.length + (focused ? 1 : 0);
@@ -379,22 +459,29 @@ class _Tiles extends StatelessWidget {
                           letter: char.toUpperCase(),
                           size: size,
                           color: tileColor,
+                          pattern: pattern,
                         ),
                       ),
                     ),
                   ),
-              if (focused && chars.length < _maxLength)
+              if (focused && chars.length < answerMaxLength)
                 Padding(
                   padding: EdgeInsets.only(top: (30 - size) / 2 + 4),
                   child: Opacity(
-                    opacity: 0.35 + 0.5 * (1 - (2 * blink - 1).abs()),
+                    opacity: 0.55 + 0.45 * (1 - (2 * blink - 1).abs()),
                     child: Container(
                       width: size - 2,
                       height: size,
                       decoration: BoxDecoration(
-                        color: tileColor.withValues(alpha: 0.4),
+                        color: Color.lerp(tileColor, color, 0.25),
                         borderRadius: BorderRadius.circular(7),
-                        border: Border.all(color: color, width: 2),
+                        border: Border.all(color: color, width: 2.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.35),
+                            blurRadius: 6,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -413,18 +500,22 @@ class _Trailing extends StatelessWidget {
     required this.correct,
     required this.matches,
     required this.canHint,
+    required this.canBuyHint,
     required this.hintsLeft,
     required this.hintKey,
     required this.onHint,
+    required this.onBuyHint,
   });
 
   final bool locked;
   final bool? correct;
   final bool matches;
   final bool canHint;
+  final bool canBuyHint;
   final int hintsLeft;
   final Key hintKey;
   final VoidCallback onHint;
+  final VoidCallback onBuyHint;
 
   @override
   Widget build(BuildContext context) {
@@ -433,7 +524,11 @@ class _Trailing extends StatelessWidget {
         padding: const EdgeInsets.only(right: 12),
         child: Row(
           children: [
-            const Text('💡', style: TextStyle(fontSize: 20)),
+            const GameIcon(
+              GameIconKind.hint,
+              size: 22,
+              color: AppColors.yellow,
+            ),
             Icon(
               correct! ? Icons.check_circle_rounded : Icons.cancel_rounded,
               color: correct! ? AppColors.green : AppColors.red,
@@ -462,6 +557,70 @@ class _Trailing extends StatelessWidget {
         ),
       );
     }
+    if (canBuyHint) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 10),
+        child: GestureDetector(
+          key: Key('${hintKey}_buy'),
+          onTap: onBuyHint,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.orange,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.depthOf(AppColors.orange),
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const GameIcon(GameIconKind.hint, size: 22),
+              ),
+              Positioned(
+                top: -6,
+                right: -10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: AppColors.yellow,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.white, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.depthOf(AppColors.yellow),
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const GameIcon(GameIconKind.coin, size: 11),
+                      const SizedBox(width: 2),
+                      Text(
+                        '$extraHintPrice',
+                        style: fredoka(
+                          size: 11,
+                          weight: FontWeight.w700,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     if (!canHint) return const SizedBox(width: 12);
     return Padding(
       padding: const EdgeInsets.only(right: 10),
@@ -485,7 +644,7 @@ class _Trailing extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Text('💡', style: TextStyle(fontSize: 20)),
+              child: const GameIcon(GameIconKind.hint, size: 24),
             ),
             Positioned(
               top: -4,

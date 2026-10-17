@@ -5,7 +5,7 @@ import '../data/solo_backend.dart';
 import 'normalization.dart';
 import 'offline_dictionary.dart';
 
-/// Same rules as the server (backend/app/core/game_rules.py).
+/// Mêmes règles que le serveur (backend/app/core/game_rules.py).
 abstract final class OfflineRules {
   static const hardLetters = 'KQWXYZ';
   static const allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -23,7 +23,7 @@ abstract final class OfflineRules {
   static const hintPoints = 5;
   static const hintsPerGame = 3;
   static const submitGrace = Duration(seconds: 2);
-  static const hintOptions = 4;
+  static const hintOptions = 3;
 }
 
 class _Game {
@@ -33,6 +33,9 @@ class _Game {
   final SoloGameSettings settings;
   final List<String> letters = [];
   final Map<Category, _Hint> hints = {};
+
+  /// Clés normalisées validées pendant cette partie.
+  final Map<Category, Set<String>> usedKeys = {};
   int hintsUsed = 0;
   int totalScore = 0;
   int roundsPlayed = 0;
@@ -49,8 +52,8 @@ class _Hint {
   String? picked;
 }
 
-/// Solo games played entirely on the device, for when the server is
-/// unreachable. Validation and scoring match the server.
+/// Parties solo jouées entièrement sur l'appareil, quand le serveur est
+/// injoignable. La validation et le score sont identiques à ceux du serveur.
 class OfflineSoloBackend implements SoloBackend {
   OfflineSoloBackend(
     this._dictionary, {
@@ -90,7 +93,7 @@ class OfflineSoloBackend implements SoloBackend {
   _Game _game(String id) =>
       _games[id] ?? (throw StateError('unknown offline game $id'));
 
-  // ------------------------------------------------------------------ letters
+  // ------------------------------------------------------------------- lettres
 
   String _drawLetter(_Game game) {
     final settings = game.settings;
@@ -105,7 +108,11 @@ class OfflineSoloBackend implements SoloBackend {
           letter,
     ];
     if (eligible.isEmpty) throw StateError('no letter available');
-    final fresh = eligible.where((l) => !game.letters.contains(l)).toList();
+    final blocked = {
+      ...game.letters,
+      ...game.settings.avoidLetters.split(''),
+    };
+    final fresh = eligible.where((l) => !blocked.contains(l)).toList();
     final pool = fresh.isEmpty ? eligible : fresh;
     return pool[_random.nextInt(pool.length)];
   }
@@ -129,22 +136,35 @@ class OfflineSoloBackend implements SoloBackend {
     );
   }
 
-  // --------------------------------------------------------------- validation
+  // ---------------------------------------------------------------- validation
 
-  /// Port of validation_service.validate_answer.
+  Set<String> _bannedKeys(_Game game, Category category) {
+    final keys = <String>{...?game.usedKeys[category]};
+    for (final word in game.settings.bannedAnswers[category] ?? const []) {
+      keys.add(_norm.normalize(word));
+      keys.addAll(_norm.lookupKeys(word, category));
+    }
+    return keys;
+  }
+
+  /// Portage de validation_service.validate_answer.
   (AnswerStatus, String?) validate(
     Category category,
     String language,
     String letter,
-    String raw,
-  ) {
+    String raw, {
+    Set<String> banned = const {},
+  }) {
     final keys = _norm.lookupKeys(raw, category);
     if (keys.isEmpty) return (AnswerStatus.empty, null);
     for (final key in keys) {
       final value = _dictionary.find(category, language, key);
       if (value != null) {
         if (!Normalizer.startsWithLetter(key, letter)) {
-          return (AnswerStatus.wrongLetter, null);
+          return (AnswerStatus.wrongLetter, value);
+        }
+        if (banned.contains(key)) {
+          return (AnswerStatus.alreadyUsed, value);
         }
         return (AnswerStatus.valid, value);
       }
@@ -172,12 +192,24 @@ class OfflineSoloBackend implements SoloBackend {
       final hint = game.hints[category];
       final raw = hint?.picked ?? answers[category] ?? '';
       final hinted = hint?.picked != null;
+      final banned = _bannedKeys(game, category);
       final (status, matched) = late
           ? (AnswerStatus.late, null)
           : (hinted && hint!.picked != hint.answer)
           ? (AnswerStatus.hintWrong, null)
-          : validate(category, settings.language, letter, raw);
+          : validate(
+              category,
+              settings.language,
+              letter,
+              raw,
+              banned: banned,
+            );
       final valid = status == AnswerStatus.valid;
+      if (valid && matched != null) {
+        game.usedKeys.putIfAbsent(category, () => {}).addAll(
+          _norm.lookupKeys(matched, category),
+        );
+      }
       results.add(
         AnswerResult(
           category: category,
@@ -188,6 +220,9 @@ class OfflineSoloBackend implements SoloBackend {
               : 0,
           matchedValue: matched,
           hinted: hinted,
+          suggestion: valid
+              ? null
+              : _example(category, settings.language, letter),
         ),
       );
     }
@@ -209,7 +244,15 @@ class OfflineSoloBackend implements SoloBackend {
     );
   }
 
-  // -------------------------------------------------------------------- hints
+  /// Une réponse connue de la catégorie, montrée quand le joueur s'est trompé.
+  String? _example(Category category, String language, String letter) {
+    final answers = _dictionary.answers(category, language, letter, limit: 10);
+    return answers.isEmpty
+        ? null
+        : answers[_random.nextInt(answers.length)].value;
+  }
+
+  // -------------------------------------------------------------------- jokers
 
   @override
   Future<HintOptions> requestHint(
@@ -255,7 +298,21 @@ class OfflineSoloBackend implements SoloBackend {
     );
   }
 
-  /// Port of hint_service.build_hint.
+  @override
+  Future<BuyHintResult> buyHint(String gameId) async {
+    throw const OfflineError('not_online');
+  }
+
+  @override
+  Future<CategoryInfo> buyCategoryInfo(
+    String gameId,
+    int roundNumber,
+    Category category,
+  ) async {
+    throw const OfflineError('not_online');
+  }
+
+  /// Portage de hint_service.build_hint.
   _Hint _buildHint(Category category, String language, String letter) {
     int pool(Category c) => c == Category.city ? 12 : 40;
     final answers = _dictionary.answers(

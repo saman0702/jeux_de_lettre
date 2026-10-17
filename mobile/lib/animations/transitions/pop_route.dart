@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Screen transition: the new page fades in while growing slightly.
+/// Transition d'écran : la nouvelle page apparaît en fondu en grandissant
+/// légèrement.
 class PopRoute<T> extends PageRouteBuilder<T> {
   PopRoute({required WidgetBuilder builder})
     : super(

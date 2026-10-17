@@ -8,6 +8,7 @@ import '../../animations/transitions/pop_route.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
+import '../../core/widgets/scroll_under_bars.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_card.dart';
 import '../../l10n/app_localizations.dart';
@@ -19,8 +20,9 @@ import 'room_screen.dart';
 import 'widgets/online_counter.dart';
 import 'widgets/online_header.dart';
 import 'widgets/player_avatar.dart';
+import '../../core/widgets/game_icon.dart';
 
-/// Open public rooms, plus creating a room or joining one with a code.
+/// Salons publics ouverts, avec la création d'une salle ou l'accès par code.
 class RoomsScreen extends StatefulWidget {
   const RoomsScreen({super.key});
 
@@ -47,7 +49,8 @@ class _RoomsScreenState extends State<RoomsScreen> {
     }
   }
 
-  /// The subscription is lost with the connection: renew it on reconnect.
+  /// L'abonnement est perdu avec la connexion : on le renouvelle à la
+  /// reconnexion.
   void _rewatch() {
     if (_online.isOnline) _online.watchRooms(_language);
   }
@@ -79,11 +82,8 @@ class _RoomsScreenState extends State<RoomsScreen> {
   }
 
   Future<void> _askCode() async {
-    final code = await showDialog<String>(
-      context: context,
-      builder: (_) => const _JoinCodeDialog(),
-    );
-    if (code != null && code.isNotEmpty) _join(code);
+    final code = await askRoomCode(context);
+    if (code != null) _join(code);
   }
 
   Future<void> _create() async {
@@ -101,78 +101,90 @@ class _RoomsScreenState extends State<RoomsScreen> {
         child: SafeArea(
           child: ListenableBuilder(
             listenable: _online,
-            builder: (context, _) => Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                OnlineHeader(
-                  title: l10n.roomsTitle,
-                  onBack: () => Navigator.of(context).pop(),
-                  trailing: const OnlineCounter(),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      CandyButton(
-                        label: l10n.createRoom,
-                        icon: Icons.add_rounded,
-                        onPressed: _online.isOnline ? _create : null,
-                      ),
-                      const SizedBox(height: 12),
-                      CandyButton(
-                        label: l10n.joinWithCode,
-                        icon: Icons.vpn_key_rounded,
-                        color: AppColors.white,
-                        height: 54,
-                        fontSize: 19,
-                        onPressed: _online.isOnline ? _askCode : null,
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 22, 24, 8),
-                  child: Text(
-                    l10n.publicRoomsTitle,
-                    style: fredoka(
-                      size: 20,
-                      weight: FontWeight.w700,
-                      color: AppColors.white,
+            // Seul l'en-tête reste en place : boutons et salons défilent
+            // dessous, sans bord visible.
+            builder: (context, _) => ScrollUnderBars(
+              header: OnlineHeader(
+                title: l10n.roomsTitle,
+                onBack: () => Navigator.of(context).pop(),
+                trailing: const OnlineCounter(),
+              ),
+              builder: (context, padding) => ListView(
+                padding: padding.copyWith(bottom: padding.bottom + 12),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        CandyButton(
+                          label: l10n.createRoom,
+                          icon: Icons.add_rounded,
+                          onPressed: _online.isOnline ? _create : null,
+                        ),
+                        const SizedBox(height: 12),
+                        CandyButton(
+                          label: l10n.joinWithCode,
+                          icon: Icons.vpn_key_rounded,
+                          color: AppColors.white,
+                          height: 54,
+                          fontSize: 19,
+                          onPressed: _online.isOnline ? _askCode : null,
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                Expanded(
-                  child: _online.rooms.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(32),
-                            child: Text(
-                              '🛋️\n${l10n.noPublicRooms}',
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 22, 24, 8),
+                    child: Text(
+                      l10n.publicRoomsTitle,
+                      style: fredoka(
+                        size: 20,
+                        weight: FontWeight.w700,
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ),
+                  if (_online.rooms.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const GameIconBadge(
+                              GameIconKind.empty,
+                              color: AppColors.purpleLight,
+                              size: 72,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              l10n.noPublicRooms,
                               textAlign: TextAlign.center,
                               style: fredoka(
                                 size: 17,
                                 color: AppColors.white.withValues(alpha: 0.85),
                               ),
                             ),
-                          ),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                          itemCount: _online.rooms.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, i) => BounceIn(
-                            key: ValueKey(_online.rooms[i].code),
-                            from: 0.8,
-                            child: _RoomTile(
-                              room: _online.rooms[i],
-                              onTap: () => _join(_online.rooms[i].code),
-                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    for (final room in _online.rooms)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                        child: BounceIn(
+                          key: ValueKey(room.code),
+                          from: 0.8,
+                          child: _RoomTile(
+                            room: room,
+                            onTap: () => _join(room.code),
                           ),
                         ),
-                ),
-              ],
+                      ),
+                ],
+              ),
             ),
           ),
         ),
@@ -190,9 +202,7 @@ class _RoomTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final name = room.quick
-        ? '⚡ ${l10n.modeQuickMatch}'
-        : l10n.roomOf(room.host);
+    final name = room.quick ? l10n.modeQuickMatch : l10n.roomOf(room.host);
 
     Widget chip(String text) => Container(
       margin: const EdgeInsets.only(right: 6, top: 6),
@@ -214,10 +224,16 @@ class _RoomTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: GameCard(
-        padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            PlayerAvatar(nickname: room.host, seed: room.code, size: 48),
+            if (room.quick)
+              const GameIconBadge(
+                GameIconKind.bolt,
+                color: AppColors.orange,
+                size: 48,
+              )
+            else
+              PlayerAvatar(nickname: room.host, seed: room.code, size: 48),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -229,11 +245,49 @@ class _RoomTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: fredoka(size: 18, weight: FontWeight.w700),
                   ),
+                  if (room.nicknames.isNotEmpty)
+                    Text(
+                      room.nicknames.join(', '),
+                      key: ValueKey('with_${room.code}'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: fredoka(
+                        size: 14,
+                        weight: FontWeight.w600,
+                        color: AppColors.inkSoft,
+                      ),
+                    ),
                   Wrap(
                     children: [
                       chip(l10n.roundsCount(room.rounds)),
                       chip(l10n.secondsShort(room.roundDuration)),
                       chip(room.language.toUpperCase()),
+                      if (room.format == RoomFormat.elimination)
+                        chip(l10n.formatElimination),
+                      if (room.kind == RoomKind.bet)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6, top: 6),
+                          padding: const EdgeInsets.fromLTRB(4, 2, 8, 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.yellow,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const GameIcon(GameIconKind.coin, size: 16),
+                              const SizedBox(width: 3),
+                              Text(
+                                l10n.stakeShort(room.stake),
+                                style: fredoka(
+                                  size: 13,
+                                  weight: FontWeight.w700,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ],
@@ -245,13 +299,20 @@ class _RoomTile extends StatelessWidget {
                 color: AppColors.green,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Text(
-                '👤 ${l10n.playersCount(room.players, room.maxPlayers)}',
-                style: fredoka(
-                  size: 15,
-                  weight: FontWeight.w700,
-                  color: AppColors.white,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const GameIcon(GameIconKind.person, size: 18),
+                  const SizedBox(width: 3),
+                  Text(
+                    l10n.playersCount(room.players, room.maxPlayers),
+                    style: fredoka(
+                      size: 15,
+                      weight: FontWeight.w700,
+                      color: AppColors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -261,14 +322,23 @@ class _RoomTile extends StatelessWidget {
   }
 }
 
-class _JoinCodeDialog extends StatefulWidget {
-  const _JoinCodeDialog();
-
-  @override
-  State<_JoinCodeDialog> createState() => _JoinCodeDialogState();
+/// Demande le code d'une salle ; null si le joueur annule.
+Future<String?> askRoomCode(BuildContext context) async {
+  final code = await showDialog<String>(
+    context: context,
+    builder: (_) => const JoinCodeDialog(),
+  );
+  return code == null || code.isEmpty ? null : code;
 }
 
-class _JoinCodeDialogState extends State<_JoinCodeDialog> {
+class JoinCodeDialog extends StatefulWidget {
+  const JoinCodeDialog();
+
+  @override
+  State<JoinCodeDialog> createState() => _JoinCodeDialogState();
+}
+
+class _JoinCodeDialogState extends State<JoinCodeDialog> {
   final _controller = TextEditingController();
 
   @override
@@ -293,7 +363,12 @@ class _JoinCodeDialogState extends State<_JoinCodeDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('🔑', style: TextStyle(fontSize: 44)),
+            const GameIconBadge(
+              GameIconKind.key,
+              color: AppColors.yellow,
+              size: 60,
+            ),
+            const SizedBox(height: 8),
             Text(
               l10n.joinCodeTitle,
               style: fredoka(size: 22, weight: FontWeight.w700),

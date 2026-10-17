@@ -7,8 +7,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/candy_button.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../core/widgets/game_icon.dart';
 
-/// Radar-like pulse while the server finds or creates a room.
+/// Pulsation façon radar pendant que le serveur trouve ou crée une salle.
 class SearchingView extends StatefulWidget {
   const SearchingView({super.key, required this.onCancel, this.label});
 
@@ -55,7 +56,7 @@ class _SearchingViewState extends State<SearchingView>
               builder: (context, _) => CustomPaint(
                 painter: _RadarPainter(_pulse.value),
                 child: const Center(
-                  child: Text('🔎', style: TextStyle(fontSize: 64)),
+                  child: GameIcon(GameIconKind.search, size: 72),
                 ),
               ),
             ),

@@ -3,13 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../animations/countdown/countdown_view.dart';
+import '../../core/audio/game_audio.dart';
 import '../../core/feedback/game_feedback.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/game_dialog.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/game_background.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/data/models.dart';
 import '../game/widgets/labels.dart';
+import '../game/widgets/quit_button.dart';
 import '../game/hints/hint_controller.dart';
 import '../game/widgets/round_view.dart';
 import 'data/room_models.dart';
@@ -18,11 +21,14 @@ import 'widgets/lobby_view.dart';
 import 'widgets/online_header.dart';
 import 'widgets/podium_view.dart';
 import 'widgets/room_results_view.dart';
+import 'widgets/players_strip.dart';
 import 'widgets/round_wait_view.dart';
 import 'widgets/searching_view.dart';
+import '../../core/widgets/game_icon.dart';
 
-/// The room the player is in, whatever its phase. Pushed right after asking
-/// the server for a room (quick match, create, join).
+/// La salle où se trouve le joueur, quelle que soit sa phase. Ouverte juste
+/// après avoir demandé une salle au serveur (partie rapide, création,
+/// rejoindre).
 class RoomScreen extends StatefulWidget {
   const RoomScreen({
     super.key,
@@ -30,7 +36,8 @@ class RoomScreen extends StatefulWidget {
     this.now = DateTime.now,
   });
 
-  /// Refresh rate of the countdowns; injectable for tests along with [now].
+  /// Fréquence de rafraîchissement des comptes à rebours ; injectable dans les
+  /// tests avec [now].
   final Duration tick;
   final DateTime Function() now;
 
@@ -49,12 +56,15 @@ class _RoomScreenState extends State<RoomScreen> {
   HintController? _hints;
   int? _submittedRound;
 
-  /// The final podium stays on screen until the player chooses, even if
-  /// someone else already restarted the room.
+  /// Le podium final reste à l'écran jusqu'au choix du joueur, même si
+  /// quelqu'un a déjà relancé la salle.
   List<RoomPlayer>? _podium;
+  int _podiumStake = 0;
+  Map<String, int> _podiumWinnings = const {};
   bool _left = false;
 
-  /// Set once a room request was seen, so a failed request closes the screen.
+  /// Renseigné dès qu'une demande de salle a été vue, pour qu'une demande
+  /// échouée ferme l'écran.
   bool _active = false;
 
   @override
@@ -83,9 +93,10 @@ class _RoomScreenState extends State<RoomScreen> {
       f.dispose();
     }
     _hints?.dispose();
-    _feedback.musicWanted = true;
+    _feedback.setMusic(MusicMood.menu);
     if (!_left && _online.room != null) {
-      // Not during the tree teardown: leaving notifies other screens.
+      // Pas pendant le démontage de l'arbre : quitter la salle prévient
+      // d'autres écrans.
       final online = _online;
       Future.microtask(online.leaveRoom);
     }
@@ -98,15 +109,22 @@ class _RoomScreenState extends State<RoomScreen> {
     final room = _room;
     if (room != null || _online.searching) _active = true;
     if (room == null) {
-      // Server-side error while searching (e.g. room full): back to the menu.
+      // Erreur du serveur pendant la recherche (ex. salle pleine) : retour au
+      // menu.
       if (_active && !_online.searching && !_left && mounted) _close();
       return;
     }
     if (room.phase == RoomPhase.finished && _podium == null) {
       _podium = room.ranking;
+      _podiumStake = room.settings.stake;
+      _podiumWinnings = room.winnings;
     }
-    _feedback.musicWanted =
-        room.phase == RoomPhase.waiting || room.phase == RoomPhase.finished;
+    // Contre des bots, musique électronique ; entre humains, musique de salon.
+    // Plus bas pendant le décompte et la manche.
+    _feedback.setMusic(
+      room.players.any((p) => p.bot) ? MusicMood.bots : MusicMood.room,
+      quiet: room.phase == RoomPhase.countdown || room.phase == RoomPhase.round,
+    );
     final round = room.round;
     if (room.phase == RoomPhase.round &&
         round != null &&
@@ -140,7 +158,8 @@ class _RoomScreenState extends State<RoomScreen> {
         round.remaining(widget.now()) == Duration.zero) {
       _submit();
     }
-    // Countdowns (quick match start, 3-2-1, timer, next round) follow the clock.
+    // Les comptes à rebours (début de partie rapide, 3-2-1, chrono, manche
+    // suivante) suivent l'horloge.
     setState(() {});
   }
 
@@ -182,7 +201,8 @@ class _RoomScreenState extends State<RoomScreen> {
 
   void _showError(String code) {
     if (!mounted) return;
-    // Errors about stale rounds are harmless (e.g. a submit right at the buzzer).
+    // Les erreurs sur des manches périmées sont sans gravité (ex. un envoi pile
+    // à la fin du temps).
     if (code.startsWith('round_')) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(errorMessage(AppLocalizations.of(context), code))),
@@ -193,7 +213,7 @@ class _RoomScreenState extends State<RoomScreen> {
     if (_left) return;
     _left = true;
     if (_online.room != null || _online.searching) _online.leaveRoom();
-    // pop(), not maybePop(): the PopScope guard would ask to confirm again.
+    // pop() et non maybePop() : la garde PopScope redemanderait confirmation.
     Navigator.of(context).pop();
   }
 
@@ -206,39 +226,15 @@ class _RoomScreenState extends State<RoomScreen> {
     if (!inGame) return _close();
 
     final l10n = AppLocalizations.of(context);
-    final leave = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: Text(
-          l10n.quitGameTitle,
-          style: fredoka(size: 22, weight: FontWeight.w700),
-        ),
-        content: Text(l10n.leaveRoomMessage, style: fredoka(size: 16)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              l10n.cancel,
-              style: fredoka(size: 16, color: AppColors.inkSoft),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              l10n.quit,
-              style: fredoka(
-                size: 16,
-                weight: FontWeight.w700,
-                color: AppColors.red,
-              ),
-            ),
-          ),
-        ],
-      ),
+    final leave = await showGameConfirm(
+      context,
+      icon: GameIconKind.door,
+      title: l10n.quitGameTitle,
+      message: l10n.leaveRoomMessage,
+      confirmLabel: l10n.quit.toUpperCase(),
+      cancelLabel: l10n.dialogStay,
     );
-    if (leave == true && mounted) _close();
+    if (leave && mounted) _close();
   }
 
   void _playAgain() {
@@ -258,6 +254,7 @@ class _RoomScreenState extends State<RoomScreen> {
       },
       child: Scaffold(
         body: GameBackground(
+          palette: _palette(room),
           child: SafeArea(
             child: Column(
               children: [
@@ -266,7 +263,7 @@ class _RoomScreenState extends State<RoomScreen> {
                     title: room == null
                         ? l10n.modeQuickMatch
                         : room.quick
-                        ? '⚡ ${l10n.modeQuickMatch}'
+                        ? l10n.modeQuickMatch
                         : l10n.roomOf(room.player(room.hostId)?.nickname ?? ''),
                     onBack: _confirmLeave,
                   ),
@@ -295,6 +292,18 @@ class _RoomScreenState extends State<RoomScreen> {
     );
   }
 
+  BackgroundPalette _palette(RoomState? room) {
+    if (_podium != null) return BackgroundPalette.victory;
+    if (room == null || room.phase == RoomPhase.waiting) {
+      return BackgroundPalette.menu;
+    }
+    if (room.phase == RoomPhase.finished) return BackgroundPalette.victory;
+    final number = room.phase == RoomPhase.countdown
+        ? room.roundNumber + 1
+        : room.roundNumber;
+    return BackgroundPalette.forRound(number);
+  }
+
   String _phaseKey(RoomState? room) {
     if (_podium != null) return 'podium';
     if (room == null) return 'searching';
@@ -305,6 +314,22 @@ class _RoomScreenState extends State<RoomScreen> {
     };
   }
 
+  Future<void> _report(RoomPlayer player) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showGameConfirm(
+      context,
+      icon: GameIconKind.flag,
+      title: l10n.reportTitle,
+      message: l10n.reportMessage(player.nickname),
+      confirmLabel: l10n.reportConfirm,
+      cancelLabel: l10n.cancel,
+    );
+    if (!confirmed) return;
+    _online.reportPlayer(player.clientId);
+    messenger.showSnackBar(SnackBar(content: Text(l10n.reportSent)));
+  }
+
   Widget _buildPhase(RoomState? room) {
     final podium = _podium;
     if (podium != null) {
@@ -313,6 +338,8 @@ class _RoomScreenState extends State<RoomScreen> {
         myId: _online.clientId,
         onPlayAgain: _playAgain,
         onLeave: _close,
+        stake: _podiumStake,
+        winnings: _podiumWinnings,
       );
     }
     if (room == null) return SearchingView(onCancel: _close);
@@ -325,13 +352,33 @@ class _RoomScreenState extends State<RoomScreen> {
           room: room,
           myId: _online.clientId,
           onReady: _online.setReady,
-          onAddBot: isHost ? _online.addBot : null,
+          // Pas de bots dans un salon de paris.
+          onAddBot: isHost && !room.settings.betting ? _online.addBot : null,
           onRemoveBot: isHost ? _online.removeBot : null,
+          onReport: _report,
         );
       case RoomPhase.countdown:
         final seconds =
             (room.until(room.goAt, widget.now()).inMilliseconds / 1000).ceil();
-        return CountdownView(value: seconds.clamp(0, 3));
+        return WithQuitButton(
+          onQuit: _confirmLeave,
+          child: Stack(
+            children: [
+              CountdownView(value: seconds.clamp(0, 3)),
+              // Avec qui on va jouer, pendant le décompte.
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 24,
+                child: PlayersStrip(
+                  room: room,
+                  myId: _online.clientId,
+                  showProgress: false,
+                ),
+              ),
+            ],
+          ),
+        );
       case RoomPhase.round:
         final round = room.round!;
         final me = room.player(_online.clientId);
@@ -343,11 +390,43 @@ class _RoomScreenState extends State<RoomScreen> {
             fields: _fields,
             onFinish: _submit,
             hints: _hints,
+            onQuit: _confirmLeave,
+            players: PlayersStrip(room: room, myId: _online.clientId),
           );
         }
-        return RoundWaitView(room: room, spectating: !(me?.playing ?? false));
+        return WithQuitButton(
+          onQuit: _confirmLeave,
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              PlayersStrip(room: room, myId: _online.clientId),
+              Expanded(
+                child: RoundWaitView(
+                  room: room,
+                  spectating: !(me?.playing ?? false),
+                  eliminated: me?.eliminated ?? false,
+                ),
+              ),
+            ],
+          ),
+        );
       case RoomPhase.results:
-        return RoomResultsView(room: room, myId: _online.clientId);
+        return WithQuitButton(
+          onQuit: _confirmLeave,
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              PlayersStrip(
+                room: room,
+                myId: _online.clientId,
+                showProgress: false,
+              ),
+              Expanded(
+                child: RoomResultsView(room: room, myId: _online.clientId),
+              ),
+            ],
+          ),
+        );
     }
   }
 }
@@ -365,14 +444,22 @@ class _ConnectionBanner extends StatelessWidget {
         color: AppColors.red,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Text(
-        '📡 ${AppLocalizations.of(context).connectionLost}',
-        textAlign: TextAlign.center,
-        style: fredoka(
-          size: 15,
-          weight: FontWeight.w600,
-          color: AppColors.white,
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const GameIcon(GameIconKind.offline, size: 20),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              AppLocalizations.of(context).connectionLost,
+              style: fredoka(
+                size: 15,
+                weight: FontWeight.w600,
+                color: AppColors.white,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -385,10 +472,16 @@ class _OnlineHintSource implements HintSource {
   final int _round;
 
   @override
+  bool get canBuyExtra => true;
+
+  @override
   Future<HintOptions> request(Category category) =>
       _online.requestHint(_round, category);
 
   @override
   Future<HintPick> pick(Category category, String choice) =>
       _online.pickHint(_round, category, choice);
+
+  @override
+  Future<BuyHintResult> buyExtra() => _online.buyHint();
 }

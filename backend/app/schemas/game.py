@@ -1,16 +1,25 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.core.game_rules import DURATION_OPTIONS, ROUND_OPTIONS, Category, Difficulty, Language
+from app.core.game_rules import (
+    CLASSIC_CATEGORIES,
+    DURATION_OPTIONS,
+    MANY_CATEGORIES,
+    MANY_CATEGORIES_MIN_DURATION,
+    ROUND_OPTIONS,
+    Category,
+    Difficulty,
+    Language,
+)
 
 
 class GameSettings(BaseModel):
-    """Options shared by every mode."""
+    """Options communes à tous les modes."""
 
     language: Language
     difficulty: Difficulty = Difficulty.NORMAL
-    categories: list[Category] = Field(default_factory=lambda: list(Category), min_length=1)
+    categories: list[Category] = Field(default_factory=lambda: list(CLASSIC_CATEGORIES), min_length=1)
     rounds: int = 5
     round_duration: int = 30
 
@@ -33,9 +42,59 @@ class GameSettings(BaseModel):
             raise ValueError(f"round_duration must be one of {DURATION_OPTIONS}")
         return value
 
+    @model_validator(mode="after")
+    def long_enough_for_many_categories(self) -> "GameSettings":
+        """Beaucoup de catégories demandent plus de temps : 5 catégories ou plus, plus de 30 s."""
+        if len(self.categories) >= MANY_CATEGORIES and self.round_duration < MANY_CATEGORIES_MIN_DURATION:
+            raise ValueError(
+                f"{MANY_CATEGORIES} categories or more need rounds of at least {MANY_CATEGORIES_MIN_DURATION} s"
+            )
+        return self
+
 
 class SoloGameCreate(GameSettings):
     nickname: str = Field(default="Player", min_length=1, max_length=32)
+    # Identifiant de l'appli : les points de la partie vont dans son porte-monnaie.
+    client_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9-]{8,64}$")
+    # Lettres de la dernière partie de ce niveau : une revanche les évite.
+    avoid_letters: str = ""
+    # Mots déjà validés dans le même monde de carrière (catégorie → valeurs).
+    banned_answers: dict[Category, list[str]] = Field(default_factory=dict)
+
+    @field_validator("avoid_letters")
+    @classmethod
+    def uppercase_letters(cls, value: str) -> str:
+        seen: set[str] = set()
+        letters = []
+        for char in value.upper():
+            if "A" <= char <= "Z" and char not in seen:
+                seen.add(char)
+                letters.append(char)
+        return "".join(letters)[:26]
+
+    @field_validator("banned_answers")
+    @classmethod
+    def clean_banned_answers(
+        cls, value: dict[Category, list[str]]
+    ) -> dict[Category, list[str]]:
+        cleaned: dict[Category, list[str]] = {}
+        for category, words in value.items():
+            seen: set[str] = set()
+            unique: list[str] = []
+            for raw in words:
+                word = raw.strip()[:100]
+                if not word:
+                    continue
+                key = word.casefold()
+                if key in seen:
+                    continue
+                seen.add(key)
+                unique.append(word)
+                if len(unique) >= 500:
+                    break
+            if unique:
+                cleaned[category] = unique
+        return cleaned
 
 
 class SubmitAnswers(BaseModel):
@@ -53,7 +112,7 @@ class RoundOut(BaseModel):
     duration: int
     started_at: datetime
     ends_at: datetime
-    # Lets the client compute its clock offset; the server clock is the reference.
+    # Permet au client de calculer son décalage d'horloge ; l'horloge du serveur fait référence.
     server_time: datetime
 
 
@@ -64,6 +123,15 @@ class AnswerResultOut(BaseModel):
     points: int
     matched_value: str | None
     hinted: bool = False
+    # Réponse valide proposée quand celle du joueur ne l'était pas.
+    suggestion: str | None = None
+    # True s'il existe une fiche info achetable pour ce mot.
+    info_available: bool = False
+    # Prix en pièces (1 si réponse juste, 2 sinon) ; 0 si déjà débloqué / pas d'info.
+    info_price: int = 0
+    # Déjà débloqué pour ce joueur : les lignes peuvent être renvoyées tout de suite.
+    info_unlocked: bool = False
+    info_lines: list[str] | None = None
 
 
 class RoundResultOut(BaseModel):
@@ -89,9 +157,59 @@ class GameOut(BaseModel):
     hints_left: int
 
 
+class WalletOut(BaseModel):
+    coins: int
+    coins_gained: int
+    points_to_next_coin: int
+    level: int
+    level_xp: int
+    level_xp_needed: int
+
+
 class SubmitResultOut(BaseModel):
     round: RoundResultOut
     game: GameOut
+    # Présent quand la partie est liée à un profil.
+    wallet: WalletOut | None = None
+
+
+class LookOut(BaseModel):
+    owned: list[str]
+    hair: str = ""
+    hat: str = ""
+    frame: str
+    name: str
+    tiles: str
+    victory: str
+
+
+class ProfileOut(BaseModel):
+    client_id: str
+    nickname: str
+    coins: int
+    total_points: int
+    points_to_next_coin: int
+    level: int
+    avatar_preset: int
+    avatar_url: str | None
+    look: LookOut
+
+
+class CosmeticIn(BaseModel):
+    item_id: str = Field(max_length=32)
+
+
+class UnequipIn(BaseModel):
+    kind: str = Field(max_length=16)
+
+
+class CosmeticResult(WalletOut):
+    look: LookOut
+
+
+class ProfileUpdate(BaseModel):
+    nickname: str | None = Field(default=None, min_length=1, max_length=32)
+    avatar_preset: int | None = Field(default=None, ge=0, le=63)
 
 
 class GameSummaryOut(GameOut):
@@ -119,9 +237,30 @@ class HintPickOut(BaseModel):
     answer: str
 
 
+class BuyHintOut(BaseModel):
+    hints_left: int
+    price: int
+    wallet: WalletOut
+
+
+class CategoryInfoIn(BaseModel):
+    category: Category
+
+
+class CategoryInfoOut(BaseModel):
+    category: Category
+    word: str
+    lines: list[str]
+    price: int
+    wallet: WalletOut
+
+
 class GameConfigOut(BaseModel):
     languages: list[Language]
     categories: list[Category]
     difficulties: list[Difficulty]
     round_options: list[int]
     duration_options: list[int]
+    category_info_price_found: int
+    category_info_price_missed: int
+    extra_hint_price: int

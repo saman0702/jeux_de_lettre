@@ -1,4 +1,4 @@
-"""Check a player's answer against the knowledge base."""
+"""Vérifie la réponse d'un joueur dans la base de réponses."""
 
 from dataclasses import dataclass
 
@@ -17,13 +17,14 @@ class Status:
     NOT_FOUND = "not_found"
     LATE = "late"
     HINT_WRONG = "hint_wrong"
+    ALREADY_USED = "already_used"
 
 
 @dataclass(frozen=True)
 class ValidationResult:
     status: str
     matched_value: str | None = None
-    # Canonical key used to detect identical answers between players.
+    # Clé canonique servant à repérer les réponses identiques entre joueurs.
     match_key: str | None = None
 
     @property

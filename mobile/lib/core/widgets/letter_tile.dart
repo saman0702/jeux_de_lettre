@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../features/shop/look_styles.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 
-/// Board-game style letter tile with a 3D edge.
+/// Tuile-lettre façon jeu de plateau, avec une tranche en 3D.
 class LetterTile extends StatelessWidget {
   const LetterTile({
     super.key,
@@ -12,6 +13,7 @@ class LetterTile extends StatelessWidget {
     this.color = AppColors.yellow,
     this.textColor = AppColors.ink,
     this.textKey,
+    this.pattern = TilePattern.plain,
   });
 
   final String letter;
@@ -19,6 +21,7 @@ class LetterTile extends StatelessWidget {
   final Color color;
   final Color textColor;
   final Key? textKey;
+  final TilePattern pattern;
 
   @override
   Widget build(BuildContext context) {
@@ -45,26 +48,38 @@ class LetterTile extends StatelessWidget {
             left: 0,
             right: 0,
             height: size,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(size * 0.22),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color.lerp(color, Colors.white, 0.3)!, color],
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  letter,
-                  key: textKey,
-                  style: fredoka(
-                    size: size * 0.62,
-                    weight: FontWeight.w700,
-                    color: textColor,
-                    height: 1,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(size * 0.22),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color.lerp(color, Colors.white, 0.3)!,
+                          color,
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                  if (pattern != TilePattern.plain)
+                    CustomPaint(painter: TilePatternPainter(pattern: pattern)),
+                  Center(
+                    child: Text(
+                      letter,
+                      key: textKey,
+                      style: fredoka(
+                        size: size * 0.62,
+                        weight: FontWeight.w700,
+                        color: textColor,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

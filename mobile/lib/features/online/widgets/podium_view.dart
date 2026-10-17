@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../animations/bounce_in.dart';
@@ -6,13 +8,18 @@ import '../../../core/audio/game_audio.dart';
 import '../../../core/feedback/game_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/voice/announcements.dart';
 import '../../../core/widgets/candy_button.dart';
 import '../../../core/widgets/game_card.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/room_models.dart';
+import '../../wallet/bet_banner.dart';
 import 'player_avatar.dart';
+import '../../shop/cosmetics.dart';
+import '../../shop/look_styles.dart';
+import '../../../core/widgets/game_icon.dart';
 
-/// End of game: 🥇🥈🥉 podium, confetti, then play again or leave.
+/// Fin de partie : podium avec médailles, confettis, puis rejouer ou quitter.
 class PodiumView extends StatefulWidget {
   const PodiumView({
     super.key,
@@ -20,9 +27,15 @@ class PodiumView extends StatefulWidget {
     required this.myId,
     required this.onPlayAgain,
     required this.onLeave,
+    this.stake = 0,
+    this.winnings = const {},
   });
 
   final List<RoomPlayer> ranking;
+
+  /// Salon de paris : mise de chaque joueur et gains des vainqueurs.
+  final int stake;
+  final Map<String, int> winnings;
   final String myId;
   final VoidCallback onPlayAgain;
   final VoidCallback onLeave;
@@ -32,6 +45,14 @@ class PodiumView extends StatefulWidget {
 }
 
 class _PodiumViewState extends State<PodiumView> {
+  Timer? _voice;
+
+  @override
+  void dispose() {
+    _voice?.cancel();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +61,17 @@ class _PodiumViewState extends State<PodiumView> {
       final feedback = GameFeedbackScope.of(context);
       feedback.play(Sfx.victory);
       feedback.haptic(Haptic.heavy);
+      final winner = widget.ranking.first;
+      final line = Announcements(AppLocalizations.of(context)).roomGameOver(
+        winnerId: winner.clientId,
+        winnerName: winner.nickname,
+        me: widget.myId,
+      );
+      final language = Localizations.localeOf(context).languageCode;
+      _voice = Timer(
+        const Duration(milliseconds: 1400),
+        () => feedback.announce(line, language),
+      );
     });
   }
 
@@ -49,29 +81,57 @@ class _PodiumViewState extends State<PodiumView> {
     final ranking = widget.ranking;
     final rest = ranking.length > 3 ? ranking.sublist(3) : const <RoomPlayer>[];
 
-    // Podium order on screen: 2nd, 1st, 3rd.
+    // Ordre du podium à l'écran : 2e, 1er, 3e.
     final steps = [
       if (ranking.length > 1) (ranking[1], 2, 110.0, AppColors.cyan),
       (ranking[0], 1, 150.0, AppColors.yellow),
       if (ranking.length > 2) (ranking[2], 3, 80.0, AppColors.orange),
     ];
 
+    final victory = GameFeedbackScope.of(context).settings.victoryStyle;
     return ConfettiOverlay(
+      colors: victoryColors(victory),
+      shape: victoryShapeFor(victory),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              '🏆 ${l10n.podiumTitle}',
-              textAlign: TextAlign.center,
-              style: fredoka(
-                size: 30,
-                weight: FontWeight.w700,
-                color: AppColors.white,
-                shadows: textShadow,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const GameIcon(
+                  GameIconKind.trophy,
+                  size: 40,
+                  color: AppColors.yellow,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.podiumTitle,
+                  style: fredoka(
+                    size: 30,
+                    weight: FontWeight.w700,
+                    color: AppColors.white,
+                    shadows: textShadow,
+                  ),
+                ),
+              ],
             ),
+            if (widget.stake > 0) ...[
+              const SizedBox(height: 10),
+              Center(
+                child: BounceIn(
+                  delay: const Duration(milliseconds: 1200),
+                  child: switch (widget.winnings[widget.myId]) {
+                    final int won => BetBanner(text: l10n.betWon(won)),
+                    null => BetBanner(
+                      text: l10n.betLost(widget.stake),
+                      highlight: false,
+                    ),
+                  },
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -114,12 +174,11 @@ class _PodiumViewState extends State<PodiumView> {
                                     weight: FontWeight.w700,
                                   ),
                                 ),
-                                title: Text(
+                                title: StyledNickname(
                                   p.nickname,
-                                  style: fredoka(
-                                    size: 17,
-                                    weight: FontWeight.w600,
-                                  ),
+                                  styleId: p.nameStyle,
+                                  size: 17,
+                                  weight: FontWeight.w600,
                                 ),
                                 trailing: Text(
                                   l10n.pointsShort(p.score),
@@ -174,27 +233,16 @@ class _PodiumStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final medal = ['🥇', '🥈', '🥉'][place - 1];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Column(
         children: [
-          PlayerAvatar(
-            nickname: player.nickname,
-            seed: player.clientId,
-            size: place == 1 ? 64 : 52,
-            bot: player.bot,
-          ),
+          PlayerAvatar.of(player, size: place == 1 ? 64 : 52),
           const SizedBox(height: 6),
-          Text(
+          StyledNickname(
             isMe ? l10n.youBadge : player.nickname,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: fredoka(
-              size: 15,
-              weight: FontWeight.w700,
-              color: AppColors.white,
-            ),
+            styleId: player.nameStyle,
+            size: 15,
           ),
           Text(
             l10n.pointsShort(player.score),
@@ -221,7 +269,7 @@ class _PodiumStep extends StatelessWidget {
                 ),
               ],
             ),
-            child: Text(medal, style: const TextStyle(fontSize: 34)),
+            child: GameIcon(GameIconKind.medal(place), size: 42),
           ),
         ],
       ),

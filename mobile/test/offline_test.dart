@@ -77,6 +77,24 @@ void main() {
     expect(letters.any((l) => OfflineRules.hardLetters.contains(l)), isFalse);
   });
 
+  test('a replay does not redraw the letters of the previous game', () async {
+    final engine = OfflineSoloBackend(dictionary, random: Random(1));
+    final game = await engine.createGame(
+      const SoloGameSettings(
+        language: 'fr',
+        rounds: 5,
+        roundDuration: 30,
+        avoidLetters: 'ABCDE',
+      ),
+    );
+    final letters = <String>[];
+    for (var i = 0; i < 5; i++) {
+      letters.add((await engine.startRound(game.id)).letter);
+      await engine.submit(game.id, i + 1, {});
+    }
+    expect(letters.every((letter) => !'ABCDE'.contains(letter)), isTrue);
+  });
+
   test(
     'a round is scored like on the server, late answers score zero',
     () async {
@@ -91,6 +109,15 @@ void main() {
       final country = result.answers.firstWhere(
         (a) => a.category == Category.country,
       );
+      final city = result.answers.firstWhere(
+        (a) => a.category == Category.city,
+      );
+      expect(
+        city.suggestion,
+        isNotNull,
+        reason: 'ville vide : une réponse est proposée',
+      );
+      expect(city.suggestion![0].toUpperCase(), round.letter);
       expect(
         country.status,
         round.letter == 'F' ? AnswerStatus.valid : AnswerStatus.wrongLetter,
@@ -106,7 +133,53 @@ void main() {
     },
   );
 
-  test('hints offer one valid word among four, three per game', () async {
+  test('career bans reuse words already validated in the world', () {
+    final engine = OfflineSoloBackend(dictionary);
+    expect(
+      engine
+          .validate(
+            Category.country,
+            'fr',
+            'F',
+            'France',
+            banned: {'france'},
+          )
+          .$1,
+      AnswerStatus.alreadyUsed,
+    );
+    expect(
+      engine.validate(Category.country, 'fr', 'F', 'France').$1,
+      AnswerStatus.valid,
+    );
+  });
+
+  test('a banned answer scores zero when submitted', () async {
+    final engine = OfflineSoloBackend(dictionary, random: Random(7));
+    for (var i = 0; i < 30; i++) {
+      final game = await engine.createGame(
+        const SoloGameSettings(
+          language: 'fr',
+          categories: [Category.country],
+          rounds: 1,
+          roundDuration: 60,
+          bannedAnswers: {
+            Category.country: ['France'],
+          },
+        ),
+      );
+      final round = await engine.startRound(game.id);
+      if (round.letter != 'F') continue;
+      final (result, _) = await engine.submit(game.id, 1, {
+        Category.country: 'France',
+      });
+      expect(result.answers.single.status, AnswerStatus.alreadyUsed);
+      expect(result.answers.single.points, 0);
+      return;
+    }
+    fail('letter F was never drawn');
+  });
+
+  test('hints offer one valid word among three, three per game', () async {
     final engine = OfflineSoloBackend(dictionary, random: Random(4));
     final game = await engine.createGame(settings);
     final round = await engine.startRound(game.id);
@@ -117,7 +190,7 @@ void main() {
       Category.country,
     ]) {
       final hint = await engine.requestHint(game.id, round.number, category);
-      expect(hint.options.length, 4);
+      expect(hint.options.length, 3);
       final valid = hint.options
           .where(
             (o) =>
@@ -167,7 +240,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('📴 No connection: playing solo offline'), findsOneWidget);
+    expect(find.text('No connection: playing solo offline'), findsOneWidget);
     expect(find.byType(SoloGameScreen), findsOneWidget);
   });
 }

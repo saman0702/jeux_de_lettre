@@ -6,11 +6,12 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 
-/// 3, 2, 1, GO! — each step slams in with a shockwave ring and a beep.
+/// 3, 2, 1, GO ! — chaque étape arrive en force avec une onde de choc et un
+/// bip.
 class CountdownView extends StatefulWidget {
   const CountdownView({super.key, required this.value});
 
-  /// 3, 2, 1, then 0 for "GO!".
+  /// 3, 2, 1, puis 0 pour « GO ! ».
   final int value;
 
   @override

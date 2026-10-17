@@ -1,5 +1,7 @@
 # Environment
 .env
+.env.production
+backend/.env.production
 
 # Python
 __pycache__/
@@ -12,3 +14,10 @@ __pycache__/
 .vscode/
 .idea/
 backend/app/data/.cache/
+
+# Avatars envoyés par les joueurs
+backend/media/
+
+# Clés des stores (boutique)
+secrets/*
+!secrets/.gitkeep

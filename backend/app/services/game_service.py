@@ -1,16 +1,23 @@
-"""Game lifecycle. The server owns the letter, the clock and the score."""
+"""Cycle de vie d'une partie. Le serveur maîtrise la lettre, le chrono et le score."""
 
 from datetime import timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.game_rules import HINTS_PER_GAME, SUBMIT_GRACE_SECONDS, Category, Difficulty
+from app.core.game_rules import (
+    EXTRA_HINT_PRICE,
+    HINTS_PER_GAME,
+    SUBMIT_GRACE_SECONDS,
+    Category,
+    Difficulty,
+)
 from app.models import Game, GameRound, HintRequest, Player, PlayerAnswer, Submission
 from app.models.base import utcnow
 from app.schemas.game import SoloGameCreate
-from app.services import hint_service, letter_service
+from app.services import fact_service, hint_service, letter_service, suggestion_service, wallet_service
 from app.services.scoring_service import score_round
+from app.services.normalization import lookup_keys, normalize
 from app.services.validation_service import Status, ValidationResult, validate_answer
 
 
@@ -39,8 +46,13 @@ async def create_solo_game(session: AsyncSession, data: SoloGameCreate) -> Game:
         status="playing",
         players=[Player(nickname=data.nickname)],
         rounds=[],
+        owner_client_id=data.client_id,
+        avoid_letters=data.avoid_letters,
+        banned_answers={c.value: words for c, words in data.banned_answers.items()},
     )
     session.add(game)
+    if data.client_id:
+        await wallet_service.get_profile(session, data.client_id, data.nickname)
     await session.commit()
     return game
 
@@ -49,8 +61,31 @@ def _is_expired(game_round: GameRound) -> bool:
     return utcnow() > game_round.ends_at + timedelta(seconds=SUBMIT_GRACE_SECONDS)
 
 
+def _banned_keys(game: Game) -> dict[str, set[str]]:
+    """Clés normalisées interdites : stock carrière + réponses déjà validées ici."""
+    banned: dict[str, set[str]] = {}
+    for category, words in (game.banned_answers or {}).items():
+        keys = banned.setdefault(category, set())
+        cat = Category(category)
+        for word in words:
+            keys.add(normalize(word))
+            keys.update(lookup_keys(word, cat))
+    for game_round in game.rounds:
+        if not game_round.finished:
+            continue
+        for submission in game_round.submissions:
+            for answer in submission.answers:
+                if answer.status != Status.VALID or not answer.matched_value:
+                    continue
+                cat = Category(answer.category)
+                keys = banned.setdefault(answer.category, set())
+                keys.add(normalize(answer.matched_value))
+                keys.update(lookup_keys(answer.matched_value, cat))
+    return banned
+
+
 async def _close_expired_round(session: AsyncSession, game: Game, game_round: GameRound) -> None:
-    """Players who never submitted get a late, zero-point submission."""
+    """Les joueurs qui n'ont rien envoyé reçoivent un envoi « en retard » à zéro point."""
     submitted = {s.player_id for s in game_round.submissions}
     for player in game.players:
         if player.id not in submitted:
@@ -84,7 +119,10 @@ async def start_next_round(session: AsyncSession, game: Game) -> GameRound:
     counts = await letter_service.letter_counts(session, game.language)
     eligible = letter_service.eligible_letters(counts, game.categories, Difficulty(game.difficulty))
     try:
-        letter = letter_service.draw_letter(eligible, (r.letter for r in game.rounds))
+        letter = letter_service.draw_letter(
+            eligible,
+            [r.letter for r in game.rounds] + list(game.avoid_letters or ""),
+        )
     except letter_service.NoLetterAvailable:
         raise GameError("no_letter_available", 503) from None
 
@@ -105,7 +143,7 @@ async def hints_left(session: AsyncSession, game: Game) -> int:
     used = await session.scalar(
         select(func.count()).select_from(HintRequest).where(HintRequest.player_id == game.players[0].id)
     )
-    return max(0, HINTS_PER_GAME - used)
+    return max(0, HINTS_PER_GAME + (game.bonus_hints or 0) - (used or 0))
 
 
 def _playable_round(game: Game, round_number: int) -> GameRound:
@@ -129,8 +167,8 @@ async def _hint_for(session: AsyncSession, game_round: GameRound, player_id: str
 
 async def request_hint(
     session: AsyncSession, game: Game, round_number: int, category: Category
-) -> tuple[HintRequest, int]:
-    """Four options for a category; asking again returns the same ones."""
+    ) -> tuple[HintRequest, int]:
+    """Trois propositions pour une catégorie ; redemander renvoie les mêmes."""
     game_round = _playable_round(game, round_number)
     if category.value not in game.categories:
         raise GameError("invalid_category", 422)
@@ -174,9 +212,76 @@ async def pick_hint(
     return request
 
 
+async def buy_hint(
+    session: AsyncSession, game: Game
+) -> tuple[int, wallet_service.WalletUpdate]:
+    """Achète un joker supplémentaire avec des pièces (pendant la partie)."""
+    if not game.owner_client_id:
+        raise GameError("login_required", 401)
+    if game.status != "playing":
+        raise GameError("game_finished")
+    try:
+        profile = await wallet_service.debit(
+            session, game.owner_client_id, EXTRA_HINT_PRICE, "extra_hint", game.id
+        )
+    except wallet_service.WalletError as error:
+        raise GameError(error.code, 402 if error.code == "not_enough_coins" else 422) from None
+    game.bonus_hints = (game.bonus_hints or 0) + 1
+    await session.commit()
+    left = await hints_left(session, game)
+    return left, wallet_service.snapshot(profile)
+
+
+async def buy_category_info(
+    session: AsyncSession, game: Game, round_number: int, category: Category
+) -> tuple[str, list[str], int, wallet_service.WalletUpdate]:
+    """Dévoile les infos d'une catégorie après la manche (ville → pays, etc.)."""
+    if not game.owner_client_id:
+        raise GameError("login_required", 401)
+    if category.value not in game.categories:
+        raise GameError("invalid_category", 422)
+    if category not in fact_service.INFO_CATEGORIES:
+        raise GameError("no_info_available", 422)
+
+    game_round = next((r for r in game.rounds if r.number == round_number), None)
+    if game_round is None or not game_round.finished or not game_round.submissions:
+        raise GameError("round_not_finished", 409)
+    submission = game_round.submissions[0]
+    answer = next((a for a in submission.answers if a.category == category.value), None)
+    if answer is None:
+        raise GameError("invalid_category", 422)
+
+    word = fact_service.info_word(answer.matched_value, answer.suggestion, answer.raw_value)
+    lines = fact_service.lookup_lines(category.value, word, game.language)
+    unlock = fact_service.unlock_id(category.value, word)
+    if not lines or unlock is None:
+        raise GameError("no_info_available", 422)
+
+    profile = await wallet_service.get_profile(session, game.owner_client_id)
+    if wallet_service.has_fact_unlocked(profile, unlock):
+        await session.commit()
+        return word, lines, 0, wallet_service.snapshot(profile)
+
+    price = fact_service.info_price(answer.status)
+    try:
+        profile = await wallet_service.debit(
+            session,
+            game.owner_client_id,
+            price,
+            "category_info",
+            unlock[:64],
+        )
+    except wallet_service.WalletError as error:
+        raise GameError(error.code, 402 if error.code == "not_enough_coins" else 422) from None
+    wallet_service.unlock_fact(profile, unlock)
+    await session.commit()
+    return word, lines, price, wallet_service.snapshot(profile)
+
+
 async def submit_answers(
     session: AsyncSession, game: Game, round_number: int, answers: dict[Category, str]
-) -> Submission:
+) -> tuple[Submission, wallet_service.WalletUpdate | None]:
+    """Valide et note la manche ; crédite les points au profil du joueur s'il en a un."""
     game_round = game.current_round
     if game_round is None or game_round.number != round_number:
         raise GameError("round_not_current")
@@ -199,6 +304,7 @@ async def submit_answers(
     }
     answers = {**answers, **{Category(c): h.picked for c, h in picked.items()}}
 
+    banned = _banned_keys(game)
     results: dict[str, ValidationResult] = {}
     for category in game.categories:
         raw = answers.get(Category(category), "")
@@ -207,11 +313,23 @@ async def submit_answers(
         elif category in picked and picked[category].picked != picked[category].answer:
             results[category] = ValidationResult(Status.HINT_WRONG)
         else:
-            results[category] = await validate_answer(
+            result = await validate_answer(
                 session, Category(category), game.language, game_round.letter, raw
             )
+            if (
+                result.is_valid
+                and result.match_key is not None
+                and result.match_key in banned.get(category, ())
+            ):
+                result = ValidationResult(
+                    Status.ALREADY_USED, matched_value=result.matched_value, match_key=result.match_key
+                )
+            results[category] = result
 
     points = score_round({player.id: results}, {player.id: set(picked)})[player.id]
+    # Une bonne réponse à montrer pour chaque catégorie ratée.
+    missed = [c for c, r in results.items() if not r.is_valid]
+    examples = await suggestion_service.example_answers(session, game.language, missed, game_round.letter)
     submission = Submission(
         player_id=player.id,
         submitted_at=min(submitted_at, game_round.ends_at),
@@ -224,6 +342,7 @@ async def submit_answers(
                 status=result.status,
                 points=points[category],
                 hinted=category in picked,
+                suggestion=examples.get(category),
             )
             for category, result in results.items()
         ],
@@ -234,5 +353,10 @@ async def submit_answers(
     if game_round.number >= game.total_rounds:
         game.status = "finished"
 
+    wallet = None
+    if game.owner_client_id:
+        wallet = await wallet_service.award_points(
+            session, game.owner_client_id, submission.score, reference=game.id
+        )
     await session.commit()
-    return submission
+    return submission, wallet

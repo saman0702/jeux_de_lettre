@@ -9,7 +9,7 @@ from sqlalchemy.pool import NullPool
 from starlette.testclient import TestClient
 
 from app.main import app
-from app.services import letter_service
+from app.services import letter_service, wallet_service
 from app.services.presence_service import MemoryPresence
 from app.services.room_service import RoomManager, Timings
 from tests.conftest import TEST_DATABASE_URL
@@ -32,7 +32,7 @@ def manager(monkeypatch):
 
     async def truncate():
         async with engine.begin() as conn:
-            await conn.execute(text("TRUNCATE games CASCADE"))
+            await conn.execute(text("TRUNCATE games, profiles CASCADE"))
 
     asyncio.run(truncate())
     letter_service.clear_cache()
@@ -64,7 +64,9 @@ def player(client, client_id, nickname):
 
 
 def wait_for(ws, predicate, limit=200):
-    """Read messages until one matches; other events (notices, counts) are skipped."""
+    """Lit les messages jusqu'à en trouver un qui correspond ; les autres événements (notifications,
+    compteurs) sont ignorés.
+    """
     for _ in range(limit):
         message = ws.receive_json()
         if predicate(message):
@@ -126,7 +128,7 @@ def test_private_room_full_game(client):
         assert {p["nickname"]: p["score"] for p in final["players"]} == {"Alice": 5, "Bob": 15}
         assert all(not p["ready"] for p in final["players"])
 
-        # "Play again" brings the room back to the lobby with scores reset.
+        # « Rejouer » ramène la salle en attente avec les scores remis à zéro.
         alice.send_json({"type": "set_ready", "ready": True})
         lobby = state(alice, "waiting")
         assert all(p["score"] == 0 for p in lobby["players"])
@@ -194,8 +196,9 @@ def test_public_rooms_are_listed(client):
         rooms = wait_for(bob, lambda m: m["type"] == "room_list" and m["rooms"])["rooms"]
         assert rooms[0]["code"] == public["code"]
         assert rooms[0]["host"] == "Alice" and rooms[0]["players"] == 1
+        assert rooms[0]["nicknames"] == ["Alice"]
 
-        create_room(alice)  # private: replaces the public one, which is now empty
+        create_room(alice)  # privée : remplace la salle publique, désormais vide
         assert wait_for(bob, lambda m: m["type"] == "room_list")["rooms"] == []
 
 
@@ -263,7 +266,7 @@ def test_play_against_bots(client):
         results = state(alice, "results")["results"]["players"]
         assert len(results) == 3
         bot_answers = [p["answers"][0] for p in results if p["client_id"].startswith("bot-")]
-        # Bots answered on their own with real countries starting with M.
+        # Les bots ont répondu seuls, avec de vrais pays commençant par M.
         assert any(a["status"] == "valid" for a in bot_answers)
 
 
@@ -331,3 +334,223 @@ def test_hints_in_a_room(client):
         expected = (5 if answer["value"] != "Mouton" else 2) if picked["correct"] else 0
         assert answer["points"] == expected
         assert state(alice)["players"][0]["hints_left"] == 2
+
+
+def test_round_results_include_examples_for_missed_categories(client):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice, categories=["country", "fruit"])
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        state(alice, "round")
+        alice.send_json({"type": "submit", "round": 1, "answers": {"country": "Maroc"}})
+        bob.send_json({"type": "submit", "round": 1, "answers": {"country": "Maroc"}})
+
+        results = state(alice, "results")["results"]
+        assert "fruit" in results["examples"] and results["examples"]["fruit"][0] == "M"
+        assert "country" not in results["examples"], "personne n'a raté le pays"
+        alice_fruit = next(p for p in results["players"] if p["nickname"] == "Alice")["answers"][1]
+        assert alice_fruit["suggestion"] == results["examples"]["fruit"]
+
+
+# ------------------------------------------------------------------ pièces et paris
+
+
+def give_coins(manager, client_id, amount):
+    async def run():
+        async with manager.session_factory() as session:
+            await wallet_service.credit(session, client_id, amount, "bet_win")
+            await session.commit()
+
+    asyncio.run(run())
+
+
+def coins_of(manager, client_id):
+    async def run():
+        async with manager.session_factory() as session:
+            return (await wallet_service.get_profile(session, client_id)).coins
+
+    return asyncio.run(run())
+
+
+def play_bet_game(alice, bob, room, alice_answers, bob_answers):
+    bob.send_json({"type": "join_room", "code": room["code"]})
+    state(bob, "waiting")
+    alice.send_json({"type": "set_ready", "ready": True})
+    bob.send_json({"type": "set_ready", "ready": True})
+    state(alice, "round")
+    alice.send_json({"type": "submit", "round": 1, "answers": alice_answers})
+    bob.send_json({"type": "submit", "round": 1, "answers": bob_answers})
+    for number in range(2, 6):
+        state(alice, "round", lambda r, n=number: r["round"]["number"] == n)
+        alice.send_json({"type": "submit", "round": number, "answers": {}})
+        bob.send_json({"type": "submit", "round": number, "answers": {}})
+    return state(alice, "finished")
+
+
+def test_welcome_carries_the_wallet(client, manager):
+    give_coins(manager, "alice-0001", 7)
+    with client.websocket_connect("/ws?client_id=alice-0001&nickname=Alice") as ws:
+        welcome = ws.receive_json()
+        assert welcome["wallet"] == {"coins": 7, "coins_gained": 0, "points_to_next_coin": 20, "level": 1, "level_xp": 0, "level_xp_needed": 100}
+
+
+def test_round_points_become_coins(client):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice)
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, "waiting")
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        state(alice, "round")
+        alice.send_json({"type": "submit", "round": 1, "answers": {"city": "Madrid", "country": "Maroc"}})
+        bob.send_json({"type": "submit", "round": 1, "answers": {}})
+        wallet = wait_for(alice, lambda m: m["type"] == "wallet")
+        assert wallet == {"type": "wallet", "coins": 1, "coins_gained": 1, "points_to_next_coin": 20, "level": 1, "level_xp": 20, "level_xp_needed": 100}
+
+
+def test_betting_room_needs_coins(client, manager):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        alice.send_json({"type": "create_room", "settings": {**SETTINGS, "kind": "bet", "stake": 5}})
+        assert error(alice) == "not_enough_coins"
+
+        give_coins(manager, "alice-0001", 5)
+        room = create_room(alice, kind="bet", stake=5)
+        assert room["settings"]["kind"] == "bet" and room["settings"]["stake"] == 5
+
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        assert error(bob) == "not_enough_coins"
+
+        alice.send_json({"type": "add_bot", "level": "easy"})
+        assert error(alice) == "bots_not_allowed"
+
+        alice.send_json({"type": "create_room", "settings": {**SETTINGS, "kind": "bet", "stake": 0}})
+        assert error(alice) == "invalid_settings"
+
+
+def test_winner_takes_the_pot(client, manager):
+    give_coins(manager, "alice-0001", 10)
+    give_coins(manager, "bob-00001", 10)
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice, kind="bet", stake=10)
+        final = play_bet_game(alice, bob, room, {"city": "Madrid"}, {})
+        assert final["pot"] == 20
+        assert final["winnings"] == {"alice-0001": 20}
+    assert coins_of(manager, "alice-0001") == 20
+    assert coins_of(manager, "bob-00001") == 0
+
+
+def test_tied_players_share_the_pot(client, manager):
+    give_coins(manager, "alice-0001", 3)
+    give_coins(manager, "bob-00001", 3)
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice, kind="bet", stake=3)
+        final = play_bet_game(alice, bob, room, {}, {})
+        assert final["winnings"] == {"alice-0001": 3, "bob-00001": 3}
+
+
+def test_player_who_cannot_pay_anymore_is_sent_away(client, manager):
+    give_coins(manager, "alice-0001", 5)
+    give_coins(manager, "bob-00001", 5)
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice, kind="bet", stake=5)
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, "waiting")
+        # Bob dépense ses pièces ailleurs avant le départ.
+        asyncio.run(_spend(manager, "bob-00001", 5))
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        assert error(bob) == "not_enough_coins"
+        room = state(alice, "waiting", lambda r: len(r["players"]) == 1)
+        assert room["pot"] == 0
+    assert coins_of(manager, "alice-0001") == 5
+
+
+async def _spend(manager, client_id, amount):
+    async with manager.session_factory() as session:
+        await wallet_service.debit(session, client_id, amount, "bet_stake")
+        await session.commit()
+
+
+def test_avatars_are_shared_and_photos_can_be_reported(client, manager):
+    async def set_photo():
+        async with manager.session_factory() as session:
+            profile = await wallet_service.get_profile(session, "bob-00001")
+            profile.avatar_file = "bob-00001-abcd.png"
+            profile.avatar_preset = 5
+            await session.commit()
+
+    asyncio.run(set_photo())
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice)
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        room = state(alice, check=lambda r: len(r["players"]) == 2)
+        assert room["players"][1]["avatar_url"] == "/media/avatars/bob-00001-abcd.png"
+
+        alice.send_json({"type": "report_player", "client_id": "bob-00001"})
+        assert wait_for(alice, lambda m: m["type"] == "reported")["client_id"] == "bob-00001"
+
+        alice.send_json({"type": "report_player", "client_id": "alice-0001"})
+        assert error(alice) == "invalid_message"
+
+
+# ------------------------------------------------------------------ éliminatoires
+
+
+def test_knockout_room_eliminates_the_lowest_score_each_round(client):
+    with (
+        player(client, "alice-0001", "Alice") as alice,
+        player(client, "bob-00001", "Bob") as bob,
+        player(client, "carol-0001", "Carol") as carol,
+    ):
+        room = create_room(alice, format="elimination")
+        assert room["settings"]["format"] == "elimination"
+        for ws in (bob, carol):
+            ws.send_json({"type": "join_room", "code": room["code"]})
+            state(ws, "waiting")
+        for ws in (alice, bob, carol):
+            ws.send_json({"type": "set_ready", "ready": True})
+
+        # Manche 1 : tout le monde à 0, personne ne sort.
+        state(alice, "round")
+        for ws in (alice, bob, carol):
+            ws.send_json({"type": "submit", "round": 1, "answers": {}})
+        assert state(alice, "results")["results"]["eliminated"] == []
+
+        # Manche 2 : Carol n'a rien, elle sort.
+        state(alice, "round", lambda r: r["round"]["number"] == 2)
+        alice.send_json({"type": "submit", "round": 2, "answers": {"city": "Madrid"}})
+        bob.send_json({"type": "submit", "round": 2, "answers": {"country": "Maroc"}})
+        carol.send_json({"type": "submit", "round": 2, "answers": {}})
+        results = state(alice, "results", lambda r: r["results"]["number"] == 2)
+        assert results["results"]["eliminated"] == ["carol-0001"]
+        assert {p["client_id"]: p["eliminated_round"] for p in results["players"]}["carol-0001"] == 2
+
+        # Manche 3 : Carol regarde ; Bob n'a rien et sort, Alice gagne, la partie s'arrête.
+        round3 = state(alice, "round", lambda r: r["round"]["number"] == 3)
+        assert {p["client_id"]: p["playing"] for p in round3["players"]}["carol-0001"] is False
+        alice.send_json({"type": "submit", "round": 3, "answers": {"city": "Madrid"}})
+        bob.send_json({"type": "submit", "round": 3, "answers": {}})
+        final = state(alice, "finished")
+        assert final["round_number"] == 3, "ends as soon as one player is left"
+        assert {p["client_id"]: p["eliminated_round"] for p in final["players"]} == {
+            "alice-0001": None,
+            "bob-00001": 3,
+            "carol-0001": 2,
+        }
+
+
+def test_knockout_rooms_cannot_be_joined_during_a_game(client):
+    with (
+        player(client, "alice-0001", "Alice") as alice,
+        player(client, "bob-00001", "Bob") as bob,
+        player(client, "carol-0001", "Carol") as carol,
+    ):
+        room = create_room(alice, format="elimination")
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, "waiting")
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        state(alice, "round")
+        carol.send_json({"type": "join_room", "code": room["code"]})
+        assert error(carol) == "game_in_progress"

@@ -26,9 +26,20 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Solo'), findsOneWidget);
-    expect(find.text('Partie rapide'), findsOneWidget);
-    expect(find.text('Serveur connecté'), findsOneWidget);
+    for (final mode in [
+      'Carrière',
+      'Solo libre',
+      'Éliminatoires',
+      'Partie rapide',
+      'Salons',
+    ]) {
+      expect(find.text(mode), findsOneWidget);
+    }
+    expect(
+      find.text('Serveur connecté'),
+      findsNothing,
+      reason: 'technical info stays hidden',
+    );
   });
 
   testWidgets('menu music plays on the home screen and can be turned off', (
@@ -49,6 +60,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(audio.musicPlaying, isTrue);
+    expect(audio.mood, MusicMood.menu);
 
     await tester.tap(find.byIcon(Icons.settings_rounded));
     await tester.pumpAndSettle();
@@ -67,7 +79,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Quick match'), findsOneWidget);
-    expect(find.text('Server unreachable'), findsOneWidget);
+    expect(find.text('Server unreachable'), findsNothing);
   });
 
   testWidgets('home does not overflow when the keyboard opens', (tester) async {
@@ -75,8 +87,45 @@ void main() {
     tester.view.devicePixelRatio = 2.75;
     tester.view.viewInsets = const FakeViewPadding(bottom: 900);
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(LetterBattleApp(home: HomeScreen(apiClient: fakeApi(healthy: true))));
+    await tester.pumpWidget(
+      LetterBattleApp(home: HomeScreen(apiClient: fakeApi(healthy: true))),
+    );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the language can be changed in the settings', (tester) async {
+    final settings = AppSettings.inMemory();
+    final feedback = GameFeedback(
+      audio: SilentGameAudio(),
+      settings: settings,
+      ambientMotion: false,
+    );
+    tester.platformDispatcher.localesTestValue = const [Locale('fr')];
+    await tester.pumpWidget(
+      LetterBattleApp(
+        feedback: feedback,
+        home: HomeScreen(apiClient: fakeApi(healthy: true)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Partie rapide'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('settings_button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('EN'));
+    await tester.pumpAndSettle();
+    expect(settings.languageCode, 'en');
+    await tester.tap(find.byKey(const Key('settings_close')));
+    await tester.pumpAndSettle();
+    expect(find.text('Quick match'), findsOneWidget);
+
+    settings.languageCode = null;
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Partie rapide'),
+      findsOneWidget,
+      reason: 'Auto follows the phone again',
+    );
   });
 }

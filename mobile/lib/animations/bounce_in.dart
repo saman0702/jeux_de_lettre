@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Pops a widget in (scale + fade), optionally after a delay, without timers
-/// so tests can settle.
+/// Fait apparaître un widget (échelle + fondu), éventuellement après un délai,
+/// sans minuteur pour que les tests puissent se stabiliser.
 class BounceIn extends StatefulWidget {
   const BounceIn({
     super.key,
@@ -17,7 +17,7 @@ class BounceIn extends StatefulWidget {
   final Duration duration;
   final double from;
 
-  /// Vertical slide distance, as a fraction of the child's height.
+  /// Distance de glissement vertical, en fraction de la hauteur de l'enfant.
   final double slideY;
 
   @override

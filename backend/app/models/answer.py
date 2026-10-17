@@ -5,7 +5,7 @@ from app.models.base import Base
 
 
 class Answer(Base):
-    """Knowledge-base entry: one accepted answer for a category."""
+    """Entrée de la base de réponses : une réponse acceptée pour une catégorie."""
 
     __tablename__ = "answers"
     __table_args__ = (
@@ -15,11 +15,11 @@ class Answer(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     category: Mapped[str] = mapped_column(String(32))
-    # Game language the entry is valid in, or "*" for every language.
+    # Langue de partie dans laquelle l'entrée est valable, ou « * » pour toutes.
     language: Mapped[str] = mapped_column(String(8))
     value: Mapped[str] = mapped_column(String(200))
     normalized_value: Mapped[str] = mapped_column(String(200))
     first_letter: Mapped[str] = mapped_column(String(1))
     accepted: Mapped[bool] = mapped_column(Boolean, default=True)
-    # How well known the answer is (population for cities); bots prefer high values.
+    # Notoriété de la réponse (population pour les villes) ; les bots préfèrent les valeurs élevées.
     popularity: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")

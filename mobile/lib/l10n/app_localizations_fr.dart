@@ -10,7 +10,7 @@ class AppLocalizationsFr extends AppLocalizations {
   AppLocalizationsFr([String locale = 'fr']) : super(locale);
 
   @override
-  String get appTitle => 'Letter Battle';
+  String get appTitle => 'Letter Race';
 
   @override
   String get tagline => 'Une lettre. Quatre catégories. Le plus rapide gagne.';
@@ -263,19 +263,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get roomType => 'Type de partie';
 
   @override
-  String get roomTypeDuel => '⚔️ Duel';
+  String get roomTypeDuel => 'Duel';
 
   @override
-  String get roomTypeGroup => '👥 Groupe (8 max)';
+  String get roomTypeGroup => 'Groupe (8 max)';
 
   @override
   String get visibility => 'Visibilité';
 
   @override
-  String get visibilityPublic => '🌐 Publique';
+  String get visibilityPublic => 'Publique';
 
   @override
-  String get visibilityPrivate => '🔒 Privée';
+  String get visibilityPrivate => 'Privée';
 
   @override
   String get create => 'CRÉER';
@@ -288,6 +288,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get codeCopied => 'Code copié !';
+
+  @override
+  String get shareInvite => 'Inviter';
+
+  @override
+  String inviteMessage(String code) {
+    return 'Rejoins ma partie Letter Race ! Code : $code';
+  }
 
   @override
   String get waitingForPlayers => 'En attente de joueurs…';
@@ -360,7 +368,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String noticeDisconnected(String name) {
-    return '⚠️ $name s\'est déconnecté';
+    return '$name s\'est déconnecté';
   }
 
   @override
@@ -393,8 +401,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addBot => 'Ajouter un bot';
 
   @override
-  String get noticeBotsJoined =>
-      'Personne en ligne : des bots te rejoignent 🤖';
+  String get noticeBotsJoined => 'Personne en ligne : des bots te rejoignent !';
 
   @override
   String get errorNotHost => 'Seul l\'hôte peut faire ça.';
@@ -404,7 +411,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String hintTitle(String category, String letter) {
-    return '💡 Joker : $category en $letter';
+    return 'Joker : $category en $letter';
   }
 
   @override
@@ -412,6 +419,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get statusHintWrong => 'Mauvais choix';
+
+  @override
+  String get statusAlreadyUsed => 'Déjà utilisé dans ce monde';
 
   @override
   String get hintedBadge => 'Joker';
@@ -423,6 +433,718 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hintUnavailable => 'Pas de joker possible ici.';
 
   @override
-  String get offlineModeNotice =>
-      '📴 Pas de connexion : partie solo hors ligne';
+  String get buyHintTitle => 'Joker en plus';
+
+  @override
+  String buyHintMessage(int count) {
+    return 'Acheter un joker pour $count pièces ?';
+  }
+
+  @override
+  String buyHintConfirm(int count) {
+    return '$count pièces';
+  }
+
+  @override
+  String get buyInfoTitle => 'Infos';
+
+  @override
+  String buyInfoMessage(int count) {
+    return 'Dévoiler les infos pour $count pièces ?';
+  }
+
+  @override
+  String buyInfoConfirm(int count) {
+    return '$count pièces';
+  }
+
+  @override
+  String buyInfoButton(int count) {
+    return 'Infos · $count pièces';
+  }
+
+  @override
+  String get buyInfoFree => 'Infos';
+
+  @override
+  String get notOnlineForPurchase => 'Connecte-toi pour dépenser des pièces.';
+
+  @override
+  String get offlineModeNotice => 'Pas de connexion : partie solo hors ligne';
+
+  @override
+  String get settingsGameKeyboard => 'Clavier du jeu';
+
+  @override
+  String get keyNext => 'Suivant';
+
+  @override
+  String get keySpace => 'espace';
+
+  @override
+  String get settingsVoice => 'Voix du présentateur';
+
+  @override
+  String voiceYouWinRound1(String name) {
+    return 'Bravo $name, tu remportes la manche !';
+  }
+
+  @override
+  String voiceYouWinRound2(String name) {
+    return 'Excellent $name ! Manche gagnée !';
+  }
+
+  @override
+  String voiceOtherWinsRound1(String name) {
+    return '$name remporte la manche !';
+  }
+
+  @override
+  String voiceOtherWinsRound2(String name) {
+    return 'Cette manche est pour $name !';
+  }
+
+  @override
+  String get voiceEncourage1 => 'Courage, tu vas te rattraper !';
+
+  @override
+  String get voiceEncourage2 => 'Pas de panique, la prochaine est pour toi !';
+
+  @override
+  String get voiceEncourage3 => 'Allez, on lâche rien !';
+
+  @override
+  String get voiceTie => 'Égalité sur cette manche ! Tout reste à jouer !';
+
+  @override
+  String get voiceNobodyScored =>
+      'Personne n\'a marqué ! Concentrez-vous, ça repart !';
+
+  @override
+  String voiceSoloGreat(int points) {
+    return 'Superbe ! $points points !';
+  }
+
+  @override
+  String voiceSoloGood(int points) {
+    return 'Bien joué, $points points !';
+  }
+
+  @override
+  String get voiceSoloLow => 'Allez, tu peux faire mieux à la prochaine !';
+
+  @override
+  String get voiceSoloZero => 'Aïe, aucun point ! Respire, tu vas y arriver !';
+
+  @override
+  String voiceYouWinGame(String name) {
+    return 'Victoire ! Bravo $name, tu gagnes la partie !';
+  }
+
+  @override
+  String voiceOtherWinsGame(String name) {
+    return '$name gagne la partie ! Bien joué à tous. Une revanche ?';
+  }
+
+  @override
+  String voiceSoloGameEnd(int points) {
+    return 'Partie terminée ! $points points au total !';
+  }
+
+  @override
+  String get dialogStay => 'RESTER';
+
+  @override
+  String get roundLabel => 'MANCHE';
+
+  @override
+  String get onlineLabel => 'EN LIGNE';
+
+  @override
+  String get settingsLanguage => 'Langue';
+
+  @override
+  String get languageAuto => 'Auto';
+
+  @override
+  String suggestionExample(String answer) {
+    return 'Réponse possible : $answer';
+  }
+
+  @override
+  String suggestionFoundBy(String name, String answer) {
+    return '$name a trouvé : $answer';
+  }
+
+  @override
+  String coinsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pièces',
+      one: '1 pièce',
+      zero: '0 pièce',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String coinsGained(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pièces',
+      one: '1 pièce',
+    );
+    return '+$_temp0';
+  }
+
+  @override
+  String get roomKind => 'Salon';
+
+  @override
+  String get roomKindClassic => 'Classique';
+
+  @override
+  String get roomKindBet => 'Paris';
+
+  @override
+  String get stake => 'Mise par joueur';
+
+  @override
+  String stakeShort(int count) {
+    return 'Mise $count';
+  }
+
+  @override
+  String potLabel(int count) {
+    return 'Pot : $count';
+  }
+
+  @override
+  String get betRules =>
+      'Chaque joueur mise la même somme. Le premier rafle tout, le pot est partagé en cas d\'égalité. Pas de bots.';
+
+  @override
+  String yourCoins(int count) {
+    return 'Ton solde : $count';
+  }
+
+  @override
+  String betWon(int count) {
+    return 'Tu rafles $count pièces !';
+  }
+
+  @override
+  String betLost(int count) {
+    return 'Mise perdue : $count pièces';
+  }
+
+  @override
+  String get errorNotEnoughCoins => 'Pas assez de pièces pour cette mise.';
+
+  @override
+  String get errorBotsNotAllowed => 'Pas de bots dans un salon de paris.';
+
+  @override
+  String get avatarTitle => 'Mon avatar';
+
+  @override
+  String get avatarCamera => 'PHOTO';
+
+  @override
+  String get avatarGallery => 'GALERIE';
+
+  @override
+  String get avatarPhotoInfo =>
+      'Ta photo est transformée en dessin avant d\'être montrée aux autres joueurs.';
+
+  @override
+  String get avatarCharacters => 'Personnages';
+
+  @override
+  String get avatarUpdated => 'Avatar mis à jour !';
+
+  @override
+  String get errorInvalidImage => 'Cette image n\'a pas pu être lue.';
+
+  @override
+  String get errorFileTooLarge => 'Image trop lourde.';
+
+  @override
+  String get reportTitle => 'Signaler la photo ?';
+
+  @override
+  String reportMessage(String name) {
+    return 'La photo de $name est retirée après plusieurs signalements.';
+  }
+
+  @override
+  String get reportConfirm => 'SIGNALER';
+
+  @override
+  String get reportSent => 'Merci, signalement envoyé.';
+
+  @override
+  String get musicCredits =>
+      'Musiques de Kevin MacLeod (incompetech.com), licence Creative Commons BY 4.0 : « Monkeys Spinning Monkeys », « Fluffing a Duck », « Carefree », « Pixel Peeker Polka », « Sneaky Snitch », « Investigations », « Run Amok », « Funkorama », « Itty Bitty 8 Bit », « Bit Quest ».';
+
+  @override
+  String get shopTitle => 'Boutique';
+
+  @override
+  String get shopCoinsLabel => 'pièces';
+
+  @override
+  String shopBonus(int percent) {
+    return '+$percent %';
+  }
+
+  @override
+  String shopBought(int count) {
+    return '+$count pièces, merci !';
+  }
+
+  @override
+  String get shopPending =>
+      'Paiement en attente : tes pièces arriveront dès qu\'il sera confirmé.';
+
+  @override
+  String get shopInvalid => 'Cet achat n\'a pas pu être validé.';
+
+  @override
+  String get shopStoreError => 'L\'achat n\'a pas abouti.';
+
+  @override
+  String get shopRetryLater =>
+      'Achat reçu : tes pièces seront ajoutées dès que le serveur sera joignable.';
+
+  @override
+  String get shopUnavailable =>
+      'La boutique n\'est pas disponible sur cet appareil pour le moment.';
+
+  @override
+  String get shopLegal =>
+      'Paiement sécurisé par Google Play ou l\'App Store. Les pièces n\'ont aucune valeur monétaire : elles ne sont ni remboursables, ni échangeables, ni convertibles en argent.';
+
+  @override
+  String get avatarPhotoNeedsConnection =>
+      'Connecte-toi pour utiliser une photo : elle est transformée en dessin sur le serveur.';
+
+  @override
+  String get avatarPickFailed =>
+      'Impossible d\'ouvrir l\'appareil photo ou la galerie. Vérifie les autorisations de l\'appli.';
+
+  @override
+  String get avatarSavedOffline =>
+      'Avatar choisi ! Il sera partagé dès que tu seras en ligne.';
+
+  @override
+  String get credits => 'Crédits';
+
+  @override
+  String levelUp(int level) {
+    return 'NIVEAU $level !';
+  }
+
+  @override
+  String levelLabel(int level) {
+    return 'Niveau $level';
+  }
+
+  @override
+  String levelProgress(int xp, int needed) {
+    return '$xp / $needed points avant le niveau suivant';
+  }
+
+  @override
+  String goalMinimum(int points) {
+    return 'Min. $points pts';
+  }
+
+  @override
+  String goalProgress(int score, int target) {
+    return '$score / $target pts';
+  }
+
+  @override
+  String challengePassed(int points) {
+    return 'MINIMUM $points PTS : RÉUSSI !';
+  }
+
+  @override
+  String challengeEliminated(int points) {
+    return 'ÉLIMINÉ ! Il fallait $points pts';
+  }
+
+  @override
+  String careerProgressBanner(int score, int target) {
+    return 'Objectif : $score / $target pts';
+  }
+
+  @override
+  String careerWon(int level) {
+    return 'Niveau $level réussi !';
+  }
+
+  @override
+  String careerLost(int level) {
+    return 'Niveau $level raté';
+  }
+
+  @override
+  String careerMessage(int target, int score) {
+    return 'Objectif $target pts · tu as marqué $score pts';
+  }
+
+  @override
+  String careerStarsInfo(int one, int two, int three) {
+    return 'Étoiles à $one, $two et $three pts';
+  }
+
+  @override
+  String get nextLevel => 'NIVEAU SUIVANT';
+
+  @override
+  String get replayLevel => 'REJOUER LE NIVEAU';
+
+  @override
+  String get levelsMap => 'CARTE DES NIVEAUX';
+
+  @override
+  String get eliminationChampion => 'Champion !';
+
+  @override
+  String get eliminationOut => 'Éliminé !';
+
+  @override
+  String eliminationMessage(int rounds, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      rounds,
+      locale: localeName,
+      other: '$rounds manches',
+      one: '1 manche',
+      zero: '0 manche',
+    );
+    return 'Tu as tenu $_temp0 sur $total';
+  }
+
+  @override
+  String eliminationRecord(int rounds) {
+    return 'Record : $rounds manches';
+  }
+
+  @override
+  String eliminationNewRecord(int rounds) {
+    return 'Nouveau record : $rounds manches !';
+  }
+
+  @override
+  String get careerTitle => 'Carrière';
+
+  @override
+  String get careerRulesIntro =>
+      '60 niveaux de 5 manches, en 4 mondes de 15. Une étoile ouvre le niveau suivant.';
+
+  @override
+  String get careerRulesFromConfirmed =>
+      'Au monde Débutant, les catégories montent : Ville et Pays, puis Animal, puis Fruit. À partir du Confirmé, les prénoms s\'ajoutent. Ensuite les lettres durcissent et l\'objectif de points grimpe.';
+
+  @override
+  String get careerRulesStars =>
+      '1 étoile à l\'objectif, puis 2 et 3 étoiles en t\'approchant du score parfait.';
+
+  @override
+  String get careerRulesBeginner =>
+      'Lettres faciles, 60 puis 45 puis 30 secondes. Ville et Pays, puis Animal, puis Fruit.';
+
+  @override
+  String get careerRulesConfirmed =>
+      'Lettres normales. Les quatre catégories, puis un prénom féminin en plus.';
+
+  @override
+  String get careerRulesExpert =>
+      'Toutes les lettres, même les plus rares. Un prénom masculin en plus.';
+
+  @override
+  String get careerRulesMaster =>
+      'Les six catégories, objectifs plus hauts. Il faut trouver de nouveaux mots.';
+
+  @override
+  String get careerRulesReuse =>
+      'Dans le même monde, un mot déjà validé ne peut plus servir si la lettre revient.';
+
+  @override
+  String get gotIt => 'COMPRIS';
+
+  @override
+  String get worldBeginner => 'Débutant';
+
+  @override
+  String get worldConfirmed => 'Confirmé';
+
+  @override
+  String get worldExpert => 'Expert';
+
+  @override
+  String get worldMaster => 'Maître';
+
+  @override
+  String levelTitle(int level) {
+    return 'Niveau $level';
+  }
+
+  @override
+  String levelGoal(int target) {
+    return 'Objectif : $target points';
+  }
+
+  @override
+  String get play => 'JOUER';
+
+  @override
+  String get modeCareer => 'Carrière';
+
+  @override
+  String get modeElimination => 'Éliminatoires';
+
+  @override
+  String get modeFreeSolo => 'Solo libre';
+
+  @override
+  String get eliminationRulesTitle => 'Règles';
+
+  @override
+  String eliminationRules(int rounds) {
+    return 'Toutes les catégories, 30 secondes par manche. Marque au moins le minimum à chaque manche, sinon tu es éliminé. Tiens les $rounds manches pour devenir champion !';
+  }
+
+  @override
+  String roundsRange(int from, int to) {
+    return 'Manches $from à $to';
+  }
+
+  @override
+  String get eliminationBestTitle => 'Ton record';
+
+  @override
+  String get eliminationNoRecord => 'Pas encore de record';
+
+  @override
+  String get roomFormat => 'Format';
+
+  @override
+  String get formatRounds => 'Par manches';
+
+  @override
+  String get formatElimination => 'Éliminatoires';
+
+  @override
+  String get formatRoundsHelp =>
+      'Toutes les manches sont jouées : le meilleur total gagne.';
+
+  @override
+  String get formatEliminationHelp =>
+      'À chaque manche, le plus petit score est éliminé. Le dernier en lice gagne.';
+
+  @override
+  String get youAreEliminated =>
+      'Tu es éliminé : regarde la fin de la partie !';
+
+  @override
+  String get youAreOut => 'Tu es éliminé !';
+
+  @override
+  String playerIsOut(String name) {
+    return '$name est éliminé !';
+  }
+
+  @override
+  String get categoryFemaleName => 'Prénom féminin';
+
+  @override
+  String get categoryMaleName => 'Prénom masculin';
+
+  @override
+  String manyCategoriesHint(int count) {
+    return '$count catégories ou plus : 45 secondes minimum par manche.';
+  }
+
+  @override
+  String get preparingGame => 'Préparation de la partie…';
+
+  @override
+  String get playAlone => 'JOUER SEUL';
+
+  @override
+  String get withFriends => 'Avec tes amis';
+
+  @override
+  String get withFriendsHelp =>
+      'Une salle s\'ouvre tout de suite, avec un code à partager comme dans un salon. Le plus petit score de chaque manche est éliminé.';
+
+  @override
+  String get inviteFriends => 'INVITER DES AMIS';
+
+  @override
+  String get looksTitle => 'Boutique style';
+
+  @override
+  String get looksSubtitle => 'Essaie un look, puis achète-le avec tes pièces.';
+
+  @override
+  String get looksPreview => 'Ton aperçu';
+
+  @override
+  String get looksPacks => 'Packs';
+
+  @override
+  String get looksHair => 'Coiffures';
+
+  @override
+  String get looksHat => 'Chapeaux';
+
+  @override
+  String get looksFrame => 'Cadres';
+
+  @override
+  String get looksName => 'Pseudos';
+
+  @override
+  String get looksTiles => 'Tuiles';
+
+  @override
+  String get looksVictory => 'Victoire';
+
+  @override
+  String get looksPacksHint => 'Plusieurs styles assortis, moins cher en lot.';
+
+  @override
+  String get looksHairHint => 'Change de coupe sans toucher à ton personnage.';
+
+  @override
+  String get looksHatHint => 'Couronnes, casquettes et chapeaux magiques.';
+
+  @override
+  String get looksFrameHint => 'Anneaux, ornements, flammes ou étoiles.';
+
+  @override
+  String get looksNameHint =>
+      'Couleur, dégradé, contour ou badge devant le pseudo.';
+
+  @override
+  String get looksTilesHint => 'Couleurs et motifs des cases quand tu joues.';
+
+  @override
+  String get looksVictoryHint =>
+      'Confettis, étoiles, bulles ou pluie de lettres.';
+
+  @override
+  String get looksHairSpiky => 'Hérisson';
+
+  @override
+  String get looksHairBob => 'Carré rose';
+
+  @override
+  String get looksHairCurly => 'Boucles bleues';
+
+  @override
+  String get looksHairBun => 'Chignon or';
+
+  @override
+  String get looksHatCrown => 'Couronne';
+
+  @override
+  String get looksHatCap => 'Casquette';
+
+  @override
+  String get looksHatWizard => 'Chapeau mage';
+
+  @override
+  String get looksHatParty => 'Fête';
+
+  @override
+  String get looksFrameOrnament => 'Ornement';
+
+  @override
+  String get looksFrameFlames => 'Flammes';
+
+  @override
+  String get looksFrameStars => 'Étoiles';
+
+  @override
+  String get looksNameGradient => 'Dégradé';
+
+  @override
+  String get looksNameOutline => 'Contour';
+
+  @override
+  String get looksNameBadge => 'Badge';
+
+  @override
+  String get looksTilesStripes => 'Rayures';
+
+  @override
+  String get looksTilesDots => 'Pois';
+
+  @override
+  String get looksTilesMetal => 'Métal';
+
+  @override
+  String get looksVictoryStars => 'Étoiles';
+
+  @override
+  String get looksVictoryBubbles => 'Bulles';
+
+  @override
+  String get looksVictoryLetters => 'Lettres';
+
+  @override
+  String get looksPackOcean => 'Pack Océan';
+
+  @override
+  String get looksPackCandy => 'Pack Bonbon';
+
+  @override
+  String get looksPackRoyal => 'Pack Royal';
+
+  @override
+  String looksPackContents(int count) {
+    return '$count styles';
+  }
+
+  @override
+  String get looksOwned => 'POSSEDÉ';
+
+  @override
+  String get looksEquip => 'ÉQUIPER';
+
+  @override
+  String get looksEquipped => 'ÉQUIPÉ';
+
+  @override
+  String looksPrice(int count) {
+    return '$count pièces';
+  }
+
+  @override
+  String get looksNotEnough => 'Pas assez de pièces.';
+
+  @override
+  String get looksGold => 'Or';
+
+  @override
+  String get looksPink => 'Rose';
+
+  @override
+  String get looksCyan => 'Cyan';
+
+  @override
+  String get looksViolet => 'Violet';
+
+  @override
+  String get looksOrange => 'Orange';
+
+  @override
+  String get looksMint => 'Menthe';
 }

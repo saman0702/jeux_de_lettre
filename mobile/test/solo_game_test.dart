@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:letter_battle/core/audio/game_audio.dart';
 import 'package:letter_battle/core/feedback/game_feedback.dart';
+import 'package:letter_battle/core/feedback/vibrator.dart';
 import 'package:letter_battle/core/network/api_client.dart';
 import 'package:letter_battle/core/settings/app_settings.dart';
 import 'package:letter_battle/features/game/data/models.dart';
@@ -15,7 +16,7 @@ import 'package:letter_battle/features/game/solo_game_screen.dart';
 import 'package:letter_battle/features/game/solo_setup_screen.dart';
 import 'package:letter_battle/main.dart';
 
-/// Minimal in-memory version of the solo API.
+/// Version minimale en mémoire de l'API solo.
 class FakeServer {
   FakeServer({this.totalRounds = 1, this.roundSeconds = 30});
 
@@ -65,7 +66,7 @@ class FakeServer {
       hintsLeft--;
       return _json({
         'category': body['category'],
-        'options': ['Mangue', 'Madrid', 'Maroc', 'Mouton'],
+        'options': ['Mangue', 'Madrid', 'Maroc'],
         'hints_left': hintsLeft,
       });
     }
@@ -105,6 +106,7 @@ class FakeServer {
               'status': 'empty',
               'points': 0,
               'matched_value': null,
+              'suggestion': 'Mangue',
             },
           ],
           'round_score': points,
@@ -177,7 +179,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('letter')), findsOneWidget);
-    expect(find.text('Round 1 / 1'), findsOneWidget);
+    expect(find.text('1/1'), findsOneWidget);
     expect(
       audio.played,
       containsAllInOrder([
@@ -188,16 +190,26 @@ void main() {
         Sfx.reveal,
       ]),
     );
-    expect(audio.musicPlaying, isFalse);
+    // Musique du solo, baissée pendant la manche.
+    expect(
+      (audio.musicPlaying, audio.mood, audio.quiet),
+      (true, MusicMood.solo, true),
+    );
 
     await tester.enterText(find.byKey(const Key('field_city')), 'Madrid');
-    await tester.tap(find.text('FINISH'));
+    await tester.tap(find.byKey(const Key('key_finish')));
     await tester.pumpAndSettle();
 
     expect(server.submissions.single, {'city': 'Madrid', 'fruit': ''});
     expect(find.text('Valid'), findsOneWidget);
+    expect(audio.quiet, isFalse, reason: 'back to full volume on results');
     expect(find.text('+10'), findsWidgets);
-    expect(find.text('⏱ Finished in 4.2s'), findsOneWidget);
+    expect(find.text('Finished in 4.2s'), findsOneWidget);
+    expect(
+      find.text('Possible answer: Mangue'),
+      findsOneWidget,
+      reason: 'bonne réponse montrée pour le fruit raté',
+    );
     expect(
       audio.played,
       containsAllInOrder([Sfx.valid, Sfx.invalid, Sfx.points]),
@@ -249,7 +261,7 @@ void main() {
 
   test('remaining time follows the server clock, not the phone clock', () {
     final phoneNow = DateTime.utc(2026, 1, 1, 12, 0, 0);
-    // Phone clock is 10 minutes ahead of the server.
+    // L'horloge du téléphone a 10 minutes d'avance sur le serveur.
     final round = GameRound.fromJson({
       'number': 1,
       'letter': 'A',
@@ -280,7 +292,7 @@ void main() {
 
     await tester.tap(find.text('10'));
     await tester.tap(find.text('45s'));
-    await tester.tap(find.text('🐘 Animal'));
+    await tester.tap(find.text('Animal'));
     await tester.ensureVisible(find.text('Hard'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Hard'));
@@ -295,11 +307,13 @@ void main() {
       'rounds': 10,
       'round_duration': 45,
       'nickname': 'Player',
+      // Les points de la partie vont dans le porte-monnaie de ce profil.
+      'client_id': isNotEmpty,
     });
     expect(find.byType(SoloGameScreen), findsOneWidget);
   });
 
-  testWidgets('a hint shows four options and locks the field', (tester) async {
+  testWidgets('a hint shows three options and locks the field', (tester) async {
     final server = FakeServer();
     final feedback = testFeedback();
     await pumpGame(tester, server, feedback: feedback);
@@ -332,7 +346,7 @@ void main() {
     );
     expect((feedback.audio as SilentGameAudio).played, contains(Sfx.valid));
 
-    await tester.tap(find.text('FINISH'));
+    await tester.tap(find.byKey(const Key('key_finish')));
     await tester.pumpAndSettle();
     expect(server.submissions.single['city'], 'Madrid');
   });
@@ -359,5 +373,138 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(audio.played, [Sfx.key, Sfx.match, Sfx.key, Sfx.erase]);
+  });
+
+  testWidgets('the game keyboard types, erases, moves on and finishes', (
+    tester,
+  ) async {
+    final server = FakeServer();
+    final feedback = testFeedback();
+    final audio = feedback.audio as SilentGameAudio;
+    await pumpGame(tester, server, feedback: feedback);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    await tester.pumpAndSettle();
+    audio.played.clear();
+
+    Future<void> press(String key) async {
+      await tester.tap(find.byKey(Key('key_$key')));
+      await tester.pump();
+    }
+
+    for (final key in ['M', 'A', 'D', 'X']) {
+      await press(key);
+    }
+    await press('backspace');
+    for (final key in ['R', 'I', 'D']) {
+      await press(key);
+    }
+    await press('next');
+    for (final key in ['M', 'E', 'L', 'O', 'N']) {
+      await press(key);
+    }
+    await tester.pumpAndSettle();
+
+    final city = tester
+        .widget<TextField>(find.byKey(const Key('field_city')))
+        .controller!
+        .text;
+    final fruit = tester
+        .widget<TextField>(find.byKey(const Key('field_fruit')))
+        .controller!
+        .text;
+    expect((city, fruit), ('MADRID', 'MELON'));
+    expect(audio.played, containsAllInOrder([Sfx.key, Sfx.match, Sfx.erase]));
+
+    await press('finish');
+    await tester.pumpAndSettle();
+    expect(server.submissions.single, {'city': 'MADRID', 'fruit': 'MELON'});
+  });
+
+  testWidgets('the phone keyboard can be used instead', (tester) async {
+    final feedback = testFeedback()..settings.gameKeyboard = false;
+    await pumpGame(tester, FakeServer(), feedback: feedback);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('key_A')), findsNothing);
+    expect(find.text('FINISH'), findsOneWidget);
+    final field = tester.widget<TextField>(find.byKey(const Key('field_city')));
+    expect(field.keyboardType, TextInputType.text);
+  });
+
+  testWidgets('the game vibrates on GO and on answers, unless turned off', (
+    tester,
+  ) async {
+    final vibrator = SilentVibrator();
+    final feedback = GameFeedback(
+      audio: SilentGameAudio(),
+      settings: AppSettings.inMemory(),
+      vibrator: vibrator,
+      ambientMotion: false,
+    );
+    await pumpGame(tester, FakeServer(), feedback: feedback);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    await tester.pumpAndSettle();
+    expect(vibrator.vibrations, contains(Haptic.heavy), reason: 'GO!');
+
+    feedback.settings.vibration = false;
+    vibrator.vibrations.clear();
+    await tester.tap(find.byKey(const Key('key_M')));
+    await tester.pumpAndSettle();
+    expect(vibrator.vibrations, isEmpty);
+  });
+
+  testWidgets('a game can be left from the round screen', (tester) async {
+    final server = FakeServer();
+    final api = SoloGameApi(server.api);
+    final game = SoloGame.fromJson(server.game());
+    final controller = SoloGameController(
+      api: api,
+      game: game,
+      countdownStep: const Duration(milliseconds: 10),
+      tick: const Duration(milliseconds: 50),
+    );
+    tester.platformDispatcher.localesTestValue = const [Locale('en')];
+    await tester.pumpWidget(
+      LetterBattleApp(
+        feedback: testFeedback(),
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => SoloGameScreen(
+                  api: api,
+                  game: game,
+                  apiClient: server.api,
+                  controller: controller,
+                ),
+              ),
+            ),
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('letter')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('quit_button')));
+    await tester.pumpAndSettle();
+    expect(find.text('QUIT THE GAME?'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('dialog_confirm')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SoloGameScreen), findsNothing);
+    expect(find.text('open'), findsOneWidget);
   });
 }
