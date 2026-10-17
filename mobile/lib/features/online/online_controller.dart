@@ -141,7 +141,7 @@ class OnlineController extends ChangeNotifier {
   void submit(int round, Map<Category, String> answers) => client.send({
     'type': 'submit',
     'round': round,
-    'answers': {for (final e in answers.entries) e.key.name: e.value},
+    'answers': {for (final e in answers.entries) e.key.wire: e.value},
   });
 
   void watchRooms(String language) =>
@@ -153,7 +153,7 @@ class OnlineController extends ChangeNotifier {
   /// joker).
   Future<HintOptions> requestHint(int round, Category category) {
     final completer = _hintRequests[category] = Completer<HintOptions>();
-    client.send({'type': 'hint', 'round': round, 'category': category.name});
+    client.send({'type': 'hint', 'round': round, 'category': category.wire});
     return _withTimeout(completer.future);
   }
 
@@ -162,7 +162,7 @@ class OnlineController extends ChangeNotifier {
     client.send({
       'type': 'hint_pick',
       'round': round,
-      'category': category.name,
+      'category': category.wire,
       'choice': choice,
     });
     return _withTimeout(completer.future);

@@ -237,5 +237,8 @@
   "formatEliminationHelp": "Each round, the lowest score is knocked out. The last one standing wins.",
   "youAreEliminated": "You are out: watch the end of the game!",
   "youAreOut": "You are out!",
-  "playerIsOut": "{name} is out!"
+  "playerIsOut": "{name} is out!",
+  "categoryFemaleName": "Girl's name",
+  "categoryMaleName": "Boy's name",
+  "manyCategoriesHint": "{count} categories or more: at least 45 seconds per round."
 }

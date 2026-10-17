@@ -67,7 +67,9 @@ enum GameIconKind {
   flag(Icons.flag_rounded, IconMotion.swing),
   layers(Icons.layers_rounded, IconMotion.bob),
   categories(Icons.category_rounded, IconMotion.wiggle),
-  flame(Icons.local_fire_department_rounded, IconMotion.flicker);
+  flame(Icons.local_fire_department_rounded, IconMotion.flicker),
+  female(Icons.woman_rounded, IconMotion.bob),
+  male(Icons.man_rounded, IconMotion.bob);
 
   const GameIconKind(this.icon, this.motion);
 

@@ -68,8 +68,8 @@ class OfflineDictionary {
 
   /// Valeur affichée d'une réponse connue, ou null.
   String? find(Category category, String language, String key) =>
-      _byKey['${category.name}|$language']?[key] ??
-      _byKey['${category.name}|$_anyLanguage']?[key];
+      _byKey['${category.wire}|$language']?[key] ??
+      _byKey['${category.wire}|$_anyLanguage']?[key];
 
   /// Réponses connues pour une lettre, les plus connues d'abord.
   List<Entry> answers(
@@ -79,14 +79,14 @@ class OfflineDictionary {
     int? limit,
   }) {
     final own =
-        _byLetter['${category.name}|$language|$letter'] ?? const <Entry>[];
+        _byLetter['${category.wire}|$language|$letter'] ?? const <Entry>[];
     final any =
-        _byLetter['${category.name}|$_anyLanguage|$letter'] ?? const <Entry>[];
+        _byLetter['${category.wire}|$_anyLanguage|$letter'] ?? const <Entry>[];
     final all = own.isEmpty ? any : (any.isEmpty ? own : [...own, ...any]);
     return limit == null || all.length <= limit ? all : all.sublist(0, limit);
   }
 
   int count(Category category, String language, String letter) =>
-      (_byLetter['${category.name}|$language|$letter']?.length ?? 0) +
-      (_byLetter['${category.name}|$_anyLanguage|$letter']?.length ?? 0);
+      (_byLetter['${category.wire}|$language|$letter']?.length ?? 0) +
+      (_byLetter['${category.wire}|$_anyLanguage|$letter']?.length ?? 0);
 }

@@ -867,4 +867,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String playerIsOut(String name) {
     return '$name is out!';
   }
+
+  @override
+  String get categoryFemaleName => 'Girl\'s name';
+
+  @override
+  String get categoryMaleName => 'Boy\'s name';
+
+  @override
+  String manyCategoriesHint(int count) {
+    return '$count categories or more: at least 45 seconds per round.';
+  }
 }

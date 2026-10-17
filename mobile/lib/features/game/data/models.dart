@@ -1,4 +1,26 @@
-enum Category { city, country, animal, fruit }
+enum Category {
+  city('city'),
+  country('country'),
+  animal('animal'),
+  fruit('fruit'),
+  femaleName('female_name'),
+  maleName('male_name');
+
+  const Category(this.wire);
+
+  /// Identifiant échangé avec le serveur (et dans le dictionnaire hors ligne).
+  final String wire;
+
+  static Category fromWire(String value) =>
+      values.firstWhere((c) => c.wire == value);
+
+  /// Catégories cochées par défaut : le Petit Bac classique.
+  static const classic = [city, country, animal, fruit];
+
+  /// À partir de ce nombre de catégories, une manche dure plus de 30 s.
+  static const many = 5;
+  static const manyMinDuration = 45;
+}
 
 enum Difficulty { easy, normal, hard }
 
@@ -17,7 +39,7 @@ class SoloGameSettings {
   const SoloGameSettings({
     required this.language,
     this.difficulty = Difficulty.normal,
-    this.categories = Category.values,
+    this.categories = Category.classic,
     this.rounds = 5,
     this.roundDuration = 30,
     this.nickname = 'Player',
@@ -40,7 +62,7 @@ class SoloGameSettings {
   Map<String, dynamic> toJson() => {
     'language': language,
     'difficulty': difficulty.name,
-    'categories': [for (final c in categories) c.name],
+    'categories': [for (final c in categories) c.wire],
     'rounds': rounds,
     'round_duration': roundDuration,
     'nickname': nickname,
@@ -64,7 +86,7 @@ class SoloGame {
     id: json['id'] as String,
     categories: [
       for (final c in json['categories'] as List)
-        Category.values.byName(c as String),
+        Category.fromWire(c as String),
     ],
     totalRounds: json['total_rounds'] as int,
     roundDuration: json['round_duration'] as int,
@@ -136,7 +158,7 @@ class AnswerResult {
   });
 
   factory AnswerResult.fromJson(Map<String, dynamic> json) => AnswerResult(
-    category: Category.values.byName(json['category'] as String),
+    category: Category.fromWire(json['category'] as String),
     value: json['value'] as String,
     status: _parseStatus(json['status'] as String),
     points: json['points'] as int,
@@ -167,7 +189,7 @@ class HintOptions {
   });
 
   factory HintOptions.fromJson(Map<String, dynamic> json) => HintOptions(
-    category: Category.values.byName(json['category'] as String),
+    category: Category.fromWire(json['category'] as String),
     options: [for (final o in json['options'] as List) o as String],
     hintsLeft: json['hints_left'] as int,
   );
@@ -185,7 +207,7 @@ class HintPick {
   });
 
   factory HintPick.fromJson(Map<String, dynamic> json) => HintPick(
-    category: Category.values.byName(json['category'] as String),
+    category: Category.fromWire(json['category'] as String),
     correct: json['correct'] as bool,
     answer: json['answer'] as String,
   );

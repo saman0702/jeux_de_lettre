@@ -18,8 +18,8 @@ CareerLevel _level(int index) {
   final world = index ~/ levelsPerWorld;
   final step = index % levelsPerWorld; // 0 à 9 dans le monde
   final categories = world == 0
-      ? Category.values.take(step < 3 ? 2 : (step < 6 ? 3 : 4)).toList()
-      : Category.values;
+      ? Category.classic.take(step < 3 ? 2 : (step < 6 ? 3 : 4)).toList()
+      : Category.classic;
   final duration = switch (world) {
     0 => step < 5 ? 60 : 45,
     1 => step < 5 ? 45 : 30,

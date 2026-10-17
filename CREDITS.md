@@ -26,3 +26,11 @@ aussi affichée dans l'appli (Réglages).
 
 - Effets sonores : synthétisés par `mobile/tool/generate_sounds.py` (aucun échantillon tiers).
 - Polices Fredoka et Lilita One (Juan Montoreano) : SIL Open Font License (`mobile/assets/fonts/LilitaOne-OFL.txt`).
+
+## Données de réponses
+
+- Villes : GeoNames (CC BY 4.0).
+- Prénoms français : Fichier des prénoms de l'Insee, naissances en France depuis 1900 (Licence
+  Ouverte / Etalab) — prénoms donnés au moins 20 fois.
+- Prénoms anglais : 1 000 prénoms les plus donnés chaque année aux États-Unis, 1880–2008 (Social
+  Security Administration, domaine public), via github.com/hadley/data-baby-names.

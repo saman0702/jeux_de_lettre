@@ -147,3 +147,34 @@ async def test_missed_answers_come_with_a_suggestion(client, letter_m):
     for category in ("animal", "fruit"):
         suggestion = answers[category]["suggestion"]
         assert suggestion and suggestion[0].upper() == "M"
+
+
+async def test_default_categories_are_the_classic_four(client):
+    game = await create_game(client)
+    assert game["categories"] == ["city", "country", "animal", "fruit"]
+
+
+async def test_many_categories_need_longer_rounds(client):
+    six = ["city", "country", "animal", "fruit", "female_name", "male_name"]
+    response = await client.post("/api/v1/solo/games", json={**GAME, "categories": six, "round_duration": 30})
+    assert response.status_code == 422
+    five = six[:5]
+    response = await client.post("/api/v1/solo/games", json={**GAME, "categories": five, "round_duration": 45})
+    assert response.status_code == 201
+    assert response.json()["categories"] == five
+
+
+async def test_first_names_are_validated(client, letter_m):
+    game = await create_game(client, categories=["female_name", "male_name"])
+    await client.post(f"/api/v1/solo/games/{game['id']}/rounds")
+    body = (
+        await client.post(
+            f"/api/v1/solo/games/{game['id']}/rounds/1/submit",
+            json={"answers": {"female_name": "marie", "male_name": "Mamadou"}},
+        )
+    ).json()
+    assert {a["category"]: a["status"] for a in body["round"]["answers"]} == {
+        "female_name": "valid",
+        "male_name": "valid",
+    }
+    assert body["round"]["round_score"] == 20

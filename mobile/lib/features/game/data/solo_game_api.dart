@@ -37,7 +37,7 @@ class SoloGameApi implements SoloBackend {
     final body = await _api.postJson(
       '/api/v1/solo/games/$gameId/rounds/$roundNumber/submit',
       {
-        'answers': {for (final e in answers.entries) e.key.name: e.value},
+        'answers': {for (final e in answers.entries) e.key.wire: e.value},
       },
     );
     if (body['wallet'] case final Map<String, dynamic> wallet) {
@@ -56,7 +56,7 @@ class SoloGameApi implements SoloBackend {
     Category category,
   ) async => HintOptions.fromJson(
     await _api.postJson('/api/v1/solo/games/$gameId/rounds/$roundNumber/hint', {
-      'category': category.name,
+      'category': category.wire,
     }),
   );
 
@@ -69,7 +69,7 @@ class SoloGameApi implements SoloBackend {
   ) async => HintPick.fromJson(
     await _api.postJson(
       '/api/v1/solo/games/$gameId/rounds/$roundNumber/hint/pick',
-      {'category': category.name, 'choice': choice},
+      {'category': category.wire, 'choice': choice},
     ),
   );
 }

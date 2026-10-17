@@ -872,4 +872,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String playerIsOut(String name) {
     return '$name est éliminé !';
   }
+
+  @override
+  String get categoryFemaleName => 'Prénom féminin';
+
+  @override
+  String get categoryMaleName => 'Prénom masculin';
+
+  @override
+  String manyCategoriesHint(int count) {
+    return '$count catégories ou plus : 45 secondes minimum par manche.';
+  }
 }

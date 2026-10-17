@@ -16,7 +16,7 @@ import json
 import unicodedata
 from pathlib import Path
 
-from app.data.seed_answers import build_rows, city_entries, curated_entries
+from app.data.seed_answers import build_rows, city_entries, curated_entries, name_entries
 from app.services.normalization import _LIGATURES, normalize
 
 MOBILE = Path(__file__).resolve().parents[3] / "mobile"
@@ -50,7 +50,7 @@ def cases(rows: list[dict]) -> list[list[str]]:
 
 
 def main() -> None:
-    rows = build_rows(curated_entries()) + build_rows(city_entries())
+    rows = build_rows(curated_entries()) + build_rows(city_entries()) + build_rows(name_entries())
     rows.sort(key=lambda r: (r["category"], r["language"], r["first_letter"], -r["popularity"], r["value"]))
 
     data = MOBILE / "assets" / "data"

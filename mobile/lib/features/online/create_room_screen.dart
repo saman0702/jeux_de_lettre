@@ -35,12 +35,23 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   int _rounds = 5;
   int _duration = 30;
   Difficulty _difficulty = Difficulty.normal;
-  final Set<Category> _categories = {...Category.values};
+  final Set<Category> _categories = {...Category.classic};
+
+  /// Beaucoup de catégories : les manches doivent durer plus de 30 s.
+  bool get _manyCategories => _categories.length >= Category.many;
+
+  List<int> get _durationOptions => [
+    for (final d in SoloGameSettings.durationOptions)
+      if (!_manyCategories || d >= Category.manyMinDuration) d,
+  ];
 
   void _toggleCategory(Category category) {
     setState(() {
       if (!_categories.contains(category)) {
         _categories.add(category);
+        if (_manyCategories && _duration < Category.manyMinDuration) {
+          _duration = Category.manyMinDuration;
+        }
       } else if (_categories.length > 1) {
         _categories.remove(category);
       }
@@ -225,11 +236,24 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                 title: l10n.roundDuration,
                 icon: GameIconKind.timer,
                 color: AppColors.cyan,
-                child: PillSelector<int>(
-                  options: SoloGameSettings.durationOptions,
-                  isSelected: (d) => d == _duration,
-                  label: (d) => l10n.secondsShort(d),
-                  onTap: (d) => setState(() => _duration = d),
+                child: Column(
+                  children: [
+                    PillSelector<int>(
+                      options: _durationOptions,
+                      isSelected: (d) => d == _duration,
+                      label: (d) => l10n.secondsShort(d),
+                      onTap: (d) => setState(() => _duration = d),
+                    ),
+                    if (_manyCategories) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.manyCategoriesHint(Category.many),
+                        key: const Key('many_categories_hint'),
+                        textAlign: TextAlign.center,
+                        style: fredoka(size: 13, color: AppColors.inkSoft),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               OptionSection(

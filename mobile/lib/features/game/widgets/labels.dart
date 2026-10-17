@@ -11,6 +11,8 @@ extension CategoryLabel on Category {
     Category.country => GameIconKind.country,
     Category.animal => GameIconKind.animal,
     Category.fruit => GameIconKind.fruit,
+    Category.femaleName => GameIconKind.female,
+    Category.maleName => GameIconKind.male,
   };
 
   /// Chaque catégorie a sa propre couleur dans le jeu.
@@ -19,6 +21,8 @@ extension CategoryLabel on Category {
     Category.country => AppColors.green,
     Category.animal => AppColors.orange,
     Category.fruit => AppColors.pink,
+    Category.femaleName => const Color(0xFFD94FD6),
+    Category.maleName => AppColors.purple,
   };
 
   String label(AppLocalizations l10n) => switch (this) {
@@ -26,6 +30,8 @@ extension CategoryLabel on Category {
     Category.country => l10n.categoryCountry,
     Category.animal => l10n.categoryAnimal,
     Category.fruit => l10n.categoryFruit,
+    Category.femaleName => l10n.categoryFemaleName,
+    Category.maleName => l10n.categoryMaleName,
   };
 }
 

@@ -21,7 +21,7 @@ class RoomSettings {
   const RoomSettings({
     required this.language,
     this.difficulty = Difficulty.normal,
-    this.categories = Category.values,
+    this.categories = Category.classic,
     this.rounds = 5,
     this.roundDuration = 30,
     this.maxPlayers = 8,
@@ -39,7 +39,7 @@ class RoomSettings {
     difficulty: Difficulty.values.byName(json['difficulty'] as String),
     categories: [
       for (final c in json['categories'] as List)
-        Category.values.byName(c as String),
+        Category.fromWire(c as String),
     ],
     rounds: json['rounds'] as int,
     roundDuration: json['round_duration'] as int,
@@ -70,7 +70,7 @@ class RoomSettings {
   Map<String, dynamic> toJson() => {
     'language': language,
     'difficulty': difficulty.name,
-    'categories': [for (final c in categories) c.name],
+    'categories': [for (final c in categories) c.wire],
     'rounds': rounds,
     'round_duration': roundDuration,
     'max_players': maxPlayers,
@@ -198,7 +198,7 @@ class RoomRoundResults {
         ],
         examples: {
           for (final e in ((json['examples'] as Map?) ?? const {}).entries)
-            Category.values.byName(e.key as String): e.value as String,
+            Category.fromWire(e.key as String): e.value as String,
         },
         eliminated: [
           for (final id in (json['eliminated'] as List?) ?? const [])

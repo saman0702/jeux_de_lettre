@@ -672,5 +672,15 @@
         "type": "String"
       }
     }
+  },
+  "categoryFemaleName": "Prénom féminin",
+  "categoryMaleName": "Prénom masculin",
+  "manyCategoriesHint": "{count} catégories ou plus : 45 secondes minimum par manche.",
+  "@manyCategoriesHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

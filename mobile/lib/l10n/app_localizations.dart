@@ -1525,6 +1525,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{name} est éliminé !'**
   String playerIsOut(String name);
+
+  /// No description provided for @categoryFemaleName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prénom féminin'**
+  String get categoryFemaleName;
+
+  /// No description provided for @categoryMaleName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prénom masculin'**
+  String get categoryMaleName;
+
+  /// No description provided for @manyCategoriesHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} catégories ou plus : 45 secondes minimum par manche.'**
+  String manyCategoriesHint(int count);
 }
 
 class _AppLocalizationsDelegate

@@ -1,8 +1,17 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.core.game_rules import DURATION_OPTIONS, ROUND_OPTIONS, Category, Difficulty, Language
+from app.core.game_rules import (
+    CLASSIC_CATEGORIES,
+    DURATION_OPTIONS,
+    MANY_CATEGORIES,
+    MANY_CATEGORIES_MIN_DURATION,
+    ROUND_OPTIONS,
+    Category,
+    Difficulty,
+    Language,
+)
 
 
 class GameSettings(BaseModel):
@@ -10,7 +19,7 @@ class GameSettings(BaseModel):
 
     language: Language
     difficulty: Difficulty = Difficulty.NORMAL
-    categories: list[Category] = Field(default_factory=lambda: list(Category), min_length=1)
+    categories: list[Category] = Field(default_factory=lambda: list(CLASSIC_CATEGORIES), min_length=1)
     rounds: int = 5
     round_duration: int = 30
 
@@ -32,6 +41,15 @@ class GameSettings(BaseModel):
         if value not in DURATION_OPTIONS:
             raise ValueError(f"round_duration must be one of {DURATION_OPTIONS}")
         return value
+
+    @model_validator(mode="after")
+    def long_enough_for_many_categories(self) -> "GameSettings":
+        """Beaucoup de catégories demandent plus de temps : 5 catégories ou plus, plus de 30 s."""
+        if len(self.categories) >= MANY_CATEGORIES and self.round_duration < MANY_CATEGORIES_MIN_DURATION:
+            raise ValueError(
+                f"{MANY_CATEGORIES} categories or more need rounds of at least {MANY_CATEGORIES_MIN_DURATION} s"
+            )
+        return self
 
 
 class SoloGameCreate(GameSettings):

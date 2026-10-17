@@ -8,6 +8,16 @@ class Category(StrEnum):
     COUNTRY = "country"
     ANIMAL = "animal"
     FRUIT = "fruit"
+    FEMALE_NAME = "female_name"
+    MALE_NAME = "male_name"
+
+
+# Catégories cochées par défaut (le Petit Bac classique).
+CLASSIC_CATEGORIES = (Category.CITY, Category.COUNTRY, Category.ANIMAL, Category.FRUIT)
+
+# À partir de ce nombre de catégories, une manche doit durer plus de 30 secondes.
+MANY_CATEGORIES = 5
+MANY_CATEGORIES_MIN_DURATION = 45
 
 
 class Language(StrEnum):

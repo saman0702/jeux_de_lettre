@@ -85,7 +85,7 @@ class EliminationChallenge extends SoloChallenge {
   SoloGameSettings settings(String language, String nickname, String? id) =>
       SoloGameSettings(
         language: language,
-        categories: Category.values,
+        categories: Category.classic,
         rounds: rounds,
         roundDuration: roundDuration,
         nickname: nickname,
