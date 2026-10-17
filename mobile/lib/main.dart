@@ -9,7 +9,7 @@ import 'core/network/realtime_client.dart';
 import 'core/settings/app_settings.dart';
 import 'core/theme/app_theme.dart';
 import 'features/game/offline/offline_dictionary.dart';
-import 'features/home/home_screen.dart';
+import 'features/home/app_splash.dart';
 import 'features/online/online_controller.dart';
 import 'core/network/api_client.dart';
 import 'features/avatar/avatar_sync.dart';
@@ -56,7 +56,7 @@ Future<void> main() async {
 class LetterBattleApp extends StatefulWidget {
   const LetterBattleApp({
     super.key,
-    this.home = const HomeScreen(),
+    this.home = const AppSplash(),
     this.feedback,
     this.online,
     this.shop,
