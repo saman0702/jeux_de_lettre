@@ -37,6 +37,9 @@ class Normalizer {
     return cleaned.split(' ').where((part) => part.isNotEmpty).join(' ');
   }
 
+  /// Mode sévère : casse, accents et espaces internes comptent.
+  static String strictForm(String text) => text.trim();
+
   static String stripArticle(String normalized) =>
       normalized.replaceFirst(_leadingArticle, '');
 

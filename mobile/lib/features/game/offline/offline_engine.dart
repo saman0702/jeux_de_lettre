@@ -84,6 +84,7 @@ class OfflineSoloBackend implements SoloBackend {
     categories: game.settings.categories,
     totalRounds: game.settings.rounds,
     roundDuration: game.settings.roundDuration,
+    strictSpelling: game.settings.strictSpelling,
     status: game.roundsPlayed >= game.settings.rounds ? 'finished' : 'playing',
     totalScore: game.totalScore,
     roundsPlayed: game.roundsPlayed,
@@ -154,6 +155,7 @@ class OfflineSoloBackend implements SoloBackend {
     String letter,
     String raw, {
     Set<String> banned = const {},
+    bool strictSpelling = false,
   }) {
     final keys = _norm.lookupKeys(raw, category);
     if (keys.isEmpty) return (AnswerStatus.empty, null);
@@ -165,6 +167,10 @@ class OfflineSoloBackend implements SoloBackend {
         }
         if (banned.contains(key)) {
           return (AnswerStatus.alreadyUsed, value);
+        }
+        if (strictSpelling &&
+            Normalizer.strictForm(raw) != Normalizer.strictForm(value)) {
+          return (AnswerStatus.notFound, value);
         }
         return (AnswerStatus.valid, value);
       }
@@ -203,6 +209,7 @@ class OfflineSoloBackend implements SoloBackend {
               letter,
               raw,
               banned: banned,
+              strictSpelling: settings.strictSpelling,
             );
       final valid = status == AnswerStatus.valid;
       if (valid && matched != null) {
@@ -258,25 +265,36 @@ class OfflineSoloBackend implements SoloBackend {
   Future<HintOptions> requestHint(
     String gameId,
     int roundNumber,
-    Category category,
-  ) async {
+    Category category, {
+    bool reveal = false,
+  }) async {
     final game = _game(gameId);
     final existing = game.hints[category];
     if (existing == null) {
       if (game.hintsUsed >= OfflineRules.hintsPerGame) {
         throw const OfflineError('no_hints_left');
       }
-      game.hints[category] = _buildHint(
+      final built = _buildHint(
         category,
         game.settings.language,
         game.letters.last,
       );
+      if (reveal) {
+        game.hints[category] = _Hint([built.answer], built.answer)
+          ..picked = built.answer;
+      } else {
+        game.hints[category] = built;
+      }
       game.hintsUsed++;
     }
+    final hint = game.hints[category]!;
+    final revealed = reveal && hint.picked == hint.answer;
     return HintOptions(
       category: category,
-      options: game.hints[category]!.options,
+      options: hint.options,
       hintsLeft: OfflineRules.hintsPerGame - game.hintsUsed,
+      revealed: revealed,
+      answer: revealed ? hint.answer : null,
     );
   }
 

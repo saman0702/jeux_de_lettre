@@ -20,6 +20,9 @@ enum Category {
   /// À partir de ce nombre de catégories, une manche dure plus de 30 s.
   static const many = 5;
   static const manyMinDuration = 45;
+
+  /// Orthographe stricte : manches d'au moins 2 minutes.
+  static const strictSpellingMinDuration = 120;
 }
 
 enum Difficulty { easy, normal, hard }
@@ -51,6 +54,7 @@ class SoloGameSettings {
     this.categories = Category.classic,
     this.rounds = 5,
     this.roundDuration = 30,
+    this.strictSpelling = false,
     this.nickname = 'Player',
     this.clientId,
     this.avoidLetters = '',
@@ -58,13 +62,17 @@ class SoloGameSettings {
   });
 
   static const roundOptions = [5, 10, 15];
-  static const durationOptions = [15, 30, 45, 60];
+  /// Jusqu'à 5 minutes par manche.
+  static const durationOptions = [15, 30, 45, 60, 120, 180, 240, 300];
 
   final String language;
   final Difficulty difficulty;
   final List<Category> categories;
   final int rounds;
   final int roundDuration;
+
+  /// Casse, accents et espaces doivent coller à la fiche.
+  final bool strictSpelling;
   final String nickname;
 
   /// Profil à créditer en pièces (parties sur le serveur uniquement).
@@ -82,6 +90,7 @@ class SoloGameSettings {
     'categories': [for (final c in categories) c.wire],
     'rounds': rounds,
     'round_duration': roundDuration,
+    'strict_spelling': strictSpelling,
     'nickname': nickname,
     if (clientId != null) 'client_id': clientId,
     if (avoidLetters.isNotEmpty) 'avoid_letters': avoidLetters,
@@ -102,6 +111,7 @@ class SoloGame {
     required this.status,
     required this.totalScore,
     required this.roundsPlayed,
+    this.strictSpelling = false,
     this.hintsLeft = 0,
   });
 
@@ -113,6 +123,7 @@ class SoloGame {
     ],
     totalRounds: json['total_rounds'] as int,
     roundDuration: json['round_duration'] as int,
+    strictSpelling: json['strict_spelling'] as bool? ?? false,
     status: json['status'] as String,
     totalScore: json['total_score'] as int,
     roundsPlayed: json['rounds_played'] as int,
@@ -123,6 +134,7 @@ class SoloGame {
   final List<Category> categories;
   final int totalRounds;
   final int roundDuration;
+  final bool strictSpelling;
   final String status;
   final int totalScore;
   final int roundsPlayed;
@@ -138,6 +150,7 @@ class GameRound {
     required this.duration,
     required this.endsAt,
     required this.clockOffset,
+    this.bonus = false,
   });
 
   /// L'horloge du serveur fait référence : `clockOffset` indique le retard de
@@ -154,6 +167,7 @@ class GameRound {
       duration: json['duration'] as int,
       endsAt: DateTime.parse(json['ends_at'] as String),
       clockOffset: serverTime.difference(receivedAt ?? DateTime.now()),
+      bonus: json['bonus'] as bool? ?? false,
     );
   }
 
@@ -162,6 +176,9 @@ class GameRound {
   final int duration;
   final DateTime endsAt;
   final Duration clockOffset;
+
+  /// Mini-manche bonus post-podium.
+  final bool bonus;
 
   Duration remaining([DateTime? now]) {
     final left = endsAt.difference((now ?? DateTime.now()).add(clockOffset));
@@ -278,23 +295,29 @@ class BuyHintResult {
   final int price;
 }
 
-/// Les trois propositions d'un joker ; la bonne reste sur le serveur.
+/// Propositions d'un joker ; en mode révélation payante, [revealed] + [answer].
 class HintOptions {
   const HintOptions({
     required this.category,
     required this.options,
     required this.hintsLeft,
+    this.revealed = false,
+    this.answer,
   });
 
   factory HintOptions.fromJson(Map<String, dynamic> json) => HintOptions(
     category: Category.fromWire(json['category'] as String),
     options: [for (final o in json['options'] as List) o as String],
     hintsLeft: json['hints_left'] as int,
+    revealed: json['revealed'] as bool? ?? false,
+    answer: json['answer'] as String?,
   );
 
   final Category category;
   final List<String> options;
   final int hintsLeft;
+  final bool revealed;
+  final String? answer;
 }
 
 class HintPick {

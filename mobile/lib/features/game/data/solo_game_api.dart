@@ -59,10 +59,12 @@ class SoloGameApi implements SoloBackend {
   Future<HintOptions> requestHint(
     String gameId,
     int roundNumber,
-    Category category,
-  ) async => HintOptions.fromJson(
+    Category category, {
+    bool reveal = false,
+  }) async => HintOptions.fromJson(
     await _api.postJson('/api/v1/solo/games/$gameId/rounds/$roundNumber/hint', {
       'category': category.wire,
+      'reveal': reveal,
     }),
   );
 

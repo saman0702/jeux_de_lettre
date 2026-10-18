@@ -9,3 +9,4 @@ pillow==11.0.0
 python-multipart==0.0.20
 httpx==0.28.1
 pyjwt[crypto]==2.10.1
+agora-token-builder==1.0.0

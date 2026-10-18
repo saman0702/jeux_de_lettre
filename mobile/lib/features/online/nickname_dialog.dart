@@ -89,8 +89,6 @@ class _NicknameDialogState extends State<_NicknameDialog> {
               onPressed: _submit,
               color: AppColors.green,
               textColor: AppColors.white,
-              height: 56,
-              fontSize: 19,
             ),
           ],
         ),

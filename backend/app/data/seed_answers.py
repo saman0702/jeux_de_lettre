@@ -44,6 +44,21 @@ CURATED_FILES = {
     Category.FRUIT: "fruits.json",
 }
 
+# Continents / ambiguïtés : jamais pays ni prénom dans le jeu.
+_BLOCKED_NORMS = frozenset({
+    "amerique",
+    "america",
+    "afrique",
+    "africa",
+    "asie",
+    "asia",
+    "europe",
+    "oceanie",
+    "oceania",
+    "antarctique",
+    "antarctica",
+})
+
 # catégorie, langue, valeur[, popularité] ; la popularité aide les bots à choisir des réponses
 # connues
 Entry = tuple
@@ -94,6 +109,8 @@ def display_name(raw: str) -> str:
 
 def name_entries() -> Iterator[Entry]:
     """Prénoms féminins et masculins, avec le nombre de naissances comme popularité."""
+    # Évite « France », « Amérique », etc. : pays / continents, pas des prénoms jouables.
+    blocked = country_normalized_names() | _BLOCKED_NORMS
     counts: dict[tuple[Category, str], int] = {}
     archive = zipfile.ZipFile(io.BytesIO(_download(INSEE_NAMES_URL, "prenoms-2025-nat_csv.zip")))
     lines = archive.read(archive.namelist()[0]).decode("utf-8").splitlines()
@@ -106,7 +123,7 @@ def name_entries() -> Iterator[Entry]:
         key = (category, display_name(name))
         counts[key] = counts.get(key, 0) + int(value)
     for (category, name), births in counts.items():
-        if births >= MIN_NAME_BIRTHS:
+        if births >= MIN_NAME_BIRTHS and not _blocked_name(name, blocked):
             yield category, ANY_LANGUAGE, name, births
 
     us = _download(US_NAMES_URL, "us-baby-names.csv").decode("utf-8")
@@ -116,23 +133,62 @@ def name_entries() -> Iterator[Entry]:
         key = (category, row["name"])
         best[key] = max(best.get(key, 0.0), float(row["percent"]))
     for (category, name), share in best.items():
-        yield category, ANY_LANGUAGE, name, round(share * US_BIRTHS_PER_YEAR)
+        if not _blocked_name(name, blocked):
+            yield category, ANY_LANGUAGE, name, round(share * US_BIRTHS_PER_YEAR)
+
+
+def country_normalized_names() -> set[str]:
+    """Noms de pays (toutes langues) — pour éviter de les accepter aussi en « ville »."""
+    names: set[str] = set()
+    for category, _language, value, *_rest in curated_entries():
+        if category == Category.COUNTRY:
+            key = normalize(value)
+            if key and key not in _BLOCKED_NORMS:
+                names.add(key)
+    return names
+
+
+def _blocked_name(value: str, blocked: set[str]) -> bool:
+    key = normalize(value)
+    return not key or key in blocked
+
+
+def is_allowed_city_label(
+    value: str, country_names: set[str], *, allow_country_name: bool
+) -> bool:
+    """True si le libellé peut entrer dans la catégorie ville."""
+    if not _is_city_name(value):
+        return False
+    key = normalize(value)
+    if key in country_names and not allow_country_name:
+        return False
+    return True
 
 
 def city_entries() -> Iterator[Entry]:
+    """Villes GeoNames, sans les homonymes de pays (ex. Angola, Indiana).
+
+    Exception : capitales dont le nom = le pays (Luxembourg, Singapour, Monaco…),
+    repérées par le code GeoNames PPLC.
+    """
+    country_names = country_normalized_names()
     with zipfile.ZipFile(io.BytesIO(geonames_archive())) as archive:
         lines = archive.read("cities5000.txt").decode("utf-8").splitlines()
     for line in lines:
         fields = line.split("\t")
         name, ascii_name, alternates = fields[1], fields[2], fields[3]
+        feature_code = fields[7]
         population = int(fields[14] or 0)
+        # Capitale politique : le nom du pays peut aussi valoir comme ville (Petit Bac).
+        allow_country_name = feature_code == "PPLC"
+
         # Seules les orthographes principales portent la population, pour que les bots préfèrent «
         # Paris » à un nom alternatif exotique.
         for value in [name, ascii_name]:
-            if _is_city_name(value):
+            if is_allowed_city_label(value, country_names, allow_country_name=allow_country_name):
                 yield Category.CITY, ANY_LANGUAGE, value, population
         for value in alternates.split(","):
-            if _is_city_name(value):
+            if is_allowed_city_label(value, country_names, allow_country_name=allow_country_name):
                 yield Category.CITY, ANY_LANGUAGE, value, 0
 
 

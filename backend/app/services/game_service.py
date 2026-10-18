@@ -43,6 +43,7 @@ async def create_solo_game(session: AsyncSession, data: SoloGameCreate) -> Game:
         categories=[c.value for c in data.categories],
         total_rounds=data.rounds,
         round_duration=data.round_duration,
+        strict_spelling=data.strict_spelling,
         status="playing",
         players=[Player(nickname=data.nickname)],
         rounds=[],
@@ -166,9 +167,14 @@ async def _hint_for(session: AsyncSession, game_round: GameRound, player_id: str
 
 
 async def request_hint(
-    session: AsyncSession, game: Game, round_number: int, category: Category
-    ) -> tuple[HintRequest, int]:
-    """Trois propositions pour une catégorie ; redemander renvoie les mêmes."""
+    session: AsyncSession,
+    game: Game,
+    round_number: int,
+    category: Category,
+    *,
+    reveal: bool = False,
+) -> tuple[HintRequest, int]:
+    """Joker : QCM (3 choix) ou révélation directe du mot si reveal=True."""
     game_round = _playable_round(game, round_number)
     if category.value not in game.categories:
         raise GameError("invalid_category", 422)
@@ -176,6 +182,10 @@ async def request_hint(
 
     existing = await _hint_for(session, game_round, player.id, category.value)
     if existing is not None:
+        if reveal and existing.picked is None:
+            existing.options = [existing.answer]
+            existing.picked = existing.answer
+            await session.commit()
         return existing, await hints_left(session, game)
     if await hints_left(session, game) == 0:
         raise GameError("no_hints_left")
@@ -184,13 +194,24 @@ async def request_hint(
         hint = await hint_service.build_hint(session, game.language, category.value, game_round.letter)
     except hint_service.NoHintAvailable:
         raise GameError("no_hint_available") from None
-    request = HintRequest(
-        round_id=game_round.id,
-        player_id=player.id,
-        category=category.value,
-        options=hint.options,
-        answer=hint.answer,
-    )
+    if reveal:
+        # Joker acheté en pièces : un seul mot, déjà validé.
+        request = HintRequest(
+            round_id=game_round.id,
+            player_id=player.id,
+            category=category.value,
+            options=[hint.answer],
+            answer=hint.answer,
+            picked=hint.answer,
+        )
+    else:
+        request = HintRequest(
+            round_id=game_round.id,
+            player_id=player.id,
+            category=category.value,
+            options=hint.options,
+            answer=hint.answer,
+        )
     session.add(request)
     await session.commit()
     return request, await hints_left(session, game)
@@ -314,7 +335,12 @@ async def submit_answers(
             results[category] = ValidationResult(Status.HINT_WRONG)
         else:
             result = await validate_answer(
-                session, Category(category), game.language, game_round.letter, raw
+                session,
+                Category(category),
+                game.language,
+                game_round.letter,
+                raw,
+                strict_spelling=game.strict_spelling,
             )
             if (
                 result.is_valid

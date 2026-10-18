@@ -1,9 +1,15 @@
 from app.core.game_rules import Category
-from app.services.normalization import lookup_keys, normalize, starts_with_letter
+from app.services.normalization import lookup_keys, normalize, starts_with_letter, strict_form
 
 
 def test_normalize_ignores_case_accents_and_spaces():
     assert normalize("éléphant") == normalize("Elephant") == normalize("  ELEPHANT ") == "elephant"
+
+
+def test_strict_form_keeps_case_accents_and_inner_spaces():
+    assert strict_form("  Éléphant ") == "Éléphant"
+    assert strict_form("Éléphant") != strict_form("elephant")
+    assert strict_form("Côte  d'Ivoire") != strict_form("Côte d'Ivoire")
 
 
 def test_normalize_handles_separators_and_ligatures():

@@ -70,7 +70,11 @@ class GameFeedback {
   void _syncMusic() {
     final mood = _mood;
     if (mood != null && _appInForeground && settings.music) {
-      audio.startMusic(mood, quiet: _musicQuiet);
+      audio.startMusic(
+        mood,
+        quiet: _musicQuiet,
+        level: settings.musicVolume,
+      );
     } else {
       audio.stopMusic();
     }

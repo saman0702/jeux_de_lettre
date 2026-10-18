@@ -7,7 +7,9 @@ from app.core.game_rules import (
     DURATION_OPTIONS,
     MANY_CATEGORIES,
     MANY_CATEGORIES_MIN_DURATION,
+    ROOM_THEMES,
     ROUND_OPTIONS,
+    STRICT_SPELLING_MIN_DURATION,
     Category,
     Difficulty,
     Language,
@@ -22,6 +24,8 @@ class GameSettings(BaseModel):
     categories: list[Category] = Field(default_factory=lambda: list(CLASSIC_CATEGORIES), min_length=1)
     rounds: int = 5
     round_duration: int = 30
+    # True : la réponse doit coller à la fiche (casse, accents, espaces).
+    strict_spelling: bool = False
 
     @field_validator("categories")
     @classmethod
@@ -43,11 +47,16 @@ class GameSettings(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def long_enough_for_many_categories(self) -> "GameSettings":
-        """Beaucoup de catégories demandent plus de temps : 5 catégories ou plus, plus de 30 s."""
+    def long_enough_for_rules(self) -> "GameSettings":
+        """Beaucoup de catégories ou orthographe stricte demandent plus de temps."""
         if len(self.categories) >= MANY_CATEGORIES and self.round_duration < MANY_CATEGORIES_MIN_DURATION:
             raise ValueError(
                 f"{MANY_CATEGORIES} categories or more need rounds of at least {MANY_CATEGORIES_MIN_DURATION} s"
+            )
+        if self.strict_spelling and self.round_duration < STRICT_SPELLING_MIN_DURATION:
+            raise ValueError(
+                f"strict spelling needs rounds of at least 2 minutes "
+                f"({STRICT_SPELLING_MIN_DURATION} s)"
             )
         return self
 
@@ -150,6 +159,7 @@ class GameOut(BaseModel):
     categories: list[Category]
     total_rounds: int
     round_duration: int
+    strict_spelling: bool = False
     status: str
     nickname: str
     total_score: int
@@ -218,6 +228,8 @@ class GameSummaryOut(GameOut):
 
 class HintRequestIn(BaseModel):
     category: Category
+    # True = joker payant : révèle directement le mot exact (pas de QCM).
+    reveal: bool = False
 
 
 class HintPickIn(BaseModel):
@@ -229,6 +241,9 @@ class HintOut(BaseModel):
     category: Category
     options: list[str]
     hints_left: int
+    # Renseigné quand reveal=True : le mot est déjà choisi et correct.
+    revealed: bool = False
+    answer: str | None = None
 
 
 class HintPickOut(BaseModel):

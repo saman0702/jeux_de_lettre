@@ -19,8 +19,9 @@ class CandyButton extends StatefulWidget {
     this.gameIcon,
     this.badge,
     this.loading = false,
-    this.fontSize = 22,
-    this.height = 64,
+    // Aligné sur les boutons salon (podium / freeze / lobby).
+    this.fontSize = 17,
+    this.height = 48,
   });
 
   final String label;
@@ -43,7 +44,7 @@ class CandyButton extends StatefulWidget {
 }
 
 class _CandyButtonState extends State<CandyButton> {
-  static const _depth = 6.0;
+  static const _depth = 5.0;
   bool _pressed = false;
 
   bool get _enabled => widget.onPressed != null && !widget.loading;
@@ -74,11 +75,26 @@ class _CandyButtonState extends State<CandyButton> {
         onTapUp: (_) => _setPressed(false),
         onTapCancel: () => _setPressed(false),
         onTap: _tap,
+        // Enfant non positionné pour donner une largeur intrinsèque (Row sans
+        // Expanded). Sous contraintes serrées (Expanded), le Stack s'étire.
         child: SizedBox(
           height: widget.height + _depth,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
+              Padding(
+                padding: EdgeInsets.only(top: _depth),
+                child: Opacity(
+                  opacity: 0,
+                  child: _face(
+                    color: color,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: _content(),
+                    ),
+                  ),
+                ),
+              ),
               Positioned.fill(
                 top: _depth,
                 child: DecoratedBox(
@@ -94,26 +110,11 @@ class _CandyButtonState extends State<CandyButton> {
                 right: 0,
                 top: offset,
                 height: widget.height,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(22),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color.lerp(color, Colors.white, 0.25)!, color],
-                    ),
-                  ),
-                  // Le libellé rétrécit plutôt que de déborder (boutons
-                  // côte à côte, langues aux mots longs).
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: _content(),
-                      ),
-                    ),
+                child: _face(
+                  color: color,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: _content(),
                   ),
                 ),
               ),
@@ -145,6 +146,29 @@ class _CandyButtonState extends State<CandyButton> {
                   ),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _face({required Color color, required Widget child}) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color.lerp(color, Colors.white, 0.25)!, color],
+        ),
+      ),
+      child: SizedBox(
+        height: widget.height,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: child,
           ),
         ),
       ),

@@ -29,6 +29,11 @@ def normalize(text: str) -> str:
     return " ".join(text.split())
 
 
+def strict_form(text: str) -> str:
+    """Forme exigée en mode sévère : casse, accents et espaces comptent (seuls les bords sont coupés)."""
+    return unicodedata.normalize("NFC", text.strip())
+
+
 def strip_article(normalized: str) -> str:
     return _LEADING_ARTICLES.sub("", normalized)
 

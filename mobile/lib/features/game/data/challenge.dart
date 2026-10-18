@@ -73,21 +73,30 @@ class CareerLevel extends SoloChallenge {
   );
 }
 
-/// Éliminatoires en solo : il faut marquer un minimum à chaque manche, de plus
-/// en plus haut. Survivre aux 15 manches fait de toi un champion.
+/// Éliminatoires en solo : minimum de points par manche, de plus en plus haut.
 class EliminationChallenge extends SoloChallenge {
-  const EliminationChallenge();
+  const EliminationChallenge({
+    this.rounds = defaultRounds,
+    this.roundDuration = defaultDuration,
+    this.strictSpelling = false,
+  });
 
-  static const rounds = 15;
-  static const roundDuration = 30;
+  static const defaultRounds = 15;
+  static const defaultDuration = 30;
+
+  final int rounds;
+  final int roundDuration;
+  final bool strictSpelling;
 
   @override
-  int requiredPoints(int round) => switch (round) {
-    <= 3 => 10,
-    <= 7 => 20,
-    <= 11 => 30,
-    _ => 40,
-  };
+  int requiredPoints(int round) {
+    // Paliers proportionnels au nombre de manches choisies.
+    final t = rounds <= 1 ? 1.0 : round / rounds;
+    if (t <= 0.25) return 10;
+    if (t <= 0.5) return 20;
+    if (t <= 0.75) return 30;
+    return 40;
+  }
 
   SoloGameSettings settings(
     String language,
@@ -100,6 +109,7 @@ class EliminationChallenge extends SoloChallenge {
     categories: Category.classic,
     rounds: rounds,
     roundDuration: roundDuration,
+    strictSpelling: strictSpelling,
     nickname: nickname,
     clientId: id,
   );

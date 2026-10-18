@@ -63,6 +63,49 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String minutesShort(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get winnerPrize => 'Dotation du vainqueur';
+
+  @override
+  String get winnerPrizeHelp =>
+      'Tu places des pièces en créant la compétition ; seul le vainqueur les récupère. Les autres ne paient rien.';
+
+  @override
+  String get noPrize => 'Sans dotation';
+
+  @override
+  String get prizeCustomHint => 'Autre montant';
+
+  @override
+  String prizePotLabel(int coins) {
+    return 'Dotation : $coins pièces';
+  }
+
+  @override
+  String prizeLost(int coins) {
+    return 'Dotation perdue ($coins)';
+  }
+
+  @override
+  String get playVsBot => 'JOUER CONTRE UN BOT';
+
+  @override
+  String get playVsBots => 'JOUER CONTRE DES BOTS';
+
+  @override
+  String get eliminationBotDifficultyHelp =>
+      'Niveau des bots si tu joues contre l\'ordinateur.';
+
+  @override
+  String noticeLeftGame(String name) {
+    return '$name a quitté la partie';
+  }
+
+  @override
   String get categories => 'Catégories';
 
   @override
@@ -166,6 +209,201 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get cancel => 'Annuler';
+
+  @override
+  String get confirm => 'OK';
+
+  @override
+  String get roomFormat => 'Format';
+
+  @override
+  String get formatRelay => 'Relais';
+
+  @override
+  String get formatRelayHelp =>
+      'Chaque joueur ne joue qu\'une partie des catégories (réparties). Il faut se coordonner… ou profiter des trous des autres !';
+
+  @override
+  String get formatRoundsHelpLong =>
+      'Tout le monde joue toutes les manches. À la fin, le meilleur score total gagne. Classique et clair.';
+
+  @override
+  String get formatEliminationHelpLong =>
+      'Après chaque manche, le plus petit score sort (à 2 joueurs : seulement à la dernière). Le dernier en lice gagne.';
+
+  @override
+  String get roomTheme => 'Thème du jour';
+
+  @override
+  String get roomThemeHelp =>
+      'Les catégories du thème rapportent le double de points. Choisis géo, prénoms ou nature pour pimenter la partie.';
+
+  @override
+  String get visibilityHelp =>
+      'Public : tous les joueurs connectés sont prévenus et peuvent rejoindre d\'un tap, sans code. Privé : seuls ceux qui ont le code peuvent entrer.';
+
+  @override
+  String get publicRoomLobbyHelp =>
+      'Salon public : visible par tous les joueurs connectés. Ils peuvent rejoindre sans code depuis « Salons ».';
+
+  @override
+  String publicRoomInvite(String host) {
+    return 'Nouveau salon public de $host';
+  }
+
+  @override
+  String get joinPublicRoom => 'REJOINDRE';
+
+  @override
+  String get joinWithCodeHelp => 'Pour un salon privé uniquement';
+
+  @override
+  String get difficultyHelp =>
+      'Facile = lettres courantes. Difficile = toutes les lettres, y compris K, W, X, Y, Z.';
+
+  @override
+  String get roomTypeHelp =>
+      'Duel = 2 joueurs. Groupe = jusqu\'à 8. Plus on est nombreux, plus les points partagés baissent.';
+
+  @override
+  String get durationHelp =>
+      'Temps pour remplir toutes les catégories. Plus de catégories ou orthographe stricte = durée minimum plus longue.';
+
+  @override
+  String get themeNone => 'Aucun';
+
+  @override
+  String get themeGeography => 'Géo (×2 villes & pays)';
+
+  @override
+  String get themeNames => 'Prénoms (×2)';
+
+  @override
+  String get themeNature => 'Nature (×2 animaux & fruits)';
+
+  @override
+  String freezeUse(int count) {
+    return 'FREEZE ($count)';
+  }
+
+  @override
+  String get freezeBuyTitle => 'Acheter un Freeze';
+
+  @override
+  String freezeBuyHelp(int price) {
+    return 'Bloque un adversaire 10 secondes. Coût : $price pièces.\nTu en as 1 gratuit par partie.';
+  }
+
+  @override
+  String get freezeInfoHelp =>
+      'Pendant la manche, gèle un adversaire 10 secondes : il ne peut pas valider. 1 Freeze gratuit par partie, puis 15 pièces pour en racheter.';
+
+  @override
+  String get freezePickTarget => 'Qui geler ?';
+
+  @override
+  String get freezeAlready => 'Déjà gelé';
+
+  @override
+  String get freezeYouAreFrozen => '❄ Tu es gelé ! Attends un peu…';
+
+  @override
+  String get lightningTitle => 'Éclair !';
+
+  @override
+  String lightningHelp(String category, String letter, int seconds) {
+    return '$category en $letter — ${seconds}s';
+  }
+
+  @override
+  String get lightningInfoHelp =>
+      'Entre deux manches : un mini QCM de 10 secondes. La bonne réponse te donne +2 points bonus. Sois rapide !';
+
+  @override
+  String lightningHit(int points) {
+    return 'Bien joué ! +$points';
+  }
+
+  @override
+  String get lightningMiss => 'Raté !';
+
+  @override
+  String get chatTitle => 'Chat du salon';
+
+  @override
+  String get chatHint => 'Écris un message…';
+
+  @override
+  String get chatUnlockTitle => 'Débloquer le chat';
+
+  @override
+  String chatUnlockHelp(int price) {
+    return 'Tout le monde pourra te lire dans ce salon. Coût : $price pièces (une fois).';
+  }
+
+  @override
+  String chatUnlockButton(int price) {
+    return 'CHAT · $price';
+  }
+
+  @override
+  String get chatInfoHelp =>
+      'Les stickers sont gratuits. Pour écrire du vrai texte, débloque le chat une fois avec des pièces dans ce salon.';
+
+  @override
+  String get reactionsTitle => 'Réactions';
+
+  @override
+  String get reactionsInfoHelp =>
+      'Envoie une réaction (feu, dodo, clap, surprise) pendant les résultats ou à la fin. Gratuit, sans modération.';
+
+  @override
+  String get wordReviewTitle => 'Revue des mots';
+
+  @override
+  String get wordReviewHelp =>
+      'Après la partie, retrouve les mots trouvés (surtout les uniques ⭐) avec des infos : capitale, continent, régime…';
+
+  @override
+  String get salonTitleChampion => 'Champion';
+
+  @override
+  String get salonTitleSpeedster => 'Éclair';
+
+  @override
+  String get salonTitleRare => 'Chasseur de pépites';
+
+  @override
+  String get salonTitleDictionary => 'Dictionnaire vivant';
+
+  @override
+  String get salonTitlesHelp =>
+      'À la fin, des titres fun sont donnés : champion, le plus rapide, celui qui trouve des mots rares, le plus grand vocabulaire.';
+
+  @override
+  String rematchVote(int votes, int need) {
+    return 'REVANCHE ($votes/$need)';
+  }
+
+  @override
+  String get rematchHelp =>
+      'Vote pour rejouer. Quand la majorité des joueurs humains a voté, une nouvelle partie démarre avec les mêmes réglages.';
+
+  @override
+  String get bonusRound => 'MANCHE BONUS';
+
+  @override
+  String get bonusRoundHelp =>
+      'Une mini-manche surprise après le podium, sans mise. Pour ceux qui veulent encore une manche avant de partir.';
+
+  @override
+  String get errorFrozen => 'Tu es gelé pour le moment !';
+
+  @override
+  String get errorNoFreezes => 'Plus de Freeze';
+
+  @override
+  String get errorChatLocked => 'Débloque le chat d\'abord';
 
   @override
   String get comingSoonBadge => 'Bientôt';
@@ -355,6 +593,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get leaveRoomMessage => 'Tu vas quitter la salle.';
+
+  @override
+  String noticeHintUsed(String name, String category) {
+    return '$name utilise un joker ($category)';
+  }
 
   @override
   String noticeJoined(String name) {
@@ -565,6 +808,30 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get languageAuto => 'Auto';
+
+  @override
+  String get settingsGender => 'Genre';
+
+  @override
+  String get genderMale => 'Homme';
+
+  @override
+  String get genderFemale => 'Femme';
+
+  @override
+  String get genderOther => 'Autre';
+
+  @override
+  String get settingsMusicVolume => 'Volume musique';
+
+  @override
+  String get onboardingTitle => 'Bienvenue !';
+
+  @override
+  String get onboardingSubtitle => 'Régle ton expérience en quelques secondes.';
+
+  @override
+  String get onboardingContinue => 'C\'EST PARTI !';
 
   @override
   String suggestionExample(String answer) {
@@ -912,11 +1179,83 @@ class AppLocalizationsFr extends AppLocalizations {
   String get modeFreeSolo => 'Solo libre';
 
   @override
-  String get eliminationRulesTitle => 'Règles';
+  String get voiceChatTitle => 'Salon vocal';
+
+  @override
+  String get voiceChatHelp =>
+      'Parlez pendant la partie. Coupez votre micro quand vous voulez. L\'hôte peut couper un micro, tous les micros, ou exclure quelqu\'un.';
+
+  @override
+  String get voiceJoin => 'REJOINDRE';
+
+  @override
+  String get voiceConnecting => 'CONNEXION…';
+
+  @override
+  String get voiceMuteSelf => 'COUPER MON MICRO';
+
+  @override
+  String get voiceUnmuteSelf => 'OUVRIR MON MICRO';
+
+  @override
+  String get voiceMuteAll => 'COUPER TOUS LES MICROS';
+
+  @override
+  String get voiceUnmuteAll => 'RENDRE LES MICROS';
+
+  @override
+  String get voiceMutePlayer => 'Couper le micro';
+
+  @override
+  String get voiceUnmutePlayer => 'Rendre le micro';
+
+  @override
+  String get voiceExcludePlayer => 'Exclure du vocal';
+
+  @override
+  String get voiceHostMutedYou => 'L\'hôte a coupé ton micro.';
+
+  @override
+  String get voiceKickedNotice => 'L\'hôte t\'a exclu du salon vocal.';
+
+  @override
+  String get voiceMutedBadge => 'Micro coupé';
+
+  @override
+  String get voiceExcludedBadge => 'Exclu du vocal';
+
+  @override
+  String get voiceHostBadge => 'Hôte';
+
+  @override
+  String get voiceUnavailable => 'Vocal non configuré sur le serveur (Agora).';
+
+  @override
+  String get errorVoiceUnavailable => 'Salon vocal indisponible.';
+
+  @override
+  String get errorVoiceClosed =>
+      'Le vocal n\'est pas encore ouvert (attente du début de partie).';
+
+  @override
+  String get errorVoiceExcluded => 'Tu es exclu du salon vocal.';
+
+  @override
+  String get errorMicDenied => 'Autorise le micro pour parler.';
+
+  @override
+  String get rulesButton => 'Règle';
+
+  @override
+  String get eliminationRulesTitle => 'Règle';
+
+  @override
+  String get eliminationRulesIntro =>
+      'Lis la règle avant de régler ta compétition.';
 
   @override
   String eliminationRules(int rounds) {
-    return 'Toutes les catégories, 30 secondes par manche. Marque au moins le minimum à chaque manche, sinon tu es éliminé. Tiens les $rounds manches pour devenir champion !';
+    return 'Pas de solo : joue avec des amis, en duel, ou contre des bots. Toutes les catégories. À chaque manche, le plus petit score sort (à 2 joueurs : seulement à la dernière). Le dernier en lice remporte la compétition ($rounds manches max) !';
   }
 
   @override
@@ -931,9 +1270,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eliminationNoRecord => 'Pas encore de record';
 
   @override
-  String get roomFormat => 'Format';
-
-  @override
   String get formatRounds => 'Par manches';
 
   @override
@@ -945,7 +1281,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get formatEliminationHelp =>
-      'À chaque manche, le plus petit score est éliminé. Le dernier en lice gagne.';
+      'À chaque manche, le plus petit score est éliminé (à 2 joueurs : seulement à la dernière manche). Le dernier en lice gagne.';
 
   @override
   String get youAreEliminated =>
@@ -971,17 +1307,27 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get strictSpelling => 'Orthographe stricte';
+
+  @override
+  String get strictSpellingHelp =>
+      'Casse, accents et espaces doivent coller à la fiche. Manches d\'au moins 2 minutes.';
+
+  @override
+  String get strictSpellingChip => 'Orthographe stricte';
+
+  @override
   String get preparingGame => 'Préparation de la partie…';
 
   @override
   String get playAlone => 'JOUER SEUL';
 
   @override
-  String get withFriends => 'Avec tes amis';
+  String get withFriends => 'Lancer la compétition';
 
   @override
   String get withFriendsHelp =>
-      'Une salle s\'ouvre tout de suite, avec un code à partager comme dans un salon. Le plus petit score de chaque manche est éliminé.';
+      'Invite des amis (code), rejoins un salon, ou joue tout de suite contre des bots. Tu peux aussi ajouter des bots dans le lobby en attendant tes amis.';
 
   @override
   String get inviteFriends => 'INVITER DES AMIS';

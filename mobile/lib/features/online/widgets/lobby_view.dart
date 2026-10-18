@@ -79,8 +79,6 @@ class LobbyView extends StatelessWidget {
                 CandyButton(
                   label: level.label(l10n),
                   color: color,
-                  height: 54,
-                  fontSize: 19,
                   onPressed: () => Navigator.pop(context, level),
                 ),
                 const SizedBox(height: 10),
@@ -120,17 +118,33 @@ class LobbyView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (!room.quick) _CodeCard(code: room.code),
+          // Code uniquement pour le privé ; le public se rejoint depuis la liste.
+          if (!room.quick && !settings.public) _CodeCard(code: room.code),
+          if (!room.quick && settings.public) _PublicRoomBanner(),
           const SizedBox(height: 12),
           Wrap(
             spacing: 6,
             runSpacing: 6,
             alignment: WrapAlignment.center,
             children: [
+              chip(
+                settings.public
+                    ? l10n.visibilityPublic
+                    : l10n.visibilityPrivate,
+              ),
               chip(l10n.roundsCount(settings.rounds)),
-              chip(l10n.secondsShort(settings.roundDuration)),
+              chip(durationLabel(l10n, settings.roundDuration)),
               chip(settings.difficulty.label(l10n)),
+              if (settings.strictSpelling) chip(l10n.strictSpellingChip),
               if (settings.elimination) chip(l10n.formatElimination),
+              if (settings.relay) chip(l10n.formatRelay),
+              if (settings.theme != RoomTheme.none)
+                chip(switch (settings.theme) {
+                  RoomTheme.geography => l10n.themeGeography,
+                  RoomTheme.names => l10n.themeNames,
+                  RoomTheme.nature => l10n.themeNature,
+                  RoomTheme.none => '',
+                }),
               for (final c in settings.categories)
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -151,6 +165,14 @@ class LobbyView extends StatelessWidget {
               child: BetBanner(
                 text:
                     '${l10n.stakeShort(settings.stake)} · ${l10n.potLabel(settings.stake * room.players.length)}',
+              ),
+            ),
+          ],
+          if (settings.prize) ...[
+            const SizedBox(height: 10),
+            Center(
+              child: BetBanner(
+                text: l10n.prizePotLabel(settings.stake),
               ),
             ),
           ],
@@ -217,8 +239,6 @@ class LobbyView extends StatelessWidget {
                 label: l10n.addBot,
                 gameIcon: GameIconKind.bot,
                 color: AppColors.white,
-                height: 48,
-                fontSize: 17,
                 onPressed: () => _pickBotLevel(context),
               ),
               const SizedBox(height: 10),
@@ -236,6 +256,36 @@ class LobbyView extends StatelessWidget {
               onPressed: () => onReady(!(me?.ready ?? false)),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PublicRoomBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return GameCard(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Row(
+        children: [
+          const GameIconBadge(
+            GameIconKind.public,
+            color: AppColors.green,
+            size: 44,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              l10n.publicRoomLobbyHelp,
+              style: fredoka(
+                size: 14,
+                weight: FontWeight.w600,
+                color: AppColors.inkSoft,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -425,7 +475,6 @@ class _EmptySeat extends StatelessWidget {
       children: [
         Container(
           width: 52,
-          height: 52,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.cloud,

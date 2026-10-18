@@ -18,11 +18,13 @@ class RoundWaitView extends StatelessWidget {
   const RoundWaitView({
     super.key,
     required this.room,
+    required this.myId,
     required this.spectating,
     this.eliminated = false,
   });
 
   final RoomState room;
+  final String myId;
   final bool spectating;
 
   /// Éliminatoires : le joueur est sorti et regarde la fin.
@@ -106,7 +108,10 @@ class RoundWaitView extends StatelessWidget {
                         duration: const Duration(milliseconds: 300),
                         transitionBuilder: (child, a) =>
                             ScaleTransition(scale: a, child: child),
-                        child: p.finished
+                        // Si on voit « Réponses envoyées », on a déjà soumis
+                        // même si le WS n'a pas encore mis finished=true.
+                        child: p.finished ||
+                                (!spectating && p.clientId == myId)
                             ? const Icon(
                                 Icons.check_circle_rounded,
                                 key: ValueKey('done'),

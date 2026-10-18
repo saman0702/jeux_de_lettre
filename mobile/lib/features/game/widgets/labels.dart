@@ -35,6 +35,12 @@ extension CategoryLabel on Category {
   };
 }
 
+/// Affiche « 45 s » ou « 2 min » selon la durée.
+String durationLabel(AppLocalizations l10n, int seconds) =>
+    seconds >= 60 && seconds % 60 == 0
+    ? l10n.minutesShort(seconds ~/ 60)
+    : l10n.secondsShort(seconds);
+
 extension DifficultyLabel on Difficulty {
   String label(AppLocalizations l10n) => switch (this) {
     Difficulty.easy => l10n.difficultyEasy,
@@ -78,6 +84,13 @@ String errorMessage(AppLocalizations l10n, String? code) => switch (code) {
   'not_host' => l10n.errorNotHost,
   'not_enough_coins' => l10n.errorNotEnoughCoins,
   'bots_not_allowed' => l10n.errorBotsNotAllowed,
+  'frozen' => l10n.errorFrozen,
+  'no_freezes_left' => l10n.errorNoFreezes,
+  'chat_locked' => l10n.errorChatLocked,
+  'voice_unavailable' => l10n.errorVoiceUnavailable,
+  'voice_closed' => l10n.errorVoiceClosed,
+  'voice_excluded' => l10n.errorVoiceExcluded,
+  'mic_denied' => l10n.errorMicDenied,
   _ => l10n.errorGeneric,
 };
 

@@ -87,9 +87,10 @@ class _RoomsScreenState extends State<RoomsScreen> {
   }
 
   Future<void> _create() async {
-    final created = await Navigator.of(context)
-        .push<bool>(PopRoute(builder: (_) => const CreateRoomScreen()));
-    if (created == true) await _openRoom();
+    // CreateRoomScreen pousse lui-même le lobby ; au retour on est encore ici.
+    await Navigator.of(context)
+        .push(PopRoute(builder: (_) => const CreateRoomScreen()));
+    if (mounted) _online.watchRooms(_language);
   }
 
   @override
@@ -127,9 +128,16 @@ class _RoomsScreenState extends State<RoomsScreen> {
                           label: l10n.joinWithCode,
                           icon: Icons.vpn_key_rounded,
                           color: AppColors.white,
-                          height: 54,
-                          fontSize: 19,
                           onPressed: _online.isOnline ? _askCode : null,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          l10n.joinWithCodeHelp,
+                          textAlign: TextAlign.center,
+                          style: fredoka(
+                            size: 13,
+                            color: AppColors.white.withValues(alpha: 0.8),
+                          ),
                         ),
                       ],
                     ),
@@ -260,8 +268,9 @@ class _RoomTile extends StatelessWidget {
                   Wrap(
                     children: [
                       chip(l10n.roundsCount(room.rounds)),
-                      chip(l10n.secondsShort(room.roundDuration)),
+                      chip(durationLabel(l10n, room.roundDuration)),
                       chip(room.language.toUpperCase()),
+                      if (room.strictSpelling) chip(l10n.strictSpellingChip),
                       if (room.format == RoomFormat.elimination)
                         chip(l10n.formatElimination),
                       if (room.kind == RoomKind.bet)
@@ -404,8 +413,6 @@ class _JoinCodeDialogState extends State<JoinCodeDialog> {
               onPressed: _submit,
               color: AppColors.green,
               textColor: AppColors.white,
-              height: 56,
-              fontSize: 19,
             ),
           ],
         ),

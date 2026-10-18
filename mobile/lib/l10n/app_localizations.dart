@@ -200,6 +200,72 @@ abstract class AppLocalizations {
   /// **'{seconds} s'**
   String secondsShort(int seconds);
 
+  /// No description provided for @minutesShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'{minutes} min'**
+  String minutesShort(int minutes);
+
+  /// No description provided for @winnerPrize.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dotation du vainqueur'**
+  String get winnerPrize;
+
+  /// No description provided for @winnerPrizeHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu places des pièces en créant la compétition ; seul le vainqueur les récupère. Les autres ne paient rien.'**
+  String get winnerPrizeHelp;
+
+  /// No description provided for @noPrize.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans dotation'**
+  String get noPrize;
+
+  /// No description provided for @prizeCustomHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre montant'**
+  String get prizeCustomHint;
+
+  /// No description provided for @prizePotLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dotation : {coins} pièces'**
+  String prizePotLabel(int coins);
+
+  /// No description provided for @prizeLost.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dotation perdue ({coins})'**
+  String prizeLost(int coins);
+
+  /// No description provided for @playVsBot.
+  ///
+  /// In fr, this message translates to:
+  /// **'JOUER CONTRE UN BOT'**
+  String get playVsBot;
+
+  /// No description provided for @playVsBots.
+  ///
+  /// In fr, this message translates to:
+  /// **'JOUER CONTRE DES BOTS'**
+  String get playVsBots;
+
+  /// No description provided for @eliminationBotDifficultyHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Niveau des bots si tu joues contre l\'ordinateur.'**
+  String get eliminationBotDifficultyHelp;
+
+  /// No description provided for @noticeLeftGame.
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} a quitté la partie'**
+  String noticeLeftGame(String name);
+
   /// No description provided for @categories.
   ///
   /// In fr, this message translates to:
@@ -397,6 +463,330 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Annuler'**
   String get cancel;
+
+  /// No description provided for @confirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'OK'**
+  String get confirm;
+
+  /// No description provided for @roomFormat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Format'**
+  String get roomFormat;
+
+  /// No description provided for @formatRelay.
+  ///
+  /// In fr, this message translates to:
+  /// **'Relais'**
+  String get formatRelay;
+
+  /// No description provided for @formatRelayHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaque joueur ne joue qu\'une partie des catégories (réparties). Il faut se coordonner… ou profiter des trous des autres !'**
+  String get formatRelayHelp;
+
+  /// No description provided for @formatRoundsHelpLong.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout le monde joue toutes les manches. À la fin, le meilleur score total gagne. Classique et clair.'**
+  String get formatRoundsHelpLong;
+
+  /// No description provided for @formatEliminationHelpLong.
+  ///
+  /// In fr, this message translates to:
+  /// **'Après chaque manche, le plus petit score sort (à 2 joueurs : seulement à la dernière). Le dernier en lice gagne.'**
+  String get formatEliminationHelpLong;
+
+  /// No description provided for @roomTheme.
+  ///
+  /// In fr, this message translates to:
+  /// **'Thème du jour'**
+  String get roomTheme;
+
+  /// No description provided for @roomThemeHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les catégories du thème rapportent le double de points. Choisis géo, prénoms ou nature pour pimenter la partie.'**
+  String get roomThemeHelp;
+
+  /// No description provided for @visibilityHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Public : tous les joueurs connectés sont prévenus et peuvent rejoindre d\'un tap, sans code. Privé : seuls ceux qui ont le code peuvent entrer.'**
+  String get visibilityHelp;
+
+  /// No description provided for @publicRoomLobbyHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salon public : visible par tous les joueurs connectés. Ils peuvent rejoindre sans code depuis « Salons ».'**
+  String get publicRoomLobbyHelp;
+
+  /// No description provided for @publicRoomInvite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau salon public de {host}'**
+  String publicRoomInvite(String host);
+
+  /// No description provided for @joinPublicRoom.
+  ///
+  /// In fr, this message translates to:
+  /// **'REJOINDRE'**
+  String get joinPublicRoom;
+
+  /// No description provided for @joinWithCodeHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour un salon privé uniquement'**
+  String get joinWithCodeHelp;
+
+  /// No description provided for @difficultyHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Facile = lettres courantes. Difficile = toutes les lettres, y compris K, W, X, Y, Z.'**
+  String get difficultyHelp;
+
+  /// No description provided for @roomTypeHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Duel = 2 joueurs. Groupe = jusqu\'à 8. Plus on est nombreux, plus les points partagés baissent.'**
+  String get roomTypeHelp;
+
+  /// No description provided for @durationHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Temps pour remplir toutes les catégories. Plus de catégories ou orthographe stricte = durée minimum plus longue.'**
+  String get durationHelp;
+
+  /// No description provided for @themeNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun'**
+  String get themeNone;
+
+  /// No description provided for @themeGeography.
+  ///
+  /// In fr, this message translates to:
+  /// **'Géo (×2 villes & pays)'**
+  String get themeGeography;
+
+  /// No description provided for @themeNames.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prénoms (×2)'**
+  String get themeNames;
+
+  /// No description provided for @themeNature.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nature (×2 animaux & fruits)'**
+  String get themeNature;
+
+  /// No description provided for @freezeUse.
+  ///
+  /// In fr, this message translates to:
+  /// **'FREEZE ({count})'**
+  String freezeUse(int count);
+
+  /// No description provided for @freezeBuyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Acheter un Freeze'**
+  String get freezeBuyTitle;
+
+  /// No description provided for @freezeBuyHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bloque un adversaire 10 secondes. Coût : {price} pièces.\nTu en as 1 gratuit par partie.'**
+  String freezeBuyHelp(int price);
+
+  /// No description provided for @freezeInfoHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pendant la manche, gèle un adversaire 10 secondes : il ne peut pas valider. 1 Freeze gratuit par partie, puis 15 pièces pour en racheter.'**
+  String get freezeInfoHelp;
+
+  /// No description provided for @freezePickTarget.
+  ///
+  /// In fr, this message translates to:
+  /// **'Qui geler ?'**
+  String get freezePickTarget;
+
+  /// No description provided for @freezeAlready.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déjà gelé'**
+  String get freezeAlready;
+
+  /// No description provided for @freezeYouAreFrozen.
+  ///
+  /// In fr, this message translates to:
+  /// **'❄ Tu es gelé ! Attends un peu…'**
+  String get freezeYouAreFrozen;
+
+  /// No description provided for @lightningTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Éclair !'**
+  String get lightningTitle;
+
+  /// No description provided for @lightningHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'{category} en {letter} — {seconds}s'**
+  String lightningHelp(String category, String letter, int seconds);
+
+  /// No description provided for @lightningInfoHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entre deux manches : un mini QCM de 10 secondes. La bonne réponse te donne +2 points bonus. Sois rapide !'**
+  String get lightningInfoHelp;
+
+  /// No description provided for @lightningHit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bien joué ! +{points}'**
+  String lightningHit(int points);
+
+  /// No description provided for @lightningMiss.
+  ///
+  /// In fr, this message translates to:
+  /// **'Raté !'**
+  String get lightningMiss;
+
+  /// No description provided for @chatTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chat du salon'**
+  String get chatTitle;
+
+  /// No description provided for @chatHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écris un message…'**
+  String get chatHint;
+
+  /// No description provided for @chatUnlockTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Débloquer le chat'**
+  String get chatUnlockTitle;
+
+  /// No description provided for @chatUnlockHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout le monde pourra te lire dans ce salon. Coût : {price} pièces (une fois).'**
+  String chatUnlockHelp(int price);
+
+  /// No description provided for @chatUnlockButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'CHAT · {price}'**
+  String chatUnlockButton(int price);
+
+  /// No description provided for @chatInfoHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les stickers sont gratuits. Pour écrire du vrai texte, débloque le chat une fois avec des pièces dans ce salon.'**
+  String get chatInfoHelp;
+
+  /// No description provided for @reactionsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réactions'**
+  String get reactionsTitle;
+
+  /// No description provided for @reactionsInfoHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoie une réaction (feu, dodo, clap, surprise) pendant les résultats ou à la fin. Gratuit, sans modération.'**
+  String get reactionsInfoHelp;
+
+  /// No description provided for @wordReviewTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Revue des mots'**
+  String get wordReviewTitle;
+
+  /// No description provided for @wordReviewHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Après la partie, retrouve les mots trouvés (surtout les uniques ⭐) avec des infos : capitale, continent, régime…'**
+  String get wordReviewHelp;
+
+  /// No description provided for @salonTitleChampion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Champion'**
+  String get salonTitleChampion;
+
+  /// No description provided for @salonTitleSpeedster.
+  ///
+  /// In fr, this message translates to:
+  /// **'Éclair'**
+  String get salonTitleSpeedster;
+
+  /// No description provided for @salonTitleRare.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chasseur de pépites'**
+  String get salonTitleRare;
+
+  /// No description provided for @salonTitleDictionary.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dictionnaire vivant'**
+  String get salonTitleDictionary;
+
+  /// No description provided for @salonTitlesHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'À la fin, des titres fun sont donnés : champion, le plus rapide, celui qui trouve des mots rares, le plus grand vocabulaire.'**
+  String get salonTitlesHelp;
+
+  /// No description provided for @rematchVote.
+  ///
+  /// In fr, this message translates to:
+  /// **'REVANCHE ({votes}/{need})'**
+  String rematchVote(int votes, int need);
+
+  /// No description provided for @rematchHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vote pour rejouer. Quand la majorité des joueurs humains a voté, une nouvelle partie démarre avec les mêmes réglages.'**
+  String get rematchHelp;
+
+  /// No description provided for @bonusRound.
+  ///
+  /// In fr, this message translates to:
+  /// **'MANCHE BONUS'**
+  String get bonusRound;
+
+  /// No description provided for @bonusRoundHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une mini-manche surprise après le podium, sans mise. Pour ceux qui veulent encore une manche avant de partir.'**
+  String get bonusRoundHelp;
+
+  /// No description provided for @errorFrozen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu es gelé pour le moment !'**
+  String get errorFrozen;
+
+  /// No description provided for @errorNoFreezes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus de Freeze'**
+  String get errorNoFreezes;
+
+  /// No description provided for @errorChatLocked.
+  ///
+  /// In fr, this message translates to:
+  /// **'Débloque le chat d\'abord'**
+  String get errorChatLocked;
 
   /// No description provided for @comingSoonBadge.
   ///
@@ -740,6 +1130,12 @@ abstract class AppLocalizations {
   /// **'Tu vas quitter la salle.'**
   String get leaveRoomMessage;
 
+  /// No description provided for @noticeHintUsed.
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} utilise un joker ({category})'**
+  String noticeHintUsed(String name, String category);
+
   /// No description provided for @noticeJoined.
   ///
   /// In fr, this message translates to:
@@ -1081,6 +1477,54 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Auto'**
   String get languageAuto;
+
+  /// No description provided for @settingsGender.
+  ///
+  /// In fr, this message translates to:
+  /// **'Genre'**
+  String get settingsGender;
+
+  /// No description provided for @genderMale.
+  ///
+  /// In fr, this message translates to:
+  /// **'Homme'**
+  String get genderMale;
+
+  /// No description provided for @genderFemale.
+  ///
+  /// In fr, this message translates to:
+  /// **'Femme'**
+  String get genderFemale;
+
+  /// No description provided for @genderOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre'**
+  String get genderOther;
+
+  /// No description provided for @settingsMusicVolume.
+  ///
+  /// In fr, this message translates to:
+  /// **'Volume musique'**
+  String get settingsMusicVolume;
+
+  /// No description provided for @onboardingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bienvenue !'**
+  String get onboardingTitle;
+
+  /// No description provided for @onboardingSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Régle ton expérience en quelques secondes.'**
+  String get onboardingSubtitle;
+
+  /// No description provided for @onboardingContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'C\'EST PARTI !'**
+  String get onboardingContinue;
 
   /// No description provided for @suggestionExample.
   ///
@@ -1580,16 +2024,154 @@ abstract class AppLocalizations {
   /// **'Solo libre'**
   String get modeFreeSolo;
 
+  /// No description provided for @voiceChatTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salon vocal'**
+  String get voiceChatTitle;
+
+  /// No description provided for @voiceChatHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parlez pendant la partie. Coupez votre micro quand vous voulez. L\'hôte peut couper un micro, tous les micros, ou exclure quelqu\'un.'**
+  String get voiceChatHelp;
+
+  /// No description provided for @voiceJoin.
+  ///
+  /// In fr, this message translates to:
+  /// **'REJOINDRE'**
+  String get voiceJoin;
+
+  /// No description provided for @voiceConnecting.
+  ///
+  /// In fr, this message translates to:
+  /// **'CONNEXION…'**
+  String get voiceConnecting;
+
+  /// No description provided for @voiceMuteSelf.
+  ///
+  /// In fr, this message translates to:
+  /// **'COUPER MON MICRO'**
+  String get voiceMuteSelf;
+
+  /// No description provided for @voiceUnmuteSelf.
+  ///
+  /// In fr, this message translates to:
+  /// **'OUVRIR MON MICRO'**
+  String get voiceUnmuteSelf;
+
+  /// No description provided for @voiceMuteAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'COUPER TOUS LES MICROS'**
+  String get voiceMuteAll;
+
+  /// No description provided for @voiceUnmuteAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'RENDRE LES MICROS'**
+  String get voiceUnmuteAll;
+
+  /// No description provided for @voiceMutePlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couper le micro'**
+  String get voiceMutePlayer;
+
+  /// No description provided for @voiceUnmutePlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rendre le micro'**
+  String get voiceUnmutePlayer;
+
+  /// No description provided for @voiceExcludePlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exclure du vocal'**
+  String get voiceExcludePlayer;
+
+  /// No description provided for @voiceHostMutedYou.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'hôte a coupé ton micro.'**
+  String get voiceHostMutedYou;
+
+  /// No description provided for @voiceKickedNotice.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'hôte t\'a exclu du salon vocal.'**
+  String get voiceKickedNotice;
+
+  /// No description provided for @voiceMutedBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Micro coupé'**
+  String get voiceMutedBadge;
+
+  /// No description provided for @voiceExcludedBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exclu du vocal'**
+  String get voiceExcludedBadge;
+
+  /// No description provided for @voiceHostBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hôte'**
+  String get voiceHostBadge;
+
+  /// No description provided for @voiceUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vocal non configuré sur le serveur (Agora).'**
+  String get voiceUnavailable;
+
+  /// No description provided for @errorVoiceUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salon vocal indisponible.'**
+  String get errorVoiceUnavailable;
+
+  /// No description provided for @errorVoiceClosed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le vocal n\'est pas encore ouvert (attente du début de partie).'**
+  String get errorVoiceClosed;
+
+  /// No description provided for @errorVoiceExcluded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu es exclu du salon vocal.'**
+  String get errorVoiceExcluded;
+
+  /// No description provided for @errorMicDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorise le micro pour parler.'**
+  String get errorMicDenied;
+
+  /// No description provided for @rulesButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Règle'**
+  String get rulesButton;
+
   /// No description provided for @eliminationRulesTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Règles'**
+  /// **'Règle'**
   String get eliminationRulesTitle;
+
+  /// No description provided for @eliminationRulesIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lis la règle avant de régler ta compétition.'**
+  String get eliminationRulesIntro;
 
   /// No description provided for @eliminationRules.
   ///
   /// In fr, this message translates to:
-  /// **'Toutes les catégories, 30 secondes par manche. Marque au moins le minimum à chaque manche, sinon tu es éliminé. Tiens les {rounds} manches pour devenir champion !'**
+  /// **'Pas de solo : joue avec des amis, en duel, ou contre des bots. Toutes les catégories. À chaque manche, le plus petit score sort (à 2 joueurs : seulement à la dernière). Le dernier en lice remporte la compétition ({rounds} manches max) !'**
   String eliminationRules(int rounds);
 
   /// No description provided for @roundsRange.
@@ -1609,12 +2191,6 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Pas encore de record'**
   String get eliminationNoRecord;
-
-  /// No description provided for @roomFormat.
-  ///
-  /// In fr, this message translates to:
-  /// **'Format'**
-  String get roomFormat;
 
   /// No description provided for @formatRounds.
   ///
@@ -1637,7 +2213,7 @@ abstract class AppLocalizations {
   /// No description provided for @formatEliminationHelp.
   ///
   /// In fr, this message translates to:
-  /// **'À chaque manche, le plus petit score est éliminé. Le dernier en lice gagne.'**
+  /// **'À chaque manche, le plus petit score est éliminé (à 2 joueurs : seulement à la dernière manche). Le dernier en lice gagne.'**
   String get formatEliminationHelp;
 
   /// No description provided for @youAreEliminated.
@@ -1676,6 +2252,24 @@ abstract class AppLocalizations {
   /// **'{count} catégories ou plus : 45 secondes minimum par manche.'**
   String manyCategoriesHint(int count);
 
+  /// No description provided for @strictSpelling.
+  ///
+  /// In fr, this message translates to:
+  /// **'Orthographe stricte'**
+  String get strictSpelling;
+
+  /// No description provided for @strictSpellingHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Casse, accents et espaces doivent coller à la fiche. Manches d\'au moins 2 minutes.'**
+  String get strictSpellingHelp;
+
+  /// No description provided for @strictSpellingChip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Orthographe stricte'**
+  String get strictSpellingChip;
+
   /// No description provided for @preparingGame.
   ///
   /// In fr, this message translates to:
@@ -1691,13 +2285,13 @@ abstract class AppLocalizations {
   /// No description provided for @withFriends.
   ///
   /// In fr, this message translates to:
-  /// **'Avec tes amis'**
+  /// **'Lancer la compétition'**
   String get withFriends;
 
   /// No description provided for @withFriendsHelp.
   ///
   /// In fr, this message translates to:
-  /// **'Une salle s\'ouvre tout de suite, avec un code à partager comme dans un salon. Le plus petit score de chaque manche est éliminé.'**
+  /// **'Invite des amis (code), rejoins un salon, ou joue tout de suite contre des bots. Tu peux aussi ajouter des bots dans le lobby en attendant tes amis.'**
   String get withFriendsHelp;
 
   /// No description provided for @inviteFriends.

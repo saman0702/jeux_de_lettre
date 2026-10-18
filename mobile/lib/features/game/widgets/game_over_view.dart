@@ -246,8 +246,6 @@ class _GameOverViewState extends State<GameOverView> {
               label: widget.homeLabel ?? l10n.backHome,
               icon: Icons.home_rounded,
               color: AppColors.white,
-              height: 54,
-              fontSize: 19,
               onPressed: widget.onHome,
             ),
           ],

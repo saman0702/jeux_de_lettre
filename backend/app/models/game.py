@@ -16,6 +16,8 @@ class Game(TimestampMixin, Base):
     categories: Mapped[list[str]] = mapped_column(JSON)
     total_rounds: Mapped[int] = mapped_column(Integer)
     round_duration: Mapped[int] = mapped_column(Integer)  # secondes
+    # Orthographe stricte : casse, accents et espaces doivent coller à la fiche.
+    strict_spelling: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     status: Mapped[str] = mapped_column(String(16), default="waiting")  # waiting | playing | finished
     # Joueur à créditer en pièces pour une partie solo (absent pour un invité sans profil).
     owner_client_id: Mapped[str | None] = mapped_column(String(64), nullable=True)

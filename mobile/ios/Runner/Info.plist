@@ -6,6 +6,8 @@
 	<string>Prends une photo : elle sera transformée en avatar dessiné.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Choisis une photo : elle sera transformée en avatar dessiné.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Parle avec les autres joueurs dans le salon vocal en fin de partie.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
