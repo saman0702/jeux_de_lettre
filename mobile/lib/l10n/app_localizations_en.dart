@@ -63,6 +63,49 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String minutesShort(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get winnerPrize => 'Winner\'s prize';
+
+  @override
+  String get winnerPrizeHelp =>
+      'You put up coins when creating the competition; only the winner takes them. Others pay nothing.';
+
+  @override
+  String get noPrize => 'No prize';
+
+  @override
+  String get prizeCustomHint => 'Custom amount';
+
+  @override
+  String prizePotLabel(int coins) {
+    return 'Prize: $coins coins';
+  }
+
+  @override
+  String prizeLost(int coins) {
+    return 'Prize lost ($coins)';
+  }
+
+  @override
+  String get playVsBot => 'PLAY VS A BOT';
+
+  @override
+  String get playVsBots => 'PLAY VS BOTS';
+
+  @override
+  String get eliminationBotDifficultyHelp =>
+      'Bot level when you play against the computer.';
+
+  @override
+  String noticeLeftGame(String name) {
+    return '$name left the game';
+  }
+
+  @override
   String get categories => 'Categories';
 
   @override
@@ -166,6 +209,201 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancel => 'Cancel';
+
+  @override
+  String get confirm => 'OK';
+
+  @override
+  String get roomFormat => 'Format';
+
+  @override
+  String get formatRelay => 'Relay';
+
+  @override
+  String get formatRelayHelp =>
+      'Each player only gets some of the categories (shared out). Team up… or exploit the gaps!';
+
+  @override
+  String get formatRoundsHelpLong =>
+      'Everyone plays every round. Highest total score wins. Classic and clear.';
+
+  @override
+  String get formatEliminationHelpLong =>
+      'After each round the lowest score is out (with 2 players: only on the last round). Last one standing wins.';
+
+  @override
+  String get roomTheme => 'Theme of the day';
+
+  @override
+  String get roomThemeHelp =>
+      'Theme categories score double points. Pick geo, names or nature to spice things up.';
+
+  @override
+  String get visibilityHelp =>
+      'Public: every online player is notified and can join with one tap, no code. Private: only people with the code can enter.';
+
+  @override
+  String get publicRoomLobbyHelp =>
+      'Public room: visible to every online player. They can join without a code from Rooms.';
+
+  @override
+  String publicRoomInvite(String host) {
+    return 'New public room by $host';
+  }
+
+  @override
+  String get joinPublicRoom => 'JOIN';
+
+  @override
+  String get joinWithCodeHelp => 'For private rooms only';
+
+  @override
+  String get difficultyHelp =>
+      'Easy = common letters. Hard = every letter, including K, W, X, Y, Z.';
+
+  @override
+  String get roomTypeHelp =>
+      'Duel = 2 players. Group = up to 8. More players means more shared points.';
+
+  @override
+  String get durationHelp =>
+      'Time to fill every category. More categories or strict spelling means a longer minimum.';
+
+  @override
+  String get themeNone => 'None';
+
+  @override
+  String get themeGeography => 'Geo (×2 cities & countries)';
+
+  @override
+  String get themeNames => 'Names (×2)';
+
+  @override
+  String get themeNature => 'Nature (×2 animals & fruits)';
+
+  @override
+  String freezeUse(int count) {
+    return 'FREEZE ($count)';
+  }
+
+  @override
+  String get freezeBuyTitle => 'Buy a Freeze';
+
+  @override
+  String freezeBuyHelp(int price) {
+    return 'Lock an opponent for 10 seconds. Costs $price coins.\nYou get 1 free Freeze per game.';
+  }
+
+  @override
+  String get freezeInfoHelp =>
+      'During a round, freeze an opponent for 10 seconds so they can\'t submit. 1 free Freeze per game, then 15 coins to buy more.';
+
+  @override
+  String get freezePickTarget => 'Who to freeze?';
+
+  @override
+  String get freezeAlready => 'Already frozen';
+
+  @override
+  String get freezeYouAreFrozen => '❄ You\'re frozen! Hang on…';
+
+  @override
+  String get lightningTitle => 'Lightning!';
+
+  @override
+  String lightningHelp(String category, String letter, int seconds) {
+    return '$category with $letter — ${seconds}s';
+  }
+
+  @override
+  String get lightningInfoHelp =>
+      'Between rounds: a 10-second quiz. The right answer gives +2 bonus points. Be quick!';
+
+  @override
+  String lightningHit(int points) {
+    return 'Nice! +$points';
+  }
+
+  @override
+  String get lightningMiss => 'Missed!';
+
+  @override
+  String get chatTitle => 'Room chat';
+
+  @override
+  String get chatHint => 'Type a message…';
+
+  @override
+  String get chatUnlockTitle => 'Unlock chat';
+
+  @override
+  String chatUnlockHelp(int price) {
+    return 'Everyone in this room can read you. Costs $price coins (once).';
+  }
+
+  @override
+  String chatUnlockButton(int price) {
+    return 'CHAT · $price';
+  }
+
+  @override
+  String get chatInfoHelp =>
+      'Stickers are free. To type real messages, unlock chat once with coins in this room.';
+
+  @override
+  String get reactionsTitle => 'Reactions';
+
+  @override
+  String get reactionsInfoHelp =>
+      'Send a reaction (fire, sleep, clap, wow) during results or at the end. Free, no moderation.';
+
+  @override
+  String get wordReviewTitle => 'Word review';
+
+  @override
+  String get wordReviewHelp =>
+      'After the game, revisit found words (especially unique ones ⭐) with facts: capital, continent, diet…';
+
+  @override
+  String get salonTitleChampion => 'Champion';
+
+  @override
+  String get salonTitleSpeedster => 'Speedster';
+
+  @override
+  String get salonTitleRare => 'Rare finder';
+
+  @override
+  String get salonTitleDictionary => 'Walking dictionary';
+
+  @override
+  String get salonTitlesHelp =>
+      'At the end, fun titles are awarded: champion, fastest, rare-word hunter, biggest vocabulary.';
+
+  @override
+  String rematchVote(int votes, int need) {
+    return 'REMATCH ($votes/$need)';
+  }
+
+  @override
+  String get rematchHelp =>
+      'Vote to play again. When a majority of human players vote, a new game starts with the same settings.';
+
+  @override
+  String get bonusRound => 'BONUS ROUND';
+
+  @override
+  String get bonusRoundHelp =>
+      'A surprise mini-round after the podium, with no stake. For anyone who wants one more round before leaving.';
+
+  @override
+  String get errorFrozen => 'You\'re frozen right now!';
+
+  @override
+  String get errorNoFreezes => 'No Freezes left';
+
+  @override
+  String get errorChatLocked => 'Unlock chat first';
 
   @override
   String get comingSoonBadge => 'Soon';
@@ -354,6 +592,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get leaveRoomMessage => 'You are about to leave the room.';
+
+  @override
+  String noticeHintUsed(String name, String category) {
+    return '$name used a joker ($category)';
+  }
 
   @override
   String noticeJoined(String name) {
@@ -563,6 +806,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageAuto => 'Auto';
+
+  @override
+  String get settingsGender => 'Gender';
+
+  @override
+  String get genderMale => 'Male';
+
+  @override
+  String get genderFemale => 'Female';
+
+  @override
+  String get genderOther => 'Other';
+
+  @override
+  String get settingsMusicVolume => 'Music volume';
+
+  @override
+  String get onboardingTitle => 'Welcome!';
+
+  @override
+  String get onboardingSubtitle => 'Set up your experience in a few seconds.';
+
+  @override
+  String get onboardingContinue => 'LET\'S GO!';
 
   @override
   String suggestionExample(String answer) {
@@ -909,11 +1176,83 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modeFreeSolo => 'Free solo';
 
   @override
+  String get voiceChatTitle => 'Voice lobby';
+
+  @override
+  String get voiceChatHelp =>
+      'Talk during the match. Mute yourself anytime. The host can mute one mic, mute everyone, or remove someone from voice.';
+
+  @override
+  String get voiceJoin => 'JOIN';
+
+  @override
+  String get voiceConnecting => 'CONNECTING…';
+
+  @override
+  String get voiceMuteSelf => 'MUTE ME';
+
+  @override
+  String get voiceUnmuteSelf => 'UNMUTE ME';
+
+  @override
+  String get voiceMuteAll => 'MUTE EVERYONE';
+
+  @override
+  String get voiceUnmuteAll => 'UNMUTE EVERYONE';
+
+  @override
+  String get voiceMutePlayer => 'Mute';
+
+  @override
+  String get voiceUnmutePlayer => 'Unmute';
+
+  @override
+  String get voiceExcludePlayer => 'Remove from voice';
+
+  @override
+  String get voiceHostMutedYou => 'The host muted your mic.';
+
+  @override
+  String get voiceKickedNotice => 'The host removed you from voice.';
+
+  @override
+  String get voiceMutedBadge => 'Muted';
+
+  @override
+  String get voiceExcludedBadge => 'Removed from voice';
+
+  @override
+  String get voiceHostBadge => 'Host';
+
+  @override
+  String get voiceUnavailable => 'Voice not configured on the server (Agora).';
+
+  @override
+  String get errorVoiceUnavailable => 'Voice lobby unavailable.';
+
+  @override
+  String get errorVoiceClosed =>
+      'Voice isn\'t open yet (wait for the match to start).';
+
+  @override
+  String get errorVoiceExcluded => 'You are excluded from voice.';
+
+  @override
+  String get errorMicDenied => 'Allow the microphone to talk.';
+
+  @override
+  String get rulesButton => 'Rules';
+
+  @override
   String get eliminationRulesTitle => 'Rules';
 
   @override
+  String get eliminationRulesIntro =>
+      'Read the rules before you set up your competition.';
+
+  @override
   String eliminationRules(int rounds) {
-    return 'All categories, 30 seconds per round. Score at least the minimum each round or you are out. Survive all $rounds rounds to become champion!';
+    return 'No solo: play with friends, in a duel, or against bots. All categories. Each round the lowest score is out (with 2 players: only on the last). Last one standing wins (up to $rounds rounds)!';
   }
 
   @override
@@ -928,9 +1267,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eliminationNoRecord => 'No record yet';
 
   @override
-  String get roomFormat => 'Format';
-
-  @override
   String get formatRounds => 'Rounds';
 
   @override
@@ -941,7 +1277,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get formatEliminationHelp =>
-      'Each round, the lowest score is knocked out. The last one standing wins.';
+      'Each round, the lowest score is knocked out (with 2 players: only on the last round). The last one standing wins.';
 
   @override
   String get youAreEliminated => 'You are out: watch the end of the game!';
@@ -966,17 +1302,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get strictSpelling => 'Strict spelling';
+
+  @override
+  String get strictSpellingHelp =>
+      'Case, accents and spaces must match the entry. Rounds of at least 2 minutes.';
+
+  @override
+  String get strictSpellingChip => 'Strict spelling';
+
+  @override
   String get preparingGame => 'Getting the game ready…';
 
   @override
   String get playAlone => 'PLAY ALONE';
 
   @override
-  String get withFriends => 'With friends';
+  String get withFriends => 'Start the competition';
 
   @override
   String get withFriendsHelp =>
-      'A room opens right away, with a code to share just like any other room. The lowest score each round is knocked out.';
+      'Invite friends (code), join a room, or play right away against bots. You can also add bots in the lobby while waiting for friends.';
 
   @override
   String get inviteFriends => 'INVITE FRIENDS';

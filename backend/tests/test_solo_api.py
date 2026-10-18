@@ -179,6 +179,20 @@ async def test_many_categories_need_longer_rounds(client):
     assert response.json()["categories"] == five
 
 
+async def test_strict_spelling_needs_rounds_of_at_least_two_minutes(client):
+    response = await client.post(
+        "/api/v1/solo/games",
+        json={**GAME, "strict_spelling": True, "round_duration": 60},
+    )
+    assert response.status_code == 422
+    response = await client.post(
+        "/api/v1/solo/games",
+        json={**GAME, "strict_spelling": True, "round_duration": 120},
+    )
+    assert response.status_code == 201
+    assert response.json()["strict_spelling"] is True
+
+
 async def test_first_names_are_validated(client, letter_m):
     game = await create_game(client, categories=["female_name", "male_name"])
     await client.post(f"/api/v1/solo/games/{game['id']}/rounds")

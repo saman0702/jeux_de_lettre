@@ -63,7 +63,8 @@ abstract class GameAudio {
 
   /// Lance (ou garde) la musique de [mood]. [quiet] baisse le volume pendant
   /// les manches pour que le chrono et les effets ressortent.
-  void startMusic(MusicMood mood, {bool quiet = false});
+  /// [level] : volume joueur 0–1 (multiplie le volume de base).
+  void startMusic(MusicMood mood, {bool quiet = false, double level = 1});
   void stopMusic();
 }
 
@@ -78,7 +79,7 @@ class SilentGameAudio implements GameAudio {
   void play(Sfx sfx) => played.add(sfx);
 
   @override
-  void startMusic(MusicMood mood, {bool quiet = false}) {
+  void startMusic(MusicMood mood, {bool quiet = false, double level = 1}) {
     musicPlaying = true;
     this.mood = mood;
     this.quiet = quiet;
@@ -107,8 +108,12 @@ class AudioplayersGameAudio implements GameAudio {
   bool _musicWanted = false;
   MusicMood? _mood;
   bool _quiet = false;
+  double _level = 1;
   final Map<MusicMood, int> _lastTrack = {};
   String? _track;
+
+  double get _targetVolume =>
+      (_quiet ? _quietVolume : _musicVolume) * _level.clamp(0.0, 1.0);
 
   int _pickOther(int count, int? last) => pickOtherIndex(_random, count, last);
 
@@ -152,10 +157,12 @@ class AudioplayersGameAudio implements GameAudio {
   }
 
   @override
-  void startMusic(MusicMood mood, {bool quiet = false}) {
-    if (quiet != _quiet || !_musicWanted) {
+  void startMusic(MusicMood mood, {bool quiet = false, double level = 1}) {
+    final levelChanged = level != _level;
+    _level = level.clamp(0.0, 1.0);
+    if (quiet != _quiet || !_musicWanted || levelChanged) {
       _quiet = quiet;
-      _music.setVolume(quiet ? _quietVolume : _musicVolume);
+      _music.setVolume(_targetVolume);
     }
     if (_musicWanted && _mood == mood) return;
     final resume = !_musicWanted && _mood == mood && _track != null;

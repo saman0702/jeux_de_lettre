@@ -9,7 +9,15 @@ import '../wallet/wallet.dart';
 import '../shop/cosmetics.dart';
 import 'data/room_models.dart';
 
-enum NoticeKind { joined, left, disconnected, reconnected, botsJoined, error }
+enum NoticeKind {
+  joined,
+  left,
+  disconnected,
+  reconnected,
+  botsJoined,
+  hintUsed,
+  error,
+}
 
 const _noticeKinds = {
   'joined': NoticeKind.joined,
@@ -17,14 +25,43 @@ const _noticeKinds = {
   'disconnected': NoticeKind.disconnected,
   'reconnected': NoticeKind.reconnected,
   'bots_joined': NoticeKind.botsJoined,
+  'hint_used': NoticeKind.hintUsed,
   'error': NoticeKind.error,
 };
 
 class RoomNotice {
-  const RoomNotice(this.kind, this.nickname);
+  const RoomNotice(this.kind, this.nickname, {this.detail = ''});
 
   final NoticeKind kind;
   final String nickname;
+
+  /// Ex. catégorie du joker (`city`, `country`…).
+  final String detail;
+}
+
+class VoiceCredentials {
+  const VoiceCredentials({
+    required this.appId,
+    required this.channel,
+    required this.token,
+    required this.uid,
+    required this.muted,
+  });
+
+  factory VoiceCredentials.fromJson(Map<String, dynamic> json) =>
+      VoiceCredentials(
+        appId: json['app_id'] as String,
+        channel: json['channel'] as String,
+        token: json['token'] as String,
+        uid: json['uid'] as int,
+        muted: json['muted'] as bool? ?? false,
+      );
+
+  final String appId;
+  final String channel;
+  final String token;
+  final int uid;
+  final bool muted;
 }
 
 /// État en ligne partagé par toute l'appli : nombre de joueurs, salons ouverts
@@ -42,11 +79,17 @@ class OnlineController extends ChangeNotifier {
   final _errors = StreamController<String>.broadcast();
   final _coinGains = StreamController<int>.broadcast();
   final _levelUps = StreamController<int>.broadcast();
+  final _publicRooms = StreamController<RoomSummary>.broadcast();
+  final _voiceCredentials = StreamController<VoiceCredentials>.broadcast();
+  final _voiceForceMute = StreamController<bool>.broadcast();
+  final _voiceKicked = StreamController<void>.broadcast();
 
   final Map<Category, Completer<HintOptions>> _hintRequests = {};
   final Map<Category, Completer<HintPick>> _hintPicks = {};
   Completer<BuyHintResult>? _buyHint;
   Completer<CategoryInfo>? _categoryInfo;
+  Completer<int>? _buyFreeze;
+  Completer<void>? _unlockChat;
 
   int _onlineCount = 0;
   List<RoomSummary> _rooms = const [];
@@ -120,6 +163,24 @@ class OnlineController extends ChangeNotifier {
   Stream<RoomNotice> get notices => _notices.stream;
   Stream<String> get errors => _errors.stream;
 
+  /// Nouveau salon public ouvert : pour proposer « Rejoindre » sans code.
+  Stream<RoomSummary> get publicRooms => _publicRooms.stream;
+
+  Stream<VoiceCredentials> get voiceCredentials => _voiceCredentials.stream;
+  Stream<bool> get voiceForceMute => _voiceForceMute.stream;
+  Stream<void> get voiceKicked => _voiceKicked.stream;
+
+  void requestVoiceJoin() => client.send({'type': 'voice_join'});
+
+  void voiceMute(String clientId, bool muted) =>
+      client.send({'type': 'voice_mute', 'client_id': clientId, 'muted': muted});
+
+  void voiceMuteAll(bool muted) =>
+      client.send({'type': 'voice_mute_all', 'muted': muted});
+
+  void voiceExclude(String clientId) =>
+      client.send({'type': 'voice_exclude', 'client_id': clientId});
+
   void quickMatch(String language) =>
       _request({'type': 'quick_match', 'language': language});
 
@@ -167,9 +228,18 @@ class OnlineController extends ChangeNotifier {
 
   /// Demande au serveur les trois propositions d'une catégorie (consomme un
   /// joker).
-  Future<HintOptions> requestHint(int round, Category category) {
+  Future<HintOptions> requestHint(
+    int round,
+    Category category, {
+    bool reveal = false,
+  }) {
     final completer = _hintRequests[category] = Completer<HintOptions>();
-    client.send({'type': 'hint', 'round': round, 'category': category.wire});
+    client.send({
+      'type': 'hint',
+      'round': round,
+      'category': category.wire,
+      'reveal': reveal,
+    });
     return _withTimeout(completer.future);
   }
 
@@ -196,6 +266,34 @@ class OnlineController extends ChangeNotifier {
     return _withTimeout(completer.future);
   }
 
+  void freezePlayer(String targetId) =>
+      client.send({'type': 'freeze', 'target': targetId});
+
+  Future<int> buyFreeze() {
+    final completer = _buyFreeze = Completer<int>();
+    client.send({'type': 'buy_freeze'});
+    return _withTimeout(completer.future);
+  }
+
+  void react(RoomSticker sticker) =>
+      client.send({'type': 'react', 'sticker': sticker.name});
+
+  Future<void> unlockChat() {
+    final completer = _unlockChat = Completer<void>();
+    client.send({'type': 'unlock_chat'});
+    return _withTimeout(completer.future);
+  }
+
+  void sendChat(String text) => client.send({'type': 'chat', 'text': text});
+
+  void voteRematch(bool vote) =>
+      client.send({'type': 'rematch_vote', 'vote': vote});
+
+  void pickLightning(String choice) =>
+      client.send({'type': 'lightning_pick', 'choice': choice});
+
+  void startBonus() => client.send({'type': 'start_bonus'});
+
   Future<T> _withTimeout<T>(Future<T> future) => future.timeout(
     const Duration(seconds: 8),
     onTimeout: () => throw ApiException('network_error'),
@@ -215,6 +313,14 @@ class OnlineController extends ChangeNotifier {
       c.completeError(ApiException(code));
     }
     _categoryInfo = null;
+    if (_buyFreeze case final c? when !c.isCompleted) {
+      c.completeError(ApiException(code));
+    }
+    _buyFreeze = null;
+    if (_unlockChat case final c? when !c.isCompleted) {
+      c.completeError(ApiException(code));
+    }
+    _unlockChat = null;
   }
 
   void _request(Map<String, dynamic> message) {
@@ -250,16 +356,45 @@ class OnlineController extends ChangeNotifier {
           for (final r in event['rooms'] as List)
             RoomSummary.fromJson(r as Map<String, dynamic>),
         ];
+      case 'public_room':
+        final summary = RoomSummary.fromJson(
+          event['room'] as Map<String, dynamic>,
+        );
+        // Liste locale à jour même sans écran « Salons ».
+        if (!_rooms.any((r) => r.code == summary.code)) {
+          _rooms = [summary, ..._rooms];
+        }
+        _publicRooms.add(summary);
+        notifyListeners();
+        return;
       case 'room_state':
-        _room = RoomState.fromJson(event['room'] as Map<String, dynamic>);
-        _searching = false;
+        try {
+          _room = RoomState.fromJson(
+            Map<String, dynamic>.from(event['room'] as Map),
+            receivedAt: DateTime.now(),
+          );
+          _searching = false;
+        } catch (e, st) {
+          assert(() {
+            // ignore: avoid_print
+            print('room_state parse failed: $e\n$st');
+            return true;
+          }());
+          return;
+        }
       case 'left_room':
         _room = null;
         _searching = false;
       case 'notice':
         final kind = _noticeKinds[event['kind']];
         if (kind != null) {
-          _notices.add(RoomNotice(kind, event['nickname'] as String? ?? ''));
+          _notices.add(
+            RoomNotice(
+              kind,
+              event['nickname'] as String? ?? '',
+              detail: event['detail'] as String? ?? '',
+            ),
+          );
         }
         return;
       case 'hint':
@@ -284,12 +419,39 @@ class OnlineController extends ChangeNotifier {
         _categoryInfo?.complete(CategoryInfo.fromJson(event));
         _categoryInfo = null;
         return;
+      case 'freeze_bought':
+        if (event['wallet'] case final Map<String, dynamic> wallet) {
+          applyWallet(WalletSnapshot.fromJson(wallet));
+        }
+        _buyFreeze?.complete(event['freezes_left'] as int? ?? 0);
+        _buyFreeze = null;
+        return;
+      case 'freeze_ok':
+        return;
+      case 'chat_unlocked':
+        if (event['wallet'] case final Map<String, dynamic> wallet) {
+          applyWallet(WalletSnapshot.fromJson(wallet));
+        }
+        _unlockChat?.complete();
+        _unlockChat = null;
+        return;
+      case 'voice_credentials':
+        _voiceCredentials.add(VoiceCredentials.fromJson(event));
+        return;
+      case 'voice_force_mute':
+        _voiceForceMute.add(event['muted'] as bool? ?? true);
+        return;
+      case 'voice_kicked':
+        _voiceKicked.add(null);
+        return;
       case 'error':
         final code = event['code'] as String? ?? 'error';
         if (_hintRequests.isNotEmpty ||
             _hintPicks.isNotEmpty ||
             _buyHint != null ||
-            _categoryInfo != null) {
+            _categoryInfo != null ||
+            _buyFreeze != null ||
+            _unlockChat != null) {
           // Les erreurs de joker / infos sont affichées par le bouton, pas
           // comme des erreurs de salle.
           _failPendingHints(code);
@@ -311,6 +473,10 @@ class OnlineController extends ChangeNotifier {
     _errors.close();
     _coinGains.close();
     _levelUps.close();
+    _publicRooms.close();
+    _voiceCredentials.close();
+    _voiceForceMute.close();
+    _voiceKicked.close();
     super.dispose();
   }
 }

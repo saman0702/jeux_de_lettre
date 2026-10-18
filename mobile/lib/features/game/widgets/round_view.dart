@@ -30,6 +30,7 @@ class RoundView extends StatefulWidget {
     this.onQuit,
     this.goal,
     this.players,
+    this.footer,
   });
 
   /// Objectif affiché en haut (carrière, éliminatoires).
@@ -37,6 +38,9 @@ class RoundView extends StatefulWidget {
 
   /// En ligne : les autres joueurs, sous la barre du haut.
   final Widget? players;
+
+  /// Contrôles sous les réponses (ex. Freeze en salon).
+  final Widget? footer;
 
   final GameRound round;
   final int totalRounds;
@@ -290,6 +294,11 @@ class _RoundViewState extends State<RoundView> {
                 ),
               ),
             ),
+            if (widget.footer != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: widget.footer,
+              ),
             if (gameKeyboard)
               GameKeyboard(
                 letter: round.letter,

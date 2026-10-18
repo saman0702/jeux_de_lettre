@@ -13,6 +13,7 @@ def game_out(game: Game, hints_left: int) -> GameOut:
         categories=game.categories,
         total_rounds=game.total_rounds,
         round_duration=game.round_duration,
+        strict_spelling=game.strict_spelling,
         status=game.status,
         nickname=player.nickname,
         total_score=player.total_score,

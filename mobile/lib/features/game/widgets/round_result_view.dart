@@ -354,7 +354,6 @@ class AnswerCard extends StatelessWidget {
               ? CountryFlag(spec: flag, width: 46)
               : Container(
                   width: 48,
-                  height: 48,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.15),
@@ -472,6 +471,10 @@ class AnswerCard extends StatelessWidget {
                       key: Key('answer_info_${answer.category.name}'),
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (flag != null) ...[
+                          CountryFlag(spec: flag, width: 56),
+                          const SizedBox(height: 6),
+                        ],
                         for (final line in infoLines!)
                           Text(
                             line,
@@ -501,8 +504,6 @@ class AnswerCard extends StatelessWidget {
                           gameIcon: GameIconKind.eyes,
                           color: AppColors.cyan,
                           textColor: AppColors.ink,
-                          fontSize: 14,
-                          height: 40,
                           onPressed: onBuyInfo,
                         ),
                       ),

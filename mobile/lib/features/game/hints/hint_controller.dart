@@ -14,7 +14,7 @@ import 'hint_picker.dart';
 
 /// D'où viennent les jokers : l'API REST du solo ou la WebSocket du salon.
 abstract class HintSource {
-  Future<HintOptions> request(Category category);
+  Future<HintOptions> request(Category category, {bool reveal = false});
   Future<HintPick> pick(Category category, String choice);
 
   /// Faux hors ligne : pas d'achat de joker.
@@ -86,25 +86,35 @@ class HintController extends ChangeNotifier {
     if (!ok || !context.mounted) return;
     _busy = true;
     final messenger = ScaffoldMessenger.of(context);
+    final feedback = GameFeedbackScope.of(context);
     try {
       final result = await source.buyExtra();
       _hintsLeft = result.hintsLeft;
+      notifyListeners();
+      // Joker payant : révèle le mot exact, sans QCM.
+      final revealed = await source.request(category, reveal: true);
+      _hintsLeft = revealed.hintsLeft;
+      final word = revealed.answer ?? revealed.options.first;
+      _fields[category] = HintFieldState(
+        options: [word],
+        picked: word,
+        correct: true,
+      );
+      controller.text = word;
+      feedback.play(Sfx.valid);
+      feedback.haptic(Haptic.medium);
       notifyListeners();
     } on ApiException catch (e) {
       messenger.showSnackBar(
         SnackBar(content: Text(hintErrorMessage(l10n, e.code))),
       );
-      return;
     } on OfflineError catch (e) {
       messenger.showSnackBar(
         SnackBar(content: Text(hintErrorMessage(l10n, e.code))),
       );
-      return;
     } finally {
       _busy = false;
     }
-    if (!context.mounted) return;
-    await use(context, category, controller);
   }
 
   /// Demande les propositions, laisse le joueur choisir et remplit

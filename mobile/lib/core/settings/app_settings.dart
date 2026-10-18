@@ -16,11 +16,15 @@ class AppSettings extends ChangeNotifier {
     this._vibration = true,
     this._gameKeyboard = true,
     this._voice = true,
+    this._musicVolume = 0.7,
     this._nickname,
     this._languageCode,
+    this._gender,
+    this._onboardingDone = false,
     this._avatarPreset = 0,
     this._avatarPending = false,
     bool careerRulesSeen = false,
+    bool eliminationRulesSeen = false,
     Map<int, int>? careerStars,
     Map<int, String>? careerLetters,
     Map<int, Map<String, List<String>>>? careerAnswers,
@@ -30,11 +34,19 @@ class AppSettings extends ChangeNotifier {
   }) : _careerStars = careerStars ?? {},
        _careerLetters = careerLetters ?? {},
        _careerAnswers = careerAnswers ?? {},
-       _careerRulesSeen = careerRulesSeen;
+       _careerRulesSeen = careerRulesSeen,
+       _eliminationRulesSeen = eliminationRulesSeen;
 
-  /// Non persisté ; utilisé par les tests.
+  /// Non persisté ; utilisé par les tests (règles déjà « lues » pour ne pas
+  /// bloquer les widgets).
   AppSettings.inMemory({String? nickname, String clientId = 'test-client-id'})
-    : this._(null, clientId: clientId, nickname: nickname);
+    : this._(
+        null,
+        clientId: clientId,
+        nickname: nickname,
+        careerRulesSeen: true,
+        eliminationRulesSeen: true,
+      );
 
   static Future<AppSettings> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -51,11 +63,19 @@ class AppSettings extends ChangeNotifier {
       vibration: prefs.getBool(_vibrationKey) ?? true,
       gameKeyboard: prefs.getBool(_gameKeyboardKey) ?? true,
       voice: prefs.getBool(_voiceKey) ?? true,
+      musicVolume: (prefs.getDouble(_musicVolumeKey) ?? 0.7).clamp(0.0, 1.0),
       nickname: prefs.getString(_nicknameKey),
       languageCode: prefs.getString(_languageKey),
+      gender: prefs.getString(_genderKey),
+      // Déjà joué avant l'écran d'accueil : ne pas reforcer l'onboarding.
+      onboardingDone: prefs.getBool(_onboardingDoneKey) ??
+          (prefs.getString(_nicknameKey) != null ||
+              prefs.containsKey(_languageKey) ||
+              prefs.getBool(_careerRulesSeenKey) == true),
       avatarPreset: prefs.getInt(_avatarPresetKey) ?? 0,
       avatarPending: prefs.getBool(_avatarPendingKey) ?? false,
       careerRulesSeen: prefs.getBool(_careerRulesSeenKey) ?? false,
+      eliminationRulesSeen: prefs.getBool(_eliminationRulesSeenKey) ?? false,
       careerStars: _decodeStars(prefs.getString(_careerKey)),
       careerLetters: _decodeLetters(prefs.getString(_careerLettersKey)),
       careerAnswers: _decodeAnswers(prefs.getString(_careerAnswersKey)),
@@ -118,15 +138,19 @@ class AppSettings extends ChangeNotifier {
 
   static const _soundKey = 'settings.sound';
   static const _musicKey = 'settings.music';
+  static const _musicVolumeKey = 'settings.music_volume';
   static const _vibrationKey = 'settings.vibration';
   static const _gameKeyboardKey = 'settings.game_keyboard';
   static const _voiceKey = 'settings.voice';
   static const _languageKey = 'settings.language';
+  static const _genderKey = 'player.gender';
+  static const _onboardingDoneKey = 'onboarding.done';
   static const _nicknameKey = 'player.nickname';
   static const _clientIdKey = 'player.client_id';
   static const _avatarPresetKey = 'player.avatar_preset';
   static const _avatarPendingKey = 'player.avatar_pending';
   static const _careerRulesSeenKey = 'career.rules_seen';
+  static const _eliminationRulesSeenKey = 'elimination.rules_seen';
   static const _careerKey = 'career.stars';
   static const _careerLettersKey = 'career.letters';
   static const _careerAnswersKey = 'career.answers';
@@ -144,11 +168,15 @@ class AppSettings extends ChangeNotifier {
   bool _vibration;
   bool _gameKeyboard;
   bool _voice;
+  double _musicVolume;
   String? _nickname;
   String? _languageCode;
+  String? _gender;
+  bool _onboardingDone;
   int _avatarPreset;
   bool _avatarPending;
   bool _careerRulesSeen;
+  bool _eliminationRulesSeen;
   final Map<int, int> _careerStars;
 
   /// Lettres de la dernière partie de chaque niveau, pour ne pas les retirer.
@@ -185,6 +213,15 @@ class AppSettings extends ChangeNotifier {
     if (_careerRulesSeen) return;
     _careerRulesSeen = true;
     _prefs?.setBool(_careerRulesSeenKey, true);
+  }
+
+  /// Les règles des éliminatoires ont déjà été lues au premier passage.
+  bool get eliminationRulesSeen => _eliminationRulesSeen;
+
+  void markEliminationRulesSeen() {
+    if (_eliminationRulesSeen) return;
+    _eliminationRulesSeen = true;
+    _prefs?.setBool(_eliminationRulesSeenKey, true);
   }
 
   /// Un niveau est ouvert quand le précédent a au moins une étoile.
@@ -298,6 +335,9 @@ class AppSettings extends ChangeNotifier {
   bool get music => _music;
   bool get vibration => _vibration;
 
+  /// Volume musique (0–1), indépendant du mute.
+  double get musicVolume => _musicVolume;
+
   /// Clavier de jeu intégré à la place de celui du téléphone.
   bool get gameKeyboard => _gameKeyboard;
 
@@ -309,6 +349,12 @@ class AppSettings extends ChangeNotifier {
   /// téléphone.
   String? get languageCode => _languageCode;
 
+  /// Genre déclaré : `male`, `female`, `other`, ou null.
+  String? get gender => _gender;
+
+  /// Premier paramétrage déjà terminé.
+  bool get onboardingDone => _onboardingDone;
+
   set languageCode(String? value) {
     _languageCode = value;
     if (value == null) {
@@ -316,6 +362,31 @@ class AppSettings extends ChangeNotifier {
     } else {
       _prefs?.setString(_languageKey, value);
     }
+    notifyListeners();
+  }
+
+  set gender(String? value) {
+    _gender = value;
+    if (value == null) {
+      _prefs?.remove(_genderKey);
+    } else {
+      _prefs?.setString(_genderKey, value);
+    }
+    notifyListeners();
+  }
+
+  set musicVolume(double value) {
+    final v = value.clamp(0.0, 1.0);
+    if (_musicVolume == v) return;
+    _musicVolume = v;
+    _prefs?.setDouble(_musicVolumeKey, v);
+    notifyListeners();
+  }
+
+  void completeOnboarding() {
+    if (_onboardingDone) return;
+    _onboardingDone = true;
+    _prefs?.setBool(_onboardingDoneKey, true);
     notifyListeners();
   }
 

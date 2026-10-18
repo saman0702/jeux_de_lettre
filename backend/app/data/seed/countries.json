@@ -59,7 +59,7 @@
   {"fr": ["Espagne"], "en": ["Spain"]},
   {"fr": ["Estonie"], "en": ["Estonia"]},
   {"fr": ["Eswatini", "Swaziland"], "en": ["Eswatini", "Swaziland"]},
-  {"fr": ["États-Unis", "USA", "Amérique"], "en": ["United States", "USA", "United States of America", "America"]},
+  {"fr": ["États-Unis", "USA"], "en": ["United States", "USA", "United States of America"]},
   {"fr": ["Éthiopie"], "en": ["Ethiopia"]},
   {"fr": ["Fidji"], "en": ["Fiji"]},
   {"fr": ["Finlande"], "en": ["Finland"]},

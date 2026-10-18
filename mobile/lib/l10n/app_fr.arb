@@ -24,6 +24,45 @@
       }
     }
   },
+  "minutesShort": "{minutes} min",
+  "@minutesShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "winnerPrize": "Dotation du vainqueur",
+  "winnerPrizeHelp": "Tu places des pièces en créant la compétition ; seul le vainqueur les récupère. Les autres ne paient rien.",
+  "noPrize": "Sans dotation",
+  "prizeCustomHint": "Autre montant",
+  "prizePotLabel": "Dotation : {coins} pièces",
+  "@prizePotLabel": {
+    "placeholders": {
+      "coins": {
+        "type": "int"
+      }
+    }
+  },
+  "prizeLost": "Dotation perdue ({coins})",
+  "@prizeLost": {
+    "placeholders": {
+      "coins": {
+        "type": "int"
+      }
+    }
+  },
+  "playVsBot": "JOUER CONTRE UN BOT",
+  "playVsBots": "JOUER CONTRE DES BOTS",
+  "eliminationBotDifficultyHelp": "Niveau des bots si tu joues contre l'ordinateur.",
+  "noticeLeftGame": "{name} a quitté la partie",
+  "@noticeLeftGame": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "categories": "Catégories",
   "selectOneCategory": "Choisis au moins une catégorie",
   "difficulty": "Difficulté",
@@ -81,6 +120,103 @@
   "quitGameMessage": "Ta progression sera perdue.",
   "quit": "Quitter",
   "cancel": "Annuler",
+  "confirm": "OK",
+  "roomFormat": "Format",
+  "formatRelay": "Relais",
+  "formatRelayHelp": "Chaque joueur ne joue qu'une partie des catégories (réparties). Il faut se coordonner… ou profiter des trous des autres !",
+  "formatRoundsHelpLong": "Tout le monde joue toutes les manches. À la fin, le meilleur score total gagne. Classique et clair.",
+  "formatEliminationHelpLong": "Après chaque manche, le plus petit score sort (à 2 joueurs : seulement à la dernière). Le dernier en lice gagne.",
+  "roomTheme": "Thème du jour",
+  "roomThemeHelp": "Les catégories du thème rapportent le double de points. Choisis géo, prénoms ou nature pour pimenter la partie.",
+  "visibilityHelp": "Public : tous les joueurs connectés sont prévenus et peuvent rejoindre d'un tap, sans code. Privé : seuls ceux qui ont le code peuvent entrer.",
+  "publicRoomLobbyHelp": "Salon public : visible par tous les joueurs connectés. Ils peuvent rejoindre sans code depuis « Salons ».",
+  "publicRoomInvite": "Nouveau salon public de {host}",
+  "@publicRoomInvite": {
+    "placeholders": {
+      "host": { "type": "String" }
+    }
+  },
+  "joinPublicRoom": "REJOINDRE",
+  "joinWithCodeHelp": "Pour un salon privé uniquement",
+  "difficultyHelp": "Facile = lettres courantes. Difficile = toutes les lettres, y compris K, W, X, Y, Z.",
+  "roomTypeHelp": "Duel = 2 joueurs. Groupe = jusqu'à 8. Plus on est nombreux, plus les points partagés baissent.",
+  "durationHelp": "Temps pour remplir toutes les catégories. Plus de catégories ou orthographe stricte = durée minimum plus longue.",
+  "themeNone": "Aucun",
+  "themeGeography": "Géo (×2 villes & pays)",
+  "themeNames": "Prénoms (×2)",
+  "themeNature": "Nature (×2 animaux & fruits)",
+  "freezeUse": "FREEZE ({count})",
+  "@freezeUse": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "freezeBuyTitle": "Acheter un Freeze",
+  "freezeBuyHelp": "Bloque un adversaire 10 secondes. Coût : {price} pièces.\nTu en as 1 gratuit par partie.",
+  "@freezeBuyHelp": {
+    "placeholders": {
+      "price": { "type": "int" }
+    }
+  },
+  "freezeInfoHelp": "Pendant la manche, gèle un adversaire 10 secondes : il ne peut pas valider. 1 Freeze gratuit par partie, puis 15 pièces pour en racheter.",
+  "freezePickTarget": "Qui geler ?",
+  "freezeAlready": "Déjà gelé",
+  "freezeYouAreFrozen": "❄ Tu es gelé ! Attends un peu…",
+  "lightningTitle": "Éclair !",
+  "lightningHelp": "{category} en {letter} — {seconds}s",
+  "@lightningHelp": {
+    "placeholders": {
+      "category": { "type": "String" },
+      "letter": { "type": "String" },
+      "seconds": { "type": "int" }
+    }
+  },
+  "lightningInfoHelp": "Entre deux manches : un mini QCM de 10 secondes. La bonne réponse te donne +2 points bonus. Sois rapide !",
+  "lightningHit": "Bien joué ! +{points}",
+  "@lightningHit": {
+    "placeholders": {
+      "points": { "type": "int" }
+    }
+  },
+  "lightningMiss": "Raté !",
+  "chatTitle": "Chat du salon",
+  "chatHint": "Écris un message…",
+  "chatUnlockTitle": "Débloquer le chat",
+  "chatUnlockHelp": "Tout le monde pourra te lire dans ce salon. Coût : {price} pièces (une fois).",
+  "@chatUnlockHelp": {
+    "placeholders": {
+      "price": { "type": "int" }
+    }
+  },
+  "chatUnlockButton": "CHAT · {price}",
+  "@chatUnlockButton": {
+    "placeholders": {
+      "price": { "type": "int" }
+    }
+  },
+  "chatInfoHelp": "Les stickers sont gratuits. Pour écrire du vrai texte, débloque le chat une fois avec des pièces dans ce salon.",
+  "reactionsTitle": "Réactions",
+  "reactionsInfoHelp": "Envoie une réaction (feu, dodo, clap, surprise) pendant les résultats ou à la fin. Gratuit, sans modération.",
+  "wordReviewTitle": "Revue des mots",
+  "wordReviewHelp": "Après la partie, retrouve les mots trouvés (surtout les uniques ⭐) avec des infos : capitale, continent, régime…",
+  "salonTitleChampion": "Champion",
+  "salonTitleSpeedster": "Éclair",
+  "salonTitleRare": "Chasseur de pépites",
+  "salonTitleDictionary": "Dictionnaire vivant",
+  "salonTitlesHelp": "À la fin, des titres fun sont donnés : champion, le plus rapide, celui qui trouve des mots rares, le plus grand vocabulaire.",
+  "rematchVote": "REVANCHE ({votes}/{need})",
+  "@rematchVote": {
+    "placeholders": {
+      "votes": { "type": "int" },
+      "need": { "type": "int" }
+    }
+  },
+  "rematchHelp": "Vote pour rejouer. Quand la majorité des joueurs humains a voté, une nouvelle partie démarre avec les mêmes réglages.",
+  "bonusRound": "MANCHE BONUS",
+  "bonusRoundHelp": "Une mini-manche surprise après le podium, sans mise. Pour ceux qui veulent encore une manche avant de partir.",
+  "errorFrozen": "Tu es gelé pour le moment !",
+  "errorNoFreezes": "Plus de Freeze",
+  "errorChatLocked": "Débloque le chat d'abord",
   "comingSoonBadge": "Bientôt",
   "settingsTitle": "Réglages",
   "settingsSound": "Effets sonores",
@@ -152,6 +288,13 @@
   "podiumTitle": "PODIUM",
   "leaveRoom": "QUITTER",
   "leaveRoomMessage": "Tu vas quitter la salle.",
+  "noticeHintUsed": "{name} utilise un joker ({category})",
+  "@noticeHintUsed": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "category": { "type": "String" }
+    }
+  },
   "noticeJoined": "{name} a rejoint la salle",
   "noticeLeft": "{name} a quitté la salle",
   "noticeDisconnected": "{name} s'est déconnecté",
@@ -390,6 +533,14 @@
   "onlineLabel": "EN LIGNE",
   "settingsLanguage": "Langue",
   "languageAuto": "Auto",
+  "settingsGender": "Genre",
+  "genderMale": "Homme",
+  "genderFemale": "Femme",
+  "genderOther": "Autre",
+  "settingsMusicVolume": "Volume musique",
+  "onboardingTitle": "Bienvenue !",
+  "onboardingSubtitle": "Régle ton expérience en quelques secondes.",
+  "onboardingContinue": "C'EST PARTI !",
   "suggestionExample": "Réponse possible : {answer}",
   "suggestionFoundBy": "{name} a trouvé : {answer}",
   "@suggestionExample": {
@@ -700,8 +851,31 @@
   "modeCareer": "Carrière",
   "modeElimination": "Éliminatoires",
   "modeFreeSolo": "Solo libre",
-  "eliminationRulesTitle": "Règles",
-  "eliminationRules": "Toutes les catégories, 30 secondes par manche. Marque au moins le minimum à chaque manche, sinon tu es éliminé. Tiens les {rounds} manches pour devenir champion !",
+  "voiceChatTitle": "Salon vocal",
+  "voiceChatHelp": "Parlez pendant la partie. Coupez votre micro quand vous voulez. L'hôte peut couper un micro, tous les micros, ou exclure quelqu'un.",
+  "voiceJoin": "REJOINDRE",
+  "voiceConnecting": "CONNEXION…",
+  "voiceMuteSelf": "COUPER MON MICRO",
+  "voiceUnmuteSelf": "OUVRIR MON MICRO",
+  "voiceMuteAll": "COUPER TOUS LES MICROS",
+  "voiceUnmuteAll": "RENDRE LES MICROS",
+  "voiceMutePlayer": "Couper le micro",
+  "voiceUnmutePlayer": "Rendre le micro",
+  "voiceExcludePlayer": "Exclure du vocal",
+  "voiceHostMutedYou": "L'hôte a coupé ton micro.",
+  "voiceKickedNotice": "L'hôte t'a exclu du salon vocal.",
+  "voiceMutedBadge": "Micro coupé",
+  "voiceExcludedBadge": "Exclu du vocal",
+  "voiceHostBadge": "Hôte",
+  "voiceUnavailable": "Vocal non configuré sur le serveur (Agora).",
+  "errorVoiceUnavailable": "Salon vocal indisponible.",
+  "errorVoiceClosed": "Le vocal n'est pas encore ouvert (attente du début de partie).",
+  "errorVoiceExcluded": "Tu es exclu du salon vocal.",
+  "errorMicDenied": "Autorise le micro pour parler.",
+  "rulesButton": "Règle",
+  "eliminationRulesTitle": "Règle",
+  "eliminationRulesIntro": "Lis la règle avant de régler ta compétition.",
+  "eliminationRules": "Pas de solo : joue avec des amis, en duel, ou contre des bots. Toutes les catégories. À chaque manche, le plus petit score sort (à 2 joueurs : seulement à la dernière). Le dernier en lice remporte la compétition ({rounds} manches max) !",
   "@eliminationRules": {
     "placeholders": {
       "rounds": {
@@ -726,7 +900,7 @@
   "formatRounds": "Par manches",
   "formatElimination": "Éliminatoires",
   "formatRoundsHelp": "Toutes les manches sont jouées : le meilleur total gagne.",
-  "formatEliminationHelp": "À chaque manche, le plus petit score est éliminé. Le dernier en lice gagne.",
+  "formatEliminationHelp": "À chaque manche, le plus petit score est éliminé (à 2 joueurs : seulement à la dernière manche). Le dernier en lice gagne.",
   "youAreEliminated": "Tu es éliminé : regarde la fin de la partie !",
   "youAreOut": "Tu es éliminé !",
   "playerIsOut": "{name} est éliminé !",
@@ -747,10 +921,14 @@
       }
     }
   },
+  "strictSpelling": "Orthographe stricte",
+  "strictSpellingHelp": "Casse, accents et espaces doivent coller à la fiche. Manches d'au moins 2 minutes.",
+  "strictSpellingChip": "Orthographe stricte",
+
   "preparingGame": "Préparation de la partie…",
   "playAlone": "JOUER SEUL",
-  "withFriends": "Avec tes amis",
-  "withFriendsHelp": "Une salle s'ouvre tout de suite, avec un code à partager comme dans un salon. Le plus petit score de chaque manche est éliminé.",
+  "withFriends": "Lancer la compétition",
+  "withFriendsHelp": "Invite des amis (code), rejoins un salon, ou joue tout de suite contre des bots. Tu peux aussi ajouter des bots dans le lobby en attendant tes amis.",
   "inviteFriends": "INVITER DES AMIS",
   "looksTitle": "Boutique style",
   "looksSubtitle": "Essaie un look, puis achète-le avec tes pièces.",

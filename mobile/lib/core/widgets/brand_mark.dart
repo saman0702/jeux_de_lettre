@@ -6,13 +6,21 @@ import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'outlined_text.dart';
 
-/// Logo Letter Race dessiné (police Lilita), net à toutes les densités —
-/// contrairement à un PNG agrandi sur le splash natif.
+/// Logo Letter Race (initiales LR) — même style que l'icône app :
+/// LR violet, petites lettres blanches, contour jaune.
 class BrandMark extends StatelessWidget {
-  const BrandMark({super.key, this.size = 1});
+  const BrandMark({
+    super.key,
+    this.size = 1,
+    this.framing = true,
+  });
 
   /// Échelle globale (1 ≈ largeur confortable sur téléphone).
   final double size;
+
+  /// Cadre blanc + bordure orange (comme l'icône). Désactiver si déjà
+  /// sur fond clair.
+  final bool framing;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +28,7 @@ class BrandMark extends StatelessWidget {
     final deco = 34.0 * size;
     final caption = 18.0 * size;
 
-    return Semantics(
+    final mark = Semantics(
       label: 'Letter Race',
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -40,11 +48,11 @@ class BrandMark extends StatelessWidget {
                     _big('R', lr),
                   ],
                 ),
-                _deco('E', deco, const Offset(-78, -28), -0.25),
-                _deco('B', deco, const Offset(-72, 8), 0.18),
-                _deco('S', deco, const Offset(-48, 42), -0.12),
-                _deco('J', deco, const Offset(52, -22), 0.22),
-                _deco('A', deco, const Offset(68, 36), -0.18),
+                _deco('E', deco, const Offset(-78, -28), -0.25, AppColors.green),
+                _deco('B', deco, const Offset(-72, 8), 0.18, AppColors.purple),
+                _deco('S', deco, const Offset(-48, 42), -0.12, AppColors.orange),
+                _deco('J', deco, const Offset(52, -22), 0.22, AppColors.red),
+                _deco('A', deco, const Offset(68, 36), -0.18, AppColors.yellow),
               ],
             ),
           ),
@@ -62,12 +70,33 @@ class BrandMark extends StatelessWidget {
             textAlign: TextAlign.center,
             style: fredoka(
               size: caption,
-              color: AppColors.white.withValues(alpha: 0.92),
+              color: framing
+                  ? AppColors.purpleDeep
+                  : AppColors.white.withValues(alpha: 0.92),
               weight: FontWeight.w500,
             ),
           ),
         ],
       ),
+    );
+
+    if (!framing) return mark;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(22 * size, 18 * size, 22 * size, 16 * size),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(36 * size),
+        border: Border.all(color: AppColors.yellow, width: 3 * size),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.ink.withValues(alpha: 0.25),
+            offset: Offset(0, 8 * size),
+            blurRadius: 0,
+          ),
+        ],
+      ),
+      child: mark,
     );
   }
 
@@ -75,30 +104,36 @@ class BrandMark extends StatelessWidget {
     letter,
     style: gameFont(
       size: fontSize,
-      color: AppColors.white,
+      color: AppColors.purple,
       height: 1,
       shadows: [
         Shadow(
-          color: AppColors.ink.withValues(alpha: 0.55),
-          offset: Offset(4 * size, 5 * size),
+          color: AppColors.ink.withValues(alpha: 0.45),
+          offset: Offset(3 * size, 4 * size),
           blurRadius: 0,
         ),
       ],
     ),
     outline: AppColors.yellow,
-    strokeWidth: 5 * size,
+    strokeWidth: 2.5 * size,
   );
 
-  Widget _deco(String letter, double fontSize, Offset offset, double angle) {
+  Widget _deco(
+    String letter,
+    double fontSize,
+    Offset offset,
+    double angle,
+    Color color,
+  ) {
     return Transform.translate(
       offset: Offset(offset.dx * size, offset.dy * size),
       child: Transform.rotate(
         angle: angle * math.pi,
         child: OutlinedText(
           letter,
-          style: gameFont(size: fontSize, color: AppColors.purpleDeep, height: 1),
+          style: gameFont(size: fontSize, color: color, height: 1),
           outline: AppColors.yellow,
-          strokeWidth: 2.5 * size,
+          strokeWidth: 1.5 * size,
         ),
       ),
     );

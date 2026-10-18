@@ -16,8 +16,9 @@ abstract class SoloBackend {
   Future<HintOptions> requestHint(
     String gameId,
     int roundNumber,
-    Category category,
-  );
+    Category category, {
+    bool reveal = false,
+  });
   Future<HintPick> pickHint(
     String gameId,
     int roundNumber,

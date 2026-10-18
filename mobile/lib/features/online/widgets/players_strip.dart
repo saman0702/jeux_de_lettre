@@ -16,6 +16,7 @@ class PlayersStrip extends StatelessWidget {
     required this.room,
     required this.myId,
     this.showProgress = true,
+    this.forceFinishedIds = const {},
   });
 
   final RoomState room;
@@ -23,6 +24,9 @@ class PlayersStrip extends StatelessWidget {
 
   /// Affiche « écrit encore / a répondu » (pendant la manche).
   final bool showProgress;
+
+  /// Ids déjà soumis côté client (avant ack serveur), ex. après Finish.
+  final Set<String> forceFinishedIds;
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +39,15 @@ class PlayersStrip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: players.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, i) => _PlayerChip(
-          player: players[i],
-          isMe: players[i].clientId == myId,
-          showProgress: showProgress,
-        ),
+        itemBuilder: (context, i) {
+          final p = players[i];
+          return _PlayerChip(
+            player: p,
+            isMe: p.clientId == myId,
+            showProgress: showProgress,
+            finished: p.finished || forceFinishedIds.contains(p.clientId),
+          );
+        },
       ),
     );
   }
@@ -50,11 +58,13 @@ class _PlayerChip extends StatelessWidget {
     required this.player,
     required this.isMe,
     required this.showProgress,
+    required this.finished,
   });
 
   final RoomPlayer player;
   final bool isMe;
   final bool showProgress;
+  final bool finished;
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +72,7 @@ class _PlayerChip extends StatelessWidget {
     final out = player.eliminated || !player.connected;
     final GameIconKind? status = !showProgress || out || !player.playing
         ? null
-        : player.finished
+        : finished
         ? GameIconKind.check
         : GameIconKind.writing;
 

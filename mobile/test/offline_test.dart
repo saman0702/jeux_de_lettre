@@ -63,6 +63,38 @@ void main() {
         expect(engine().validate(category, language, letter, raw).$1, status);
       });
     }
+
+    test('strict spelling keeps case accents and spaces', () {
+      final e = engine();
+      expect(
+        e.validate(Category.animal, 'fr', 'E', 'elephant').$1,
+        AnswerStatus.valid,
+      );
+      expect(
+        e
+            .validate(
+              Category.animal,
+              'fr',
+              'E',
+              'elephant',
+              strictSpelling: true,
+            )
+            .$1,
+        AnswerStatus.notFound,
+      );
+      expect(
+        e
+            .validate(
+              Category.animal,
+              'fr',
+              'E',
+              'Éléphant',
+              strictSpelling: true,
+            )
+            .$1,
+        AnswerStatus.valid,
+      );
+    });
   });
 
   test('hard letters are only drawn in hard mode and never twice', () async {

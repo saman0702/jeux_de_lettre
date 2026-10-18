@@ -270,6 +270,33 @@ def test_play_against_bots(client):
         assert any(a["status"] == "valid" for a in bot_answers)
 
 
+def test_lightning_pick_is_recorded(client, manager):
+    """Après une manche, le QCM éclair enregistre le choix du joueur."""
+    manager.timings.results = 2.0
+    with player(client, "alice-0001", "Alice") as alice:
+        alice.send_json({
+            "type": "create_room",
+            "settings": {**SETTINGS, "categories": ["country"], "rounds": 5},
+            "bots": {"count": 1, "level": "easy"},
+        })
+        state(alice, "round")
+        alice.send_json({"type": "submit", "round": 1, "answers": {"country": "Maroc"}})
+        state(alice, "results")
+        room = state(alice, "lightning")
+        lightning = room["lightning"]
+        assert lightning and lightning["options"]
+        choice = lightning["options"][0]
+        alice.send_json({"type": "lightning_pick", "choice": choice})
+        updated = state(
+            alice,
+            "lightning",
+            check=lambda r: "alice-0001" in (r.get("lightning") or {}).get("picks", {}),
+        )
+        pick = updated["lightning"]["picks"]["alice-0001"]
+        assert pick["choice"] == choice
+        assert "points" in pick
+
+
 def test_host_adds_and_removes_bots(client):
     with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
         room = create_room(alice)
@@ -440,6 +467,45 @@ def test_winner_takes_the_pot(client, manager):
     assert coins_of(manager, "bob-00001") == 0
 
 
+def test_prize_room_host_funds_winner_takes(client, manager):
+    """Dotation : l'hôte place les pièces, l'invité ne paie pas, bots autorisés."""
+    give_coins(manager, "alice-0001", 25)
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        alice.send_json(
+            {
+                "type": "create_room",
+                "settings": {**SETTINGS, "kind": "prize", "stake": 15, "format": "elimination", "rounds": 2},
+            }
+        )
+        room = state(alice, "waiting")
+        assert room["settings"]["kind"] == "prize"
+        alice.send_json({"type": "add_bot", "level": "easy"})
+        state(alice, "waiting", lambda r: any(p.get("bot") for p in r["players"]))
+
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, "waiting")
+        # Bob sans pièces peut quand même rejoindre.
+        assert coins_of(manager, "bob-00001") == 0
+
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        state(alice, "round")
+        state(bob, "round")
+        alice.send_json({"type": "submit", "round": 1, "answers": {}})
+        bob.send_json({"type": "submit", "round": 1, "answers": {"city": "Madrid"}})
+        state(alice, "results")
+        # 2e manche pour finir (ou élimination).
+        for number in range(2, 3):
+            state(alice, "round", lambda r, n=number: r["round"]["number"] == n)
+            alice.send_json({"type": "submit", "round": number, "answers": {}})
+            bob.send_json({"type": "submit", "round": number, "answers": {"city": "Metz"}})
+        final = state(alice, "finished")
+        assert final["pot"] == 15
+        assert final["winnings"].get("bob-00001") == 15
+    assert coins_of(manager, "alice-0001") == 10  # 25 - 15
+    assert coins_of(manager, "bob-00001") == 15
+
+
 def test_tied_players_share_the_pot(client, manager):
     give_coins(manager, "alice-0001", 3)
     give_coins(manager, "bob-00001", 3)
@@ -526,16 +592,28 @@ def test_knockout_room_eliminates_the_lowest_score_each_round(client):
         assert results["results"]["eliminated"] == ["carol-0001"]
         assert {p["client_id"]: p["eliminated_round"] for p in results["players"]}["carol-0001"] == 2
 
-        # Manche 3 : Carol regarde ; Bob n'a rien et sort, Alice gagne, la partie s'arrête.
+        # Manche 3 : Carol regarde ; à 2 joueurs on n'élimine plus avant la dernière manche.
         round3 = state(alice, "round", lambda r: r["round"]["number"] == 3)
         assert {p["client_id"]: p["playing"] for p in round3["players"]}["carol-0001"] is False
         alice.send_json({"type": "submit", "round": 3, "answers": {"city": "Madrid"}})
         bob.send_json({"type": "submit", "round": 3, "answers": {}})
+        results3 = state(alice, "results", lambda r: r["results"]["number"] == 3)
+        assert results3["results"]["eliminated"] == []
+
+        # Manches 4 puis 5 (finale) : Bob sort seulement à la dernière manche.
+        state(alice, "round", lambda r: r["round"]["number"] == 4)
+        alice.send_json({"type": "submit", "round": 4, "answers": {"city": "Madrid"}})
+        bob.send_json({"type": "submit", "round": 4, "answers": {"country": "Maroc"}})
+        state(alice, "results", lambda r: r["results"]["number"] == 4)
+
+        state(alice, "round", lambda r: r["round"]["number"] == 5)
+        alice.send_json({"type": "submit", "round": 5, "answers": {"city": "Madrid"}})
+        bob.send_json({"type": "submit", "round": 5, "answers": {}})
         final = state(alice, "finished")
-        assert final["round_number"] == 3, "ends as soon as one player is left"
+        assert final["round_number"] == 5
         assert {p["client_id"]: p["eliminated_round"] for p in final["players"]} == {
             "alice-0001": None,
-            "bob-00001": 3,
+            "bob-00001": 5,
             "carol-0001": 2,
         }
 

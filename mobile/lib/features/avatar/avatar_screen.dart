@@ -200,8 +200,6 @@ class _AvatarScreenState extends State<AvatarScreen> {
                           label: label,
                           gameIcon: kind,
                           color: color,
-                          height: 52,
-                          fontSize: 17,
                           onPressed: _busy ? null : () => _photo(source),
                         ),
                       ),

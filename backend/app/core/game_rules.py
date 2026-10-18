@@ -19,6 +19,9 @@ CLASSIC_CATEGORIES = (Category.CITY, Category.COUNTRY, Category.ANIMAL, Category
 MANY_CATEGORIES = 5
 MANY_CATEGORIES_MIN_DURATION = 45
 
+# Orthographe stricte (casse, accents, espaces) : manches d'au moins 2 minutes.
+STRICT_SPELLING_MIN_DURATION = 120
+
 
 class Language(StrEnum):
     FR = "fr"
@@ -35,7 +38,8 @@ class Difficulty(StrEnum):
 ANY_LANGUAGE = "*"
 
 ROUND_OPTIONS = (5, 10, 15)
-DURATION_OPTIONS = (15, 30, 45, 60)
+# Jusqu'à 5 minutes par manche.
+DURATION_OPTIONS = (15, 30, 45, 60, 120, 180, 240, 300)
 
 HARD_LETTERS = frozenset("KQWXYZ")
 ALL_LETTERS = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -150,6 +154,36 @@ COIN_PACKS = {
     "coins_550": 550,
     "coins_1200": 1200,
     "coins_2500": 2500,
+}
+
+# --- Salon : pouvoirs, social, formats ---------------------------------------
+
+# Freeze : 1 gratuit par partie ; recharge en pièces ; cible bloquée N secondes.
+FREEZES_PER_GAME = 1
+FREEZE_PRICE = 15
+FREEZE_SECONDS = 10
+
+# Chat écrit : débloqué une fois pour la session dans la salle.
+CHAT_UNLOCK_PRICE = 25
+CHAT_MESSAGE_MAX = 120
+CHAT_HISTORY = 40
+
+# Réactions (stickers) pendant les résultats / fin de partie.
+STICKER_IDS = ("fire", "sleep", "clap", "wow")
+
+# Défi éclair entre deux manches.
+LIGHTNING_SECONDS = 10
+LIGHTNING_POINTS = 2
+
+# Mini-manche bonus après le podium (sans mise).
+BONUS_ROUND_DURATION = 45
+BONUS_CATEGORIES = 3
+
+# Thèmes du jour : ×2 sur ces catégories.
+ROOM_THEMES: dict[str, tuple[Category, ...]] = {
+    "geography": (Category.CITY, Category.COUNTRY),
+    "names": (Category.FEMALE_NAME, Category.MALE_NAME),
+    "nature": (Category.ANIMAL, Category.FRUIT),
 }
 
 # Niveaux de joueur : l'expérience est le total des points marqués dans les parties validées par

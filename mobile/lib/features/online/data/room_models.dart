@@ -1,17 +1,50 @@
 import '../../game/data/models.dart';
 
-enum RoomPhase { waiting, countdown, round, results, finished }
+enum RoomPhase { waiting, countdown, round, results, lightning, finished }
 
-/// Salon normal, ou salon de paris où chacun mise des pièces.
-/// Toutes les manches (meilleur total) ou éliminatoires (le plus petit score
-/// de chaque manche sort).
-enum RoomFormat { rounds, elimination }
+/// Toutes les manches (meilleur total), éliminatoires, ou relais (catégories
+/// réparties).
+enum RoomFormat { rounds, elimination, relay }
 
+/// Thème du jour : score ×2 sur ces catégories.
+enum RoomTheme {
+  none(''),
+  geography('geography'),
+  names('names'),
+  nature('nature');
+
+  const RoomTheme(this.wire);
+  final String wire;
+
+  static RoomTheme fromWire(String? value) => values.firstWhere(
+        (t) => t.wire == (value ?? ''),
+        orElse: () => none,
+      );
+}
+
+/// Stickers de réaction (pas un vrai chat).
+enum RoomSticker {
+  fire,
+  sleep,
+  clap,
+  wow;
+
+  String get emoji => switch (this) {
+        fire => '🔥',
+        sleep => '😴',
+        clap => '👏',
+        wow => '😱',
+      };
+}
+
+/// Classique (gratuit), paris (chacun mise), ou dotation (l'hôte place le gain).
 enum RoomKind {
   classic,
-  bet;
+  bet,
+  prize;
 
   static const stakeOptions = [5, 10, 25, 50, 100];
+  static const maxStake = 1000;
 }
 
 DateTime? _date(Object? value) =>
@@ -24,11 +57,13 @@ class RoomSettings {
     this.categories = Category.classic,
     this.rounds = 5,
     this.roundDuration = 30,
+    this.strictSpelling = false,
     this.maxPlayers = 8,
     this.public = false,
     this.kind = RoomKind.classic,
     this.stake = 0,
     this.format = RoomFormat.rounds,
+    this.theme = RoomTheme.none,
   });
 
   factory RoomSettings.fromJson(
@@ -43,11 +78,13 @@ class RoomSettings {
     ],
     rounds: json['rounds'] as int,
     roundDuration: json['round_duration'] as int,
+    strictSpelling: json['strict_spelling'] as bool? ?? false,
     maxPlayers: json['max_players'] as int,
     public: public,
     kind: RoomKind.values.byName(json['kind'] as String? ?? 'classic'),
     stake: json['stake'] as int? ?? 0,
     format: RoomFormat.values.byName(json['format'] as String? ?? 'rounds'),
+    theme: RoomTheme.fromWire(json['theme'] as String?),
   );
 
   final String language;
@@ -55,17 +92,22 @@ class RoomSettings {
   final List<Category> categories;
   final int rounds;
   final int roundDuration;
+  final bool strictSpelling;
   final int maxPlayers;
   final bool public;
   final RoomKind kind;
 
-  /// Pièces misées par chaque joueur dans un salon de paris.
+  /// Mise (paris) ou montant de la dotation (prize).
   final int stake;
 
   bool get betting => kind == RoomKind.bet;
+  bool get prize => kind == RoomKind.prize;
 
   final RoomFormat format;
   bool get elimination => format == RoomFormat.elimination;
+  bool get relay => format == RoomFormat.relay;
+
+  final RoomTheme theme;
 
   Map<String, dynamic> toJson() => {
     'language': language,
@@ -73,11 +115,13 @@ class RoomSettings {
     'categories': [for (final c in categories) c.wire],
     'rounds': rounds,
     'round_duration': roundDuration,
+    'strict_spelling': strictSpelling,
     'max_players': maxPlayers,
     'public': public,
     'kind': kind.name,
     'stake': stake,
     'format': format.name,
+    'theme': theme.wire,
   };
 }
 
@@ -92,6 +136,12 @@ class RoomPlayer {
     required this.playing,
     this.botLevel,
     this.hintsLeft = 0,
+    this.freezesLeft = 0,
+    this.frozenUntil,
+    this.chatUnlocked = false,
+    this.rematchVote = false,
+    this.title = '',
+    this.assignments = const [],
     this.avatarPreset = 0,
     this.avatarUrl,
     this.level = 1,
@@ -114,6 +164,15 @@ class RoomPlayer {
         ? null
         : Difficulty.values.byName(json['bot_level'] as String),
     hintsLeft: json['hints_left'] as int? ?? 0,
+    freezesLeft: json['freezes_left'] as int? ?? 0,
+    frozenUntil: _date(json['frozen_until']),
+    chatUnlocked: json['chat_unlocked'] as bool? ?? false,
+    rematchVote: json['rematch_vote'] as bool? ?? false,
+    title: json['title'] as String? ?? '',
+    assignments: [
+      for (final c in (json['assignments'] as List?) ?? const [])
+        Category.fromWire(c as String),
+    ],
     avatarPreset: json['avatar_preset'] as int? ?? 0,
     avatarUrl: json['avatar_url'] as String?,
     level: json['level'] as int? ?? 1,
@@ -123,6 +182,11 @@ class RoomPlayer {
     frame: json['frame'] as String? ?? '',
     nameStyle: json['name_style'] as String? ?? '',
   );
+
+  bool get frozen {
+    final until = frozenUntil;
+    return until != null && until.isAfter(DateTime.now());
+  }
 
   final String clientId;
   final String nickname;
@@ -143,6 +207,14 @@ class RoomPlayer {
 
   /// Jokers restants dans cette partie.
   final int hintsLeft;
+
+  /// Charges Freeze restantes.
+  final int freezesLeft;
+  final DateTime? frozenUntil;
+  final bool chatUnlocked;
+  final bool rematchVote;
+  final String title;
+  final List<Category> assignments;
 
   final int avatarPreset;
 
@@ -246,6 +318,150 @@ class RoomRoundResults {
   ];
 }
 
+class RoomReaction {
+  const RoomReaction({
+    required this.clientId,
+    required this.nickname,
+    required this.sticker,
+  });
+
+  factory RoomReaction.fromJson(Map<String, dynamic> json) => RoomReaction(
+        clientId: json['client_id'] as String,
+        nickname: json['nickname'] as String,
+        sticker: RoomSticker.values.byName(json['sticker'] as String),
+      );
+
+  final String clientId;
+  final String nickname;
+  final RoomSticker sticker;
+}
+
+class RoomChatMessage {
+  const RoomChatMessage({
+    required this.clientId,
+    required this.nickname,
+    required this.text,
+  });
+
+  factory RoomChatMessage.fromJson(Map<String, dynamic> json) =>
+      RoomChatMessage(
+        clientId: json['client_id'] as String,
+        nickname: json['nickname'] as String,
+        text: json['text'] as String,
+      );
+
+  final String clientId;
+  final String nickname;
+  final String text;
+}
+
+class LightningState {
+  const LightningState({
+    required this.letter,
+    required this.category,
+    required this.options,
+    required this.endsAt,
+    required this.picks,
+  });
+
+  factory LightningState.fromJson(Map<String, dynamic> json) {
+    final rawPicks = json['picks'];
+    final picks = <String, (String, int)>{};
+    if (rawPicks is Map) {
+      for (final e in rawPicks.entries) {
+        final value = e.value;
+        if (value is! Map) continue;
+        final choice = value['choice'];
+        if (choice is! String) continue;
+        final points = value['points'];
+        picks['${e.key}'] = (
+          choice,
+          points is int ? points : int.tryParse('$points') ?? 0,
+        );
+      }
+    }
+    return LightningState(
+      letter: json['letter'] as String,
+      category: Category.fromWire(json['category'] as String),
+      options: [for (final o in json['options'] as List) '$o'],
+      endsAt: DateTime.parse(json['ends_at'] as String),
+      picks: picks,
+    );
+  }
+
+  final String letter;
+  final Category category;
+  final List<String> options;
+  final DateTime endsAt;
+  final Map<String, (String, int)> picks;
+}
+
+class WordReviewItem {
+  const WordReviewItem({
+    required this.category,
+    required this.word,
+    required this.letter,
+    required this.unique,
+    required this.by,
+    this.facts = const [],
+  });
+
+  factory WordReviewItem.fromJson(Map<String, dynamic> json) => WordReviewItem(
+        category: Category.fromWire(json['category'] as String),
+        word: json['word'] as String,
+        letter: json['letter'] as String? ?? '',
+        unique: json['unique'] as bool? ?? false,
+        by: [for (final n in (json['by'] as List?) ?? const []) n as String],
+        facts: [
+          for (final f in (json['facts'] as List?) ?? const []) '$f',
+        ],
+      );
+
+  final Category category;
+  final String word;
+  final String letter;
+  final bool unique;
+  final List<String> by;
+
+  /// Infos pédagogiques (capitale, continent, régime…).
+  final List<String> facts;
+}
+
+/// Salon vocal pendant la partie (Agora).
+class RoomVoice {
+  const RoomVoice({
+    this.enabled = false,
+    this.open = false,
+    this.channel = '',
+    this.muted = const [],
+    this.excluded = const [],
+  });
+
+  factory RoomVoice.fromJson(Map<String, dynamic>? json) {
+    if (json == null) return const RoomVoice();
+    return RoomVoice(
+      enabled: json['enabled'] as bool? ?? false,
+      open: json['open'] as bool? ?? false,
+      channel: json['channel'] as String? ?? '',
+      muted: [
+        for (final id in (json['muted'] as List?) ?? const []) id as String,
+      ],
+      excluded: [
+        for (final id in (json['excluded'] as List?) ?? const []) id as String,
+      ],
+    );
+  }
+
+  final bool enabled;
+  final bool open;
+  final String channel;
+  final List<String> muted;
+  final List<String> excluded;
+
+  bool isMuted(String clientId) => muted.contains(clientId);
+  bool isExcluded(String clientId) => excluded.contains(clientId);
+}
+
 class RoomState {
   const RoomState({
     required this.code,
@@ -263,6 +479,16 @@ class RoomState {
     this.nextRoundAt,
     this.pot = 0,
     this.winnings = const {},
+    this.lightning,
+    this.reactions = const [],
+    this.chat = const [],
+    this.wordReview = const [],
+    this.bonusPlayed = false,
+    this.rematchVotes = 0,
+    this.rematchNeed = 1,
+    this.freezePrice = 15,
+    this.chatUnlockPrice = 25,
+    this.voice = const RoomVoice(),
   });
 
   factory RoomState.fromJson(
@@ -271,6 +497,7 @@ class RoomState {
   }) {
     final serverTime = DateTime.parse(json['server_time'] as String);
     final roundJson = json['round'] as Map<String, dynamic>?;
+    final prices = (json['prices'] as Map?) ?? const {};
     return RoomState(
       code: json['code'] as String,
       quick: json['quick'] as bool,
@@ -302,6 +529,27 @@ class RoomState {
         for (final e in ((json['winnings'] as Map?) ?? const {}).entries)
           e.key as String: e.value as int,
       },
+      lightning: json['lightning'] == null
+          ? null
+          : LightningState.fromJson(json['lightning'] as Map<String, dynamic>),
+      reactions: [
+        for (final r in (json['reactions'] as List?) ?? const [])
+          RoomReaction.fromJson(r as Map<String, dynamic>),
+      ],
+      chat: [
+        for (final m in (json['chat'] as List?) ?? const [])
+          RoomChatMessage.fromJson(m as Map<String, dynamic>),
+      ],
+      wordReview: [
+        for (final w in (json['word_review'] as List?) ?? const [])
+          WordReviewItem.fromJson(w as Map<String, dynamic>),
+      ],
+      bonusPlayed: json['bonus_played'] as bool? ?? false,
+      rematchVotes: json['rematch_votes'] as int? ?? 0,
+      rematchNeed: json['rematch_need'] as int? ?? 1,
+      freezePrice: prices['freeze'] as int? ?? 15,
+      chatUnlockPrice: prices['chat_unlock'] as int? ?? 25,
+      voice: RoomVoice.fromJson(json['voice'] as Map<String, dynamic>?),
       clockOffset: serverTime.difference(receivedAt ?? DateTime.now()),
     );
   }
@@ -322,6 +570,16 @@ class RoomState {
   /// Salon de paris : pièces en jeu, puis ce que chaque gagnant a remporté.
   final int pot;
   final Map<String, int> winnings;
+  final LightningState? lightning;
+  final List<RoomReaction> reactions;
+  final List<RoomChatMessage> chat;
+  final List<WordReviewItem> wordReview;
+  final bool bonusPlayed;
+  final int rematchVotes;
+  final int rematchNeed;
+  final int freezePrice;
+  final int chatUnlockPrice;
+  final RoomVoice voice;
 
   /// Horloge du serveur moins horloge de l'appareil, pour décompter jusqu'aux
   /// échéances du serveur.
@@ -365,6 +623,7 @@ class RoomSummary {
     required this.language,
     required this.rounds,
     required this.roundDuration,
+    this.strictSpelling = false,
     this.nicknames = const [],
     this.kind = RoomKind.classic,
     this.stake = 0,
@@ -384,6 +643,7 @@ class RoomSummary {
     language: json['language'] as String,
     rounds: json['rounds'] as int,
     roundDuration: json['round_duration'] as int,
+    strictSpelling: json['strict_spelling'] as bool? ?? false,
     kind: RoomKind.values.byName(json['kind'] as String? ?? 'classic'),
     stake: json['stake'] as int? ?? 0,
     format: RoomFormat.values.byName(json['format'] as String? ?? 'rounds'),
@@ -403,4 +663,5 @@ class RoomSummary {
   final String language;
   final int rounds;
   final int roundDuration;
+  final bool strictSpelling;
 }

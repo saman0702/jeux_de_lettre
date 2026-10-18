@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../animations/bounce_in.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/game_dialog.dart';
 import '../../../core/widgets/game_icon.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Boîte de réglage façon jeu : panneau à bordure colorée en relief, reflet
 /// brillant en haut, et ruban titre centré à cheval sur le bord (pans repliés
@@ -16,6 +18,7 @@ class OptionSection extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.child,
+    this.help,
   });
 
   /// Position dans la liste, pour l'apparition décalée.
@@ -26,6 +29,9 @@ class OptionSection extends StatelessWidget {
   /// Couleur de la bordure et du ruban.
   final Color color;
   final Widget child;
+
+  /// Texte d'aide : affiche une pastille « i » sur le ruban.
+  final String? help;
 
   /// Hauteur du ruban qui dépasse au-dessus de la boîte.
   static const _bannerOverlap = 10.0;
@@ -109,6 +115,7 @@ class OptionSection extends StatelessWidget {
               light: light,
               icon: icon,
               title: title,
+              help: help,
             ),
           ],
         ),
@@ -126,6 +133,7 @@ class _Ribbon extends StatelessWidget {
     required this.light,
     required this.icon,
     required this.title,
+    this.help,
   });
 
   final Color color;
@@ -134,6 +142,7 @@ class _Ribbon extends StatelessWidget {
   final bool light;
   final GameIconKind icon;
   final String title;
+  final String? help;
 
   @override
   Widget build(BuildContext context) {
@@ -174,6 +183,18 @@ class _Ribbon extends StatelessWidget {
                   shadows: light ? null : textShadow,
                 ),
               ),
+              if (help != null) ...[
+                const SizedBox(width: 6),
+                InfoTip(
+                  title: title,
+                  message: help!,
+                  okLabel: AppLocalizations.of(context).gotIt,
+                  icon: icon,
+                  accent: color,
+                  color: ink,
+                  size: 18,
+                ),
+              ],
             ],
           ),
         ),

@@ -8,7 +8,9 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
 import '../../core/widgets/floating_bars_layout.dart';
 import '../../core/widgets/game_background.dart';
+import '../../core/widgets/game_dialog.dart';
 import '../../core/widgets/game_icon.dart';
+import '../../core/widgets/game_toggle.dart';
 import '../../l10n/app_localizations.dart';
 import '../online/data/room_models.dart';
 import '../online/nickname_dialog.dart';
@@ -32,6 +34,7 @@ class SoloSetupScreen extends StatefulWidget {
 class _SoloSetupScreenState extends State<SoloSetupScreen> {
   int _rounds = 5;
   int _duration = 30;
+  bool _strictSpelling = false;
   Difficulty _difficulty = Difficulty.normal;
   final Set<Category> _categories = {...Category.classic};
   int _bots = 0;
@@ -63,6 +66,7 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
         categories: _selectedCategories,
         rounds: _rounds,
         roundDuration: _duration,
+        strictSpelling: _strictSpelling,
         maxPlayers: _bots + 1,
       ),
       bots: _bots,
@@ -82,6 +86,7 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
       categories: _selectedCategories,
       rounds: _rounds,
       roundDuration: _duration,
+      strictSpelling: _strictSpelling,
       nickname:
           GameFeedbackScope.of(context).settings.nickname ??
           l10n.defaultNickname,
@@ -99,18 +104,29 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
   /// Beaucoup de catégories : les manches doivent durer plus de 30 s.
   bool get _manyCategories => _categories.length >= Category.many;
 
+  int get _minDuration {
+    final many = _manyCategories ? Category.manyMinDuration : 0;
+    final strict = _strictSpelling ? Category.strictSpellingMinDuration : 0;
+    return many > strict ? many : strict;
+  }
+
   List<int> get _durationOptions => [
     for (final d in SoloGameSettings.durationOptions)
-      if (!_manyCategories || d >= Category.manyMinDuration) d,
+      if (d >= _minDuration) d,
   ];
+
+  void _setStrictSpelling(bool value) {
+    setState(() {
+      _strictSpelling = value;
+      if (_duration < _minDuration) _duration = _minDuration;
+    });
+  }
 
   void _toggleCategory(Category category) {
     setState(() {
       if (!_categories.contains(category)) {
         _categories.add(category);
-        if (_manyCategories && _duration < Category.manyMinDuration) {
-          _duration = Category.manyMinDuration;
-        }
+        if (_duration < _minDuration) _duration = _minDuration;
       } else if (_categories.length > 1) {
         _categories.remove(category);
       } else {
@@ -186,7 +202,7 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
                     PillSelector<int>(
                       options: _durationOptions,
                       isSelected: (d) => d == _duration,
-                      label: (d) => l10n.secondsShort(d),
+                      label: (d) => durationLabel(l10n, d),
                       onTap: (d) => setState(() => _duration = d),
                     ),
                     if (_manyCategories) ...[
@@ -220,11 +236,43 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
                 title: l10n.difficulty,
                 icon: GameIconKind.flame,
                 color: AppColors.orange,
-                child: PillSelector<Difficulty>(
-                  options: Difficulty.values,
-                  isSelected: (d) => d == _difficulty,
-                  label: (d) => d.label(l10n),
-                  onTap: (d) => setState(() => _difficulty = d),
+                child: Column(
+                  children: [
+                    PillSelector<Difficulty>(
+                      options: Difficulty.values,
+                      isSelected: (d) => d == _difficulty,
+                      label: (d) => d.label(l10n),
+                      onTap: (d) => setState(() => _difficulty = d),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.strictSpelling,
+                            style: fredoka(
+                              size: 15,
+                              weight: FontWeight.w600,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                        ),
+                        InfoTip(
+                          title: l10n.strictSpelling,
+                          message: l10n.strictSpellingHelp,
+                          okLabel: l10n.gotIt,
+                          icon: GameIconKind.flag,
+                          accent: AppColors.purpleLight,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 10),
+                        GameToggle(
+                          value: _strictSpelling,
+                          onChanged: _setStrictSpelling,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               OptionSection(

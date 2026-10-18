@@ -31,3 +31,24 @@ async def test_validate_answer(session, category, language, letter, raw, status)
 async def test_valid_answer_returns_canonical_value(session):
     result = await validate_answer(session, Category.ANIMAL, "fr", "E", "elephant")
     assert result.matched_value == "Éléphant"
+
+
+async def test_strict_spelling_rejects_missing_accents_and_wrong_case(session):
+    loose = await validate_answer(session, Category.ANIMAL, "fr", "E", "elephant")
+    assert loose.status == Status.VALID
+
+    no_accent = await validate_answer(
+        session, Category.ANIMAL, "fr", "E", "elephant", strict_spelling=True
+    )
+    assert no_accent.status == Status.NOT_FOUND
+
+    wrong_case = await validate_answer(
+        session, Category.ANIMAL, "fr", "E", "éléphant", strict_spelling=True
+    )
+    assert wrong_case.status == Status.NOT_FOUND
+
+    exact = await validate_answer(
+        session, Category.ANIMAL, "fr", "E", "Éléphant", strict_spelling=True
+    )
+    assert exact.status == Status.VALID
+    assert exact.matched_value == "Éléphant"

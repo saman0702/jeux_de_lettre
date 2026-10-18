@@ -279,17 +279,23 @@ void main() {
   testWidgets('knockout: invite friends opens a knockout room', (tester) async {
     final h = Harness();
     await h.start(tester, EliminationScreen(apiClient: FakeServer().api));
-    await tester.ensureVisible(find.text('Hard'));
-    await tester.tap(find.text('Hard'));
-    await tester.pump();
-    await tester.ensureVisible(find.byKey(const Key('invite_friends')));
+    final list = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('invite_friends')),
+      200,
+      scrollable: list,
+    );
+    await tester.drag(list, const Offset(0, -200));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('invite_friends')));
     await tester.pump();
-    final settings = h.socket.sent.last['settings'] as Map<String, dynamic>;
+    final create = h.socket.sent.lastWhere((m) => m['type'] == 'create_room');
+    final settings = create['settings'] as Map<String, dynamic>;
     expect(settings['format'], 'elimination');
-    expect(settings['difficulty'], 'hard');
     expect(settings['rounds'], 15);
     expect(settings['round_duration'], 30);
+    expect(settings['kind'], 'classic');
+    expect(settings['stake'], 0);
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(RoomScreen), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));

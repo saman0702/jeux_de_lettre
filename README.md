@@ -42,6 +42,13 @@ Après une modification des modèles : `cd backend && .venv/bin/alembic revision
 | POST | `/api/v1/solo/games/{id}/rounds` | Démarre la manche suivante (le serveur tire la lettre) |
 | POST | `/api/v1/solo/games/{id}/rounds/{n}/submit` | Envoie les réponses, renvoie validation et points |
 
+### Vocal fin de partie (optionnel)
+
+Après le podium (salon / éliminatoires), les humains peuvent parler via Agora.
+Configurer `AGORA_APP_ID` et `AGORA_APP_CERTIFICATE` (console Agora → projet).
+Sans ces variables, le panneau vocal reste masqué. L'hôte peut muter ou exclure
+un joueur du vocal jusqu'à la prochaine manche.
+
 ### Temps réel (multijoueur)
 
 WebSocket : `ws://localhost:8010/ws?client_id=<id>&nickname=<pseudo>`. Messages JSON `{"type": ...}` :

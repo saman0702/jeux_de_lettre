@@ -113,8 +113,17 @@ async def request_hint(
     """Trois propositions pour une catégorie, une seule valide. Consomme un des jokers de la partie.
     """
     game = await game_service.get_game(session, game_id)
-    hint, left = await game_service.request_hint(session, game, number, data.category)
-    return HintOut(category=hint.category, options=hint.options, hints_left=left)
+    hint, left = await game_service.request_hint(
+        session, game, number, data.category, reveal=data.reveal
+    )
+    revealed = data.reveal and hint.picked == hint.answer
+    return HintOut(
+        category=hint.category,
+        options=hint.options,
+        hints_left=left,
+        revealed=bool(revealed),
+        answer=hint.answer if revealed else None,
+    )
 
 
 @router.post("/solo/games/{game_id}/rounds/{number}/hint/pick", response_model=HintPickOut)

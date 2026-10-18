@@ -98,6 +98,15 @@ class _SettingsSheet extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
+                    BounceIn(
+                      from: 0.85,
+                      slideY: 0.3,
+                      child: _GenderRow(
+                        value: settings.gender,
+                        onChanged: (g) => settings.gender = g,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     for (final (i, (icon, color, label, read, write))
                         in options.indexed)
                       Padding(
@@ -116,6 +125,17 @@ class _SettingsSheet extends StatelessWidget {
                           ),
                         ),
                       ),
+                    BounceIn(
+                      delay: Duration(milliseconds: 60 * options.length),
+                      from: 0.85,
+                      slideY: 0.3,
+                      child: _MusicVolumeRow(
+                        enabled: settings.music,
+                        value: settings.musicVolume,
+                        onChanged: (v) => settings.musicVolume = v,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     // Lien discret : la licence CC BY des musiques demande de
                     // citer l'auteur quelque part dans l'appli.
                     TextButton(
@@ -317,6 +337,124 @@ class _LanguageRow extends StatelessWidget {
             onTap: onChanged,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _GenderRow extends StatelessWidget {
+  const _GenderRow({required this.value, required this.onChanged});
+
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      key: const Key('setting_gender'),
+      padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.pink, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.depthOf(AppColors.pink),
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const GameIconBadge(
+            GameIconKind.person,
+            color: AppColors.pink,
+            size: 44,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              l10n.settingsGender,
+              style: fredoka(size: 17, weight: FontWeight.w700),
+            ),
+          ),
+          PillSelector<String?>(
+            options: const ['male', 'female', 'other'],
+            isSelected: (code) => code == value,
+            label: (code) => switch (code) {
+              'male' => l10n.genderMale,
+              'female' => l10n.genderFemale,
+              _ => l10n.genderOther,
+            },
+            onTap: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MusicVolumeRow extends StatelessWidget {
+  const _MusicVolumeRow({
+    required this.enabled,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final bool enabled;
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Opacity(
+      opacity: enabled ? 1 : 0.45,
+      child: Container(
+        key: const Key('setting_music_volume'),
+        padding: const EdgeInsets.fromLTRB(10, 8, 12, 4),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.pink, width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.depthOf(AppColors.pink),
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const GameIconBadge(
+                  GameIconKind.music,
+                  color: AppColors.pink,
+                  size: 40,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  l10n.settingsMusicVolume,
+                  style: fredoka(size: 16, weight: FontWeight.w700),
+                ),
+              ],
+            ),
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                activeTrackColor: AppColors.pink,
+                inactiveTrackColor: const Color(0xFFDCD3F2),
+                thumbColor: AppColors.pink,
+              ),
+              child: Slider(
+                value: value,
+                onChanged: enabled ? onChanged : null,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

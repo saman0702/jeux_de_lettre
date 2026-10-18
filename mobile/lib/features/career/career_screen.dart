@@ -280,7 +280,6 @@ class _LevelTile extends StatelessWidget {
             children: [
               Container(
                 width: 54,
-                height: 54,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.game_rules import ANY_LANGUAGE, Category
 from app.models import Answer
-from app.services.normalization import lookup_keys, normalize, starts_with_letter
+from app.services.normalization import lookup_keys, normalize, starts_with_letter, strict_form
 
 
 class Status:
@@ -33,7 +33,13 @@ class ValidationResult:
 
 
 async def validate_answer(
-    session: AsyncSession, category: Category, language: str, letter: str, raw: str
+    session: AsyncSession,
+    category: Category,
+    language: str,
+    letter: str,
+    raw: str,
+    *,
+    strict_spelling: bool = False,
 ) -> ValidationResult:
     keys = lookup_keys(raw, category)
     if not keys:
@@ -58,4 +64,8 @@ async def validate_answer(
     if not starts_with_letter(match, letter):
         return ValidationResult(Status.WRONG_LETTER, matched_value=found[match])
 
-    return ValidationResult(Status.VALID, matched_value=found[match], match_key=match)
+    value = found[match]
+    if strict_spelling and strict_form(raw) != strict_form(value):
+        return ValidationResult(Status.NOT_FOUND, matched_value=value)
+
+    return ValidationResult(Status.VALID, matched_value=value, match_key=match)

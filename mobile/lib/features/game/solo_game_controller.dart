@@ -199,8 +199,8 @@ class _SoloHintSource implements HintSource {
   bool get canBuyExtra => !_api.offline;
 
   @override
-  Future<HintOptions> request(Category category) =>
-      _api.requestHint(_gameId, _round, category);
+  Future<HintOptions> request(Category category, {bool reveal = false}) =>
+      _api.requestHint(_gameId, _round, category, reveal: reveal);
 
   @override
   Future<HintPick> pick(Category category, String choice) =>

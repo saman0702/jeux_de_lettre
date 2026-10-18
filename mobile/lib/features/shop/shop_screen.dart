@@ -252,8 +252,6 @@ class _PackCard extends StatelessWidget {
             label: pack.price,
             color: AppColors.green,
             textColor: AppColors.white,
-            height: 44,
-            fontSize: 17,
             loading: busy,
             onPressed: onBuy,
           ),

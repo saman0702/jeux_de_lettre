@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Fond uni seulement : le logo est dessiné en Flutter (net). -->
+<!-- Fond violet uniquement : le logo texte est rendu par Flutter (AppSplash). -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/splash_background" />
 </layer-list>

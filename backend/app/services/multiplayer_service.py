@@ -58,6 +58,7 @@ async def create_game(
         categories=[c.value for c in settings.categories],
         total_rounds=settings.rounds,
         round_duration=settings.round_duration,
+        strict_spelling=settings.strict_spelling,
         status="playing",
         players=list(players.values()),
         rounds=[],
@@ -126,7 +127,12 @@ async def close_round(
                 result = ValidationResult(Status.HINT_WRONG)
             else:
                 result = await validate_answer(
-                    session, Category(category), game.language, game_round.letter, raw
+                    session,
+                    Category(category),
+                    game.language,
+                    game_round.letter,
+                    raw,
+                    strict_spelling=game.strict_spelling,
                 )
             validated[player_id][category] = result
 

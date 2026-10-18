@@ -72,8 +72,6 @@ Future<String?> showHintPicker(
                   key: Key('hint_option_$i'),
                   label: option,
                   color: _optionColors[i % _optionColors.length],
-                  height: 56,
-                  fontSize: 20,
                   onPressed: () => Navigator.pop(context, option),
                 ),
               ),

@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     # « sandbox » pendant les tests, « production » une fois l'appli publiée.
     apple_environment: str = "sandbox"
 
+    # Vocal pendant la partie (Agora). Vide = vocal désactivé.
+    agora_app_id: str | None = Field(default=None, validation_alias="AGORA_APP_ID")
+    agora_app_certificate: str | None = Field(
+        default=None, validation_alias="AGORA_APP_CERTIFICATE"
+    )
+
     database_url_env: str | None = Field(default=None, validation_alias="DATABASE_URL")
     redis_url_env: str | None = Field(default=None, validation_alias="REDIS_URL")
 

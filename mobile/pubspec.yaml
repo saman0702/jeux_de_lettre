@@ -47,6 +47,8 @@ dependencies:
   in_app_purchase: ^3.3.1
   in_app_purchase_android: ^0.5.4
   share_plus: ^13.3.1
+  agora_rtc_engine: ^6.6.4
+  permission_handler: ^13.0.2
 
 dev_dependencies:
   flutter_test:
