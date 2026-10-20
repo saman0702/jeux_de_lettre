@@ -53,6 +53,7 @@ from app.services import (
     hint_service,
     multiplayer_service,
     perks_service,
+    room_store,
     voice_service,
     wallet_service,
 )
@@ -211,6 +212,8 @@ class Room:
     results_history: list[dict] = field(default_factory=list)
     word_review: list[dict] = field(default_factory=list)
     bonus_played: bool = False
+    # Salon gardé en base (créé par un joueur) : son créateur en redevient l'hôte à chaque retour.
+    creator_id: str | None = None
     # Vocal pendant la partie : mutés / exclus par l'hôte (humains seulement).
     voice_muted: set[str] = field(default_factory=set)
     voice_excluded: set[str] = field(default_factory=set)
@@ -298,9 +301,21 @@ class RoomManager:
 
     def start(self) -> None:
         self._presence_task = asyncio.create_task(self._presence_loop())
+        self._purge_task = asyncio.create_task(self._purge_loop())
+
+    async def _purge_loop(self) -> None:
+        """Une fois par heure : salons sans activité depuis 30 jours supprimés."""
+        while True:
+            try:
+                async with self.session_factory() as session:
+                    await room_store.purge_inactive(session, keep=set(self.rooms))
+                    await session.commit()
+            except Exception:
+                logger.exception("room purge failed")
+            await asyncio.sleep(3600)
 
     async def stop(self) -> None:
-        tasks = [self._presence_task, *self._expiry_tasks.values()]
+        tasks = [self._presence_task, getattr(self, "_purge_task", None), *self._expiry_tasks.values()]
         for room in self.rooms.values():
             tasks += [room.game_task, room.quick_timer, room.bot_fill_timer]
         for task in tasks:
@@ -426,6 +441,7 @@ class RoomManager:
             "react": self._on_react,
             "unlock_chat": self._on_unlock_chat,
             "chat": self._on_chat,
+            "dm": self._on_dm,
             "rematch_vote": self._on_rematch_vote,
             "lightning_pick": self._on_lightning_pick,
             "start_bonus": self._on_start_bonus,
@@ -472,7 +488,19 @@ class RoomManager:
             await self._require_coins(connection.client_id, settings.stake)
 
         await self._leave(connection.client_id)
-        room = self._new_room(settings, quick=False, host=connection)
+        room = self._new_room(settings, quick=False, host=connection, code=await self._free_code())
+        room.creator_id = connection.client_id
+        async with self.session_factory() as session:
+            await room_store.save_room(
+                session,
+                room.code,
+                connection.client_id,
+                connection.nickname,
+                settings.public,
+                settings.language,
+                settings.model_dump(mode="json"),
+            )
+            await session.commit()
         await self._add_player(room, connection)
         if bot_count > 0:
             # Partie contre l'ordinateur : on démarre tout de suite.
@@ -484,7 +512,7 @@ class RoomManager:
 
     async def _on_join_room(self, connection: Connection, message: dict) -> None:
         code = str(message.get("code", "")).strip().upper()
-        room = self.rooms.get(code)
+        room = self.rooms.get(code) or await self._reopen(code, connection)
         if room is None:
             raise RoomError("room_not_found")
         if connection.client_id in room.players:
@@ -858,6 +886,10 @@ class RoomManager:
             await session.commit()
             wallet = wallet_service.snapshot(profile)
         player.chat_unlocked = True
+        if room.creator_id is not None:
+            async with self.session_factory() as session:
+                await room_store.unlock_private(session, room.code, connection.client_id)
+                await session.commit()
         await self._send(
             connection.client_id,
             {
@@ -873,13 +905,49 @@ class RoomManager:
         if room.phase == "round":
             raise RoomError("game_in_progress")
         player = room.players[connection.client_id]
-        if player.bot or not player.chat_unlocked:
-            raise RoomError("chat_locked")
+        # Conversation de groupe gratuite ; seuls les messages privés se débloquent en pièces.
+        if player.bot:
+            raise RoomError("invalid_message")
         text = " ".join(str(message.get("text") or "").split())[:CHAT_MESSAGE_MAX]
         if not text:
             raise RoomError("invalid_message")
-        room.chat.append(ChatMessage(connection.client_id, player.nickname, text, utcnow()))
+        mentions: list[str] = []
+        if room.creator_id is not None:
+            async with self.session_factory() as session:
+                mentions = await room_store.mentions_in(session, room.code, text)
+                await room_store.add_message(session, room.code, connection.client_id, player.nickname, text, mentions=mentions)
+                await session.commit()
+        room.chat.append(ChatMessage(connection.client_id, player.nickname, text, utcnow(), mentions))
         await self._broadcast(room)
+        for client_id in mentions:
+            if client_id != connection.client_id:
+                await self._send(
+                    client_id,
+                    {"type": "mention", "room": room.code, "from": player.nickname, "text": text},
+                )
+
+    async def _on_dm(self, connection: Connection, message: dict) -> None:
+        """Message privé à un autre membre du salon (débloqué en pièces)."""
+        room = self._require_room(connection.client_id)
+        player = room.players[connection.client_id]
+        if room.creator_id is None or player.bot:
+            raise RoomError("invalid_message")
+        if not player.chat_unlocked:
+            raise RoomError("chat_locked")
+        to = str(message.get("to") or "")
+        text = " ".join(str(message.get("text") or "").split())[:CHAT_MESSAGE_MAX]
+        if not text or not to or to == connection.client_id:
+            raise RoomError("invalid_message")
+        async with self.session_factory() as session:
+            if not await room_store.is_member(session, room.code, to):
+                raise RoomError("invalid_message")
+            saved = await room_store.add_message(
+                session, room.code, connection.client_id, player.nickname, text, recipient_id=to
+            )
+            await session.commit()
+        payload = {"type": "dm", "room": room.code, "message": room_store.message_dict(saved)}
+        await self._send(connection.client_id, payload)
+        await self._send(to, payload)
 
     async def _on_lightning_pick(self, connection: Connection, message: dict) -> None:
         room = self._require_room(connection.client_id)
@@ -1116,9 +1184,36 @@ class RoomManager:
 
     # --------------------------------------------------------------------- salles
 
-    def _new_room(self, settings: RoomSettings, quick: bool, host: Connection) -> Room:
-        code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(CODE_LENGTH))
-        while code in self.rooms:
+    async def _free_code(self) -> str:
+        """Code libre en mémoire et parmi les salons gardés en base."""
+        async with self.session_factory() as session:
+            while True:
+                code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(CODE_LENGTH))
+                if code not in self.rooms and not await room_store.code_taken(session, code):
+                    return code
+
+    async def _reopen(self, code: str, connection: Connection) -> Room | None:
+        """Salon fermé (plus personne dedans) : on le rouvre avec ses réglages et sa conversation."""
+        if not code:
+            return None
+        async with self.session_factory() as session:
+            saved = await room_store.get_room(session, code)
+            if saved is None:
+                return None
+            messages = await room_store.group_messages(session, code, CHAT_HISTORY)
+        try:
+            settings = RoomSettings.model_validate(saved.settings)
+        except ValidationError:
+            settings = RoomSettings(language=saved.language, public=saved.public)
+        room = Room(code=code, settings=settings, quick=False, host_id=connection.client_id)
+        room.creator_id = saved.creator_id
+        for m in messages:
+            room.chat.append(ChatMessage(m.sender_id, m.sender_nickname, m.text, m.created_at, list(m.mentions or [])))
+        self.rooms[code] = room
+        return room
+
+    def _new_room(self, settings: RoomSettings, quick: bool, host: Connection, code: str | None = None) -> Room:
+        while code is None or code in self.rooms:
             code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(CODE_LENGTH))
         room = Room(code=code, settings=settings, quick=quick, host_id=host.client_id)
         self.rooms[code] = room
@@ -1149,6 +1244,16 @@ class RoomManager:
             name_style=connection.name_style,
         )
         self._room_of[connection.client_id] = room.code
+        if room.creator_id is not None:
+            # Salon gardé : le joueur le retrouvera dans « Mes salons » ; son déblocage des
+            # messages privés le suit ; le créateur redevient l'hôte.
+            async with self.session_factory() as session:
+                member = await room_store.join(session, room.code, connection.client_id, connection.nickname)
+                await session.commit()
+            if member is not None and member.private_unlocked:
+                room.players[connection.client_id].chat_unlocked = True
+            if connection.client_id == room.creator_id:
+                room.host_id = connection.client_id
         if room.quick:
             self._schedule_quick_start(room)
         await self._notice(room, "joined", connection.nickname, exclude=connection.client_id)
@@ -1348,6 +1453,7 @@ class RoomManager:
             room.game_task = None
 
         self._finalize_social(room)
+        await self._record_room_game(room)
         room.phase = "finished"
         room.live_round = None
         room.lightning = None
@@ -1357,6 +1463,29 @@ class RoomManager:
             player.rematch_vote = False
         await self._broadcast(room)
         await self._rooms_changed()
+
+    async def _record_room_game(self, room: Room) -> None:
+        """Classement final dans l'historique du salon (salons gardés seulement)."""
+        if room.creator_id is None or room.round_number == 0:
+            return
+        def place(p: RoomPlayer) -> tuple:
+            # Éliminatoires : les survivants d'abord, puis les éliminés du plus tardif au plus tôt.
+            if room.settings.elimination:
+                return (p.eliminated_round is not None, -(p.eliminated_round or 0), -p.score)
+            return (-p.score, p.nickname)
+
+        ranking = [
+            {"client_id": p.client_id, "nickname": p.nickname, "score": p.score, "bot": p.bot}
+            for p in sorted(room.players.values(), key=place)
+        ]
+        try:
+            async with self.session_factory() as session:
+                await room_store.record_game(
+                    session, room.code, room.game_id, room.settings.format, room.round_number, ranking
+                )
+                await session.commit()
+        except Exception:
+            logger.exception("could not record game of room %s", room.code)
 
     def _finalize_social(self, room: Room) -> None:
         """Titres de salon + revue des mots à la fin de partie."""
@@ -1916,6 +2045,8 @@ class RoomManager:
             },
             "reactions": trim_reactions(room.reactions),
             "chat": trim_chat(room.chat, CHAT_HISTORY),
+            "creator_id": room.creator_id,
+            "saved": room.creator_id is not None,
             "word_review": room.word_review,
             "bonus_played": room.bonus_played,
             "rematch_votes": rematch_votes,

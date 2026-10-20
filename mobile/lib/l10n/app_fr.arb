@@ -195,8 +195,8 @@
   "lightningMiss": "Raté !",
   "chatTitle": "Chat du salon",
   "chatHint": "Écris un message…",
-  "chatUnlockTitle": "Débloquer le chat",
-  "chatUnlockHelp": "Tout le monde pourra te lire dans ce salon. Coût : {price} pièces (une fois).",
+  "chatUnlockTitle": "Débloquer les messages privés",
+  "chatUnlockHelp": "Écris en privé à n'importe quel joueur de ce salon (personne d'autre ne vous lit). Coût : {price} pièces, une fois pour ce salon.",
   "@chatUnlockHelp": {
     "placeholders": {
       "price": {
@@ -204,7 +204,7 @@
       }
     }
   },
-  "chatUnlockButton": "CHAT · {price}",
+  "chatUnlockButton": "PRIVÉ · {price}",
   "@chatUnlockButton": {
     "placeholders": {
       "price": {
@@ -212,7 +212,7 @@
       }
     }
   },
-  "chatInfoHelp": "Les stickers sont gratuits. Pour écrire du vrai texte, débloque le chat une fois avec des pièces dans ce salon.",
+  "chatInfoHelp": "La discussion de groupe est gratuite et reste dans le salon, même après la partie. Tague un joueur en touchant son pseudo. Les messages privés se débloquent une fois avec des pièces.",
   "reactionsTitle": "Réactions",
   "reactionsInfoHelp": "Envoie une réaction (feu, dodo, clap, surprise) pendant les résultats ou à la fin. Gratuit, sans modération.",
   "wordReviewTitle": "Revue des mots",
@@ -1091,5 +1091,80 @@
   "perksRemoveAdsInfo": "Plus aucune pub entre les parties, pour toujours. Les vidéos pour gagner des pièces restent possibles.",
   "perksRemoveAdsOwned": "Sans pub : activé",
   "perksRemoveAdsDone": "C'est fini les pubs, merci !",
-  "shopUnavailableShort": "Indisponible"
+  "shopUnavailableShort": "Indisponible",
+  "roomHistoryTitle": "Salon {code}",
+  "@roomHistoryTitle": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "historyGames": "Parties",
+  "historyGroup": "Groupe",
+  "historyPrivate": "Privé",
+  "historyUnavailable": "Historique indisponible pour le moment.",
+  "historyNoGames": "Aucune partie terminée dans ce salon pour l'instant.",
+  "historyNoMessages": "Personne n'a encore écrit dans le groupe.",
+  "historyNoPrivate": "Aucune conversation privée. Ouvre la discussion du salon, puis « Privé », pour écrire à un joueur.",
+  "privateChatEmpty": "Écris ton premier message à {name}.",
+  "@privateChatEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "privateChatJoinRoom": "Rejoins le salon pour répondre.",
+  "privateChatUnlock": "Débloquer les messages privés ({price} pièces)",
+  "@privateChatUnlock": {
+    "placeholders": {
+      "price": {
+        "type": "int"
+      }
+    }
+  },
+  "privateChatHint": "Message à {name}",
+  "@privateChatHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "myRoomsTitle": "Mes salons",
+  "allPublicRoomsTitle": "Tous les salons publics",
+  "savedRoomInfo": "{members} joueurs · {date}",
+  "@savedRoomInfo": {
+    "placeholders": {
+      "members": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "savedRoomOpen": "{count} dedans",
+  "@savedRoomOpen": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "savedRoomClosed": "Fermé",
+  "roomChatButton": "DISCUSSION",
+  "roomHistoryButton": "HISTORIQUE",
+  "chatPrivateButton": "Privé",
+  "chatPrivatePick": "À qui veux-tu écrire ?",
+  "chatMentionedBy": "{name} t'a tagué dans la discussion",
+  "@chatMentionedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTagHint": "Touche un pseudo pour le taguer (@pseudo)."
 }

@@ -671,25 +671,25 @@ abstract class AppLocalizations {
   /// No description provided for @chatUnlockTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Débloquer le chat'**
+  /// **'Débloquer les messages privés'**
   String get chatUnlockTitle;
 
   /// No description provided for @chatUnlockHelp.
   ///
   /// In fr, this message translates to:
-  /// **'Tout le monde pourra te lire dans ce salon. Coût : {price} pièces (une fois).'**
+  /// **'Écris en privé à n\'importe quel joueur de ce salon (personne d\'autre ne vous lit). Coût : {price} pièces, une fois pour ce salon.'**
   String chatUnlockHelp(int price);
 
   /// No description provided for @chatUnlockButton.
   ///
   /// In fr, this message translates to:
-  /// **'CHAT · {price}'**
+  /// **'PRIVÉ · {price}'**
   String chatUnlockButton(int price);
 
   /// No description provided for @chatInfoHelp.
   ///
   /// In fr, this message translates to:
-  /// **'Les stickers sont gratuits. Pour écrire du vrai texte, débloque le chat une fois avec des pièces dans ce salon.'**
+  /// **'La discussion de groupe est gratuite et reste dans le salon, même après la partie. Tague un joueur en touchant son pseudo. Les messages privés se débloquent une fois avec des pièces.'**
   String get chatInfoHelp;
 
   /// No description provided for @reactionsTitle.
@@ -2731,6 +2731,144 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Indisponible'**
   String get shopUnavailableShort;
+
+  /// No description provided for @roomHistoryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salon {code}'**
+  String roomHistoryTitle(String code);
+
+  /// No description provided for @historyGames.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parties'**
+  String get historyGames;
+
+  /// No description provided for @historyGroup.
+  ///
+  /// In fr, this message translates to:
+  /// **'Groupe'**
+  String get historyGroup;
+
+  /// No description provided for @historyPrivate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Privé'**
+  String get historyPrivate;
+
+  /// No description provided for @historyUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Historique indisponible pour le moment.'**
+  String get historyUnavailable;
+
+  /// No description provided for @historyNoGames.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune partie terminée dans ce salon pour l\'instant.'**
+  String get historyNoGames;
+
+  /// No description provided for @historyNoMessages.
+  ///
+  /// In fr, this message translates to:
+  /// **'Personne n\'a encore écrit dans le groupe.'**
+  String get historyNoMessages;
+
+  /// No description provided for @historyNoPrivate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune conversation privée. Ouvre la discussion du salon, puis « Privé », pour écrire à un joueur.'**
+  String get historyNoPrivate;
+
+  /// No description provided for @privateChatEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écris ton premier message à {name}.'**
+  String privateChatEmpty(String name);
+
+  /// No description provided for @privateChatJoinRoom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoins le salon pour répondre.'**
+  String get privateChatJoinRoom;
+
+  /// No description provided for @privateChatUnlock.
+  ///
+  /// In fr, this message translates to:
+  /// **'Débloquer les messages privés ({price} pièces)'**
+  String privateChatUnlock(int price);
+
+  /// No description provided for @privateChatHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Message à {name}'**
+  String privateChatHint(String name);
+
+  /// No description provided for @myRoomsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes salons'**
+  String get myRoomsTitle;
+
+  /// No description provided for @allPublicRoomsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les salons publics'**
+  String get allPublicRoomsTitle;
+
+  /// No description provided for @savedRoomInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'{members} joueurs · {date}'**
+  String savedRoomInfo(int members, String date);
+
+  /// No description provided for @savedRoomOpen.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} dedans'**
+  String savedRoomOpen(int count);
+
+  /// No description provided for @savedRoomClosed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermé'**
+  String get savedRoomClosed;
+
+  /// No description provided for @roomChatButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'DISCUSSION'**
+  String get roomChatButton;
+
+  /// No description provided for @roomHistoryButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'HISTORIQUE'**
+  String get roomHistoryButton;
+
+  /// No description provided for @chatPrivateButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Privé'**
+  String get chatPrivateButton;
+
+  /// No description provided for @chatPrivatePick.
+  ///
+  /// In fr, this message translates to:
+  /// **'À qui veux-tu écrire ?'**
+  String get chatPrivatePick;
+
+  /// No description provided for @chatMentionedBy.
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} t\'a tagué dans la discussion'**
+  String chatMentionedBy(String name);
+
+  /// No description provided for @chatTagHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Touche un pseudo pour le taguer (@pseudo).'**
+  String get chatTagHint;
 }
 
 class _AppLocalizationsDelegate

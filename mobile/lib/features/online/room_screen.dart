@@ -22,6 +22,8 @@ import 'widgets/podium_view.dart';
 import 'widgets/room_results_view.dart';
 import 'widgets/salon_social.dart';
 import '../perks/perks_controller.dart';
+import '../../animations/transitions/pop_route.dart';
+import 'room_history.dart';
 import 'widgets/players_strip.dart';
 import 'widgets/round_wait_view.dart';
 import 'widgets/searching_view.dart';
@@ -82,6 +84,7 @@ class _RoomScreenState extends State<RoomScreen> {
     if (_subscriptions.isEmpty) {
       _subscriptions
         ..add(_online.notices.listen(_showNotice))
+        ..add(_online.mentions.listen(_showMention))
         ..add(_online.errors.listen(_showError));
       _online.addListener(_onRoomChanged);
       _ticker = Timer.periodic(widget.tick, (_) => _onTick());
@@ -291,6 +294,20 @@ class _RoomScreenState extends State<RoomScreen> {
 
   PerksController? _perks;
 
+  /// Quelqu'un m'a tagué dans la discussion du salon.
+  void _showMention(String from) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context).chatMentionedBy(from)),
+        action: SnackBarAction(
+          label: AppLocalizations.of(context).roomChatButton,
+          onPressed: () => showRoomChatSheet(context, _online),
+        ),
+      ),
+    );
+  }
+
   /// On quitte le podium : une pub peut passer, selon les options du serveur.
   void _leavePodium() {
     if (_podium != null) _perks?.onGameFinished();
@@ -481,6 +498,10 @@ class _RoomScreenState extends State<RoomScreen> {
           onAddBot: isHost && !room.settings.betting ? _online.addBot : null,
           onRemoveBot: isHost ? _online.removeBot : null,
           onReport: _report,
+          onOpenChat: () => showRoomChatSheet(context, _online),
+          onOpenHistory: () => Navigator.of(context).push(
+            PopRoute(builder: (_) => RoomHistoryScreen(code: room.code)),
+          ),
         );
       case RoomPhase.finished:
         // Géré par le podium ci-dessus.

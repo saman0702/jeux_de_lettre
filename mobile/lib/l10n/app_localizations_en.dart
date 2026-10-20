@@ -334,21 +334,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatHint => 'Type a message…';
 
   @override
-  String get chatUnlockTitle => 'Unlock chat';
+  String get chatUnlockTitle => 'Unlock private messages';
 
   @override
   String chatUnlockHelp(int price) {
-    return 'Everyone in this room can read you. Costs $price coins (once).';
+    return 'Write privately to any player in this room (nobody else can read you). Costs $price coins, once for this room.';
   }
 
   @override
   String chatUnlockButton(int price) {
-    return 'CHAT · $price';
+    return 'PRIVATE · $price';
   }
 
   @override
   String get chatInfoHelp =>
-      'Stickers are free. To type real messages, unlock chat once with coins in this room.';
+      'The group chat is free and stays in the room, even after the game. Tag a player by tapping their name. Private messages are unlocked once with coins.';
 
   @override
   String get reactionsTitle => 'Reactions';
@@ -1562,4 +1562,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shopUnavailableShort => 'Unavailable';
+
+  @override
+  String roomHistoryTitle(String code) {
+    return 'Room $code';
+  }
+
+  @override
+  String get historyGames => 'Games';
+
+  @override
+  String get historyGroup => 'Group';
+
+  @override
+  String get historyPrivate => 'Private';
+
+  @override
+  String get historyUnavailable => 'History unavailable right now.';
+
+  @override
+  String get historyNoGames => 'No finished game in this room yet.';
+
+  @override
+  String get historyNoMessages => 'Nobody has written in the group yet.';
+
+  @override
+  String get historyNoPrivate =>
+      'No private conversation. Open the room chat, then “Private”, to write to a player.';
+
+  @override
+  String privateChatEmpty(String name) {
+    return 'Write your first message to $name.';
+  }
+
+  @override
+  String get privateChatJoinRoom => 'Join the room to reply.';
+
+  @override
+  String privateChatUnlock(int price) {
+    return 'Unlock private messages ($price coins)';
+  }
+
+  @override
+  String privateChatHint(String name) {
+    return 'Message to $name';
+  }
+
+  @override
+  String get myRoomsTitle => 'My rooms';
+
+  @override
+  String get allPublicRoomsTitle => 'All public rooms';
+
+  @override
+  String savedRoomInfo(int members, String date) {
+    return '$members players · $date';
+  }
+
+  @override
+  String savedRoomOpen(int count) {
+    return '$count inside';
+  }
+
+  @override
+  String get savedRoomClosed => 'Closed';
+
+  @override
+  String get roomChatButton => 'CHAT';
+
+  @override
+  String get roomHistoryButton => 'HISTORY';
+
+  @override
+  String get chatPrivateButton => 'Private';
+
+  @override
+  String get chatPrivatePick => 'Who do you want to write to?';
+
+  @override
+  String chatMentionedBy(String name) {
+    return '$name tagged you in the chat';
+  }
+
+  @override
+  String get chatTagHint => 'Tap a name to tag them (@name).';
 }

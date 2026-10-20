@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../../animations/bounce_in.dart';
@@ -17,6 +18,7 @@ import '../../game/widgets/labels.dart';
 import '../../shop/cosmetics.dart';
 import '../data/room_models.dart';
 import '../online_controller.dart';
+import '../room_history.dart';
 
 /// Barre de réactions (stickers) pendant results / lightning / finished.
 class ReactionBar extends StatelessWidget {
@@ -191,6 +193,61 @@ class _RoomChatPanelState extends State<RoomChatPanel> {
     _text.clear();
   }
 
+  /// Toucher un pseudo le tague dans le message en cours (« @pseudo »).
+  void _tag(String nickname) {
+    final tag = '@${nickname.replaceAll(' ', '')} ';
+    final current = _text.text;
+    _text.text = current.isEmpty || current.endsWith(' ')
+        ? '$current$tag'
+        : '$current $tag';
+    _text.selection = TextSelection.collapsed(offset: _text.text.length);
+  }
+
+  /// Messages privés : choisir un membre du salon.
+  Future<void> _openPrivate(RoomState room, String me) async {
+    final l10n = AppLocalizations.of(context);
+    final others = [
+      for (final p in room.players)
+        if (!p.bot && p.clientId != me) p,
+    ];
+    final picked = await showModalBottomSheet<RoomPlayer>(
+      context: context,
+      backgroundColor: AppColors.white,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                l10n.chatPrivatePick,
+                style: fredoka(size: 18, weight: FontWeight.w700),
+              ),
+            ),
+            for (final p in others)
+              ListTile(
+                key: Key('pick_private_${p.clientId}'),
+                leading: const Icon(Icons.lock_rounded, color: AppColors.purple),
+                title: Text(p.nickname, style: fredoka(size: 16)),
+                onTap: () => Navigator.pop(ctx, p),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PrivateChatScreen(
+          code: room.code,
+          otherId: picked.clientId,
+          otherName: picked.nickname,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -241,7 +298,14 @@ class _RoomChatPanelState extends State<RoomChatPanel> {
                 size: 20,
               ),
               const Spacer(),
-              if (!me.chatUnlocked)
+              if (room.saved)
+                TextButton.icon(
+                  key: const Key('chat_private'),
+                  onPressed: () => _openPrivate(room, me.clientId),
+                  icon: const Icon(Icons.lock_person_rounded, size: 20),
+                  label: Text(l10n.chatPrivateButton),
+                ),
+              if (!me.chatUnlocked && room.saved)
                 Tooltip(
                   message: l10n.chatUnlockButton(room.chatUnlockPrice),
                   child: Material(
@@ -309,12 +373,23 @@ class _RoomChatPanelState extends State<RoomChatPanel> {
                   : ListView(
                       children: [
                         for (final m in room.chat)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 6),
+                            padding: m.mentionsMe(me.clientId)
+                                ? const EdgeInsets.symmetric(horizontal: 6, vertical: 3)
+                                : EdgeInsets.zero,
+                            decoration: m.mentionsMe(me.clientId)
+                                ? BoxDecoration(
+                                    color: AppColors.yellow.withValues(alpha: 0.6),
+                                    borderRadius: BorderRadius.circular(8),
+                                  )
+                                : null,
                             child: Text.rich(
                               TextSpan(
                                 children: [
                                   TextSpan(
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () => _tag(m.nickname),
                                     text: '${m.nickname}: ',
                                     style: fredoka(
                                       size: 14,
@@ -337,7 +412,8 @@ class _RoomChatPanelState extends State<RoomChatPanel> {
                     ),
             ),
           ),
-          if (me.chatUnlocked) ...[
+          // Conversation de groupe gratuite : la saisie est toujours là.
+          ...[
             const SizedBox(height: 10),
             Row(
               children: [

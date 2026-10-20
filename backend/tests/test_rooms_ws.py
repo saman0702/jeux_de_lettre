@@ -32,7 +32,7 @@ def manager(monkeypatch):
 
     async def truncate():
         async with engine.begin() as conn:
-            await conn.execute(text("TRUNCATE games, profiles CASCADE"))
+            await conn.execute(text("TRUNCATE games, profiles, saved_rooms CASCADE"))
 
     asyncio.run(truncate())
     letter_service.clear_cache()
@@ -632,3 +632,134 @@ def test_knockout_rooms_cannot_be_joined_during_a_game(client):
         state(alice, "round")
         carol.send_json({"type": "join_room", "code": room["code"]})
         assert error(carol) == "game_in_progress"
+
+
+# ------------------------------------------------------------------ salons gardés et historique
+
+
+@pytest.fixture
+def http(manager):
+    """Routes HTTP sur la même base de test que le gestionnaire de salons."""
+    from app.core.database import get_session
+
+    async def session():
+        async with manager.session_factory() as s:
+            yield s
+
+    app.dependency_overrides[get_session] = session
+    yield
+    app.dependency_overrides.pop(get_session, None)
+
+
+def test_a_closed_room_reopens_with_its_chat_and_creator_as_host(client, http):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice, public=False)
+        code = room["code"]
+        assert room["saved"] is True
+        bob.send_json({"type": "join_room", "code": code})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        bob.send_json({"type": "chat", "text": "Salut @Alice !"})
+        chat = state(alice, check=lambda r: len(r["chat"]) == 1)["chat"]
+        assert chat[0]["mentions"] == ["alice-0001"], "@Alice is tagged"
+        assert wait_for(alice, lambda m: m["type"] == "mention")["from"] == "Bob"
+        for ws in (alice, bob):
+            ws.send_json({"type": "leave_room"})
+            wait_for(ws, lambda m: m["type"] == "left_room")
+
+    # Plus personne : le salon est fermé, mais gardé.
+    with player(client, "bob-00001", "Bob") as bob:
+        bob.send_json({"type": "join_room", "code": code})
+        reopened = state(bob, "waiting")
+        assert reopened["code"] == code
+        assert [m["text"] for m in reopened["chat"]] == ["Salut @Alice !"]
+        assert reopened["host_id"] == "bob-00001", "creator away: first back is host"
+        with player(client, "alice-0001", "Alice") as alice:
+            alice.send_json({"type": "join_room", "code": code})
+            assert state(alice, check=lambda r: len(r["players"]) == 2)["host_id"] == "alice-0001"
+
+    mine = client.get("/api/v1/rooms/mine", params={"client_id": "bob-00001"}).json()
+    assert [r["code"] for r in mine] == [code]
+    assert mine[0]["members"] == 2
+
+
+def test_private_rooms_are_listed_only_for_members(client, http):
+    with player(client, "alice-0001", "Alice") as alice:
+        private = create_room(alice, public=False)["code"]
+        alice.send_json({"type": "leave_room"})
+        wait_for(alice, lambda m: m["type"] == "left_room")
+        public = create_room(alice, public=True)["code"]
+
+    others = client.get("/api/v1/rooms/public", params={"language": "fr"}).json()
+    assert [r["code"] for r in others] == [public], "private room hidden from strangers"
+    assert client.get(f"/api/v1/rooms/{private}/history", params={"client_id": "carol-0001"}).status_code == 404
+    history = client.get(f"/api/v1/rooms/{public}/history", params={"client_id": "carol-0001"})
+    assert history.status_code == 200, "anyone can read a public room"
+    assert client.get(f"/api/v1/rooms/{private}/history", params={"client_id": "alice-0001"}).status_code == 200
+
+
+def test_finished_games_are_kept_in_the_room_history(client, http):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        code = create_room(alice)["code"]
+        bob.send_json({"type": "join_room", "code": code})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        for number in range(1, 6):
+            state(alice, "round", lambda r, n=number: r["round"]["number"] == n)
+            answers = {"city": "Madrid"} if number == 1 else {}
+            alice.send_json({"type": "submit", "round": number, "answers": answers})
+            bob.send_json({"type": "submit", "round": number, "answers": {}})
+        state(alice, "finished")
+
+    games = client.get(f"/api/v1/rooms/{code}/history", params={"client_id": "bob-00001"}).json()["games"]
+    assert len(games) == 1
+    assert [p["nickname"] for p in games[0]["ranking"]] == ["Alice", "Bob"]
+    assert games[0]["ranking"][0]["score"] == 10
+
+
+def test_private_messages_cost_coins_and_stay_between_two(client, manager, http):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        code = create_room(alice)["code"]
+        bob.send_json({"type": "join_room", "code": code})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+
+        alice.send_json({"type": "dm", "to": "bob-00001", "text": "Coucou"})
+        assert error(alice) == "chat_locked"
+
+        give_coins(manager, "alice-0001", 100)
+        alice.send_json({"type": "unlock_chat"})
+        wait_for(alice, lambda m: m["type"] == "chat_unlocked")
+        alice.send_json({"type": "dm", "to": "bob-00001", "text": "Coucou"})
+        received = wait_for(bob, lambda m: m["type"] == "dm")["message"]
+        assert (received["nickname"], received["to"], received["text"]) == ("Alice", "bob-00001", "Coucou")
+
+    with player(client, "carol-0001", "Carol") as carol:
+        carol.send_json({"type": "join_room", "code": code})
+        state(carol, "waiting")
+
+    def private(client_id):
+        return client.get(f"/api/v1/rooms/{code}/history", params={"client_id": client_id}).json()["private"]
+
+    assert [m["text"] for m in private("bob-00001")] == ["Coucou"]
+    assert private("carol-0001") == [], "others never see private messages"
+
+
+def test_rooms_without_activity_for_30_days_are_deleted(manager):
+    from datetime import timedelta
+
+    from app.models.base import utcnow
+    from app.services import room_store
+
+    async def run():
+        async with manager.session_factory() as session:
+            await room_store.save_room(session, "OLD01", "alice-0001", "Alice", True, "fr", {})
+            await room_store.save_room(session, "NEW01", "alice-0001", "Alice", True, "fr", {})
+            await session.flush()
+            (await room_store.get_room(session, "OLD01")).last_activity_at = utcnow() - timedelta(days=31)
+            await session.commit()
+            removed = await room_store.purge_inactive(session, keep=set())
+            await session.commit()
+            return removed, await room_store.get_room(session, "OLD01"), await room_store.get_room(session, "NEW01")
+
+    removed, old, new = asyncio.run(run())
+    assert removed == 1 and old is None and new is not None

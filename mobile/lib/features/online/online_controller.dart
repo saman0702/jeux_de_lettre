@@ -286,6 +286,20 @@ class OnlineController extends ChangeNotifier {
 
   void sendChat(String text) => client.send({'type': 'chat', 'text': text});
 
+  /// Message privé à un autre membre du salon (une fois les messages privés
+  /// débloqués).
+  void sendPrivate(String to, String text) =>
+      client.send({'type': 'dm', 'to': to, 'text': text});
+
+  final _privateMessages = StreamController<RoomChatMessage>.broadcast();
+  final _mentions = StreamController<String>.broadcast();
+
+  /// Messages privés reçus ou envoyés (confirmés par le serveur).
+  Stream<RoomChatMessage> get privateMessages => _privateMessages.stream;
+
+  /// Pseudo de celui qui vient de me taguer dans la conversation de groupe.
+  Stream<String> get mentions => _mentions.stream;
+
   void voteRematch(bool vote) =>
       client.send({'type': 'rematch_vote', 'vote': vote});
 
@@ -427,6 +441,14 @@ class OnlineController extends ChangeNotifier {
         _buyFreeze = null;
         return;
       case 'freeze_ok':
+        return;
+      case 'dm':
+        if (event['message'] case final Map<String, dynamic> m) {
+          _privateMessages.add(RoomChatMessage.fromJson(m));
+        }
+        return;
+      case 'mention':
+        _mentions.add(event['from'] as String? ?? '');
         return;
       case 'chat_unlocked':
         if (event['wallet'] case final Map<String, dynamic> wallet) {

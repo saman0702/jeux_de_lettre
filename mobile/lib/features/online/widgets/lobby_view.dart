@@ -29,7 +29,13 @@ class LobbyView extends StatelessWidget {
     this.onAddBot,
     this.onRemoveBot,
     this.onReport,
+    this.onOpenChat,
+    this.onOpenHistory,
   });
+
+  /// Salon gardé : discussion (groupe et privé) et historique des parties.
+  final VoidCallback? onOpenChat;
+  final VoidCallback? onOpenHistory;
 
   final RoomState room;
   final String myId;
@@ -159,6 +165,39 @@ class LobbyView extends StatelessWidget {
                 ),
             ],
           ),
+          if (room.saved && (onOpenChat != null || onOpenHistory != null)) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (onOpenChat != null)
+                  Expanded(
+                    child: CandyButton(
+                      key: const Key('lobby_chat'),
+                      label: l10n.roomChatButton,
+                      icon: Icons.chat_bubble_rounded,
+                      color: AppColors.cyan,
+                      height: 46,
+                      fontSize: 16,
+                      onPressed: onOpenChat,
+                    ),
+                  ),
+                if (onOpenChat != null && onOpenHistory != null)
+                  const SizedBox(width: 10),
+                if (onOpenHistory != null)
+                  Expanded(
+                    child: CandyButton(
+                      key: const Key('lobby_history'),
+                      label: l10n.roomHistoryButton,
+                      icon: Icons.history_rounded,
+                      color: AppColors.white,
+                      height: 46,
+                      fontSize: 16,
+                      onPressed: onOpenHistory,
+                    ),
+                  ),
+              ],
+            ),
+          ],
           if (settings.betting) ...[
             const SizedBox(height: 10),
             Center(

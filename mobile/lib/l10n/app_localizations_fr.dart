@@ -334,21 +334,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get chatHint => 'Écris un message…';
 
   @override
-  String get chatUnlockTitle => 'Débloquer le chat';
+  String get chatUnlockTitle => 'Débloquer les messages privés';
 
   @override
   String chatUnlockHelp(int price) {
-    return 'Tout le monde pourra te lire dans ce salon. Coût : $price pièces (une fois).';
+    return 'Écris en privé à n\'importe quel joueur de ce salon (personne d\'autre ne vous lit). Coût : $price pièces, une fois pour ce salon.';
   }
 
   @override
   String chatUnlockButton(int price) {
-    return 'CHAT · $price';
+    return 'PRIVÉ · $price';
   }
 
   @override
   String get chatInfoHelp =>
-      'Les stickers sont gratuits. Pour écrire du vrai texte, débloque le chat une fois avec des pièces dans ce salon.';
+      'La discussion de groupe est gratuite et reste dans le salon, même après la partie. Tague un joueur en touchant son pseudo. Les messages privés se débloquent une fois avec des pièces.';
 
   @override
   String get reactionsTitle => 'Réactions';
@@ -1570,4 +1570,89 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get shopUnavailableShort => 'Indisponible';
+
+  @override
+  String roomHistoryTitle(String code) {
+    return 'Salon $code';
+  }
+
+  @override
+  String get historyGames => 'Parties';
+
+  @override
+  String get historyGroup => 'Groupe';
+
+  @override
+  String get historyPrivate => 'Privé';
+
+  @override
+  String get historyUnavailable => 'Historique indisponible pour le moment.';
+
+  @override
+  String get historyNoGames =>
+      'Aucune partie terminée dans ce salon pour l\'instant.';
+
+  @override
+  String get historyNoMessages => 'Personne n\'a encore écrit dans le groupe.';
+
+  @override
+  String get historyNoPrivate =>
+      'Aucune conversation privée. Ouvre la discussion du salon, puis « Privé », pour écrire à un joueur.';
+
+  @override
+  String privateChatEmpty(String name) {
+    return 'Écris ton premier message à $name.';
+  }
+
+  @override
+  String get privateChatJoinRoom => 'Rejoins le salon pour répondre.';
+
+  @override
+  String privateChatUnlock(int price) {
+    return 'Débloquer les messages privés ($price pièces)';
+  }
+
+  @override
+  String privateChatHint(String name) {
+    return 'Message à $name';
+  }
+
+  @override
+  String get myRoomsTitle => 'Mes salons';
+
+  @override
+  String get allPublicRoomsTitle => 'Tous les salons publics';
+
+  @override
+  String savedRoomInfo(int members, String date) {
+    return '$members joueurs · $date';
+  }
+
+  @override
+  String savedRoomOpen(int count) {
+    return '$count dedans';
+  }
+
+  @override
+  String get savedRoomClosed => 'Fermé';
+
+  @override
+  String get roomChatButton => 'DISCUSSION';
+
+  @override
+  String get roomHistoryButton => 'HISTORIQUE';
+
+  @override
+  String get chatPrivateButton => 'Privé';
+
+  @override
+  String get chatPrivatePick => 'À qui veux-tu écrire ?';
+
+  @override
+  String chatMentionedBy(String name) {
+    return '$name t\'a tagué dans la discussion';
+  }
+
+  @override
+  String get chatTagHint => 'Touche un pseudo pour le taguer (@pseudo).';
 }

@@ -341,6 +341,9 @@ class RoomChatMessage {
     required this.clientId,
     required this.nickname,
     required this.text,
+    this.mentions = const [],
+    this.to,
+    this.at,
   });
 
   factory RoomChatMessage.fromJson(Map<String, dynamic> json) =>
@@ -348,11 +351,26 @@ class RoomChatMessage {
         clientId: json['client_id'] as String,
         nickname: json['nickname'] as String,
         text: json['text'] as String,
+        mentions: [
+          for (final id in (json['mentions'] as List?) ?? const [])
+            id as String,
+        ],
+        to: json['to'] as String?,
+        at: json['at'] == null ? null : DateTime.parse(json['at'] as String),
       );
 
   final String clientId;
   final String nickname;
   final String text;
+
+  /// Joueurs tagués « @pseudo ».
+  final List<String> mentions;
+
+  /// Message privé : destinataire (null pour la conversation de groupe).
+  final String? to;
+  final DateTime? at;
+
+  bool mentionsMe(String me) => mentions.contains(me);
 }
 
 class LightningState {
@@ -488,6 +506,8 @@ class RoomState {
     this.rematchNeed = 1,
     this.freezePrice = 15,
     this.chatUnlockPrice = 25,
+    this.creatorId,
+    this.saved = false,
     this.voice = const RoomVoice(),
   });
 
@@ -549,6 +569,8 @@ class RoomState {
       rematchNeed: json['rematch_need'] as int? ?? 1,
       freezePrice: prices['freeze'] as int? ?? 15,
       chatUnlockPrice: prices['chat_unlock'] as int? ?? 25,
+      creatorId: json['creator_id'] as String?,
+      saved: json['saved'] as bool? ?? false,
       voice: RoomVoice.fromJson(json['voice'] as Map<String, dynamic>?),
       clockOffset: serverTime.difference(receivedAt ?? DateTime.now()),
     );
@@ -579,6 +601,12 @@ class RoomState {
   final int rematchNeed;
   final int freezePrice;
   final int chatUnlockPrice;
+
+  /// Créateur du salon : il en redevient l'hôte à chaque retour.
+  final String? creatorId;
+
+  /// Salon gardé (créé par un joueur) : historique et messages privés.
+  final bool saved;
   final RoomVoice voice;
 
   /// Horloge du serveur moins horloge de l'appareil, pour décompter jusqu'aux

@@ -16,6 +16,7 @@ import '../game/widgets/labels.dart';
 import 'create_room_screen.dart';
 import 'data/room_models.dart';
 import 'online_controller.dart';
+import 'room_history.dart';
 import 'room_screen.dart';
 import 'widgets/online_counter.dart';
 import 'widgets/online_header.dart';
@@ -70,10 +71,15 @@ class _RoomsScreenState extends State<RoomsScreen> {
     super.dispose();
   }
 
+  final _saved = GlobalKey<SavedRoomsSectionState>();
+
   Future<void> _openRoom() async {
     await Navigator.of(context)
         .push(PopRoute(builder: (_) => const RoomScreen()));
-    if (mounted) _online.watchRooms(_language);
+    if (mounted) {
+      _online.watchRooms(_language);
+      _saved.currentState?.refresh();
+    }
   }
 
   void _join(String code) {
@@ -191,6 +197,13 @@ class _RoomsScreenState extends State<RoomsScreen> {
                           ),
                         ),
                       ),
+                  // Salons déjà fréquentés (publics ou privés) et salons publics
+                  // fermés : on les rouvre en les touchant.
+                  SavedRoomsSection(
+                    key: _saved,
+                    onOpen: _join,
+                    liveCodes: {for (final r in _online.rooms) r.code},
+                  ),
                 ],
               ),
             ),
