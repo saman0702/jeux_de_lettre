@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 
+/// Les packs de pièces se rachètent ; « Sans pub » et le Pass non.
+bool isConsumable(String productId) => productId.startsWith('coins_');
+
 /// Un pack tel que le store le présente : son prix dans la monnaie du joueur.
 class StoreProduct {
   const StoreProduct({required this.id, required this.price});
@@ -103,13 +106,17 @@ class DeviceCoinStore implements CoinStore {
   Future<void> buy(String productId) async {
     final details = _details[productId];
     if (details == null) return;
+    final param = PurchaseParam(productDetails: details);
+    if (!isConsumable(productId)) {
+      // « Sans pub » et Pass : achetés une fois (ou abonnement), jamais
+      // consommés.
+      await _iap.buyNonConsumable(purchaseParam: param);
+      return;
+    }
     // Pas de consommation automatique : sur Android, l'achat est consommé
     // seulement après que le serveur a crédité les pièces (sinon une coupure
     // réseau ferait perdre l'achat).
-    await _iap.buyConsumable(
-      purchaseParam: PurchaseParam(productDetails: details),
-      autoConsume: false,
-    );
+    await _iap.buyConsumable(purchaseParam: param, autoConsume: false);
   }
 
   @override
@@ -137,7 +144,9 @@ class DeviceCoinStore implements CoinStore {
 
   Future<void> _finish(PurchaseDetails p) async {
     try {
-      if (Platform.isAndroid && p.status != PurchaseStatus.error) {
+      if (Platform.isAndroid &&
+          p.status != PurchaseStatus.error &&
+          isConsumable(p.productID)) {
         // Consommer le pack permet de le racheter.
         await _iap
             .getPlatformAddition<InAppPurchaseAndroidPlatformAddition>()

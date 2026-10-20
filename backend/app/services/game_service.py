@@ -15,7 +15,7 @@ from app.core.game_rules import (
 from app.models import Game, GameRound, HintRequest, Player, PlayerAnswer, Submission
 from app.models.base import utcnow
 from app.schemas.game import SoloGameCreate
-from app.services import fact_service, hint_service, letter_service, suggestion_service, wallet_service
+from app.services import fact_service, hint_service, letter_service, perks_service, suggestion_service, wallet_service
 from app.services.scoring_service import score_round
 from app.services.normalization import lookup_keys, normalize
 from app.services.validation_service import Status, ValidationResult, validate_answer
@@ -53,7 +53,9 @@ async def create_solo_game(session: AsyncSession, data: SoloGameCreate) -> Game:
     )
     session.add(game)
     if data.client_id:
-        await wallet_service.get_profile(session, data.client_id, data.nickname)
+        profile = await wallet_service.get_profile(session, data.client_id, data.nickname)
+        # Abonnés au Pass : jokers en plus dans chaque partie.
+        game.bonus_hints = perks_service.bonus_hints_for(profile)
     await session.commit()
     return game
 

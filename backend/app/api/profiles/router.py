@@ -3,15 +3,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.models import Profile
-from app.schemas.game import CosmeticIn, CosmeticResult, LookOut, ProfileOut, ProfileUpdate, UnequipIn
-from app.services import avatar_service, wallet_service
+from app.schemas.game import CosmeticIn, CosmeticResult, LookOut, ProfileOut, ProfileUpdate, UnequipIn, WalletOut
+from app.api.shop.router import get_store_verifier
+from app.services import avatar_service, perks_service, shop_service, wallet_service
+from app.services.store_service import StoreVerifier
 
 router = APIRouter(prefix="/api/v1/profiles", tags=["profiles"])
 
 
-def profile_out(profile: Profile) -> ProfileOut:
+def profile_out(profile: Profile, ad_rewards_left: int = 0) -> ProfileOut:
     snap = wallet_service.snapshot(profile)
     return ProfileOut(
+        ads_removed=bool(profile.ads_removed),
+        pass_expires_at=profile.pass_expires_at,
+        ad_rewards_left=ad_rewards_left,
+        daily_bonus_available=perks_service.daily_bonus_available(profile),
         client_id=profile.client_id,
         nickname=profile.nickname,
         coins=profile.coins,
@@ -37,11 +43,29 @@ async def _profile(session: AsyncSession, client_id: str) -> Profile:
 
 
 @router.get("/{client_id}", response_model=ProfileOut)
-async def get_profile(client_id: str, session: AsyncSession = Depends(get_session)):
-    """Profil du joueur (pièces, avatar) ; créé au premier appel."""
+async def get_profile(
+    client_id: str,
+    session: AsyncSession = Depends(get_session),
+    verifier: StoreVerifier = Depends(get_store_verifier),
+):
+    """Profil du joueur (pièces, avatar, avantages) ; créé au premier appel."""
     profile = await _profile(session, client_id)
+    if profile.pass_token and not perks_service.pass_active(profile):
+        await shop_service.refresh_pass(session, verifier, profile)
     await session.commit()
-    return profile_out(profile)
+    return profile_out(profile, await perks_service.ad_rewards_left(session, client_id))
+
+
+@router.post("/{client_id}/daily-bonus", response_model=WalletOut)
+async def claim_daily_bonus(client_id: str, session: AsyncSession = Depends(get_session)):
+    """Bonus de pièces du jour, pour les abonnés au Pass."""
+    profile = await _profile(session, client_id)
+    try:
+        wallet = await perks_service.claim_daily_bonus(session, profile)
+    except perks_service.PerkError as error:
+        raise HTTPException(status_code=error.status_code, detail=error.code) from None
+    await session.commit()
+    return wallet.as_dict()
 
 
 async def _avatar_changed(request: Request, profile: Profile) -> None:

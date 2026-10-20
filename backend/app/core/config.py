@@ -34,6 +34,26 @@ class Settings(BaseSettings):
     # « sandbox » pendant les tests, « production » une fois l'appli publiée.
     apple_environment: str = "sandbox"
 
+    # Revenus en plus de la vente de pièces : chaque option s'active ou se coupe ici (le serveur
+    # les transmet à l'appli au démarrage, sans nouvelle version de l'appli).
+    # Pubs récompensées : une vidéo regardée = des pièces, avec une limite par jour.
+    feature_rewarded_ads: bool = False
+    rewarded_ad_coins: int = 5
+    rewarded_ads_per_day: int = 10
+    # Seulement pour les tests en local : crédite la récompense signalée par l'appli. En prod,
+    # laisser à false : AdMob prévient le serveur lui-même (vérification côté serveur, signée).
+    rewarded_ads_trust_client: bool = False
+    # Pub plein écran entre les parties, toutes les N parties terminées.
+    feature_interstitial_ads: bool = False
+    interstitial_every_games: int = 3
+    # Achat unique « Sans pub » (produit non consommable `remove_ads`).
+    feature_remove_ads: bool = False
+    # Abonnement « Pass » (produit `pass_monthly`) : sans pub, bonus de pièces chaque jour,
+    # jokers en plus dans chaque partie.
+    feature_subscription: bool = False
+    pass_daily_coins: int = 20
+    pass_bonus_hints: int = 2
+
     # Vocal pendant la partie (Agora). Vide = vocal désactivé.
     agora_app_id: str | None = Field(default=None, validation_alias="AGORA_APP_ID")
     agora_app_certificate: str | None = Field(

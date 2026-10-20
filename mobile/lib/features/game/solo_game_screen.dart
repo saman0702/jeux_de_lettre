@@ -18,6 +18,7 @@ import 'data/solo_backend.dart';
 import 'solo_game_controller.dart';
 import '../career/career_levels.dart';
 import '../online/online_controller.dart';
+import '../perks/perks_controller.dart';
 import 'solo_launcher.dart';
 import 'solo_setup_screen.dart';
 import 'widgets/challenge_banner.dart';
@@ -113,7 +114,10 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
       _feedback = GameFeedbackScope.of(context);
       _syncMusic();
     }
+    _perks ??= PerksScope.maybeOf(context);
   }
+
+  PerksController? _perks;
 
   /// Musique du solo, plus basse pendant le décompte et la manche pour que le
   /// tic-tac ressorte.
@@ -127,6 +131,9 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
 
   @override
   void dispose() {
+    // Partie terminée : une pub peut passer en quittant l'écran de fin (jamais
+    // pendant la partie), selon les options du serveur.
+    if (_controller.phase == SoloPhase.finished) _perks?.onGameFinished();
     _controller.removeListener(_syncMusic);
     _controller.removeListener(_recordEnd);
     _feedback?.setMusic(MusicMood.menu);

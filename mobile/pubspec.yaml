@@ -49,6 +49,7 @@ dependencies:
   share_plus: ^13.3.1
   agora_rtc_engine: ^6.6.4
   permission_handler: ^13.0.2
+  google_mobile_ads: ^9.1.0
 
 dev_dependencies:
   flutter_test:

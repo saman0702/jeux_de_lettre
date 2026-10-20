@@ -21,6 +21,7 @@ import 'widgets/online_header.dart';
 import 'widgets/podium_view.dart';
 import 'widgets/room_results_view.dart';
 import 'widgets/salon_social.dart';
+import '../perks/perks_controller.dart';
 import 'widgets/players_strip.dart';
 import 'widgets/round_wait_view.dart';
 import 'widgets/searching_view.dart';
@@ -76,6 +77,7 @@ class _RoomScreenState extends State<RoomScreen> {
     super.didChangeDependencies();
     _online = OnlineScope.of(context);
     _feedback = GameFeedbackScope.of(context);
+    _perks ??= PerksScope.maybeOf(context);
     if (_online.room != null || _online.searching) _active = true;
     if (_subscriptions.isEmpty) {
       _subscriptions
@@ -88,6 +90,7 @@ class _RoomScreenState extends State<RoomScreen> {
 
   @override
   void dispose() {
+    if (_podium != null) _perks?.onGameFinished();
     _ticker?.cancel();
     _online.removeListener(_onRoomChanged);
     for (final s in _subscriptions) {
@@ -136,9 +139,8 @@ class _RoomScreenState extends State<RoomScreen> {
         round != null &&
         _fieldsRound != round.number) {
       final me = room.player(_online.clientId);
-      final cats = room.settings.relay &&
-              me != null &&
-              me.assignments.isNotEmpty
+      final cats =
+          room.settings.relay && me != null && me.assignments.isNotEmpty
           ? me.assignments
           : room.settings.categories;
       _prepareFields(cats, round.number);
@@ -147,7 +149,7 @@ class _RoomScreenState extends State<RoomScreen> {
     if (_podium != null &&
         room.phase != RoomPhase.finished &&
         room.phase != RoomPhase.results) {
-      _podium = null;
+      _leavePodium();
     }
     if (mounted) setState(() {});
   }
@@ -202,27 +204,30 @@ class _RoomScreenState extends State<RoomScreen> {
   void _showNotice(RoomNotice notice) {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context);
-    final inGame = _room != null &&
+    final inGame =
+        _room != null &&
         _room!.phase != RoomPhase.waiting &&
         _room!.phase != RoomPhase.finished;
     final text = switch (notice.kind) {
       NoticeKind.joined => l10n.noticeJoined(notice.nickname),
-      NoticeKind.left => inGame
-          ? l10n.noticeLeftGame(notice.nickname)
-          : l10n.noticeLeft(notice.nickname),
+      NoticeKind.left =>
+        inGame
+            ? l10n.noticeLeftGame(notice.nickname)
+            : l10n.noticeLeft(notice.nickname),
       NoticeKind.disconnected => l10n.noticeDisconnected(notice.nickname),
       NoticeKind.reconnected => l10n.noticeReconnected(notice.nickname),
       NoticeKind.botsJoined => l10n.noticeBotsJoined,
       NoticeKind.hintUsed => () {
-          var category = notice.detail;
-          try {
-            category = Category.fromWire(notice.detail).label(l10n);
-          } catch (_) {}
-          return l10n.noticeHintUsed(notice.nickname, category);
-        }(),
+        var category = notice.detail;
+        try {
+          category = Category.fromWire(notice.detail).label(l10n);
+        } catch (_) {}
+        return l10n.noticeHintUsed(notice.nickname, category);
+      }(),
       NoticeKind.error => l10n.errorGeneric,
     };
-    final important = notice.kind == NoticeKind.left ||
+    final important =
+        notice.kind == NoticeKind.left ||
         notice.kind == NoticeKind.disconnected ||
         notice.kind == NoticeKind.hintUsed;
     ScaffoldMessenger.of(context)
@@ -284,13 +289,21 @@ class _RoomScreenState extends State<RoomScreen> {
     if (leave && mounted) _close();
   }
 
+  PerksController? _perks;
+
+  /// On quitte le podium : une pub peut passer, selon les options du serveur.
+  void _leavePodium() {
+    if (_podium != null) _perks?.onGameFinished();
+    _podium = null;
+  }
+
   void _playAgain() {
     // Vote revanche : le podium reste jusqu'au quorum, puis le lobby reprend.
     _online.voteRematch(true);
   }
 
   void _startBonus() {
-    setState(() => _podium = null);
+    setState(_leavePodium);
     _online.startBonus();
   }
 
@@ -356,8 +369,10 @@ class _RoomScreenState extends State<RoomScreen> {
                         transitionBuilder: (child, animation) => FadeTransition(
                           opacity: animation,
                           child: ScaleTransition(
-                            scale:
-                                Tween(begin: 0.94, end: 1.0).animate(animation),
+                            scale: Tween(
+                              begin: 0.94,
+                              end: 1.0,
+                            ).animate(animation),
                             child: child,
                           ),
                         ),
@@ -508,9 +523,7 @@ class _RoomScreenState extends State<RoomScreen> {
           ];
           return RoundView(
             round: round,
-            totalRounds: room.round?.bonus == true
-                ? 1
-                : room.settings.rounds,
+            totalRounds: room.round?.bonus == true ? 1 : room.settings.rounds,
             remaining: round.remaining(widget.now()),
             fields: _fields,
             onFinish: me?.frozen == true ? () {} : _submit,

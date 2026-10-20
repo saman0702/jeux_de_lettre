@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, utcnow
@@ -28,6 +28,14 @@ class Profile(TimestampMixin, Base):
     cosmetic_hat: Mapped[str] = mapped_column(String(32), default="", server_default="")
     cosmetic_frame: Mapped[str] = mapped_column(String(32), default="", server_default="")
     cosmetic_name: Mapped[str] = mapped_column(String(32), default="", server_default="")
+    # Achat « Sans pub ».
+    ads_removed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # Abonnement « Pass » : fin de la période payée, et l'achat pour la redemander au store.
+    pass_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    pass_platform: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    pass_token: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # Dernier jour (UTC) où le bonus quotidien du Pass a été pris.
+    daily_bonus_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     cosmetic_tiles: Mapped[str] = mapped_column(String(32), default="", server_default="")
     cosmetic_victory: Mapped[str] = mapped_column(String(32), default="", server_default="")
     # Infos catégories débloquées une fois pour toutes (`country:france,city:paris`…).

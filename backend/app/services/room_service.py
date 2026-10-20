@@ -43,6 +43,7 @@ from app.core.game_rules import (
     Difficulty,
     Language,
 )
+from app.models import Profile
 from app.models.base import utcnow
 from app.schemas.game import GameSettings
 from app.api.games.presenters import enrich_answer_dict
@@ -51,6 +52,7 @@ from app.services import (
     fact_service,
     hint_service,
     multiplayer_service,
+    perks_service,
     voice_service,
     wallet_service,
 )
@@ -1305,6 +1307,7 @@ class RoomManager:
                 )
             for client_id, player_id in ids.items():
                 room.players[client_id].db_player_id = player_id
+            await self._apply_pass_hints(room)
 
             # 1 Freeze gratuit par humain en début de partie.
             for player in room.players.values():
@@ -1584,6 +1587,16 @@ class RoomManager:
         room.phase = "results"
         await self._broadcast(room)
         await self._award_round_points(room, outcome.results, client_of)
+
+    async def _apply_pass_hints(self, room: Room) -> None:
+        """Abonnés au Pass : jokers en plus pour la partie."""
+        humans = [p for p in room.players.values() if not p.bot and wallet_service.is_client_id(p.client_id)]
+        if not humans:
+            return
+        async with self.session_factory() as session:
+            for player in humans:
+                profile = await session.get(Profile, player.client_id)
+                player.bonus_hints += perks_service.bonus_hints_for(profile)
 
     def _alive(self, room: Room) -> list[RoomPlayer]:
         return [p for p in room.players.values() if p.eliminated_round is None]

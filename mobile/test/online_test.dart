@@ -13,6 +13,7 @@ import 'package:letter_battle/features/online/room_screen.dart';
 import 'package:letter_battle/features/online/online_controller.dart';
 import 'package:letter_battle/features/online/create_room_screen.dart';
 import 'package:letter_battle/features/online/rooms_screen.dart';
+import 'package:letter_battle/features/perks/perks_controller.dart';
 import 'package:letter_battle/features/shop/shop_controller.dart';
 import 'package:letter_battle/features/wallet/wallet.dart';
 import 'package:letter_battle/main.dart';
@@ -81,6 +82,7 @@ class Harness {
     WidgetTester tester,
     Widget home, {
     ShopController? shop,
+    PerksController? perks,
   }) async {
     tester.platformDispatcher.localesTestValue = const [Locale('en')];
     await tester.pumpWidget(
@@ -88,6 +90,7 @@ class Harness {
         feedback: feedback,
         online: online,
         shop: shop,
+        perks: perks,
         home: home,
       ),
     );

@@ -30,7 +30,7 @@ from app.schemas.game import (
     SubmitAnswers,
     SubmitResultOut,
 )
-from app.services import game_service, wallet_service
+from app.services import game_service, perks_service, wallet_service
 
 router = APIRouter(prefix="/api/v1", tags=["games"])
 
@@ -46,6 +46,7 @@ async def get_config():
         category_info_price_found=CATEGORY_INFO_PRICE_FOUND,
         category_info_price_missed=CATEGORY_INFO_PRICE_MISSED,
         extra_hint_price=EXTRA_HINT_PRICE,
+        features=perks_service.features(),
     )
 
 

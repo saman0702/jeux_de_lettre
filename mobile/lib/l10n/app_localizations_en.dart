@@ -1487,4 +1487,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get looksMint => 'Mint';
+
+  @override
+  String get perksFreeCoins => 'Free coins';
+
+  @override
+  String perksWatchInfo(int coins, int left) {
+    return 'Watch a short video and earn $coins coins. $left left today.';
+  }
+
+  @override
+  String perksWatch(int coins) {
+    return 'WATCH (+$coins)';
+  }
+
+  @override
+  String get perksAdLimit => 'No more videos today: come back tomorrow!';
+
+  @override
+  String get perksAdPending => 'Video watched! Your coins are on their way.';
+
+  @override
+  String get perksNoAd => 'No video available right now.';
+
+  @override
+  String get perksPassTitle => 'Letter Race Pass';
+
+  @override
+  String get perksPassNoAds => 'No ads between games';
+
+  @override
+  String perksPassDaily(int coins) {
+    return '$coins free coins every day';
+  }
+
+  @override
+  String perksPassHints(int hints) {
+    return '$hints extra hints in every game';
+  }
+
+  @override
+  String perksPassActive(String date) {
+    return 'Pass active until $date';
+  }
+
+  @override
+  String perksPassPrice(String price) {
+    return 'SUBSCRIBE · $price / month';
+  }
+
+  @override
+  String perksClaimDaily(int coins) {
+    return 'CLAIM MY $coins COINS';
+  }
+
+  @override
+  String get perksDailyTaken => 'DAILY BONUS CLAIMED';
+
+  @override
+  String get perksPassDone => 'Welcome to the Pass!';
+
+  @override
+  String get perksRemoveAdsTitle => 'No ads';
+
+  @override
+  String get perksRemoveAdsInfo =>
+      'No more ads between games, forever. Videos to earn coins stay available.';
+
+  @override
+  String get perksRemoveAdsOwned => 'No ads: on';
+
+  @override
+  String get perksRemoveAdsDone => 'No more ads, thank you!';
+
+  @override
+  String get shopUnavailableShort => 'Unavailable';
 }

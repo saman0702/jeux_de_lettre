@@ -1,4 +1,5 @@
 import asyncio
+from urllib.parse import urlsplit
 
 import asyncpg
 import pytest
@@ -17,6 +18,15 @@ from app.services import letter_service
 
 TEST_DB = f"{settings.postgres_db}_test"
 TEST_DATABASE_URL = settings.database_url.rsplit("/", 1)[0] + f"/{TEST_DB}"
+
+# Garde-fou : les tests effacent et recréent leurs tables. Ils ne tournent jamais contre une base
+# distante (ex. DATABASE_URL de .env.production) : il faut viser le Postgres local.
+_TEST_HOST = urlsplit(TEST_DATABASE_URL.replace("+asyncpg", "")).hostname
+if _TEST_HOST not in {"localhost", "127.0.0.1", "postgres"}:
+    raise RuntimeError(
+        f"Tests refusés sur la base distante {_TEST_HOST!r}. Lancer avec "
+        "DATABASE_URL=postgresql+asyncpg://USER:PASS@localhost:5432/letterbattle"
+    )
 
 TEST_CITIES = ["Marseille", "Mbandaka", "Madrid", "Montréal", "Le Havre", "Abidjan", "Paris"]
 TEST_FEMALE_NAMES = ["Marie", "Mariam", "Manon", "Awa", "Camille"]

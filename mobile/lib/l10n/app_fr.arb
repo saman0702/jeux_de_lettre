@@ -133,7 +133,9 @@
   "publicRoomInvite": "Nouveau salon public de {host}",
   "@publicRoomInvite": {
     "placeholders": {
-      "host": { "type": "String" }
+      "host": {
+        "type": "String"
+      }
     }
   },
   "joinPublicRoom": "REJOINDRE",
@@ -148,14 +150,18 @@
   "freezeUse": "FREEZE ({count})",
   "@freezeUse": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "freezeBuyTitle": "Acheter un Freeze",
   "freezeBuyHelp": "Bloque un adversaire 10 secondes. Coût : {price} pièces.\nTu en as 1 gratuit par partie.",
   "@freezeBuyHelp": {
     "placeholders": {
-      "price": { "type": "int" }
+      "price": {
+        "type": "int"
+      }
     }
   },
   "freezeInfoHelp": "Pendant la manche, gèle un adversaire 10 secondes : il ne peut pas valider. 1 Freeze gratuit par partie, puis 15 pièces pour en racheter.",
@@ -166,16 +172,24 @@
   "lightningHelp": "{category} en {letter} — {seconds}s",
   "@lightningHelp": {
     "placeholders": {
-      "category": { "type": "String" },
-      "letter": { "type": "String" },
-      "seconds": { "type": "int" }
+      "category": {
+        "type": "String"
+      },
+      "letter": {
+        "type": "String"
+      },
+      "seconds": {
+        "type": "int"
+      }
     }
   },
   "lightningInfoHelp": "Entre deux manches : un mini QCM de 10 secondes. La bonne réponse te donne +2 points bonus. Sois rapide !",
   "lightningHit": "Bien joué ! +{points}",
   "@lightningHit": {
     "placeholders": {
-      "points": { "type": "int" }
+      "points": {
+        "type": "int"
+      }
     }
   },
   "lightningMiss": "Raté !",
@@ -185,13 +199,17 @@
   "chatUnlockHelp": "Tout le monde pourra te lire dans ce salon. Coût : {price} pièces (une fois).",
   "@chatUnlockHelp": {
     "placeholders": {
-      "price": { "type": "int" }
+      "price": {
+        "type": "int"
+      }
     }
   },
   "chatUnlockButton": "CHAT · {price}",
   "@chatUnlockButton": {
     "placeholders": {
-      "price": { "type": "int" }
+      "price": {
+        "type": "int"
+      }
     }
   },
   "chatInfoHelp": "Les stickers sont gratuits. Pour écrire du vrai texte, débloque le chat une fois avec des pièces dans ce salon.",
@@ -207,8 +225,12 @@
   "rematchVote": "REVANCHE ({votes}/{need})",
   "@rematchVote": {
     "placeholders": {
-      "votes": { "type": "int" },
-      "need": { "type": "int" }
+      "votes": {
+        "type": "int"
+      },
+      "need": {
+        "type": "int"
+      }
     }
   },
   "rematchHelp": "Vote pour rejouer. Quand la majorité des joueurs humains a voté, une nouvelle partie démarre avec les mêmes réglages.",
@@ -291,8 +313,12 @@
   "noticeHintUsed": "{name} utilise un joker ({category})",
   "@noticeHintUsed": {
     "placeholders": {
-      "name": { "type": "String" },
-      "category": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "category": {
+        "type": "String"
+      }
     }
   },
   "noticeJoined": "{name} a rejoint la salle",
@@ -896,7 +922,6 @@
   },
   "eliminationBestTitle": "Ton record",
   "eliminationNoRecord": "Pas encore de record",
-  "roomFormat": "Format",
   "formatRounds": "Par manches",
   "formatElimination": "Éliminatoires",
   "formatRoundsHelp": "Toutes les manches sont jouées : le meilleur total gagne.",
@@ -924,7 +949,6 @@
   "strictSpelling": "Orthographe stricte",
   "strictSpellingHelp": "Casse, accents et espaces doivent coller à la fiche. Manches d'au moins 2 minutes.",
   "strictSpellingChip": "Orthographe stricte",
-
   "preparingGame": "Préparation de la partie…",
   "playAlone": "JOUER SEUL",
   "withFriends": "Lancer la compétition",
@@ -995,5 +1019,77 @@
   "looksCyan": "Cyan",
   "looksViolet": "Violet",
   "looksOrange": "Orange",
-  "looksMint": "Menthe"
+  "looksMint": "Menthe",
+  "perksFreeCoins": "Pièces gratuites",
+  "perksWatchInfo": "Regarde une courte vidéo et gagne {coins} pièces. Encore {left} aujourd'hui.",
+  "@perksWatchInfo": {
+    "placeholders": {
+      "coins": {
+        "type": "int"
+      },
+      "left": {
+        "type": "int"
+      }
+    }
+  },
+  "perksWatch": "REGARDER (+{coins})",
+  "@perksWatch": {
+    "placeholders": {
+      "coins": {
+        "type": "int"
+      }
+    }
+  },
+  "perksAdLimit": "Plus de vidéo pour aujourd'hui : reviens demain !",
+  "perksAdPending": "Vidéo vue ! Tes pièces arrivent dans un instant.",
+  "perksNoAd": "Pas de vidéo disponible pour le moment.",
+  "perksPassTitle": "Pass Letter Race",
+  "perksPassNoAds": "Aucune pub entre les parties",
+  "perksPassDaily": "{coins} pièces offertes chaque jour",
+  "@perksPassDaily": {
+    "placeholders": {
+      "coins": {
+        "type": "int"
+      }
+    }
+  },
+  "perksPassHints": "{hints} jokers en plus dans chaque partie",
+  "@perksPassHints": {
+    "placeholders": {
+      "hints": {
+        "type": "int"
+      }
+    }
+  },
+  "perksPassActive": "Pass actif jusqu'au {date}",
+  "@perksPassActive": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "perksPassPrice": "S'ABONNER · {price} / mois",
+  "@perksPassPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "perksClaimDaily": "PRENDRE MES {coins} PIÈCES",
+  "@perksClaimDaily": {
+    "placeholders": {
+      "coins": {
+        "type": "int"
+      }
+    }
+  },
+  "perksDailyTaken": "BONUS DU JOUR PRIS",
+  "perksPassDone": "Bienvenue dans le Pass !",
+  "perksRemoveAdsTitle": "Sans pub",
+  "perksRemoveAdsInfo": "Plus aucune pub entre les parties, pour toujours. Les vidéos pour gagner des pièces restent possibles.",
+  "perksRemoveAdsOwned": "Sans pub : activé",
+  "perksRemoveAdsDone": "C'est fini les pubs, merci !",
+  "shopUnavailableShort": "Indisponible"
 }

@@ -419,7 +419,7 @@ def test_welcome_carries_the_wallet(client, manager):
     give_coins(manager, "alice-0001", 7)
     with client.websocket_connect("/ws?client_id=alice-0001&nickname=Alice") as ws:
         welcome = ws.receive_json()
-        assert welcome["wallet"] == {"coins": 7, "coins_gained": 0, "points_to_next_coin": 20, "level": 1, "level_xp": 0, "level_xp_needed": 100}
+        assert welcome["wallet"] == {"coins": 7, "coins_gained": 0, "points_to_next_coin": 20, "level": 1, "level_xp": 0, "level_xp_needed": 100, "ads_removed": False, "pass_expires_at": None}
 
 
 def test_round_points_become_coins(client):
@@ -433,7 +433,7 @@ def test_round_points_become_coins(client):
         alice.send_json({"type": "submit", "round": 1, "answers": {"city": "Madrid", "country": "Maroc"}})
         bob.send_json({"type": "submit", "round": 1, "answers": {}})
         wallet = wait_for(alice, lambda m: m["type"] == "wallet")
-        assert wallet == {"type": "wallet", "coins": 1, "coins_gained": 1, "points_to_next_coin": 20, "level": 1, "level_xp": 20, "level_xp_needed": 100}
+        assert wallet == {"type": "wallet", "coins": 1, "coins_gained": 1, "points_to_next_coin": 20, "level": 1, "level_xp": 20, "level_xp_needed": 100, "ads_removed": False, "pass_expires_at": None}
 
 
 def test_betting_room_needs_coins(client, manager):

@@ -2611,6 +2611,126 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Menthe'**
   String get looksMint;
+
+  /// No description provided for @perksFreeCoins.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pièces gratuites'**
+  String get perksFreeCoins;
+
+  /// No description provided for @perksWatchInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Regarde une courte vidéo et gagne {coins} pièces. Encore {left} aujourd\'hui.'**
+  String perksWatchInfo(int coins, int left);
+
+  /// No description provided for @perksWatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'REGARDER (+{coins})'**
+  String perksWatch(int coins);
+
+  /// No description provided for @perksAdLimit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus de vidéo pour aujourd\'hui : reviens demain !'**
+  String get perksAdLimit;
+
+  /// No description provided for @perksAdPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéo vue ! Tes pièces arrivent dans un instant.'**
+  String get perksAdPending;
+
+  /// No description provided for @perksNoAd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de vidéo disponible pour le moment.'**
+  String get perksNoAd;
+
+  /// No description provided for @perksPassTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pass Letter Race'**
+  String get perksPassTitle;
+
+  /// No description provided for @perksPassNoAds.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune pub entre les parties'**
+  String get perksPassNoAds;
+
+  /// No description provided for @perksPassDaily.
+  ///
+  /// In fr, this message translates to:
+  /// **'{coins} pièces offertes chaque jour'**
+  String perksPassDaily(int coins);
+
+  /// No description provided for @perksPassHints.
+  ///
+  /// In fr, this message translates to:
+  /// **'{hints} jokers en plus dans chaque partie'**
+  String perksPassHints(int hints);
+
+  /// No description provided for @perksPassActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pass actif jusqu\'au {date}'**
+  String perksPassActive(String date);
+
+  /// No description provided for @perksPassPrice.
+  ///
+  /// In fr, this message translates to:
+  /// **'S\'ABONNER · {price} / mois'**
+  String perksPassPrice(String price);
+
+  /// No description provided for @perksClaimDaily.
+  ///
+  /// In fr, this message translates to:
+  /// **'PRENDRE MES {coins} PIÈCES'**
+  String perksClaimDaily(int coins);
+
+  /// No description provided for @perksDailyTaken.
+  ///
+  /// In fr, this message translates to:
+  /// **'BONUS DU JOUR PRIS'**
+  String get perksDailyTaken;
+
+  /// No description provided for @perksPassDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bienvenue dans le Pass !'**
+  String get perksPassDone;
+
+  /// No description provided for @perksRemoveAdsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans pub'**
+  String get perksRemoveAdsTitle;
+
+  /// No description provided for @perksRemoveAdsInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus aucune pub entre les parties, pour toujours. Les vidéos pour gagner des pièces restent possibles.'**
+  String get perksRemoveAdsInfo;
+
+  /// No description provided for @perksRemoveAdsOwned.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans pub : activé'**
+  String get perksRemoveAdsOwned;
+
+  /// No description provided for @perksRemoveAdsDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'C\'est fini les pubs, merci !'**
+  String get perksRemoveAdsDone;
+
+  /// No description provided for @shopUnavailableShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indisponible'**
+  String get shopUnavailableShort;
 }
 
 class _AppLocalizationsDelegate

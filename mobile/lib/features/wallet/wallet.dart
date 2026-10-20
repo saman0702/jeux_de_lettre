@@ -8,6 +8,8 @@ class WalletSnapshot {
     this.level = 1,
     this.levelXp = 0,
     this.levelXpNeeded = 100,
+    this.adsRemoved = false,
+    this.passExpiresAt,
   });
 
   factory WalletSnapshot.fromJson(Map<String, dynamic> json) => WalletSnapshot(
@@ -17,6 +19,35 @@ class WalletSnapshot {
     level: json['level'] as int? ?? 1,
     levelXp: json['level_xp'] as int? ?? 0,
     levelXpNeeded: json['level_xp_needed'] as int? ?? 100,
+    adsRemoved: json['ads_removed'] as bool? ?? false,
+    passExpiresAt: json['pass_expires_at'] == null
+        ? null
+        : DateTime.parse(json['pass_expires_at'] as String),
+  );
+
+  /// Achat « Sans pub ».
+  final bool adsRemoved;
+
+  /// Fin de la période payée de l'abonnement Pass.
+  final DateTime? passExpiresAt;
+
+  bool passActive([DateTime? now]) =>
+      passExpiresAt != null && passExpiresAt!.isAfter(now ?? DateTime.now());
+
+  WalletSnapshot copyWith({
+    int? coins,
+    int? coinsGained,
+    bool? adsRemoved,
+    DateTime? passExpiresAt,
+  }) => WalletSnapshot(
+    coins: coins ?? this.coins,
+    coinsGained: coinsGained ?? 0,
+    pointsToNextCoin: pointsToNextCoin,
+    level: level,
+    levelXp: levelXp,
+    levelXpNeeded: levelXpNeeded,
+    adsRemoved: adsRemoved ?? this.adsRemoved,
+    passExpiresAt: passExpiresAt ?? this.passExpiresAt,
   );
 
   static const pointsPerCoin = 20;

@@ -105,7 +105,7 @@ async def test_online_solo_game_fills_the_wallet(client, monkeypatch):
         )
     ).json()
     assert body["round"]["round_score"] == 30
-    assert body["wallet"] == {"coins": 1, "coins_gained": 1, "points_to_next_coin": 10, "level": 1, "level_xp": 30, "level_xp_needed": 100}
+    assert body["wallet"] == {"coins": 1, "coins_gained": 1, "points_to_next_coin": 10, "level": 1, "level_xp": 30, "level_xp_needed": 100, "ads_removed": False, "pass_expires_at": None}
 
 
 async def test_solo_game_without_profile_has_no_wallet(client, monkeypatch):

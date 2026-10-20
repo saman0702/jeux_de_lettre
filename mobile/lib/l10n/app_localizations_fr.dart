@@ -1493,4 +1493,81 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get looksMint => 'Menthe';
+
+  @override
+  String get perksFreeCoins => 'Pièces gratuites';
+
+  @override
+  String perksWatchInfo(int coins, int left) {
+    return 'Regarde une courte vidéo et gagne $coins pièces. Encore $left aujourd\'hui.';
+  }
+
+  @override
+  String perksWatch(int coins) {
+    return 'REGARDER (+$coins)';
+  }
+
+  @override
+  String get perksAdLimit =>
+      'Plus de vidéo pour aujourd\'hui : reviens demain !';
+
+  @override
+  String get perksAdPending =>
+      'Vidéo vue ! Tes pièces arrivent dans un instant.';
+
+  @override
+  String get perksNoAd => 'Pas de vidéo disponible pour le moment.';
+
+  @override
+  String get perksPassTitle => 'Pass Letter Race';
+
+  @override
+  String get perksPassNoAds => 'Aucune pub entre les parties';
+
+  @override
+  String perksPassDaily(int coins) {
+    return '$coins pièces offertes chaque jour';
+  }
+
+  @override
+  String perksPassHints(int hints) {
+    return '$hints jokers en plus dans chaque partie';
+  }
+
+  @override
+  String perksPassActive(String date) {
+    return 'Pass actif jusqu\'au $date';
+  }
+
+  @override
+  String perksPassPrice(String price) {
+    return 'S\'ABONNER · $price / mois';
+  }
+
+  @override
+  String perksClaimDaily(int coins) {
+    return 'PRENDRE MES $coins PIÈCES';
+  }
+
+  @override
+  String get perksDailyTaken => 'BONUS DU JOUR PRIS';
+
+  @override
+  String get perksPassDone => 'Bienvenue dans le Pass !';
+
+  @override
+  String get perksRemoveAdsTitle => 'Sans pub';
+
+  @override
+  String get perksRemoveAdsInfo =>
+      'Plus aucune pub entre les parties, pour toujours. Les vidéos pour gagner des pièces restent possibles.';
+
+  @override
+  String get perksRemoveAdsOwned => 'Sans pub : activé';
+
+  @override
+  String get perksRemoveAdsDone => 'C\'est fini les pubs, merci !';
+
+  @override
+  String get shopUnavailableShort => 'Indisponible';
 }
