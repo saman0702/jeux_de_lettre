@@ -199,6 +199,8 @@ void main() {
     expect(h.uris.single.queryParameters, {
       'client_id': me,
       'nickname': 'Blaise',
+      // Langue de l'appli : le serveur valide les réponses dans celle-ci.
+      'language': 'fr',
     });
   });
 

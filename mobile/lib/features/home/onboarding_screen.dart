@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'country_picker.dart';
+
 import '../../core/audio/game_audio.dart';
 import '../../core/feedback/game_feedback.dart';
 import '../../core/theme/app_colors.dart';
@@ -98,6 +100,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               child: _GenderBlock(
                                 value: settings.gender,
                                 onChanged: (g) => settings.gender = g,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Pays d'origine : drapeau vu par les autres joueurs.
+                            _Card(
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      l10n.settingsCountry,
+                                      style: fredoka(size: 16, weight: FontWeight.w700),
+                                    ),
+                                  ),
+                                  CountryButton(
+                                    value: settings.country,
+                                    onChanged: (c) => settings.country = c,
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(height: 12),

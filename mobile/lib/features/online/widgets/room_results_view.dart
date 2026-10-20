@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../home/country_picker.dart';
 import '../../../animations/bounce_in.dart';
 import '../../../core/audio/game_audio.dart';
 import '../../../core/feedback/game_feedback.dart';
@@ -153,7 +154,10 @@ class _RoomResultsViewState extends State<RoomResultsView> {
           .map((f) => l10n.suggestionFoundBy(f.$1, f.$2))
           .join('  ·  ');
     }
-    final example = results.examples[answer.category] ?? answer.suggestion;
+    // Réponse possible dans la langue du joueur (parties mélangées FR/EN).
+    final language = Localizations.localeOf(context).languageCode;
+    final example =
+        results.examplesFor(language)[answer.category] ?? answer.suggestion;
     return example == null ? null : l10n.suggestionExample(example);
   }
 
@@ -331,6 +335,10 @@ class _LeaderboardRow extends StatelessWidget {
             ),
             PlayerAvatar.of(player, size: 36),
             const SizedBox(width: 10),
+            if (player.country != null) ...[
+              CountryBadge(country: player.country, width: 18),
+              const SizedBox(width: 6),
+            ],
             Expanded(
               child: StyledNickname(
                 isMe

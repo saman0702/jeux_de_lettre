@@ -1166,5 +1166,10 @@
       }
     }
   },
-  "chatTagHint": "Touche un pseudo pour le taguer (@pseudo)."
+  "chatTagHint": "Touche un pseudo pour le taguer (@pseudo).",
+  "settingsCountry": "Pays d'origine",
+  "countryPickTitle": "Ton pays d'origine",
+  "countrySearch": "Rechercher un pays",
+  "countryChoose": "Choisir",
+  "mixedLanguages": "FR + EN : chacun dans sa langue"
 }

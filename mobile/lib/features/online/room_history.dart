@@ -575,9 +575,8 @@ class SavedRoomsSectionState extends State<SavedRoomsSection> {
       widget.apiClient ?? ApiClient(),
       OnlineScope.of(context).clientId,
     );
-    final language = Localizations.localeOf(context).languageCode;
     try {
-      final results = await Future.wait([api.mine(), api.public(language)]);
+      final results = await Future.wait([api.mine(), api.public()]);
       if (!mounted) return;
       setState(() {
         _mine = results[0];

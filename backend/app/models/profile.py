@@ -28,6 +28,8 @@ class Profile(TimestampMixin, Base):
     cosmetic_hat: Mapped[str] = mapped_column(String(32), default="", server_default="")
     cosmetic_frame: Mapped[str] = mapped_column(String(32), default="", server_default="")
     cosmetic_name: Mapped[str] = mapped_column(String(32), default="", server_default="")
+    # Pays d'origine (nom anglais), affiché en drapeau à côté du pseudo.
+    country: Mapped[str | None] = mapped_column(String(48), nullable=True)
     # Achat « Sans pub ».
     ads_removed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     # Abonnement « Pass » : fin de la période payée, et l'achat pour la redemander au store.

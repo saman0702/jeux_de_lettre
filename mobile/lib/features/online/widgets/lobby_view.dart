@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../home/country_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -141,6 +142,13 @@ class LobbyView extends StatelessWidget {
               chip(l10n.roundsCount(settings.rounds)),
               chip(durationLabel(l10n, settings.roundDuration)),
               chip(settings.difficulty.label(l10n)),
+              // Partie mélangée : chacun répond dans sa langue.
+              if ({
+                    for (final p in room.players)
+                      if (!p.bot) p.language,
+                  }.length >
+                  1)
+                chip(l10n.mixedLanguages),
               if (settings.strictSpelling) chip(l10n.strictSpellingChip),
               if (settings.elimination) chip(l10n.formatElimination),
               if (settings.relay) chip(l10n.formatRelay),
@@ -494,11 +502,21 @@ class _PlayerSeat extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        StyledNickname(
-          isMe ? l10n.youBadge : player.nickname,
-          styleId: player.nameStyle,
-          size: 13,
-          weight: isMe ? FontWeight.w700 : FontWeight.w600,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drapeau du pays d'origine.
+            CountryBadge(country: player.country, width: 16),
+            if (player.country != null) const SizedBox(width: 3),
+            Flexible(
+              child: StyledNickname(
+                isMe ? l10n.youBadge : player.nickname,
+                styleId: player.nameStyle,
+                size: 13,
+                weight: isMe ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ],
     );

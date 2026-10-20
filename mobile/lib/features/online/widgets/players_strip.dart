@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../home/country_picker.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/game_icon.dart';
@@ -92,6 +93,10 @@ class _PlayerChip extends StatelessWidget {
           children: [
             PlayerAvatar.of(player, size: 38),
             const SizedBox(width: 6),
+            if (player.country != null) ...[
+              CountryBadge(country: player.country, width: 16),
+              const SizedBox(width: 4),
+            ],
             Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,

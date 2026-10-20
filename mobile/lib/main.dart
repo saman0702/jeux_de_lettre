@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -35,6 +36,16 @@ Future<void> main() async {
     RealtimeClient(
       clientId: settings.clientId,
       nickname: settings.nickname ?? 'Joueur',
+      language: appLanguage(settings),
+      country: settings.country,
+    ),
+  );
+  // Chacun répond dans la langue de son appli : le serveur doit la connaître,
+  // ainsi que le pays d'origine (drapeau vu par les autres).
+  settings.addListener(
+    () => online.client.updateIdentity(
+      language: appLanguage(settings),
+      country: settings.country,
     ),
   );
   // Une seule connexion pour toute l'appli : compteur en ligne, salons et
@@ -71,6 +82,14 @@ Future<void> main() async {
       perks: perks,
     ),
   );
+}
+
+/// Langue réellement affichée : celle choisie, sinon celle du téléphone si
+/// l'appli la parle (français), sinon l'anglais.
+String appLanguage(AppSettings settings) {
+  final code =
+      settings.languageCode ?? PlatformDispatcher.instance.locale.languageCode;
+  return code == 'fr' ? 'fr' : 'en';
 }
 
 class LetterBattleApp extends StatefulWidget {

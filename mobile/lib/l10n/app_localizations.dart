@@ -2869,6 +2869,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Touche un pseudo pour le taguer (@pseudo).'**
   String get chatTagHint;
+
+  /// No description provided for @settingsCountry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pays d\'origine'**
+  String get settingsCountry;
+
+  /// No description provided for @countryPickTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton pays d\'origine'**
+  String get countryPickTitle;
+
+  /// No description provided for @countrySearch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un pays'**
+  String get countrySearch;
+
+  /// No description provided for @countryChoose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir'**
+  String get countryChoose;
+
+  /// No description provided for @mixedLanguages.
+  ///
+  /// In fr, this message translates to:
+  /// **'FR + EN : chacun dans sa langue'**
+  String get mixedLanguages;
 }
 
 class _AppLocalizationsDelegate

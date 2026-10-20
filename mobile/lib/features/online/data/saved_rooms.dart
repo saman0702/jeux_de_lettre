@@ -145,9 +145,10 @@ class SavedRoomsApi {
       SavedRoomSummary.fromJson(r as Map<String, dynamic>),
   ];
 
-  Future<List<SavedRoomSummary>> public(String language) async => [
+  /// Toutes langues confondues : chacun joue dans la sienne.
+  Future<List<SavedRoomSummary>> public() async => [
     for (final r in await _api.getJsonList(
-      '/api/v1/rooms/public?language=$language&client_id=$clientId',
+      '/api/v1/rooms/public?client_id=$clientId',
     ))
       SavedRoomSummary.fromJson(r as Map<String, dynamic>),
   ];

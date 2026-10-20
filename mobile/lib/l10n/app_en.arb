@@ -531,5 +531,10 @@
   "chatPrivateButton": "Private",
   "chatPrivatePick": "Who do you want to write to?",
   "chatMentionedBy": "{name} tagged you in the chat",
-  "chatTagHint": "Tap a name to tag them (@name)."
+  "chatTagHint": "Tap a name to tag them (@name).",
+  "settingsCountry": "Home country",
+  "countryPickTitle": "Your home country",
+  "countrySearch": "Search a country",
+  "countryChoose": "Choose",
+  "mixedLanguages": "FR + EN: each in their own language"
 }

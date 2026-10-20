@@ -10,6 +10,12 @@ router = APIRouter()
 _CLIENT_ID = re.compile(r"^[A-Za-z0-9-]{8,64}$")
 
 
+def clean_country(raw: str) -> str | None:
+    """Pays choisi dans l'appli (nom anglais, ex. « Ivory Coast ») ; vide = pas de drapeau."""
+    country = " ".join(raw.split())[:48]
+    return country or None
+
+
 def clean_nickname(raw: str) -> str:
     nickname = " ".join(raw.split())[:20]
     return nickname or "Joueur"
@@ -20,6 +26,8 @@ async def game_socket(
     websocket: WebSocket,
     client_id: str = Query(...),
     nickname: str = Query("Joueur"),
+    language: str = Query("fr"),
+    country: str = Query(""),
 ):
     """Une connexion persistante par appli : présence, salle d'attente et parties en direct.
 
@@ -32,7 +40,14 @@ async def game_socket(
 
     await websocket.accept()
     manager = websocket.app.state.room_manager
-    connection = await manager.connect(websocket, client_id, clean_nickname(nickname))
+    connection = await manager.connect(
+        websocket,
+        client_id,
+        clean_nickname(nickname),
+        # Langue de l'appli (réponses validées dans celle-ci) et pays d'origine (drapeau).
+        language=language if language in {"fr", "en"} else "fr",
+        country=clean_country(country),
+    )
     try:
         while True:
             text = await websocket.receive_text()

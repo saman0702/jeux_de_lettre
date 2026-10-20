@@ -56,8 +56,9 @@ def client(manager):
 
 
 @contextmanager
-def player(client, client_id, nickname):
-    with client.websocket_connect(f"/ws?client_id={client_id}&nickname={nickname}") as ws:
+def player(client, client_id, nickname, language="fr", country=""):
+    url = f"/ws?client_id={client_id}&nickname={nickname}&language={language}&country={country}"
+    with client.websocket_connect(url) as ws:
         welcome = ws.receive_json()
         assert welcome["type"] == "welcome"
         yield ws
@@ -180,11 +181,13 @@ def test_quick_match_groups_players_and_starts_automatically(client):
         assert state(alice, "round")["round"]["letter"] == "M"
 
 
-def test_quick_match_keeps_languages_apart(client):
-    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+def test_quick_match_mixes_languages(client):
+    """Chacun répond dans sa langue : un francophone et un anglophone jouent ensemble."""
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob", "en") as bob:
         alice.send_json({"type": "quick_match", "language": "fr"})
+        code = state(alice, "waiting")["code"]
         bob.send_json({"type": "quick_match", "language": "en"})
-        assert state(alice, "waiting")["code"] != state(bob, "waiting")["code"]
+        assert state(bob, "waiting")["code"] == code
 
 
 def test_public_rooms_are_listed(client):
@@ -763,3 +766,40 @@ def test_rooms_without_activity_for_30_days_are_deleted(manager):
 
     removed, old, new = asyncio.run(run())
     assert removed == 1 and old is None and new is not None
+
+
+# ------------------------------------------------------------------ langues mélangées et pays
+
+
+def test_french_and_english_players_share_a_room(client):
+    with (
+        player(client, "alice-0001", "Alice", "fr", "France") as alice,
+        player(client, "bob-00001", "Bob", "en", "Ivory%20Coast") as bob,
+    ):
+        room = create_room(alice, categories=["country"])
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        room = state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        assert {p["client_id"]: (p["language"], p["country"]) for p in room["players"]} == {
+            "alice-0001": ("fr", "France"),
+            "bob-00001": ("en", "Ivory Coast"),
+        }
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        state(alice, "round")
+        # Chacun dans sa langue : « Maroc » et « Morocco » sont la même réponse (partagée).
+        alice.send_json({"type": "submit", "round": 1, "answers": {"country": "Maroc"}})
+        bob.send_json({"type": "submit", "round": 1, "answers": {"country": "Morocco"}})
+        results = state(alice, "results")["results"]
+        by_player = {p["nickname"]: p for p in results["players"]}
+        assert by_player["Alice"]["answers"][0]["status"] == "valid"
+        assert by_player["Bob"]["answers"][0]["status"] == "valid"
+        assert by_player["Alice"]["round_score"] == by_player["Bob"]["round_score"] == 5
+
+        # Un anglophone qui répond en français n'est pas validé (il joue en anglais).
+        state(alice, "round", lambda r: r["round"]["number"] == 2)
+        alice.send_json({"type": "submit", "round": 2, "answers": {}})
+        bob.send_json({"type": "submit", "round": 2, "answers": {"country": "Maroc"}})
+        results = state(bob, "results", lambda r: r["results"]["number"] == 2)["results"]
+        bob_answer = {p["nickname"]: p for p in results["players"]}["Bob"]["answers"][0]
+        assert bob_answer["status"] != "valid"
+        assert set(results["examples_by_language"]) == {"fr", "en"}

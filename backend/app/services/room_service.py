@@ -159,6 +159,9 @@ class RoomPlayer:
     hat: str = ""
     frame: str = ""
     name_style: str = ""
+    # Langue de l'appli du joueur (il répond dans celle-ci) et pays d'origine (drapeau).
+    language: str = "fr"
+    country: str | None = None
 
     @property
     def bot(self) -> bool:
@@ -258,6 +261,9 @@ class Connection:
     hat: str = ""
     frame: str = ""
     name_style: str = ""
+    # Langue de l'appli du joueur (il répond dans celle-ci) et pays d'origine (drapeau).
+    language: str = "fr"
+    country: str | None = None
 
 
 class RoomError(Exception):
@@ -340,19 +346,28 @@ class RoomManager:
 
     # ---------------------------------------------------------------- connexions
 
-    async def connect(self, websocket: WebSocket, client_id: str, nickname: str) -> Connection:
+    async def connect(
+        self,
+        websocket: WebSocket,
+        client_id: str,
+        nickname: str,
+        language: str = "fr",
+        country: str | None = None,
+    ) -> Connection:
         previous = self.connections.get(client_id)
         if previous is not None:
             with contextlib.suppress(Exception):
                 await previous.websocket.close(code=4000, reason="replaced")
 
-        connection = Connection(client_id, nickname, websocket)
+        connection = Connection(client_id, nickname, websocket, language=language, country=country)
         # Profil lu avant d'enregistrer la connexion : « welcome » reste ainsi le premier message.
         wallet = None
         look = None
         try:
             async with self.session_factory() as session:
                 profile = await wallet_service.get_profile(session, client_id, nickname)
+                if country is not None and profile.country != country:
+                    profile.country = country
                 await session.commit()
             wallet = wallet_service.snapshot(profile).as_dict()
             look = wallet_service.look_of(profile)
@@ -535,7 +550,8 @@ class RoomManager:
         candidates = [
             r
             for r in self.rooms.values()
-            if r.quick and r.phase == "waiting" and r.joinable and r.settings.language == language
+            # Toutes langues mélangées : chacun répond dans la sienne.
+            if r.quick and r.phase == "waiting" and r.joinable
         ]
         # Rejoint la salle la plus remplie pour que la partie démarre plus vite.
         room = max(candidates, key=lambda r: len(r.players), default=None)
@@ -654,7 +670,7 @@ class RoomManager:
             try:
                 async with self.session_factory() as session:
                     hint = await hint_service.build_hint(
-                        session, room.settings.language, category, live.letter
+                        session, player.language, category, live.letter
                     )
             except hint_service.NoHintAvailable:
                 raise RoomError("no_hint_available") from None
@@ -746,7 +762,8 @@ class RoomManager:
         word = fact_service.info_word(
             answer.get("matched_value"), answer.get("suggestion"), answer.get("value") or ""
         )
-        lines = fact_service.lookup_lines(category, word, room.settings.language)
+        asker = room.players.get(connection.client_id)
+        lines = fact_service.lookup_lines(category, word, asker.language if asker else room.settings.language)
         unlock = fact_service.unlock_id(category, word)
         if not lines or unlock is None:
             raise RoomError("no_info_available")
@@ -1226,6 +1243,8 @@ class RoomManager:
             nickname=bot_service.bot_name(taken),
             ready=True,
             bot_level=level,
+            # Les bots répondent dans la langue du salon.
+            language=room.settings.language,
         )
         room.players[bot.client_id] = bot
         return bot
@@ -1242,6 +1261,8 @@ class RoomManager:
             hat=connection.hat,
             frame=connection.frame,
             name_style=connection.name_style,
+            language=connection.language,
+            country=connection.country,
         )
         self._room_of[connection.client_id] = room.code
         if room.creator_id is not None:
@@ -1592,7 +1613,11 @@ class RoomManager:
         await asyncio.sleep(self.timings.countdown)
 
         async with self.session_factory() as session:
-            info = await multiplayer_service.start_round(session, room.game_id)
+            # Lettre jouable dans toutes les langues des joueurs encore en lice.
+            languages = {
+                p.language for p in room.players.values() if not p.bot and p.eliminated_round is None
+            } or {room.settings.language}
+            info = await multiplayer_service.start_round(session, room.game_id, languages)
         # Bonus : durée plus courte côté client (ends_at recalculé).
         ends_at = info.ends_at
         if bonus:
@@ -1649,6 +1674,10 @@ class RoomManager:
                 participants=list(live.participants.values()),
                 submissions={live.participants[cid]: sub for cid, sub in live.submissions.items()},
                 hints=hints,
+                languages={
+                    db_id: room.players[cid].language if cid in room.players else room.settings.language
+                    for cid, db_id in live.participants.items()
+                },
             )
 
         by_player_id = {p.db_player_id: p for p in room.players.values()}
@@ -1677,7 +1706,7 @@ class RoomManager:
                     "client_id": cid,
                     "nickname": player.nickname if player else "",
                     "answers": [
-                        enrich_answer_dict(a, language=language, unlocked=unlocked)
+                        enrich_answer_dict(a, language=player.language if player else language, unlocked=unlocked)
                         for a in result.answers
                     ],
                     "round_score": result.round_score,
@@ -1707,6 +1736,7 @@ class RoomManager:
             "letter": outcome.letter,
             "players": results,
             "examples": outcome.examples,
+            "examples_by_language": outcome.examples_by_language,
             "eliminated": eliminated,
             "bonus": bool(live and live.bonus),
             "assignments": dict(live.assignments) if live else {},
@@ -2011,6 +2041,8 @@ class RoomManager:
                     "avatar_url": p.avatar_url,
                     "level": p.level,
                     "eliminated_round": p.eliminated_round,
+                    "language": p.language,
+                    "country": p.country,
                     "hair": p.hair,
                     "hat": p.hat,
                     "frame": p.frame,
@@ -2076,9 +2108,9 @@ class RoomManager:
             if r.settings.public
             and r.phase == "waiting"
             and r.joinable
-            and (language is None or r.settings.language == language)
         ]
-        rooms.sort(key=lambda r: len(r.players), reverse=True)
+        # Toutes les langues se mélangent ; les salons de la même langue viennent en premier.
+        rooms.sort(key=lambda r: (r.settings.language != language, -len(r.players)))
         return [
             {
                 "code": r.code,

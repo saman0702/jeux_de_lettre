@@ -1655,4 +1655,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get chatTagHint => 'Touche un pseudo pour le taguer (@pseudo).';
+
+  @override
+  String get settingsCountry => 'Pays d\'origine';
+
+  @override
+  String get countryPickTitle => 'Ton pays d\'origine';
+
+  @override
+  String get countrySearch => 'Rechercher un pays';
+
+  @override
+  String get countryChoose => 'Choisir';
+
+  @override
+  String get mixedLanguages => 'FR + EN : chacun dans sa langue';
 }

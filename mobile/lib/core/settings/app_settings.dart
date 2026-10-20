@@ -20,6 +20,7 @@ class AppSettings extends ChangeNotifier {
     this._nickname,
     this._languageCode,
     this._gender,
+    this._country,
     this._onboardingDone = false,
     this._avatarPreset = 0,
     this._avatarPending = false,
@@ -67,6 +68,7 @@ class AppSettings extends ChangeNotifier {
       nickname: prefs.getString(_nicknameKey),
       languageCode: prefs.getString(_languageKey),
       gender: prefs.getString(_genderKey),
+      country: prefs.getString(_countryKey),
       // Déjà joué avant l'écran d'accueil : ne pas reforcer l'onboarding.
       onboardingDone: prefs.getBool(_onboardingDoneKey) ??
           (prefs.getString(_nicknameKey) != null ||
@@ -144,6 +146,7 @@ class AppSettings extends ChangeNotifier {
   static const _voiceKey = 'settings.voice';
   static const _languageKey = 'settings.language';
   static const _genderKey = 'player.gender';
+  static const _countryKey = 'player.country';
   static const _onboardingDoneKey = 'onboarding.done';
   static const _nicknameKey = 'player.nickname';
   static const _clientIdKey = 'player.client_id';
@@ -172,6 +175,7 @@ class AppSettings extends ChangeNotifier {
   String? _nickname;
   String? _languageCode;
   String? _gender;
+  String? _country;
   bool _onboardingDone;
   int _avatarPreset;
   bool _avatarPending;
@@ -351,6 +355,20 @@ class AppSettings extends ChangeNotifier {
 
   /// Genre déclaré : `male`, `female`, `other`, ou null.
   String? get gender => _gender;
+
+  /// Pays d'origine (nom anglais, ex. « Ivory Coast ») : drapeau à côté du
+  /// pseudo dans les salons ; null tant qu'il n'est pas choisi.
+  String? get country => _country;
+
+  set country(String? value) {
+    _country = value;
+    if (value == null) {
+      _prefs?.remove(_countryKey);
+    } else {
+      _prefs?.setString(_countryKey, value);
+    }
+    notifyListeners();
+  }
 
   /// Premier paramétrage déjà terminé.
   bool get onboardingDone => _onboardingDone;

@@ -1646,4 +1646,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatTagHint => 'Tap a name to tag them (@name).';
+
+  @override
+  String get settingsCountry => 'Home country';
+
+  @override
+  String get countryPickTitle => 'Your home country';
+
+  @override
+  String get countrySearch => 'Search a country';
+
+  @override
+  String get countryChoose => 'Choose';
+
+  @override
+  String get mixedLanguages => 'FR + EN: each in their own language';
 }

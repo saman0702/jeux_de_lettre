@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../home/country_picker.dart';
 import '../../../animations/bounce_in.dart';
 import '../../../animations/victory/confetti.dart';
 import '../../../core/audio/game_audio.dart';
@@ -357,10 +358,19 @@ class _PodiumStep extends StatelessWidget {
         children: [
           PlayerAvatar.of(player, size: place == 1 ? 64 : 52),
           const SizedBox(height: 6),
-          StyledNickname(
-            isMe ? l10n.youBadge : player.nickname,
-            styleId: player.nameStyle,
-            size: 15,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CountryBadge(country: player.country, width: 18),
+              if (player.country != null) const SizedBox(width: 4),
+              Flexible(
+                child: StyledNickname(
+                  isMe ? l10n.youBadge : player.nickname,
+                  styleId: player.nameStyle,
+                  size: 15,
+                ),
+              ),
+            ],
           ),
           Text(
             l10n.pointsShort(player.score),

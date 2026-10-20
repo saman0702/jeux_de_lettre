@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'country_picker.dart';
+
 import '../../animations/bounce_in.dart';
 import '../../core/feedback/game_feedback.dart';
 import '../../core/theme/app_colors.dart';
@@ -104,6 +106,15 @@ class _SettingsSheet extends StatelessWidget {
                       child: _GenderRow(
                         value: settings.gender,
                         onChanged: (g) => settings.gender = g,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    BounceIn(
+                      from: 0.85,
+                      slideY: 0.3,
+                      child: _CountryRow(
+                        value: settings.country,
+                        onChanged: (c) => settings.country = c,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -336,6 +347,51 @@ class _LanguageRow extends StatelessWidget {
             },
             onTap: onChanged,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pays d'origine, à côté du sexe.
+class _CountryRow extends StatelessWidget {
+  const _CountryRow({required this.value, required this.onChanged});
+
+  final String? value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      key: const Key('setting_country'),
+      padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.green, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.depthOf(AppColors.green),
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const GameIconBadge(
+            GameIconKind.country,
+            color: AppColors.green,
+            size: 44,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              l10n.settingsCountry,
+              style: fredoka(size: 17, weight: FontWeight.w700),
+            ),
+          ),
+          Flexible(child: CountryButton(value: value, onChanged: onChanged)),
         ],
       ),
     );

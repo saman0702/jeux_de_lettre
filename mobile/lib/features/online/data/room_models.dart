@@ -146,6 +146,8 @@ class RoomPlayer {
     this.avatarUrl,
     this.level = 1,
     this.eliminatedRound,
+    this.language = 'fr',
+    this.country,
     this.hair = '',
     this.hat = '',
     this.frame = '',
@@ -177,6 +179,8 @@ class RoomPlayer {
     avatarUrl: json['avatar_url'] as String?,
     level: json['level'] as int? ?? 1,
     eliminatedRound: json['eliminated_round'] as int?,
+    language: json['language'] as String? ?? 'fr',
+    country: json['country'] as String?,
     hair: json['hair'] as String? ?? '',
     hat: json['hat'] as String? ?? '',
     frame: json['frame'] as String? ?? '',
@@ -226,6 +230,10 @@ class RoomPlayer {
 
   /// Éliminatoires : manche où le joueur est sorti.
   final int? eliminatedRound;
+
+  /// Langue dans laquelle le joueur répond, et pays d'origine (drapeau).
+  final String language;
+  final String? country;
   bool get eliminated => eliminatedRound != null;
 
   /// Coiffure boutique, ou vide.
@@ -277,6 +285,7 @@ class RoomRoundResults {
     required this.letter,
     required this.players,
     this.examples = const {},
+    this.examplesByLanguage = const {},
     this.eliminated = const [],
   });
 
@@ -292,6 +301,14 @@ class RoomRoundResults {
           for (final e in ((json['examples'] as Map?) ?? const {}).entries)
             Category.fromWire(e.key as String): e.value as String,
         },
+        examplesByLanguage: {
+          for (final l
+              in ((json['examples_by_language'] as Map?) ?? const {}).entries)
+            l.key as String: {
+              for (final e in (l.value as Map).entries)
+                Category.fromWire(e.key as String): e.value as String,
+            },
+        },
         eliminated: [
           for (final id in (json['eliminated'] as List?) ?? const [])
             id as String,
@@ -304,6 +321,13 @@ class RoomRoundResults {
 
   /// Une réponse valide par catégorie ratée par au moins un joueur.
   final Map<Category, String> examples;
+
+  /// Les mêmes dans chaque langue des joueurs (parties mélangées).
+  final Map<String, Map<Category, String>> examplesByLanguage;
+
+  /// Réponses possibles dans la langue de [language].
+  Map<Category, String> examplesFor(String language) =>
+      examplesByLanguage[language] ?? examples;
 
   /// Éliminatoires : joueurs sortis à cette manche.
   final List<String> eliminated;
