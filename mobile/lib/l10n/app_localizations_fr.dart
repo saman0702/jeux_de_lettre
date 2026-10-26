@@ -10,7 +10,7 @@ class AppLocalizationsFr extends AppLocalizations {
   AppLocalizationsFr([String locale = 'fr']) : super(locale);
 
   @override
-  String get appTitle => 'Letter Race';
+  String get appTitle => 'Mind Race';
 
   @override
   String get tagline => 'Une lettre. Quatre catégories. Le plus rapide gagne.';
@@ -532,7 +532,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String inviteMessage(String code) {
-    return 'Rejoins ma partie Letter Race ! Code : $code';
+    return 'Rejoins ma partie Mind Race ! Code : $code';
   }
 
   @override
@@ -1519,7 +1519,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get perksNoAd => 'Pas de vidéo disponible pour le moment.';
 
   @override
-  String get perksPassTitle => 'Pass Letter Race';
+  String get perksPassTitle => 'Pass Mind Race';
 
   @override
   String get perksPassNoAds => 'Aucune pub entre les parties';

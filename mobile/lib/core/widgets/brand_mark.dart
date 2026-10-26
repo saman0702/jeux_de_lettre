@@ -6,8 +6,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'outlined_text.dart';
 
-/// Logo Letter Race (initiales LR) — même style que l'icône app :
-/// LR violet, petites lettres blanches, contour jaune.
+/// Logo Mind Race (initiales MR) — même style que l'icône app :
+/// MR violet, petites lettres blanches, contour jaune.
 class BrandMark extends StatelessWidget {
   const BrandMark({
     super.key,
@@ -29,7 +29,7 @@ class BrandMark extends StatelessWidget {
     final caption = 18.0 * size;
 
     final mark = Semantics(
-      label: 'Letter Race',
+      label: 'Mind Race',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -43,7 +43,7 @@ class BrandMark extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    _big('L', lr),
+                    _big('M', lr),
                     SizedBox(width: 4 * size),
                     _big('R', lr),
                   ],

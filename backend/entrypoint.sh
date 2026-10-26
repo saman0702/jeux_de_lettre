@@ -4,7 +4,7 @@ set -eu
 
 PORT="${PORT:-8000}"
 
-echo "[entrypoint] Letter Race API — démarrage"
+echo "[entrypoint] Mind Race API — démarrage"
 echo "[entrypoint] écoute 0.0.0.0:${PORT}"
 
 if [ -z "${DATABASE_URL:-}" ]; then

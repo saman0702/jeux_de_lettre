@@ -10,7 +10,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "Letter Race API"
+    app_name: str = "Mind Race API"
     # Requêtes API par minute et par adresse IP (0 = pas de limite).
     rate_limit_per_minute: int = 240
 

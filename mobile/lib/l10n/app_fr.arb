@@ -1,6 +1,6 @@
 {
   "@@locale": "fr",
-  "appTitle": "Letter Race",
+  "appTitle": "Mind Race",
   "tagline": "Une lettre. Quatre catégories. Le plus rapide gagne.",
   "modeSolo": "Solo",
   "modeDuel": "Duel",
@@ -284,7 +284,7 @@
   "copyCode": "Copier",
   "codeCopied": "Code copié !",
   "shareInvite": "Inviter",
-  "inviteMessage": "Rejoins ma partie Letter Race ! Code : {code}",
+  "inviteMessage": "Rejoins ma partie Mind Race ! Code : {code}",
   "@inviteMessage": {
     "placeholders": {
       "code": {
@@ -1043,7 +1043,7 @@
   "perksAdLimit": "Plus de vidéo pour aujourd'hui : reviens demain !",
   "perksAdPending": "Vidéo vue ! Tes pièces arrivent dans un instant.",
   "perksNoAd": "Pas de vidéo disponible pour le moment.",
-  "perksPassTitle": "Pass Letter Race",
+  "perksPassTitle": "Pass Mind Race",
   "perksPassNoAds": "Aucune pub entre les parties",
   "perksPassDaily": "{coins} pièces offertes chaque jour",
   "@perksPassDaily": {

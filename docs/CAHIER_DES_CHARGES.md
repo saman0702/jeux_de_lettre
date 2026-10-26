@@ -2,7 +2,7 @@
 
 ## 1. Présentation du projet
 
-**Nom :** Letter Race.
+**Nom :** Mind Race (anciennement Letter Race).
 
 **Concept :** application mobile de rapidité et de réflexion. Une lettre est donnée aux joueurs. Chaque joueur doit trouver le plus rapidement possible un élément correspondant à cette lettre dans différentes catégories.
 

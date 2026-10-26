@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Letter Race'**
+  /// **'Mind Race'**
   String get appTitle;
 
   /// No description provided for @tagline.
@@ -1019,7 +1019,7 @@ abstract class AppLocalizations {
   /// No description provided for @inviteMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Rejoins ma partie Letter Race ! Code : {code}'**
+  /// **'Rejoins ma partie Mind Race ! Code : {code}'**
   String inviteMessage(String code);
 
   /// No description provided for @waitingForPlayers.
@@ -2651,7 +2651,7 @@ abstract class AppLocalizations {
   /// No description provided for @perksPassTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Pass Letter Race'**
+  /// **'Pass Mind Race'**
   String get perksPassTitle;
 
   /// No description provided for @perksPassNoAds.
