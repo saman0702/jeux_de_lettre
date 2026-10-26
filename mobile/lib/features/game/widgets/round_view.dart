@@ -9,7 +9,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/candy_button.dart';
 import '../../../core/widgets/game_icon.dart';
-import '../../../core/widgets/scroll_under_bars.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
 import '../hints/hint_controller.dart';
@@ -241,25 +240,21 @@ class _RoundViewState extends State<RoundView> {
           ),
         );
         // La grande lettre fait partie de la liste : elle défile avec les
-        // champs, sous la barre du haut transparente.
+        // champs. La barre du haut (manche, chrono, joueurs) reste fixe : les
+        // champs défilent en dessous, pas sous les compteurs.
         final offset = compact ? 0 : 1;
 
         return Column(
           children: [
+            topBar,
+            if (widget.players != null) ...[
+              const SizedBox(height: 8),
+              widget.players!,
+            ],
             Expanded(
-              child: ScrollUnderBars(
-                header: widget.players == null
-                    ? topBar
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          topBar,
-                          const SizedBox(height: 8),
-                          widget.players!,
-                        ],
-                      ),
-                builder: (context, padding) => ListView.separated(
-                  padding: padding.copyWith(left: 20, right: 20),
+              child: ClipRect(
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                   itemCount: categories.length + offset,
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, i) {

@@ -72,7 +72,7 @@ class OptionSection extends StatelessWidget {
               ),
               padding: const EdgeInsets.all(2),
               child: Container(
-                padding: const EdgeInsets.fromLTRB(10, 22, 10, 8),
+                padding: const EdgeInsets.fromLTRB(10, 18, 10, 6),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   gradient: LinearGradient(

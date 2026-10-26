@@ -194,8 +194,13 @@ class _LetterBattleAppState extends State<LetterBattleApp>
                   GlobalCupertinoLocalizations.delegate,
                 ],
                 supportedLocales: AppLocalizations.supportedLocales,
-                builder: (context, child) =>
-                    CoinGainOverlay(child: child ?? const SizedBox.shrink()),
+                // La police agrandie du téléphone faisait déborder cadres et
+                // boutons : on la suit, mais pas au-delà de 10 %.
+                builder: (context, child) => MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: 1.1,
+                  child:
+                      CoinGainOverlay(child: child ?? const SizedBox.shrink()),
+                ),
                 home: widget.home,
               ),
             ),

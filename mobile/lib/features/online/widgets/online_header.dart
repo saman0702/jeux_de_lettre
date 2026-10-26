@@ -62,7 +62,7 @@ class OnlineHeader extends StatelessWidget {
                     title,
                     strokeWidth: 3.5,
                     style: fredoka(
-                      size: 26,
+                      size: 22,
                       weight: FontWeight.w700,
                       color: AppColors.white,
                       shadows: textShadow,

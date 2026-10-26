@@ -202,59 +202,68 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
     final current = _current;
     final elapsed = widget.now().difference(_startedAt);
     final remaining = _total - elapsed;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    // Numéro et chrono fixes en haut ; seule l'énigme défile.
+    return Column(
       children: [
-        IqHeader(
-          number: _index + 1,
-          total: puzzles.length,
-          trailing: current == null
-              ? TimerBadge(
-                  remaining: remaining.isNegative ? Duration.zero : remaining,
-                  total: _total,
-                )
-              : null,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: IqHeader(
+            number: _index + 1,
+            total: puzzles.length,
+            trailing: current == null
+                ? TimerBadge(
+                    remaining: remaining.isNegative ? Duration.zero : remaining,
+                    total: _total,
+                  )
+                : null,
+          ),
         ),
-        const SizedBox(height: 10),
-        IqPuzzleCard(
-          key: ValueKey(puzzle.id),
-          puzzle: puzzle,
-          language: language,
-        ),
-        const SizedBox(height: 14),
-        if (current == null)
-          IqAnswerPad(
-            key: ValueKey('pad_${puzzle.id}'),
-            puzzle: puzzle,
-            language: language,
-            onAnswer: _answer,
-          )
-        else ...[
-          IqRevealCard(
-            puzzle: puzzle,
-            language: language,
-            players: [
-              IqPlayerResult(
-                name: l10n.iqYou,
-                answer: current.answer,
-                correct: current.correct,
-                points: current.points,
-                isMe: true,
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+            children: [
+              IqPuzzleCard(
+                key: ValueKey(puzzle.id),
+                puzzle: puzzle,
+                language: language,
               ),
+              const SizedBox(height: 14),
+              if (current == null)
+                IqAnswerPad(
+                  key: ValueKey('pad_${puzzle.id}'),
+                  puzzle: puzzle,
+                  language: language,
+                  onAnswer: _answer,
+                )
+              else ...[
+                IqRevealCard(
+                  puzzle: puzzle,
+                  language: language,
+                  players: [
+                    IqPlayerResult(
+                      name: l10n.iqYou,
+                      answer: current.answer,
+                      correct: current.correct,
+                      points: current.points,
+                      isMe: true,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                CandyButton(
+                  key: const Key('iq_next'),
+                  label: _index + 1 >= puzzles.length
+                      ? l10n.iqSeeResult
+                      : l10n.iqNext,
+                  icon: Icons.arrow_forward_rounded,
+                  color: AppColors.green,
+                  textColor: AppColors.white,
+                  onPressed: _next,
+                ),
+              ],
             ],
           ),
-          const SizedBox(height: 14),
-          CandyButton(
-            key: const Key('iq_next'),
-            label: _index + 1 >= puzzles.length
-                ? l10n.iqSeeResult
-                : l10n.iqNext,
-            icon: Icons.arrow_forward_rounded,
-            color: AppColors.green,
-            textColor: AppColors.white,
-            onPressed: _next,
-          ),
-        ],
+        ),
       ],
     );
   }

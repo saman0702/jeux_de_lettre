@@ -80,10 +80,10 @@ class IqPuzzleCard extends StatelessWidget {
             puzzle.promptIn(language),
             key: const Key('iq_prompt'),
             textAlign: TextAlign.center,
-            style: gameFont(size: 20, color: AppColors.ink),
+            style: gameFont(size: 18, color: AppColors.ink),
           ),
           if (puzzle.items.isNotEmpty) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             Wrap(
               alignment: WrapAlignment.center,
               spacing: 8,
@@ -92,7 +92,7 @@ class IqPuzzleCard extends StatelessWidget {
             ),
           ],
           if (puzzle.grid != null) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             Center(
               child: Column(
                 children: [
@@ -123,7 +123,7 @@ class IqPuzzleCard extends StatelessWidget {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile(this.text, {this.size = 50});
+  const _Tile(this.text, {this.size = 44});
 
   final String text;
   final double size;
@@ -209,8 +209,8 @@ class _IqAnswerPadState extends State<IqAnswerPad> {
                 key: Key('iq_choice_$i'),
                 label: choice,
                 color: _choiceColors[i % _choiceColors.length],
-                height: 54,
-                fontSize: 18,
+                height: 48,
+                fontSize: 16,
                 onPressed: widget.enabled ? () => widget.onAnswer('$i') : null,
               ),
             ),
@@ -226,8 +226,8 @@ class _IqAnswerPadState extends State<IqAnswerPad> {
               key: Key('iq_key_$label'),
               label: label,
               color: color,
-              height: 50,
-              fontSize: 22,
+              height: 44,
+              fontSize: 20,
               onPressed: widget.enabled ? () => _key(label) : null,
             ),
           ),
@@ -237,7 +237,7 @@ class _IqAnswerPadState extends State<IqAnswerPad> {
       children: [
         Container(
           key: const Key('iq_typed'),
-          height: 56,
+          height: 46,
           alignment: Alignment.center,
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
@@ -273,7 +273,7 @@ class _IqAnswerPadState extends State<IqAnswerPad> {
           icon: Icons.check_rounded,
           color: AppColors.green,
           textColor: AppColors.white,
-          height: 54,
+          height: 48,
           fontSize: 20,
           onPressed: widget.enabled && _typed.replaceAll('-', '').isNotEmpty
               ? () => widget.onAnswer(_typed)

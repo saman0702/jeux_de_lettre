@@ -68,7 +68,7 @@ class GameHubScreen extends StatelessWidget {
                   },
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               BounceIn(
                 from: 0.7,
                 delay: const Duration(milliseconds: 120),
@@ -114,49 +114,49 @@ class _GameCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(18),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [Color.lerp(color, AppColors.white, 0.25)!, color],
           ),
-          border: Border.all(color: AppColors.white, width: 3),
+          border: Border.all(color: AppColors.white, width: 2.5),
           boxShadow: [
             BoxShadow(
               color: AppColors.depthOf(color),
-              offset: const Offset(0, 6),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              width: 70,
-              height: 70,
+              width: 48,
+              height: 48,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: AppColors.white.withValues(alpha: 0.9),
                 shape: BoxShape.circle,
               ),
-              child: GameIcon(icon, size: 40, color: AppColors.depthOf(color)),
+              child: GameIcon(icon, size: 28, color: AppColors.depthOf(color)),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: gameFont(size: 24, color: ink)),
-                  const SizedBox(height: 4),
+                  Text(title, style: gameFont(size: 19, color: ink)),
+                  const SizedBox(height: 2),
                   Text(
                     info,
-                    style: fredoka(size: 14, color: ink.withValues(alpha: 0.9)),
+                    style: fredoka(size: 13, color: ink.withValues(alpha: 0.9)),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: ink, size: 32),
+            Icon(Icons.chevron_right_rounded, color: ink, size: 26),
           ],
         ),
       ),
