@@ -70,7 +70,8 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.yellow : AppColors.cloud;
+    // Option non choisie : fond blanc et léger contour, pour bien la voir.
+    final color = selected ? AppColors.yellow : AppColors.white;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -81,6 +82,12 @@ class _Pill extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(11),
+          border: Border.all(
+            color: selected
+                ? AppColors.depthOf(AppColors.yellow)
+                : const Color(0xFFC9BEEA),
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
               color: selected
