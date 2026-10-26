@@ -16,6 +16,7 @@ import '../online/room_screen.dart';
 import '../online/rooms_screen.dart';
 import '../online/widgets/online_header.dart';
 import 'game_hub_screen.dart';
+import 'iq_daily_screen.dart';
 import 'iq_setup_screen.dart';
 
 /// Espace QI : créer ou rejoindre un salon, jouer seul ou contre les bots.
@@ -120,32 +121,36 @@ class _IqHubScreenState extends State<IqHubScreen> {
                     onPressed: () => _join(),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CandyButton(
-                          key: const Key('iq_solo'),
-                          label: l10n.iqSolo,
-                          gameIcon: GameIconKind.person,
-                          color: AppColors.yellow,
-                          height: 48,
-                          fontSize: 16,
-                          onPressed: () => _setup(IqSetupMode.solo),
+                  const SizedBox(height: 12),
+                  CandyButton(
+                    key: const Key('iq_daily'),
+                    label: l10n.iqDailyTitle.toUpperCase(),
+                    gameIcon: GameIconKind.trophy,
+                    color: AppColors.yellow,
+                    height: 48,
+                    fontSize: 16,
+                    onPressed: () async {
+                      if (!await readyForOnline(context) || !context.mounted) {
+                        return;
+                      }
+                      await Navigator.of(context).push(
+                        PopRoute(
+                          builder: (_) =>
+                              IqDailyScreen(apiClient: widget.apiClient),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: CandyButton(
-                          key: const Key('iq_bots'),
-                          label: l10n.iqBots,
-                          gameIcon: GameIconKind.bot,
-                          color: AppColors.cyan,
-                          height: 48,
-                          fontSize: 16,
-                          onPressed: () => _setup(IqSetupMode.bots),
-                        ),
-                      ),
-                    ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  // Le QI solo est dans « Solo libre », à l'accueil.
+                  CandyButton(
+                    key: const Key('iq_bots'),
+                    label: l10n.iqBots,
+                    gameIcon: GameIconKind.bot,
+                    color: AppColors.cyan,
+                    height: 48,
+                    fontSize: 16,
+                    onPressed: () => _setup(IqSetupMode.bots),
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(4, 22, 4, 8),

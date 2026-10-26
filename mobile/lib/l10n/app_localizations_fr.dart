@@ -1808,4 +1808,63 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get iqKindFigureOdd => 'Intrus visuel';
+
+  @override
+  String get iqJokerFifty => '50/50';
+
+  @override
+  String get iqJokerHint => 'Indice';
+
+  @override
+  String get iqJokerTime => '+15 s';
+
+  @override
+  String get iqJokerSkip => 'Passer';
+
+  @override
+  String iqHintRange(int low, int high) {
+    return 'Indice : entre $low et $high';
+  }
+
+  @override
+  String iqCoinsWon(int coins) {
+    return '+$coins pièce(s) gagnée(s)';
+  }
+
+  @override
+  String get iqOfflineNoCoins => 'Hors ligne : partie sans pièces ni jokers.';
+
+  @override
+  String get iqDailyTitle => 'Défi du jour';
+
+  @override
+  String get iqDailyInfo =>
+      '10 énigmes, les mêmes pour tous, une seule tentative par jour, sans jokers. Podium récompensé : 50, 30 et 20 pièces.';
+
+  @override
+  String get iqDailyPlay => 'JOUER LE DÉFI';
+
+  @override
+  String get iqDailyDone => 'Déjà joué aujourd\'hui : reviens demain !';
+
+  @override
+  String iqDailyRank(int rank) {
+    return 'Ton rang : $rank';
+  }
+
+  @override
+  String get iqDailyLeaderboard => 'Classement du jour';
+
+  @override
+  String get iqDailyYesterday => 'Podium d\'hier';
+
+  @override
+  String get iqDailyEmpty =>
+      'Personne n\'a encore joué aujourd\'hui : sois le premier !';
+
+  @override
+  String get iqDailyNeedsOnline => 'Le défi du jour se joue en ligne.';
+
+  @override
+  String get iqLate => 'Trop tard !';
 }

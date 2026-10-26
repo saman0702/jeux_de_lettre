@@ -575,6 +575,7 @@ class RoomState {
     this.chatUnlockPrice = 25,
     this.iqPuzzle,
     this.iqPuzzles = const {},
+    this.iqJokerPrices = const {},
     this.creatorId,
     this.saved = false,
     this.voice = const RoomVoice(),
@@ -645,6 +646,10 @@ class RoomState {
       rematchNeed: json['rematch_need'] as int? ?? 1,
       freezePrice: prices['freeze'] as int? ?? 15,
       chatUnlockPrice: prices['chat_unlock'] as int? ?? 25,
+      iqJokerPrices: {
+        for (final kind in const ['fifty', 'hint', 'time', 'skip'])
+          if (prices['iq_$kind'] case final int price) kind: price,
+      },
       creatorId: json['creator_id'] as String?,
       saved: json['saved'] as bool? ?? false,
       voice: RoomVoice.fromJson(json['voice'] as Map<String, dynamic>?),
@@ -683,6 +688,9 @@ class RoomState {
 
   /// QI en relais : l'énigme de chaque joueur.
   final Map<String, IqPuzzle> iqPuzzles;
+
+  /// Prix des jokers du QI (fifty, hint, time, skip).
+  final Map<String, int> iqJokerPrices;
 
   /// L'énigme à résoudre pour ce joueur (la sienne en relais).
   IqPuzzle? iqPuzzleFor(String clientId) => iqPuzzles[clientId] ?? iqPuzzle;

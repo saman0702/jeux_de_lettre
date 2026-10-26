@@ -264,11 +264,15 @@ class IqFigureChoices extends StatelessWidget {
     required this.figures,
     required this.onAnswer,
     this.enabled = true,
+    this.removed = const {},
   });
 
   final IqFigures figures;
   final ValueChanged<String> onAnswer;
   final bool enabled;
+
+  /// Choix retirés par le joker 50/50.
+  final Set<int> removed;
 
   static const _labels = ['A', 'B', 'C', 'D'];
 
@@ -285,31 +289,36 @@ class IqFigureChoices extends StatelessWidget {
         for (final (i, figure) in figures.options.indexed)
           GestureDetector(
             key: Key('iq_choice_$i'),
-            onTap: enabled ? () => onAnswer('$i') : null,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.purpleLight, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.depthOf(AppColors.purpleLight),
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    left: 8,
-                    top: 4,
-                    child: Text(
-                      _labels[i],
-                      style: gameFont(size: 16, color: AppColors.purple),
+            onTap: enabled && !removed.contains(i)
+                ? () => onAnswer('$i')
+                : null,
+            child: Opacity(
+              opacity: removed.contains(i) ? 0.3 : 1,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.purpleLight, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.depthOf(AppColors.purpleLight),
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                  Center(child: IqFigureView(figure, size: 64)),
-                ],
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: 8,
+                      top: 4,
+                      child: Text(
+                        _labels[i],
+                        style: gameFont(size: 16, color: AppColors.purple),
+                      ),
+                    ),
+                    Center(child: IqFigureView(figure, size: 64)),
+                  ],
+                ),
               ),
             ),
           ),

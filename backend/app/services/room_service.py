@@ -202,6 +202,9 @@ class LiveRound:
     # QI : l'énigme de la manche ; en relais, une énigme par joueur.
     puzzle: iq_service.Puzzle | None = None
     puzzles: dict[str, iq_service.Puzzle] = field(default_factory=dict)
+    # Jokers QI : ceux pris par chaque joueur, et ses secondes en plus (+15 s).
+    iq_jokers: dict[str, set[str]] = field(default_factory=dict)
+    iq_extra: dict[str, int] = field(default_factory=dict)
 
     def puzzle_for(self, client_id: str) -> iq_service.Puzzle | None:
         return self.puzzles.get(client_id) or self.puzzle
@@ -469,6 +472,7 @@ class RoomManager:
             "set_ready": self._on_set_ready,
             "submit": self._on_submit,
             "iq_answer": self._on_iq_answer,
+            "iq_joker": self._on_iq_joker,
             "hint": self._on_hint,
             "hint_pick": self._on_hint_pick,
             "buy_hint": self._on_buy_hint,
@@ -2030,6 +2034,58 @@ class RoomManager:
         await self._broadcast(room)
         self._check_all_in(room)
 
+    async def _on_iq_joker(self, connection: Connection, message: dict) -> None:
+        """Joker payant en salon QI : 50/50, indice, +15 s ou une autre énigme. Une fois chacun par
+        manche ; l'effet n'est envoyé qu'au joueur qui l'a pris."""
+        room = self._require_room(connection.client_id)
+        live = room.live_round
+        cid = connection.client_id
+        kind = str(message.get("kind", ""))
+        if (
+            not room.settings.iq
+            or room.phase != "round"
+            or live is None
+            or message.get("round") != live.number
+            or cid not in live.participants
+            or cid in live.submissions
+        ):
+            raise RoomError("round_not_current")
+        player = room.players[cid]
+        puzzle = live.puzzle_for(cid)
+        if (
+            player.bot
+            or puzzle is None
+            or kind not in iq_service.JOKER_PRICES
+            or not iq_service.joker_allowed(puzzle, kind)
+            or kind in live.iq_jokers.get(cid, set())
+        ):
+            raise RoomError("joker_unavailable")
+        price = iq_service.JOKER_PRICES[kind]
+        async with self.session_factory() as session:
+            try:
+                profile = await wallet_service.debit(session, cid, price, f"iq_joker_{kind}", room.code)
+            except wallet_service.WalletError as error:
+                raise RoomError(error.code) from None
+            await session.commit()
+            wallet = wallet_service.snapshot(profile)
+        live.iq_jokers.setdefault(cid, set()).add(kind)
+        rng = random.Random()
+        effect: dict = {"type": "iq_joker", "round": live.number, "kind": kind, "price": price}
+        if kind == "fifty":
+            effect["removed"] = iq_service.fifty(puzzle, rng)
+        elif kind == "hint":
+            effect["low"], effect["high"] = iq_service.hint_range(puzzle, rng)
+        elif kind == "time":
+            live.iq_extra[cid] = live.iq_extra.get(cid, 0) + iq_service.EXTRA_TIME
+            effect["extra_seconds"] = live.iq_extra[cid]
+        else:  # skip : une autre énigme du même niveau, rien que pour lui
+            used = {p.id for p in live.puzzles.values()} | ({live.puzzle.id} if live.puzzle else set())
+            live.puzzles[cid] = iq_service.draw(puzzle.level, exclude=used, rng=rng)
+            effect["puzzle"] = live.puzzles[cid].public()
+        effect["wallet"] = wallet.as_dict()
+        await self._send(cid, effect)
+        await self._broadcast(room)
+
     async def _play_iq_round(self, room: Room, number: int) -> None:
         """Une manche de QI : une énigme (en relais, une par joueur, du même niveau), des points
         selon la justesse et la vitesse."""
@@ -2077,9 +2133,16 @@ class RoomManager:
         await self._broadcast(room)
         self._launch_iq_bots(room, live)
 
-        timeout = settings.round_duration + self.timings.submit_grace
-        with contextlib.suppress(TimeoutError):
-            await asyncio.wait_for(live.all_in.wait(), timeout=timeout)
+        # Fin de la manche : tout le monde a répondu, ou le temps est passé (en comptant les
+        # +15 s pris en joker, qui peuvent arriver pendant l'attente).
+        while not live.all_in.is_set():
+            extra = max(live.iq_extra.values(), default=0)
+            deadline = live.ends_at + timedelta(seconds=extra + self.timings.submit_grace)
+            remaining = (deadline - utcnow()).total_seconds()
+            if remaining <= 0:
+                break
+            with contextlib.suppress(TimeoutError):
+                await asyncio.wait_for(live.all_in.wait(), timeout=min(remaining, 1.0))
         for task in live.bot_tasks:
             task.cancel()
 
@@ -2090,7 +2153,8 @@ class RoomManager:
                 continue
             submitted = live.submissions.get(cid)
             answer = submitted[1].get("iq") if submitted else None
-            elapsed = (min(submitted[0], live.ends_at) - started).total_seconds() if submitted else None
+            own_end = live.ends_at + timedelta(seconds=live.iq_extra.get(cid, 0))
+            elapsed = (min(submitted[0], own_end) - started).total_seconds() if submitted else None
             mine = live.puzzle_for(cid)
             correct = submitted is not None and mine is not None and iq_service.check(mine, answer)
             pts = iq_service.points(
@@ -2111,8 +2175,8 @@ class RoomManager:
                     "correct": correct,
                     "round_score": pts,
                     "elapsed_ms": int(elapsed * 1000) if elapsed is not None else None,
-                    # Relais : l'énigme de ce joueur, avec sa réponse.
-                    **({"puzzle": mine.reveal()} if settings.relay and mine else {}),
+                    # Relais (ou joker « passer ») : l'énigme de ce joueur, avec sa réponse.
+                    **({"puzzle": mine.reveal()} if mine is not None and mine is not puzzle else {}),
                 }
             )
             if pts > 0 and player.db_player_id:
@@ -2292,6 +2356,8 @@ class RoomManager:
                 "freeze": FREEZE_PRICE,
                 "chat_unlock": CHAT_UNLOCK_PRICE,
                 "extra_hint": EXTRA_HINT_PRICE,
+                # Jokers du QI (fifty, hint, time, skip).
+                **{f"iq_{kind}": price for kind, price in iq_service.JOKER_PRICES.items()},
             },
             "starts_at": _iso(room.starts_at),
             "go_at": _iso(room.go_at),

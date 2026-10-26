@@ -174,12 +174,16 @@ class IqAnswerPad extends StatefulWidget {
     required this.language,
     required this.onAnswer,
     this.enabled = true,
+    this.removed = const {},
   });
 
   final IqPuzzle puzzle;
   final String language;
   final ValueChanged<String> onAnswer;
   final bool enabled;
+
+  /// Choix retirés par le joker 50/50.
+  final Set<int> removed;
 
   @override
   State<IqAnswerPad> createState() => _IqAnswerPadState();
@@ -211,6 +215,7 @@ class _IqAnswerPadState extends State<IqAnswerPad> {
         figures: figures,
         onAnswer: widget.onAnswer,
         enabled: widget.enabled,
+        removed: widget.removed,
       );
     }
     if (!puzzle.typed) {
@@ -221,13 +226,18 @@ class _IqAnswerPadState extends State<IqAnswerPad> {
           for (final (i, choice) in choices.indexed)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: CandyButton(
-                key: Key('iq_choice_$i'),
-                label: choice,
-                color: _choiceColors[i % _choiceColors.length],
-                height: 48,
-                fontSize: 16,
-                onPressed: widget.enabled ? () => widget.onAnswer('$i') : null,
+              child: Opacity(
+                opacity: widget.removed.contains(i) ? 0.3 : 1,
+                child: CandyButton(
+                  key: Key('iq_choice_$i'),
+                  label: choice,
+                  color: _choiceColors[i % _choiceColors.length],
+                  height: 48,
+                  fontSize: 16,
+                  onPressed: widget.enabled && !widget.removed.contains(i)
+                      ? () => widget.onAnswer('$i')
+                      : null,
+                ),
               ),
             ),
         ],
@@ -483,6 +493,60 @@ class IqHeader extends StatelessWidget {
           ),
         ),
         ?trailing,
+      ],
+    );
+  }
+}
+
+/// Jokers payants de l'énigme en cours : 50/50 (choix) ou indice (nombre),
+/// +15 s, passer.
+class IqJokerBar extends StatelessWidget {
+  const IqJokerBar({
+    super.key,
+    required this.puzzle,
+    required this.prices,
+    required this.used,
+    required this.onUse,
+    this.busy = false,
+  });
+
+  final IqPuzzle puzzle;
+  final Map<String, int> prices;
+  final Set<String> used;
+  final ValueChanged<String> onUse;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final kinds = [
+      puzzle.typed ? 'hint' : 'fifty',
+      'time',
+      'skip',
+    ].where(prices.containsKey).toList();
+    String label(String kind) => switch (kind) {
+      'fifty' => l10n.iqJokerFifty,
+      'hint' => l10n.iqJokerHint,
+      'time' => l10n.iqJokerTime,
+      _ => l10n.iqJokerSkip,
+    };
+    return Row(
+      children: [
+        for (final (i, kind) in kinds.indexed) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(
+            child: CandyButton(
+              key: Key('iq_joker_$kind'),
+              label: label(kind),
+              badge: '${prices[kind]}',
+              gameIcon: GameIconKind.coin,
+              color: AppColors.white,
+              height: 40,
+              fontSize: 14,
+              onPressed: busy || used.contains(kind) ? null : () => onUse(kind),
+            ),
+          ),
+        ],
       ],
     );
   }

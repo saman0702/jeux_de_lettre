@@ -23,6 +23,14 @@ POINTS_CORRECT = 10
 SPEED_BONUS_MAX = 10
 WRONG_PENALTY = 5
 
+# Jokers payants (en pièces), une fois par énigme chacun :
+# - fifty : retire 2 mauvais choix (énigmes à choix) ;
+# - hint : donne un intervalle qui contient la réponse (énigmes à nombre) ;
+# - time : 15 secondes de plus ;
+# - skip : une autre énigme du même niveau.
+JOKER_PRICES = {"fifty": 3, "hint": 3, "time": 3, "skip": 5}
+EXTRA_TIME = 15
+
 
 @dataclass(frozen=True)
 class Puzzle:
@@ -559,6 +567,46 @@ def wrong_answer(puzzle: Puzzle, rng: random.Random) -> str:
         return rng.choice([str(i) for i in range(4) if str(i) != puzzle.answer])
     value = int(float(puzzle.answer))
     return str(value + rng.choice([-3, -2, -1, 1, 2, 3, 10]))
+
+
+def joker_allowed(puzzle: Puzzle, kind: str) -> bool:
+    """50/50 pour les choix, indice pour les nombres ; +15 s et passer pour toutes."""
+    if kind == "fifty":
+        return puzzle.input == "choice"
+    if kind == "hint":
+        return puzzle.input == "number"
+    return kind in ("time", "skip")
+
+
+def fifty(puzzle: Puzzle, rng: random.Random) -> list[int]:
+    """Deux mauvais choix à retirer."""
+    wrong = [i for i in range(4) if str(i) != puzzle.answer]
+    return sorted(rng.sample(wrong, 2))
+
+
+def hint_range(puzzle: Puzzle, rng: random.Random) -> tuple[int, int]:
+    """Un intervalle d'entiers qui contient la réponse, sans la mettre au milieu."""
+    value = round(float(puzzle.answer))
+    width = max(4, round(abs(value) * 0.3))
+    low = value - rng.randint(1, width - 1)
+    return low, low + width
+
+
+def puzzle_from(data: dict) -> Puzzle:
+    """Énigme gardée en base (reveal()) remise en objet."""
+    return Puzzle(
+        id=data["id"],
+        kind=data["kind"],
+        level=data["level"],
+        input=data["input"],
+        prompt=data["prompt"],
+        answer=data["answer"],
+        explanation=data["explanation"],
+        choices=data.get("choices"),
+        grid=data.get("grid"),
+        items=data.get("items") or [],
+        figures=data.get("figures"),
+    )
 
 
 def iq_estimate(results: list[tuple[int, bool]]) -> int:

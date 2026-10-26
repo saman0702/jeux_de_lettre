@@ -79,6 +79,7 @@ class OnlineController extends ChangeNotifier {
   final _errors = StreamController<String>.broadcast();
   final _coinGains = StreamController<int>.broadcast();
   final _levelUps = StreamController<int>.broadcast();
+  final _iqJokers = StreamController<Map<String, dynamic>>.broadcast();
   final _publicRooms = StreamController<RoomSummary>.broadcast();
   final _voiceCredentials = StreamController<VoiceCredentials>.broadcast();
   final _voiceForceMute = StreamController<bool>.broadcast();
@@ -141,6 +142,9 @@ class OnlineController extends ChangeNotifier {
 
   /// Nouveaux niveaux atteints, pour la célébration « NIVEAU N ! ».
   Stream<int> get levelUps => _levelUps.stream;
+
+  /// Effet d'un joker QI pris par ce joueur (50/50, indice, +15 s, passer).
+  Stream<Map<String, dynamic>> get iqJokers => _iqJokers.stream;
 
   /// Niveau du joueur (1 tant que le serveur ne l'a pas envoyé).
   int get level => _wallet?.level ?? 1;
@@ -287,6 +291,9 @@ class OnlineController extends ChangeNotifier {
   void sendChat(String text) => client.send({'type': 'chat', 'text': text});
 
   /// QI : réponse à l'énigme de la manche (un nombre, ou l'indice du choix).
+  void sendIqJoker(int round, String kind) =>
+      client.send({'type': 'iq_joker', 'round': round, 'kind': kind});
+
   void sendIqAnswer(int round, String answer) =>
       client.send({'type': 'iq_answer', 'round': round, 'answer': answer});
 
@@ -423,6 +430,12 @@ class OnlineController extends ChangeNotifier {
         final pick = HintPick.fromJson(event);
         _hintPicks.remove(pick.category)?.complete(pick);
         return;
+      case 'iq_joker':
+        if (event['wallet'] case final Map<String, dynamic> wallet) {
+          applyWallet(WalletSnapshot.fromJson(wallet));
+        }
+        _iqJokers.add(event);
+        return;
       case 'hint_bought':
         if (event['wallet'] case final Map<String, dynamic> wallet) {
           applyWallet(WalletSnapshot.fromJson(wallet));
@@ -499,6 +512,7 @@ class OnlineController extends ChangeNotifier {
     _errors.close();
     _coinGains.close();
     _levelUps.close();
+    _iqJokers.close();
     _publicRooms.close();
     _voiceCredentials.close();
     _voiceForceMute.close();

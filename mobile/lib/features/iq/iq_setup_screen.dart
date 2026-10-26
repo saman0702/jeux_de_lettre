@@ -11,6 +11,7 @@ import '../../core/widgets/game_icon.dart';
 import '../../core/widgets/game_toggle.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/data/models.dart';
+import '../game/solo_setup_screen.dart';
 import '../game/widgets/labels.dart';
 import '../game/widgets/option_section.dart';
 import '../game/widgets/pill_selector.dart';
@@ -20,6 +21,7 @@ import '../online/room_screen.dart';
 import '../online/widgets/online_header.dart';
 import 'iq_models.dart';
 import 'iq_solo_screen.dart';
+import 'solo_game_picker.dart';
 
 enum IqSetupMode { room, bots, solo }
 
@@ -50,6 +52,10 @@ class _IqSetupScreenState extends State<IqSetupScreen> {
   int _bots = 2;
   Difficulty _botLevel = Difficulty.normal;
 
+  /// Salon à mise : chacun mise la même somme, le meilleur QI rafle le pot.
+  RoomKind _kind = RoomKind.classic;
+  int _stake = RoomKind.stakeOptions.first;
+
   void _start() {
     final navigator = Navigator.of(context);
     final scoring = IqScoring(speedBonus: _speedBonus, penalty: _penalty);
@@ -77,6 +83,8 @@ class _IqSetupScreenState extends State<IqSetupScreen> {
         maxPlayers: bots ? _bots + 1 : _maxPlayers,
         public: !bots && _public,
         format: _format,
+        kind: bots ? RoomKind.classic : _kind,
+        stake: !bots && _kind == RoomKind.bet ? _stake : 0,
         game: RoomGame.iq,
         iqSpeedBonus: _speedBonus,
         iqPenalty: _penalty,
@@ -136,6 +144,16 @@ class _IqSetupScreenState extends State<IqSetupScreen> {
               ),
             ),
             children: [
+              // Le QI solo se lance depuis « Solo libre » : on peut revenir au
+              // Petit Bac d'ici.
+              if (widget.mode == IqSetupMode.solo)
+                SoloGamePicker(
+                  current: RoomGame.iq,
+                  onPick: (_) => switchSoloScreen(
+                    context,
+                    SoloSetupScreen(apiClient: widget.apiClient ?? ApiClient()),
+                  ),
+                ),
               if (widget.mode == IqSetupMode.bots) ...[
                 OptionSection(
                   index: index++,
@@ -164,6 +182,46 @@ class _IqSetupScreenState extends State<IqSetupScreen> {
                 ),
               ],
               if (widget.mode == IqSetupMode.room) ...[
+                OptionSection(
+                  index: index++,
+                  title: l10n.roomKind,
+                  icon: GameIconKind.bet,
+                  color: AppColors.yellow,
+                  help: l10n.betRules,
+                  child: Column(
+                    children: [
+                      PillSelector<RoomKind>(
+                        key: const Key('iq_room_kind'),
+                        options: const [RoomKind.classic, RoomKind.bet],
+                        isSelected: (k) => k == _kind,
+                        label: (k) => k == RoomKind.bet
+                            ? l10n.roomKindBet
+                            : l10n.roomKindClassic,
+                        icon: (k) => k == RoomKind.bet
+                            ? GameIconKind.bet
+                            : GameIconKind.smile,
+                        onTap: (k) => setState(() => _kind = k),
+                      ),
+                      if (_kind == RoomKind.bet) ...[
+                        const SizedBox(height: 8),
+                        PillSelector<int>(
+                          key: const Key('iq_stake'),
+                          options: RoomKind.stakeOptions,
+                          isSelected: (s) => s == _stake,
+                          label: (s) => '$s',
+                          icon: (_) => GameIconKind.coin,
+                          onTap: (s) => setState(() => _stake = s),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${l10n.yourCoins(OnlineScope.of(context).wallet?.coins ?? 0)} · ${l10n.betRules}',
+                          textAlign: TextAlign.center,
+                          style: fredoka(size: 13, color: AppColors.inkSoft),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
                 OptionSection(
                   index: index++,
                   title: l10n.roomType,

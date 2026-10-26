@@ -1237,5 +1237,46 @@
   "iqRelayHelp": "Chacun reçoit sa propre énigme, du même niveau : impossible de copier sur le voisin !",
   "iqKindMatrix": "Matrice",
   "iqKindRotation": "Rotation",
-  "iqKindFigureOdd": "Intrus visuel"
+  "iqKindFigureOdd": "Intrus visuel",
+  "iqJokerFifty": "50/50",
+  "iqJokerHint": "Indice",
+  "iqJokerTime": "+15 s",
+  "iqJokerSkip": "Passer",
+  "iqHintRange": "Indice : entre {low} et {high}",
+  "@iqHintRange": {
+    "placeholders": {
+      "low": {
+        "type": "int"
+      },
+      "high": {
+        "type": "int"
+      }
+    }
+  },
+  "iqCoinsWon": "+{coins} pièce(s) gagnée(s)",
+  "@iqCoinsWon": {
+    "placeholders": {
+      "coins": {
+        "type": "int"
+      }
+    }
+  },
+  "iqOfflineNoCoins": "Hors ligne : partie sans pièces ni jokers.",
+  "iqDailyTitle": "Défi du jour",
+  "iqDailyInfo": "10 énigmes, les mêmes pour tous, une seule tentative par jour, sans jokers. Podium récompensé : 50, 30 et 20 pièces.",
+  "iqDailyPlay": "JOUER LE DÉFI",
+  "iqDailyDone": "Déjà joué aujourd'hui : reviens demain !",
+  "iqDailyRank": "Ton rang : {rank}",
+  "@iqDailyRank": {
+    "placeholders": {
+      "rank": {
+        "type": "int"
+      }
+    }
+  },
+  "iqDailyLeaderboard": "Classement du jour",
+  "iqDailyYesterday": "Podium d'hier",
+  "iqDailyEmpty": "Personne n'a encore joué aujourd'hui : sois le premier !",
+  "iqDailyNeedsOnline": "Le défi du jour se joue en ligne.",
+  "iqLate": "Trop tard !"
 }

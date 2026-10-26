@@ -579,5 +579,22 @@
   "iqRelayHelp": "Everyone gets their own puzzle, of the same level: no copying from your neighbour!",
   "iqKindMatrix": "Matrix",
   "iqKindRotation": "Rotation",
-  "iqKindFigureOdd": "Visual odd one"
+  "iqKindFigureOdd": "Visual odd one",
+  "iqJokerFifty": "50/50",
+  "iqJokerHint": "Hint",
+  "iqJokerTime": "+15 s",
+  "iqJokerSkip": "Skip",
+  "iqHintRange": "Hint: between {low} and {high}",
+  "iqCoinsWon": "+{coins} coin(s) won",
+  "iqOfflineNoCoins": "Offline: no coins or jokers in this game.",
+  "iqDailyTitle": "Daily challenge",
+  "iqDailyInfo": "10 puzzles, the same for everyone, one try a day, no jokers. Podium rewarded: 50, 30 and 20 coins.",
+  "iqDailyPlay": "PLAY THE CHALLENGE",
+  "iqDailyDone": "Already played today: come back tomorrow!",
+  "iqDailyRank": "Your rank: {rank}",
+  "iqDailyLeaderboard": "Today's leaderboard",
+  "iqDailyYesterday": "Yesterday's podium",
+  "iqDailyEmpty": "Nobody has played yet today: be the first!",
+  "iqDailyNeedsOnline": "The daily challenge is played online.",
+  "iqLate": "Too late!"
 }

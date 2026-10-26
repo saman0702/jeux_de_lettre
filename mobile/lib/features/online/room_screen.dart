@@ -62,6 +62,13 @@ class _RoomScreenState extends State<RoomScreen> {
   HintController? _hints;
   int? _submittedRound;
 
+  // Jokers QI pris pendant la manche en cours (effets pour ce joueur seul).
+  int? _iqJokerRound;
+  Set<String> _iqJokersUsed = {};
+  Set<int> _iqRemoved = {};
+  (int, int)? _iqRange;
+  int _iqExtra = 0;
+
   /// Le podium final reste à l'écran jusqu'au choix du joueur, même si
   /// quelqu'un a déjà relancé la salle.
   List<RoomPlayer>? _podium;
@@ -86,7 +93,8 @@ class _RoomScreenState extends State<RoomScreen> {
       _subscriptions
         ..add(_online.notices.listen(_showNotice))
         ..add(_online.mentions.listen(_showMention))
-        ..add(_online.errors.listen(_showError));
+        ..add(_online.errors.listen(_showError))
+        ..add(_online.iqJokers.listen(_onIqJoker));
       _online.addListener(_onRoomChanged);
       _ticker = Timer.periodic(widget.tick, (_) => _onTick());
     }
@@ -198,6 +206,8 @@ class _RoomScreenState extends State<RoomScreen> {
     final answered =
         _submittedRound == round.number || (me?.finished ?? false);
     final canPlay = me != null && me.playing && !me.eliminated;
+    final jokers = _iqJokerRound == round.number;
+    final extra = Duration(seconds: jokers ? _iqExtra : 0);
     return Column(
       children: [
         Padding(
@@ -206,8 +216,8 @@ class _RoomScreenState extends State<RoomScreen> {
             number: round.number,
             total: room.settings.rounds,
             trailing: TimerBadge(
-              remaining: round.remaining(widget.now()),
-              total: Duration(seconds: round.duration),
+              remaining: round.remaining(widget.now()) + extra,
+              total: Duration(seconds: round.duration) + extra,
             ),
           ),
         ),
@@ -239,21 +249,72 @@ class _RoomScreenState extends State<RoomScreen> {
                   textAlign: TextAlign.center,
                   style: gameFont(size: 18, color: AppColors.white),
                 )
-              else
+              else ...[
+                if (room.iqJokerPrices.isNotEmpty && !(me.bot)) ...[
+                  IqJokerBar(
+                    puzzle: puzzle,
+                    prices: room.iqJokerPrices,
+                    used: jokers ? _iqJokersUsed : const {},
+                    onUse: (kind) => _online.sendIqJoker(round.number, kind),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                if (jokers && _iqRange != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      l10n.iqHintRange(_iqRange!.$1, _iqRange!.$2),
+                      key: const Key('iq_hint_range'),
+                      textAlign: TextAlign.center,
+                      style: gameFont(size: 17, color: AppColors.yellow),
+                    ),
+                  ),
                 IqAnswerPad(
                   key: ValueKey(puzzle.id),
                   puzzle: puzzle,
                   language: language,
+                  removed: jokers ? _iqRemoved : const {},
                   onAnswer: (answer) {
                     setState(() => _submittedRound = round.number);
                     _online.sendIqAnswer(round.number, answer);
                   },
                 ),
+              ],
             ],
           ),
         ),
       ],
     );
+  }
+
+  /// Joker QI acheté : on garde son effet pour la manche en cours.
+  void _onIqJoker(Map<String, dynamic> event) {
+    if (!mounted) return;
+    final round = event['round'] as int?;
+    _feedback.play(Sfx.reveal);
+    setState(() {
+      if (_iqJokerRound != round) {
+        _iqJokerRound = round;
+        _iqJokersUsed = {};
+        _iqRemoved = {};
+        _iqRange = null;
+        _iqExtra = 0;
+      }
+      _iqJokersUsed = {..._iqJokersUsed, event['kind'] as String};
+      _iqRemoved = {
+        ..._iqRemoved,
+        for (final i in (event['removed'] as List?) ?? const []) i as int,
+      };
+      if (event['low'] case final int low) {
+        _iqRange = (low, event['high'] as int);
+      }
+      if (event['extra_seconds'] case final int extra) _iqExtra = extra;
+      // Passer : nouvelle énigme, les choix retirés ne valent plus.
+      if (event['kind'] == 'skip') {
+        _iqRemoved = {};
+        _iqRange = null;
+      }
+    });
   }
 
   /// QI : la bonne réponse, l'explication et la réponse de chaque joueur.
@@ -265,9 +326,10 @@ class _RoomScreenState extends State<RoomScreen> {
       if (p.clientId == _online.clientId) mine = p;
     }
     // Relais : on corrige sa propre énigme (un spectateur voit la première).
+    // Sa propre énigme d'abord (relais ou joker « passer »).
     final puzzle =
-        results?.puzzle ??
         mine?.iqPuzzle ??
+        results?.puzzle ??
         results?.players.firstOrNull?.iqPuzzle;
     if (results == null || puzzle == null) return const SizedBox.shrink();
     return ListView(

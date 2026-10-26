@@ -3157,6 +3157,108 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Intrus visuel'**
   String get iqKindFigureOdd;
+
+  /// No description provided for @iqJokerFifty.
+  ///
+  /// In fr, this message translates to:
+  /// **'50/50'**
+  String get iqJokerFifty;
+
+  /// No description provided for @iqJokerHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indice'**
+  String get iqJokerHint;
+
+  /// No description provided for @iqJokerTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'+15 s'**
+  String get iqJokerTime;
+
+  /// No description provided for @iqJokerSkip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passer'**
+  String get iqJokerSkip;
+
+  /// No description provided for @iqHintRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indice : entre {low} et {high}'**
+  String iqHintRange(int low, int high);
+
+  /// No description provided for @iqCoinsWon.
+  ///
+  /// In fr, this message translates to:
+  /// **'+{coins} pièce(s) gagnée(s)'**
+  String iqCoinsWon(int coins);
+
+  /// No description provided for @iqOfflineNoCoins.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hors ligne : partie sans pièces ni jokers.'**
+  String get iqOfflineNoCoins;
+
+  /// No description provided for @iqDailyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Défi du jour'**
+  String get iqDailyTitle;
+
+  /// No description provided for @iqDailyInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'10 énigmes, les mêmes pour tous, une seule tentative par jour, sans jokers. Podium récompensé : 50, 30 et 20 pièces.'**
+  String get iqDailyInfo;
+
+  /// No description provided for @iqDailyPlay.
+  ///
+  /// In fr, this message translates to:
+  /// **'JOUER LE DÉFI'**
+  String get iqDailyPlay;
+
+  /// No description provided for @iqDailyDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déjà joué aujourd\'hui : reviens demain !'**
+  String get iqDailyDone;
+
+  /// No description provided for @iqDailyRank.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton rang : {rank}'**
+  String iqDailyRank(int rank);
+
+  /// No description provided for @iqDailyLeaderboard.
+  ///
+  /// In fr, this message translates to:
+  /// **'Classement du jour'**
+  String get iqDailyLeaderboard;
+
+  /// No description provided for @iqDailyYesterday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Podium d\'hier'**
+  String get iqDailyYesterday;
+
+  /// No description provided for @iqDailyEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Personne n\'a encore joué aujourd\'hui : sois le premier !'**
+  String get iqDailyEmpty;
+
+  /// No description provided for @iqDailyNeedsOnline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le défi du jour se joue en ligne.'**
+  String get iqDailyNeedsOnline;
+
+  /// No description provided for @iqLate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop tard !'**
+  String get iqLate;
 }
 
 class _AppLocalizationsDelegate

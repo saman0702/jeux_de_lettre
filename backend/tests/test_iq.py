@@ -88,3 +88,130 @@ def test_matrix_answer_is_the_missing_cell():
     # Niveau 2 : ligne 3 = même forme que les deux autres cases de la ligne.
     row = p.figures["cells"][6:8]
     assert all(c["s"] == correct["s"] for c in row)
+
+
+# ------------------------------------------------------------- parties vérifiées par le serveur
+
+from datetime import date, timedelta  # noqa: E402
+
+from app.models import IqSession  # noqa: E402
+from app.services import iq_play_service  # noqa: E402
+
+PLAYER = "iq-player-0001"
+
+
+async def _give_coins(client, session, client_id, coins):
+    from app.services import wallet_service
+
+    await client.get(f"/api/v1/profiles/{client_id}")
+    profile = await wallet_service.get_profile(session, client_id)
+    profile.coins = coins
+    await session.commit()
+
+
+async def test_online_solo_checks_answers_on_the_server_and_pays_coins(client, session):
+    game = (await client.post("/api/v1/iq/solo", json={"client_id": PLAYER, "rounds": 5, "duration": 30})).json()
+    assert game["number"] == 1 and game["total"] == 5
+    assert "answer" not in game["puzzle"], "the answer stays on the server"
+    stored = await session.get(IqSession, game["id"])
+    total_points = 0
+    for number in range(1, 6):
+        await session.refresh(stored)
+        right = stored.puzzles[number - 1]["answer"]
+        result = (await client.post(f"/api/v1/iq/sessions/{game['id']}/answer", json={"client_id": PLAYER, "answer": right})).json()
+        assert result["correct"] is True and result["points"] >= 10
+        total_points += result["points"]
+        again = await client.post(f"/api/v1/iq/sessions/{game['id']}/answer", json={"client_id": PLAYER, "answer": right})
+        assert again.status_code == 409, "one answer per puzzle"
+        if number < 5:
+            nxt = (await client.post(f"/api/v1/iq/sessions/{game['id']}/next", json={"client_id": PLAYER})).json()
+            assert nxt["number"] == number + 1
+    assert result["finished"] is True and result["iq"] == 145
+    profile = (await client.get(f"/api/v1/profiles/{PLAYER}")).json()
+    assert profile["total_points"] == total_points and profile["coins"] == total_points // 20
+
+
+async def test_a_late_answer_counts_as_no_answer(client, session):
+    game = (await client.post("/api/v1/iq/solo", json={"client_id": PLAYER, "rounds": 5, "duration": 15})).json()
+    stored = await session.get(IqSession, game["id"])
+    stored.served_at = stored.served_at - timedelta(seconds=60)
+    await session.commit()
+    right = stored.puzzles[0]["answer"]
+    result = (await client.post(f"/api/v1/iq/sessions/{game['id']}/answer", json={"client_id": PLAYER, "answer": right})).json()
+    assert result["late"] is True and result["correct"] is False and result["points"] == 0
+
+
+async def test_someone_else_cannot_answer_my_game(client):
+    game = (await client.post("/api/v1/iq/solo", json={"client_id": PLAYER, "rounds": 5, "duration": 30})).json()
+    other = await client.post(f"/api/v1/iq/sessions/{game['id']}/answer", json={"client_id": "other-0001", "answer": "1"})
+    assert other.status_code == 404
+
+
+async def test_jokers_cost_coins_and_help(client, session):
+    await _give_coins(client, session, PLAYER, 100)
+    game = (await client.post("/api/v1/iq/solo", json={"client_id": PLAYER, "rounds": 5, "duration": 30})).json()
+    stored = await session.get(IqSession, game["id"])
+    puzzle = iq_service.puzzle_from(stored.puzzles[0])
+    help_kind = "fifty" if puzzle.input == "choice" else "hint"
+    wrong_kind = "hint" if help_kind == "fifty" else "fifty"
+    url = f"/api/v1/iq/sessions/{game['id']}/joker"
+    assert (await client.post(url, json={"client_id": PLAYER, "kind": wrong_kind})).status_code == 409
+    effect = (await client.post(url, json={"client_id": PLAYER, "kind": help_kind})).json()
+    if help_kind == "fifty":
+        assert len(effect["removed"]) == 2 and puzzle.answer not in {str(i) for i in effect["removed"]}
+    else:
+        assert effect["low"] <= float(puzzle.answer) <= effect["high"]
+    assert effect["wallet"]["coins"] == 97
+    assert (await client.post(url, json={"client_id": PLAYER, "kind": help_kind})).status_code == 409, "once per puzzle"
+    timed = (await client.post(url, json={"client_id": PLAYER, "kind": "time"})).json()
+    assert timed["extra_seconds"] == 15
+    skipped = (await client.post(url, json={"client_id": PLAYER, "kind": "skip"})).json()
+    assert skipped["game"]["puzzle"]["id"] != puzzle.id and skipped["wallet"]["coins"] == 89
+
+
+async def test_jokers_need_coins(client, session):
+    game = (await client.post("/api/v1/iq/solo", json={"client_id": PLAYER, "rounds": 5, "duration": 30})).json()
+    broke = await client.post(f"/api/v1/iq/sessions/{game['id']}/joker", json={"client_id": PLAYER, "kind": "time"})
+    assert broke.status_code == 402 and broke.json()["detail"] == "not_enough_coins"
+
+
+def test_daily_puzzles_are_the_same_for_everyone():
+    day = date(2026, 10, 26)
+    first, second = iq_play_service.daily_puzzles(day), iq_play_service.daily_puzzles(day)
+    assert [p["prompt"] for p in first] == [p["prompt"] for p in second]
+    assert [p["answer"] for p in first] == [p["answer"] for p in second]
+    assert len(first) == 10 and first[0]["level"] == 1 and first[-1]["level"] == 3
+    assert [p["prompt"] for p in iq_play_service.daily_puzzles(day + timedelta(days=1))] != [p["prompt"] for p in first]
+
+
+async def test_daily_challenge_once_a_day_and_podium_paid_once(client, session):
+    for i, cid in enumerate(["daily-a-0001", "daily-b-0001", "daily-c-0001", "daily-d-0001"]):
+        game = (await client.post("/api/v1/iq/daily", json={"client_id": cid})).json()
+        assert game["mode"] == "daily" and game["joker_prices"] == {}
+        assert (await client.post("/api/v1/iq/daily", json={"client_id": cid})).status_code == 409
+        no_joker = await client.post(f"/api/v1/iq/sessions/{game['id']}/joker", json={"client_id": cid, "kind": "time"})
+        assert no_joker.status_code == 403
+        stored = await session.get(IqSession, game["id"])
+        await session.refresh(stored)
+        # a répond juste à tout, b à 9, c à 8, d à 7.
+        for number in range(1, 11):
+            await session.refresh(stored)
+            right = stored.puzzles[number - 1]["answer"]
+            answer = right if number > i else "-999"
+            await client.post(f"/api/v1/iq/sessions/{game['id']}/answer", json={"client_id": cid, "answer": answer})
+            if number < 10:
+                await client.post(f"/api/v1/iq/sessions/{game['id']}/next", json={"client_id": cid})
+    board = (await client.get("/api/v1/iq/daily/leaderboard", params={"client_id": "daily-b-0001"})).json()
+    assert [r["client_id"] for r in board["top"]] == ["daily-a-0001", "daily-b-0001", "daily-c-0001", "daily-d-0001"]
+    assert board["me"]["rank"] == 2 and board["played"] is True
+
+    # Le lendemain : le podium d'hier est payé, une seule fois.
+    await session.execute(IqSession.__table__.update().values(day=iq_play_service.today() - timedelta(days=1)))
+    await session.commit()
+    before = {cid: (await client.get(f"/api/v1/profiles/{cid}")).json()["coins"] for cid in ["daily-a-0001", "daily-d-0001"]}
+    board = (await client.get("/api/v1/iq/daily/leaderboard")).json()
+    await client.get("/api/v1/iq/daily/leaderboard")
+    assert [r["prize"] for r in board["yesterday"]] == [50, 30, 20]
+    after = {cid: (await client.get(f"/api/v1/profiles/{cid}")).json()["coins"] for cid in ["daily-a-0001", "daily-d-0001"]}
+    assert after["daily-a-0001"] == before["daily-a-0001"] + 50
+    assert after["daily-d-0001"] == before["daily-d-0001"], "4th place: no prize"

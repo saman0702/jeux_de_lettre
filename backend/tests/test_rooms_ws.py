@@ -928,3 +928,53 @@ def test_the_live_connection_needs_the_secret_token(client):
     with player(client, "alice-0001", "Alice") as alice:
         alice.send_json({"type": "subscribe_rooms", "language": "fr"})
 
+
+
+def test_iq_jokers_in_a_room_cost_coins_and_help_only_the_buyer(client, manager, monkeypatch):
+    from app.services import iq_service
+
+    counter = iter(range(1, 100))
+
+    def draw(level, exclude=None, rng=None):
+        n = next(counter)
+        return iq_service.Puzzle(
+            id=f"j-{n}", kind="sequence", level=level, input="number",
+            prompt={"fr": "Suite ?", "en": "Next?"}, answer=str(n * 10),
+            explanation={"fr": "", "en": ""}, items=[str(n), "?"],
+        )
+
+    monkeypatch.setattr(iq_service, "draw", draw)
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        give_coins(manager, "alice-0001", 20)
+        room = create_room(alice, game="iq")
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        common = state(alice, "round")["round"]["puzzle"]
+
+        alice.send_json({"type": "iq_joker", "round": 1, "kind": "fifty"})
+        refused = wait_for(alice, lambda m: m["type"] == "error")
+        assert refused["code"] == "joker_unavailable", "no 50/50 on a number puzzle"
+        alice.send_json({"type": "iq_joker", "round": 1, "kind": "hint"})
+        hint = wait_for(alice, lambda m: m["type"] == "iq_joker")
+        assert hint["low"] <= 10 <= hint["high"] and hint["wallet"]["coins"] == 17
+        alice.send_json({"type": "iq_joker", "round": 1, "kind": "time"})
+        assert wait_for(alice, lambda m: m["type"] == "iq_joker")["extra_seconds"] == 15
+        alice.send_json({"type": "iq_joker", "round": 1, "kind": "skip"})
+        skipped = wait_for(alice, lambda m: m["type"] == "iq_joker")
+        assert skipped["puzzle"]["id"] != common["id"] and "answer" not in skipped["puzzle"]
+        assert coins_of(manager, "alice-0001") == 9
+
+        bob.send_json({"type": "iq_joker", "round": 1, "kind": "time"})
+        assert wait_for(bob, lambda m: m["type"] == "error")["code"] == "not_enough_coins"
+
+        # Alice répond à sa nouvelle énigme, Bob à l'énigme commune.
+        new_answer = str(int(skipped["puzzle"]["items"][0]) * 10)
+        alice.send_json({"type": "iq_answer", "round": 1, "answer": new_answer})
+        bob.send_json({"type": "iq_answer", "round": 1, "answer": "10"})
+        results = state(alice, "results")["results"]
+        by_player = {p["client_id"]: p for p in results["players"]}
+        assert by_player["alice-0001"]["correct"] is True
+        assert by_player["alice-0001"]["puzzle"]["id"] == skipped["puzzle"]["id"]
+        assert by_player["bob-00001"]["correct"] is True and "puzzle" not in by_player["bob-00001"]

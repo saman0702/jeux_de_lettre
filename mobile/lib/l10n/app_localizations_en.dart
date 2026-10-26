@@ -1797,4 +1797,62 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get iqKindFigureOdd => 'Visual odd one';
+
+  @override
+  String get iqJokerFifty => '50/50';
+
+  @override
+  String get iqJokerHint => 'Hint';
+
+  @override
+  String get iqJokerTime => '+15 s';
+
+  @override
+  String get iqJokerSkip => 'Skip';
+
+  @override
+  String iqHintRange(int low, int high) {
+    return 'Hint: between $low and $high';
+  }
+
+  @override
+  String iqCoinsWon(int coins) {
+    return '+$coins coin(s) won';
+  }
+
+  @override
+  String get iqOfflineNoCoins => 'Offline: no coins or jokers in this game.';
+
+  @override
+  String get iqDailyTitle => 'Daily challenge';
+
+  @override
+  String get iqDailyInfo =>
+      '10 puzzles, the same for everyone, one try a day, no jokers. Podium rewarded: 50, 30 and 20 coins.';
+
+  @override
+  String get iqDailyPlay => 'PLAY THE CHALLENGE';
+
+  @override
+  String get iqDailyDone => 'Already played today: come back tomorrow!';
+
+  @override
+  String iqDailyRank(int rank) {
+    return 'Your rank: $rank';
+  }
+
+  @override
+  String get iqDailyLeaderboard => 'Today\'s leaderboard';
+
+  @override
+  String get iqDailyYesterday => 'Yesterday\'s podium';
+
+  @override
+  String get iqDailyEmpty => 'Nobody has played yet today: be the first!';
+
+  @override
+  String get iqDailyNeedsOnline => 'The daily challenge is played online.';
+
+  @override
+  String get iqLate => 'Too late!';
 }
