@@ -81,6 +81,15 @@ class IqPuzzle {
     return i >= 0 && i < list.length ? list[i] : a;
   }
 
+  /// Une réponse donnée, lisible (le texte du choix pour un QCM).
+  String shown(String? raw, String language) {
+    if (raw == null || raw.isEmpty) return '—';
+    if (typed) return raw;
+    final list = choicesIn(language);
+    final i = int.tryParse(raw) ?? -1;
+    return i >= 0 && i < list.length ? list[i] : raw;
+  }
+
   /// Même règle que le serveur : « 1 024 » et « 1024,0 » valent 1024.
   bool isCorrect(String? raw) {
     final a = answer;

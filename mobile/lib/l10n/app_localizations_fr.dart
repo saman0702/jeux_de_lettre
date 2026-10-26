@@ -1795,4 +1795,8 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get iqYou => 'Toi';
+
+  @override
+  String get iqRelayHelp =>
+      'Chacun reçoit sa propre énigme, du même niveau : impossible de copier sur le voisin !';
 }

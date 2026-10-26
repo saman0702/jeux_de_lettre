@@ -173,6 +173,7 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: GameBackground(
+        theme: BackgroundTheme.iq,
         child: SafeArea(
           child: Column(
             children: [

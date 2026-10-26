@@ -292,10 +292,14 @@ class IqPlayerResult {
     required this.correct,
     required this.points,
     this.isMe = false,
+    this.shownAnswer,
   });
 
   final String name;
   final String? answer;
+
+  /// Réponse déjà mise en forme (relais : lue sur l'énigme de ce joueur).
+  final String? shownAnswer;
   final bool correct;
   final int points;
   final bool isMe;
@@ -400,7 +404,7 @@ class IqRevealCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        _shown(p.answer),
+                        p.shownAnswer ?? _shown(p.answer),
                         style: fredoka(size: 15, color: AppColors.inkSoft),
                       ),
                       const SizedBox(width: 12),

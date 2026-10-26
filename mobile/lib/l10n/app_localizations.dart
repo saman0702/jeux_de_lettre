@@ -3133,6 +3133,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Toi'**
   String get iqYou;
+
+  /// No description provided for @iqRelayHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chacun reçoit sa propre énigme, du même niveau : impossible de copier sur le voisin !'**
+  String get iqRelayHelp;
 }
 
 class _AppLocalizationsDelegate

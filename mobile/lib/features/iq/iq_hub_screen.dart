@@ -85,6 +85,7 @@ class _IqHubScreenState extends State<IqHubScreen> {
     final online = OnlineScope.of(context);
     return Scaffold(
       body: GameBackground(
+        theme: BackgroundTheme.iq,
         child: SafeArea(
           child: ListenableBuilder(
             listenable: online,

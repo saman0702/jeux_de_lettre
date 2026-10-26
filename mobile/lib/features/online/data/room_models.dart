@@ -279,12 +279,16 @@ class PlayerRoundResult {
     this.elapsed,
     this.iqAnswer,
     this.iqCorrect = false,
+    this.iqPuzzle,
   });
 
   factory PlayerRoundResult.fromJson(Map<String, dynamic> json) =>
       PlayerRoundResult(
         iqAnswer: json['answer'] as String?,
         iqCorrect: json['correct'] as bool? ?? false,
+        iqPuzzle: json['puzzle'] == null
+            ? null
+            : IqPuzzle.fromJson(json['puzzle'] as Map<String, dynamic>),
         clientId: json['client_id'] as String,
         nickname: json['nickname'] as String,
         answers: [
@@ -299,6 +303,9 @@ class PlayerRoundResult {
 
   /// QI : réponse donnée (nombre ou indice du choix) et si elle est juste.
   final String? iqAnswer;
+
+  /// QI en relais : l'énigme de ce joueur, avec sa réponse.
+  final IqPuzzle? iqPuzzle;
   final bool iqCorrect;
 
   final String clientId;
@@ -567,6 +574,7 @@ class RoomState {
     this.freezePrice = 15,
     this.chatUnlockPrice = 25,
     this.iqPuzzle,
+    this.iqPuzzles = const {},
     this.creatorId,
     this.saved = false,
     this.voice = const RoomVoice(),
@@ -596,6 +604,10 @@ class RoomState {
       iqPuzzle: roundJson?['puzzle'] == null
           ? null
           : IqPuzzle.fromJson(roundJson!['puzzle'] as Map<String, dynamic>),
+      iqPuzzles: {
+        for (final e in ((roundJson?['puzzles'] as Map?) ?? const {}).entries)
+          e.key as String: IqPuzzle.fromJson(e.value as Map<String, dynamic>),
+      },
       round: roundJson == null
           ? null
           : GameRound.fromJson({
@@ -668,6 +680,12 @@ class RoomState {
 
   /// QI : l'énigme de la manche en cours (sans la réponse).
   final IqPuzzle? iqPuzzle;
+
+  /// QI en relais : l'énigme de chaque joueur.
+  final Map<String, IqPuzzle> iqPuzzles;
+
+  /// L'énigme à résoudre pour ce joueur (la sienne en relais).
+  IqPuzzle? iqPuzzleFor(String clientId) => iqPuzzles[clientId] ?? iqPuzzle;
 
   /// Créateur du salon : il en redevient l'hôte à chaque retour.
   final String? creatorId;

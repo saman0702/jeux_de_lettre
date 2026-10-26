@@ -191,7 +191,8 @@ class _RoomScreenState extends State<RoomScreen> {
   Widget _iqRound(RoomState room) {
     final l10n = AppLocalizations.of(context);
     final round = room.round!;
-    final puzzle = room.iqPuzzle;
+    // Relais : chacun a sa propre énigme.
+    final puzzle = room.iqPuzzleFor(_online.clientId);
     final me = room.player(_online.clientId);
     final language = Localizations.localeOf(context).languageCode;
     final answered =
@@ -258,9 +259,17 @@ class _RoomScreenState extends State<RoomScreen> {
   /// QI : la bonne réponse, l'explication et la réponse de chaque joueur.
   Widget _iqResults(RoomState room) {
     final results = room.results;
-    final puzzle = results?.puzzle;
-    if (results == null || puzzle == null) return const SizedBox.shrink();
     final language = Localizations.localeOf(context).languageCode;
+    PlayerRoundResult? mine;
+    for (final p in results?.players ?? const <PlayerRoundResult>[]) {
+      if (p.clientId == _online.clientId) mine = p;
+    }
+    // Relais : on corrige sa propre énigme (un spectateur voit la première).
+    final puzzle =
+        results?.puzzle ??
+        mine?.iqPuzzle ??
+        results?.players.firstOrNull?.iqPuzzle;
+    if (results == null || puzzle == null) return const SizedBox.shrink();
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       children: [
@@ -277,6 +286,7 @@ class _RoomScreenState extends State<RoomScreen> {
                 correct: p.iqCorrect,
                 points: p.roundScore,
                 isMe: p.clientId == _online.clientId,
+                shownAnswer: p.iqPuzzle?.shown(p.iqAnswer, language),
               ),
           ],
         ),
@@ -467,6 +477,10 @@ class _RoomScreenState extends State<RoomScreen> {
       child: Scaffold(
         body: GameBackground(
           palette: _palette(room),
+          // Salon QI : chiffres, symboles et cerveaux au lieu des lettres.
+          theme: (room?.settings.iq ?? false)
+              ? BackgroundTheme.iq
+              : BackgroundTheme.letters,
           child: SafeArea(
             child: Stack(
               children: [

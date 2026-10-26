@@ -14,8 +14,10 @@ import 'package:letter_battle/features/iq/iq_models.dart';
 import 'package:letter_battle/features/iq/iq_setup_screen.dart';
 import 'package:letter_battle/features/iq/iq_solo_screen.dart';
 import 'package:letter_battle/features/iq/iq_solo_source.dart';
+import 'package:letter_battle/features/career/elimination_screen.dart';
 import 'package:letter_battle/features/online/room_screen.dart';
 
+import 'solo_game_test.dart' show FakeServer;
 import 'online_test.dart' show Harness, me, player, pumpFor, roomEvent;
 
 Map<String, dynamic> sequenceJson({bool withAnswer = true}) => {
@@ -439,6 +441,130 @@ void main() {
     await pumpFor(tester, const Duration(milliseconds: 600));
     expect(find.byKey(const Key('iq_answer')), findsOneWidget);
     expect(find.text('An apple is not an animal.'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('IQ relay: each player solves their own puzzle', (tester) async {
+    tallPhone(tester);
+    final h = Harness();
+    await h.start(tester, const RoomScreen());
+    final now = DateTime.now().toUtc();
+    final event = iqRoom(
+      roomEvent(
+        'round',
+        round: {
+          'number': 1,
+          'letter': '',
+          'duration': 30,
+          'started_at': now.toIso8601String(),
+          'ends_at': now.add(const Duration(seconds: 30)).toIso8601String(),
+          'puzzle': null,
+          'puzzles': {
+            me: sequenceJson(withAnswer: false),
+            'kev': oddJson(withAnswer: false),
+          },
+        },
+      ),
+    );
+    ((event['room'] as Map)['settings'] as Map)['format'] = 'relay';
+    h.socket.push(event);
+    await pumpFor(tester, const Duration(milliseconds: 300));
+    // Mon énigme à moi, pas celle de Kevin.
+    expect(find.text('Which number comes next?'), findsOneWidget);
+    expect(find.text('Which is the odd one out?'), findsNothing);
+    await tapKey(tester, 'iq_key_8');
+    await tapKey(tester, 'iq_submit');
+    expect(h.socket.sent.last, {
+      'type': 'iq_answer',
+      'round': 1,
+      'answer': '8',
+    });
+
+    final results = iqRoom(
+      roomEvent(
+        'results',
+        results: {
+          'number': 1,
+          'letter': '',
+          'puzzle': null,
+          'players': [
+            {
+              'client_id': me,
+              'nickname': 'Blaise',
+              'answers': [],
+              'answer': '8',
+              'correct': true,
+              'round_score': 15,
+              'puzzle': sequenceJson(),
+            },
+            {
+              'client_id': 'kev',
+              'nickname': 'Kevin',
+              'answers': [],
+              'answer': '0',
+              'correct': false,
+              'round_score': 0,
+              'puzzle': oddJson(),
+            },
+          ],
+          'examples': {},
+          'eliminated': [],
+        },
+        nextRoundAt: now.add(const Duration(seconds: 8)),
+      ),
+    );
+    ((results['room'] as Map)['settings'] as Map)['format'] = 'relay';
+    h.socket.push(results);
+    await pumpFor(tester, const Duration(milliseconds: 600));
+    expect(find.text('Add 2 each time.'), findsOneWidget);
+    // La réponse de Kevin est lue sur sa propre énigme.
+    expect(find.text('Cat'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('IQ room setup offers rounds or relay, like Geography & Nature', (
+    tester,
+  ) async {
+    tallPhone(tester);
+    final h = Harness();
+    await h.start(tester, const IqSetupScreen(mode: IqSetupMode.room));
+    expect(find.text('Knockout'), findsNothing);
+    await tester.tap(find.text('Relay'));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('iq_start')));
+    await tester.pump();
+    final create = h.socket.sent.lastWhere((m) => m['type'] == 'create_room');
+    expect((create['settings'] as Map)['format'], 'relay');
+    expect((create['settings'] as Map)['game'], 'iq');
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('knockout mode can be played with IQ puzzles', (tester) async {
+    tallPhone(tester);
+    final h = Harness();
+    await h.start(tester, EliminationScreen(apiClient: FakeServer().api));
+    await tester.tap(find.text('IQ'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('elim_iq_penalty')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('elim_iq_penalty')));
+    await tester.pumpAndSettle();
+    final list = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('invite_friends')),
+      200,
+      scrollable: list,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('invite_friends')));
+    await tester.pump();
+    final create = h.socket.sent.lastWhere((m) => m['type'] == 'create_room');
+    final settings = create['settings'] as Map<String, dynamic>;
+    expect(settings['format'], 'elimination');
+    expect(settings['game'], 'iq');
+    expect(settings['iq_penalty'], isTrue);
+    expect(settings['strict_spelling'], isFalse);
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpWidget(const SizedBox());
   });
 }

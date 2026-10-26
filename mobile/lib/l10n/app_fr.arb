@@ -1233,5 +1233,6 @@
   "iqNext": "ÉNIGME SUIVANTE",
   "iqSeeResult": "VOIR MON QI",
   "iqBadge": "QI",
-  "iqYou": "Toi"
+  "iqYou": "Toi",
+  "iqRelayHelp": "Chacun reçoit sa propre énigme, du même niveau : impossible de copier sur le voisin !"
 }

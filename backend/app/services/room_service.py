@@ -102,9 +102,7 @@ class RoomSettings(GameSettings):
         if self.kind == "classic":
             self.stake = 0
         if self.game == "iq":
-            # Pas de lettre ni de catégories en QI : ni relais ni thème.
-            if self.format == "relay":
-                self.format = "rounds"
+            # Pas de catégories en QI : pas de thème. Le relais répartit les énigmes.
             self.theme = ""
         return self
 
@@ -201,8 +199,12 @@ class LiveRound:
     # Freeze : client cible -> fin du gel.
     frozen_until: dict[str, datetime] = field(default_factory=dict)
     bonus: bool = False
-    # QI : l'énigme de la manche.
+    # QI : l'énigme de la manche ; en relais, une énigme par joueur.
     puzzle: iq_service.Puzzle | None = None
+    puzzles: dict[str, iq_service.Puzzle] = field(default_factory=dict)
+
+    def puzzle_for(self, client_id: str) -> iq_service.Puzzle | None:
+        return self.puzzles.get(client_id) or self.puzzle
 
 
 @dataclass
@@ -2016,7 +2018,7 @@ class RoomManager:
             not room.settings.iq
             or room.phase != "round"
             or live is None
-            or live.puzzle is None
+            or live.puzzle_for(connection.client_id) is None
             or message.get("round") != live.number
             or connection.client_id not in live.participants
         ):
@@ -2029,7 +2031,8 @@ class RoomManager:
         self._check_all_in(room)
 
     async def _play_iq_round(self, room: Room, number: int) -> None:
-        """Une manche de QI : une énigme, des points selon la justesse (et la vitesse)."""
+        """Une manche de QI : une énigme (en relais, une par joueur, du même niveau), des points
+        selon la justesse et la vitesse."""
         room.phase = "countdown"
         room.results = None
         room.next_round_at = None
@@ -2040,19 +2043,32 @@ class RoomManager:
         settings = room.settings
         level = iq_service.level_for(number, settings.rounds, settings.difficulty)
         used = {r.get("puzzle", {}).get("id") for r in room.results_history if isinstance(r.get("puzzle"), dict)}
-        puzzle = iq_service.draw(level, exclude=used)
+        used |= {
+            p["puzzle"]["id"]
+            for r in room.results_history
+            for p in r.get("players", [])
+            if isinstance(p.get("puzzle"), dict)
+        }
         started = utcnow()
+        participants = {
+            cid: p.db_player_id or cid for cid, p in room.players.items() if p.eliminated_round is None
+        }
+        puzzle, puzzles = None, {}
+        if settings.relay:
+            # Chacun son énigme : personne ne peut s'aider de l'écran du voisin.
+            for cid in participants:
+                puzzles[cid] = iq_service.draw(level, exclude=used)
+                used.add(puzzles[cid].id)
+        else:
+            puzzle = iq_service.draw(level, exclude=used)
         live = LiveRound(
             number=number,
             letter="",
             started_at=started,
             ends_at=started + timedelta(seconds=settings.round_duration),
-            participants={
-                cid: p.db_player_id or cid
-                for cid, p in room.players.items()
-                if p.eliminated_round is None
-            },
+            participants=participants,
             puzzle=puzzle,
+            puzzles=puzzles,
         )
         room.round_number = number
         room.live_round = live
@@ -2075,7 +2091,8 @@ class RoomManager:
             submitted = live.submissions.get(cid)
             answer = submitted[1].get("iq") if submitted else None
             elapsed = (min(submitted[0], live.ends_at) - started).total_seconds() if submitted else None
-            correct = submitted is not None and iq_service.check(puzzle, answer)
+            mine = live.puzzle_for(cid)
+            correct = submitted is not None and mine is not None and iq_service.check(mine, answer)
             pts = iq_service.points(
                 correct,
                 submitted is not None,
@@ -2094,6 +2111,8 @@ class RoomManager:
                     "correct": correct,
                     "round_score": pts,
                     "elapsed_ms": int(elapsed * 1000) if elapsed is not None else None,
+                    # Relais : l'énigme de ce joueur, avec sa réponse.
+                    **({"puzzle": mine.reveal()} if settings.relay and mine else {}),
                 }
             )
             if pts > 0 and player.db_player_id:
@@ -2103,7 +2122,7 @@ class RoomManager:
         room.results = {
             "number": number,
             "letter": "",
-            "puzzle": puzzle.reveal(),
+            "puzzle": puzzle.reveal() if puzzle else None,
             "players": results,
             "examples": {},
             "eliminated": eliminated,
@@ -2129,7 +2148,10 @@ class RoomManager:
             if bot is None or not bot.bot:
                 continue
             accuracy, (low, high) = profiles.get(bot.bot_level, profiles[Difficulty.NORMAL])
-            answer = live.puzzle.answer if rng.random() < accuracy else iq_service.wrong_answer(live.puzzle, rng)
+            puzzle = live.puzzle_for(cid)
+            if puzzle is None:
+                continue
+            answer = puzzle.answer if rng.random() < accuracy else iq_service.wrong_answer(puzzle, rng)
             delay = room.settings.round_duration * rng.uniform(low, high) * self.timings.bot_speed
             live.bot_tasks.append(asyncio.create_task(self._iq_bot_answer(room, live, cid, answer, delay)))
 
@@ -2235,6 +2257,8 @@ class RoomManager:
                 "assignments": live.assignments,
                 # QI : l'énigme, sans sa réponse.
                 "puzzle": live.puzzle.public() if live.puzzle else None,
+                # Relais : l'énigme de chaque joueur (sans les réponses).
+                "puzzles": {cid: p.public() for cid, p in live.puzzles.items()},
             },
             "results": room.results,
             "lightning": None

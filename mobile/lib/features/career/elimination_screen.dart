@@ -18,6 +18,7 @@ import '../game/widgets/option_section.dart';
 import '../game/widgets/pill_selector.dart';
 import '../../animations/transitions/pop_route.dart';
 import '../game/widgets/labels.dart';
+import '../iq/iq_setup_screen.dart';
 import '../online/data/room_models.dart';
 import '../online/nickname_dialog.dart';
 import '../online/online_controller.dart';
@@ -43,11 +44,20 @@ class _EliminationScreenState extends State<EliminationScreen> {
   bool _strictSpelling = false;
   int _maxPlayers = 8;
 
+  /// Éliminatoires de Géographie & Nature ou de QI.
+  RoomGame _game = RoomGame.letters;
+  bool _iqSpeedBonus = true;
+  bool _iqPenalty = false;
+
+  bool get _iq => _game == RoomGame.iq;
+
   /// 0 = pas de dotation ; sinon pièces placées par le créateur.
   int _prize = 0;
   late final TextEditingController _prizeField;
 
-  List<int> get _durationOptions => [
+  List<int> get _durationOptions => _iq
+      ? IqSetupScreen.durationOptions
+      : [
         for (final d in SoloGameSettings.durationOptions)
           if (!_strictSpelling || d >= Category.strictSpellingMinDuration) d,
       ];
@@ -85,6 +95,16 @@ class _EliminationScreenState extends State<EliminationScreen> {
   void dispose() {
     _prizeField.dispose();
     super.dispose();
+  }
+
+  void _setGame(RoomGame game) {
+    setState(() {
+      _game = game;
+      // Temps par énigme en QI : 15 à 60 s.
+      if (!_durationOptions.contains(_duration)) {
+        _duration = EliminationChallenge.defaultDuration;
+      }
+    });
   }
 
   void _setStrictSpelling(bool value) {
@@ -139,9 +159,12 @@ class _EliminationScreenState extends State<EliminationScreen> {
         difficulty: _difficulty,
         rounds: _rounds,
         roundDuration: _duration,
-        strictSpelling: _strictSpelling,
+        strictSpelling: _strictSpelling && !_iq,
         maxPlayers: _maxPlayers,
         format: RoomFormat.elimination,
+        game: _game,
+        iqSpeedBonus: _iqSpeedBonus,
+        iqPenalty: _iqPenalty,
         kind: _prize > 0 ? RoomKind.prize : RoomKind.classic,
         stake: _prize,
       );
@@ -203,6 +226,7 @@ class _EliminationScreenState extends State<EliminationScreen> {
 
     return Scaffold(
       body: GameBackground(
+        theme: _iq ? BackgroundTheme.iq : BackgroundTheme.letters,
         child: SafeArea(
           child: FloatingBarsLayout(
             header: OnlineHeader(
@@ -214,6 +238,22 @@ class _EliminationScreenState extends State<EliminationScreen> {
               helpIcon: GameIconKind.flag,
             ),
             children: [
+              OptionSection(
+                index: 0,
+                title: l10n.gamesTitle,
+                icon: GameIconKind.trophy,
+                color: AppColors.purpleLight,
+                child: PillSelector<RoomGame>(
+                  options: RoomGame.values,
+                  isSelected: (g) => g == _game,
+                  label: (g) => g == RoomGame.iq
+                      ? l10n.gameIqTitle
+                      : l10n.gameLettersTitle,
+                  icon: (g) =>
+                      g == RoomGame.iq ? GameIconKind.hint : GameIconKind.country,
+                  onTap: _setGame,
+                ),
+              ),
               OptionSection(
                 index: 0,
                 title: l10n.roomType,
@@ -265,6 +305,8 @@ class _EliminationScreenState extends State<EliminationScreen> {
                       label: (d) => d.label(l10n),
                       onTap: (d) => setState(() => _difficulty = d),
                     ),
+                    // Pas d'orthographe en QI.
+                    if (!_iq) ...[
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -293,9 +335,53 @@ class _EliminationScreenState extends State<EliminationScreen> {
                         ),
                       ],
                     ),
+                    ],
                   ],
                 ),
               ),
+              if (_iq)
+                OptionSection(
+                  index: 3,
+                  title: l10n.iqScoring,
+                  icon: GameIconKind.trophy,
+                  color: AppColors.pink,
+                  child: Column(
+                    children: [
+                      for (final (label, value, onChanged, key) in [
+                        (
+                          l10n.iqSpeedBonus,
+                          _iqSpeedBonus,
+                          (bool v) => setState(() => _iqSpeedBonus = v),
+                          'elim_iq_speed_bonus',
+                        ),
+                        (
+                          l10n.iqPenalty,
+                          _iqPenalty,
+                          (bool v) => setState(() => _iqPenalty = v),
+                          'elim_iq_penalty',
+                        ),
+                      ])
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  label,
+                                  style: fredoka(size: 15, color: AppColors.ink),
+                                ),
+                              ),
+                              GameToggle(
+                                key: Key(key),
+                                value: value,
+                                onChanged: onChanged,
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               OptionSection(
                 index: 4,
                 title: l10n.winnerPrize,

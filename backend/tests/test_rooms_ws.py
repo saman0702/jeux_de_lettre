@@ -842,6 +842,54 @@ def test_an_iq_room_scores_right_and_fast_answers(client, monkeypatch):
         assert by_player["Bob"]["correct"] is False and by_player["Bob"]["round_score"] == -5, "penalty on"
 
 
+def test_iq_relay_gives_each_player_their_own_puzzle(client, monkeypatch):
+    from app.services import iq_service
+
+    drawn = []
+
+    def draw(level, exclude=None, rng=None):
+        n = len(drawn) + 1
+        drawn.append(
+            iq_service.Puzzle(
+                id=f"relay-{n}",
+                kind="sequence",
+                level=level,
+                input="number",
+                prompt={"fr": "Suite ?", "en": "Next?"},
+                answer=str(n * 100),
+                explanation={"fr": "", "en": ""},
+                items=[str(n), "?"],
+            )
+        )
+        assert exclude is None or drawn[-1].id not in exclude
+        return drawn[-1]
+
+    monkeypatch.setattr(iq_service, "draw", draw)
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice, game="iq", format="relay")
+        assert room["settings"]["format"] == "relay", "relay is allowed in IQ"
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+
+        round_ = state(alice, "round")["round"]
+        puzzles = round_["puzzles"]
+        assert set(puzzles) == {"alice-0001", "bob-00001"}
+        assert puzzles["alice-0001"]["id"] != puzzles["bob-00001"]["id"]
+        assert all("answer" not in p for p in puzzles.values())
+        answers = {p.id: p.answer for p in drawn}
+        alice.send_json({"type": "iq_answer", "round": 1, "answer": answers[puzzles["alice-0001"]["id"]]})
+        # Bob donne la réponse de l'énigme d'Alice : faux pour la sienne.
+        bob.send_json({"type": "iq_answer", "round": 1, "answer": answers[puzzles["alice-0001"]["id"]]})
+        results = state(alice, "results")["results"]
+        by_player = {p["client_id"]: p for p in results["players"]}
+        assert by_player["alice-0001"]["correct"] is True
+        assert by_player["bob-00001"]["correct"] is False
+        assert by_player["bob-00001"]["puzzle"]["id"] == puzzles["bob-00001"]["id"]
+        assert by_player["bob-00001"]["puzzle"]["answer"] == answers[puzzles["bob-00001"]["id"]]
+
+
 def test_iq_bots_answer_by_themselves(client, monkeypatch):
     with player(client, "alice-0001", "Alice") as alice:
         alice.send_json({

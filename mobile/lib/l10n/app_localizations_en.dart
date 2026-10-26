@@ -1784,4 +1784,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get iqYou => 'You';
+
+  @override
+  String get iqRelayHelp =>
+      'Everyone gets their own puzzle, of the same level: no copying from your neighbour!';
 }

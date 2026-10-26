@@ -115,6 +115,7 @@ class _IqSetupScreenState extends State<IqSetupScreen> {
     var index = 0;
     return Scaffold(
       body: GameBackground(
+        theme: BackgroundTheme.iq,
         child: SafeArea(
           child: FloatingBarsLayout(
             header: OnlineHeader(
@@ -201,13 +202,13 @@ class _IqSetupScreenState extends State<IqSetupScreen> {
                   title: l10n.roomFormat,
                   icon: GameIconKind.layers,
                   color: AppColors.purpleLight,
-                  help:
-                      '${l10n.formatRoundsHelp}\n\n${l10n.formatEliminationHelp}',
+                  // Comme le Petit Bac : par manches ou relais.
+                  help: '${l10n.formatRoundsHelpLong}\n\n${l10n.iqRelayHelp}',
                   child: PillSelector<RoomFormat>(
-                    options: const [RoomFormat.rounds, RoomFormat.elimination],
+                    options: const [RoomFormat.rounds, RoomFormat.relay],
                     isSelected: (f) => f == _format,
-                    label: (f) => f == RoomFormat.elimination
-                        ? l10n.formatElimination
+                    label: (f) => f == RoomFormat.relay
+                        ? l10n.formatRelay
                         : l10n.formatRounds,
                     onTap: (f) => setState(() => _format = f),
                   ),
