@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.client_auth import verified_client
 from app.core.database import get_session
 from app.models import Profile
 from app.schemas.game import CosmeticIn, CosmeticResult, LookOut, ProfileOut, ProfileUpdate, UnequipIn, WalletOut
@@ -8,7 +9,8 @@ from app.api.shop.router import get_store_verifier
 from app.services import avatar_service, perks_service, shop_service, wallet_service
 from app.services.store_service import StoreVerifier
 
-router = APIRouter(prefix="/api/v1/profiles", tags=["profiles"])
+# Toutes ces routes agissent sur le profil d'un joueur : son jeton secret est exigé.
+router = APIRouter(prefix="/api/v1/profiles", tags=["profiles"], dependencies=[Depends(verified_client)])
 
 
 def profile_out(profile: Profile, ad_rewards_left: int = 0) -> ProfileOut:

@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.games.presenters import game_out, game_summary_out, round_result_out
+from app.core import client_auth
 from app.core.database import get_session
 from app.core.game_rules import (
     CATEGORY_INFO_PRICE_FOUND,
@@ -51,7 +52,14 @@ async def get_config():
 
 
 @router.post("/solo/games", response_model=GameOut, status_code=201)
-async def create_solo_game(data: SoloGameCreate, session: AsyncSession = Depends(get_session)):
+async def create_solo_game(
+    data: SoloGameCreate,
+    session: AsyncSession = Depends(get_session),
+    x_client_token: str | None = Header(default=None),
+):
+    # Partie liée à un joueur (points, pièces, indices achetés) : son jeton est exigé.
+    if data.client_id:
+        await client_auth.check(session, data.client_id, x_client_token)
     game = await game_service.create_solo_game(session, data)
     return game_out(game, await game_service.hints_left(session, game))
 

@@ -11,6 +11,7 @@ class AppSettings extends ChangeNotifier {
   AppSettings._(
     this._prefs, {
     required this.clientId,
+    required this.clientToken,
     this._sound = true,
     this._music = true,
     this._vibration = true,
@@ -44,6 +45,7 @@ class AppSettings extends ChangeNotifier {
     : this._(
         null,
         clientId: clientId,
+        clientToken: 'test-client-token-$clientId',
         nickname: nickname,
         careerRulesSeen: true,
         eliminationRulesSeen: true,
@@ -56,9 +58,16 @@ class AppSettings extends ChangeNotifier {
       clientId = _randomId();
       await prefs.setString(_clientIdKey, clientId);
     }
+    // Jeton secret, créé une fois : jamais montré aux autres joueurs.
+    var clientToken = prefs.getString(_clientTokenKey);
+    if (clientToken == null) {
+      clientToken = _randomId(length: 48);
+      await prefs.setString(_clientTokenKey, clientToken);
+    }
     return AppSettings._(
       prefs,
       clientId: clientId,
+      clientToken: clientToken,
       sound: prefs.getBool(_soundKey) ?? true,
       music: prefs.getBool(_musicKey) ?? true,
       vibration: prefs.getBool(_vibrationKey) ?? true,
@@ -130,10 +139,10 @@ class AppSettings extends ChangeNotifier {
     }
   }
 
-  static String _randomId() {
+  static String _randomId({int length = 24}) {
     final random = Random.secure();
     return List.generate(
-      24,
+      length,
       (_) => random.nextInt(16).toRadixString(16),
     ).join();
   }
@@ -150,6 +159,7 @@ class AppSettings extends ChangeNotifier {
   static const _onboardingDoneKey = 'onboarding.done';
   static const _nicknameKey = 'player.nickname';
   static const _clientIdKey = 'player.client_id';
+  static const _clientTokenKey = 'player.client_token';
   static const _avatarPresetKey = 'player.avatar_preset';
   static const _avatarPendingKey = 'player.avatar_pending';
   static const _careerRulesSeenKey = 'career.rules_seen';
@@ -164,8 +174,13 @@ class AppSettings extends ChangeNotifier {
   final SharedPreferences? _prefs;
 
   /// Identifiant aléatoire gardé sur l'appareil : il permet à un invité de
-  /// retrouver sa place après une perte de connexion.
+  /// retrouver sa place après une perte de connexion. Il est public : les
+  /// autres joueurs du salon le voient.
   final String clientId;
+
+  /// Secret gardé sur l'appareil, envoyé seulement au serveur : sans lui,
+  /// personne ne peut agir sur le profil (pièces, achats, messages privés).
+  final String clientToken;
   bool _sound;
   bool _music;
   bool _vibration;

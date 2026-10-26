@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Letter Race API"
+    # Requêtes API par minute et par adresse IP (0 = pas de limite).
+    rate_limit_per_minute: int = 240
 
     postgres_user: str = "letterbattle"
     postgres_password: str = "letterbattle"

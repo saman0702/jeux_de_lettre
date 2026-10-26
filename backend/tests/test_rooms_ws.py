@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import NullPool
 from starlette.testclient import TestClient
 
+from tests.conftest import sign_as_owner, token_for
+
 from app.main import app
 from app.services import letter_service, wallet_service
 from app.services.presence_service import MemoryPresence
@@ -52,12 +54,16 @@ def manager(monkeypatch):
 @pytest.fixture
 def client(manager):
     with TestClient(app) as client:
+        client.event_hooks = {"request": [sign_as_owner]}
         yield client
 
 
 @contextmanager
 def player(client, client_id, nickname, language="fr", country=""):
-    url = f"/ws?client_id={client_id}&nickname={nickname}&language={language}&country={country}"
+    url = (
+        f"/ws?client_id={client_id}&nickname={nickname}&language={language}&country={country}"
+        f"&token={token_for(client_id)}"
+    )
     with client.websocket_connect(url) as ws:
         welcome = ws.receive_json()
         assert welcome["type"] == "welcome"
@@ -420,7 +426,7 @@ def play_bet_game(alice, bob, room, alice_answers, bob_answers):
 
 def test_welcome_carries_the_wallet(client, manager):
     give_coins(manager, "alice-0001", 7)
-    with client.websocket_connect("/ws?client_id=alice-0001&nickname=Alice") as ws:
+    with client.websocket_connect(f"/ws?client_id=alice-0001&nickname=Alice&token={token_for('alice-0001')}") as ws:
         welcome = ws.receive_json()
         assert welcome["wallet"] == {"coins": 7, "coins_gained": 0, "points_to_next_coin": 20, "level": 1, "level_xp": 0, "level_xp_needed": 100, "ads_removed": False, "pass_expires_at": None}
 
@@ -905,3 +911,20 @@ def test_iq_bots_answer_by_themselves(client, monkeypatch):
         results = state(alice, "results")["results"]
         assert {p["client_id"] for p in results["players"] if p["client_id"].startswith("bot-")}
         assert all(p["answer"] is not None for p in results["players"]), "bots answered"
+
+
+def test_the_live_connection_needs_the_secret_token(client):
+    from starlette.websockets import WebSocketDisconnect
+
+    # Le vrai joueur se connecte : son jeton est associé à son profil.
+    with player(client, "alice-0001", "Alice"):
+        pass
+    for token in ("", "pirate-token-0123456789"):
+        try:
+            with client.websocket_connect(f"/ws?client_id=alice-0001&nickname=Pirate&token={token}"):
+                raise AssertionError("an impostor must not get in")
+        except WebSocketDisconnect as closed:
+            assert closed.code == 4401
+    with player(client, "alice-0001", "Alice") as alice:
+        alice.send_json({"type": "subscribe_rooms", "language": "fr"})
+

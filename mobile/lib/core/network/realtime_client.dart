@@ -45,6 +45,7 @@ class RealtimeClient extends ChangeNotifier {
   RealtimeClient({
     required this.clientId,
     required this._nickname,
+    this.token,
     String language = 'fr',
     String? country,
     RealtimeConnector? connector,
@@ -60,6 +61,10 @@ class RealtimeClient extends ChangeNotifier {
   String? _country;
 
   final String clientId;
+
+  /// Jeton secret de l'appli : prouve au serveur que c'est bien ce joueur
+  /// (le clientId, lui, est vu par les autres joueurs).
+  final String? token;
   final String baseUrl;
 
   /// Garde les connexions inactives en vie à travers les proxys ; null
@@ -95,6 +100,7 @@ class RealtimeClient extends ChangeNotifier {
         'nickname': _nickname,
         'language': _language,
         if (_country != null) 'country': _country,
+        if (token != null) 'token': token,
       },
     );
   }

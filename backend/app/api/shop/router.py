@@ -1,9 +1,10 @@
 from functools import lru_cache
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import client_auth
 from app.core.database import get_session
 from app.core.game_rules import COIN_PACKS
 from app.schemas.game import WalletOut
@@ -43,8 +44,10 @@ async def redeem_purchase(
     data: PurchaseIn,
     session: AsyncSession = Depends(get_session),
     verifier: StoreVerifier = Depends(get_store_verifier),
+    x_client_token: str | None = Header(default=None),
 ):
     """Crédite un achat après l'avoir vérifié auprès du store."""
+    await client_auth.check(session, data.client_id, x_client_token)
     try:
         wallet = await shop_service.redeem(session, verifier, data.client_id, data.platform, data.product_id, data.token)
     except StoreError as error:

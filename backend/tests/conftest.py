@@ -1,4 +1,6 @@
 import asyncio
+import json
+import re
 from urllib.parse import urlsplit
 
 import asyncpg
@@ -15,6 +17,9 @@ from app.data.seed_answers import build_rows, curated_entries
 from app.main import app
 from app.models import Answer, Base
 from app.services import letter_service
+
+# Les tests enchaînent des centaines de requêtes depuis la même adresse.
+settings.rate_limit_per_minute = 0
 
 TEST_DB = f"{settings.postgres_db}_test"
 TEST_DATABASE_URL = settings.database_url.rsplit("/", 1)[0] + f"/{TEST_DB}"
@@ -62,6 +67,49 @@ async def _prepare_database() -> None:
     await engine.dispose()
 
 
+def token_for(client_id: str) -> str:
+    """Jeton secret de l'appli d'un joueur de test."""
+    return f"test-token-{client_id}"
+
+
+def auth(client_id: str) -> dict[str, str]:
+    return {"X-Client-Token": token_for(client_id)}
+
+
+_PROFILE_PATH = re.compile(r"/api/v1/profiles/([^/?]+)")
+
+
+def _client_of(request) -> str | None:
+    """Joueur pour qui la requête agit : chemin /profiles/<id>, ?client_id= ou corps JSON."""
+    match = _PROFILE_PATH.search(request.url.path)
+    if match:
+        return match.group(1)
+    if request.url.params.get("client_id"):
+        return request.url.params["client_id"]
+    if request.headers.get("content-type", "").startswith("application/json"):
+        try:
+            body = json.loads(request.content or b"{}")
+        except ValueError:
+            return None
+        if isinstance(body, dict) and isinstance(body.get("client_id"), str):
+            return body["client_id"]
+    return None
+
+
+def sign_as_owner(request) -> None:
+    """Les tests jouent le rôle de l'appli : chaque requête porte le jeton du joueur concerné
+    (sauf si le test en donne un lui-même). Les refus sont testés à part, sans ce crochet."""
+    if "x-client-token" in request.headers:
+        return
+    client_id = _client_of(request)
+    if client_id:
+        request.headers["X-Client-Token"] = token_for(client_id)
+
+
+async def _sign_async(request) -> None:
+    sign_as_owner(request)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def database():
     asyncio.run(_prepare_database())
@@ -90,6 +138,8 @@ async def client(session_factory):
             yield session
 
     app.dependency_overrides[get_session] = override_session
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", event_hooks={"request": [_sign_async]}
+    ) as client:
         yield client
     app.dependency_overrides.clear()

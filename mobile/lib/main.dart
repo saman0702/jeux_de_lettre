@@ -26,6 +26,7 @@ import 'l10n/app_localizations.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final settings = await AppSettings.load();
+  ApiClient.clientToken = settings.clientToken;
   final feedback = GameFeedback(
     audio: await AudioplayersGameAudio.create(),
     settings: settings,
@@ -35,6 +36,7 @@ Future<void> main() async {
   final online = OnlineController(
     RealtimeClient(
       clientId: settings.clientId,
+      token: settings.clientToken,
       nickname: settings.nickname ?? 'Joueur',
       language: appLanguage(settings),
       country: settings.country,
@@ -128,6 +130,7 @@ class _LetterBattleAppState extends State<LetterBattleApp>
       OnlineController(
         RealtimeClient(
           clientId: _feedback.settings.clientId,
+          token: _feedback.settings.clientToken,
           nickname: 'Joueur',
         ),
       );

@@ -12,6 +12,7 @@ from app.api.rooms.router import router as rooms_router
 from app.api.shop.router import router as shop_router
 from app.api.health import router as health_router
 from app.core.config import settings
+from app.core.rate_limit import limit_requests
 from app.core.database import engine
 from app.core.redis import redis_client
 from app.services import avatar_service
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 app.state.room_manager = room_manager
+app.middleware("http")(limit_requests)
 app.include_router(health_router)
 app.include_router(games_router)
 app.include_router(profiles_router)

@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import client_auth
 from app.core.database import get_session
 from app.models import SavedRoom
 from app.services import room_store
@@ -33,8 +34,10 @@ async def my_rooms(
     request: Request,
     client_id: str = Query(pattern=CLIENT_ID),
     session: AsyncSession = Depends(get_session),
+    x_client_token: str | None = Header(default=None),
 ):
     """Salons où le joueur est déjà allé (publics et privés), du plus récent au plus ancien."""
+    await client_auth.check(session, client_id, x_client_token)
     rows = await room_store.rooms_of(session, client_id)
     counts = await room_store.member_counts(session, [r.code for r, _ in rows])
     return [_summary(request, room, counts.get(room.code, 0), True) for room, _ in rows]
@@ -46,12 +49,15 @@ async def public_rooms(
     language: str | None = Query(default=None, max_length=8),
     client_id: str | None = Query(default=None, pattern=CLIENT_ID),
     session: AsyncSession = Depends(get_session),
+    x_client_token: str | None = Header(default=None),
 ):
     """Salons publics, ouverts ou fermés : visibles par tous, même sans y être allé."""
     rooms = await room_store.public_rooms(session, language)
     counts = await room_store.member_counts(session, [r.code for r in rooms])
     mine = set()
-    if client_id:
+    # « Déjà allé » seulement pour le joueur lui-même (jeton présenté).
+    if client_id and x_client_token:
+        await client_auth.check(session, client_id, x_client_token)
         mine = {r.code for r, _ in await room_store.rooms_of(session, client_id, limit=200)}
     return [_summary(request, room, counts.get(room.code, 0), room.code in mine) for room in rooms]
 
@@ -62,11 +68,14 @@ async def room_history(
     request: Request,
     client_id: str = Query(pattern=CLIENT_ID),
     session: AsyncSession = Depends(get_session),
+    x_client_token: str | None = Header(default=None),
 ):
     """Parties jouées, conversation de groupe et conversations privées du joueur dans ce salon.
 
     Salon privé : seulement pour ceux qui y sont déjà entrés. Salon public : pour tous (les
     conversations privées restent visibles uniquement par les deux personnes)."""
+    # Les conversations privées du joueur sont dans la réponse : son jeton est exigé.
+    await client_auth.check(session, client_id, x_client_token)
     code = code.strip().upper()
     room = await room_store.get_room(session, code)
     member = room is not None and await room_store.is_member(session, code, client_id)

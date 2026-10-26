@@ -12,6 +12,9 @@ class Profile(TimestampMixin, Base):
     __tablename__ = "profiles"
 
     client_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    # Empreinte (SHA-256) du jeton secret gardé par l'appli. Le client_id est public (les autres
+    # joueurs le voient) : sans ce jeton, impossible d'agir sur le profil.
+    secret_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     nickname: Mapped[str] = mapped_column(String(32), default="Joueur")
     coins: Mapped[int] = mapped_column(Integer, default=0)
     # Points gagnés depuis toujours (statistique).

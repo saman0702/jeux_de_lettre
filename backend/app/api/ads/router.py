@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import client_auth
 from app.core.config import settings
 from app.core.database import get_session
 from app.schemas.game import WalletOut
@@ -39,11 +40,16 @@ class RewardIn(BaseModel):
 
 
 @router.post("/reward", response_model=WalletOut)
-async def client_reported_reward(data: RewardIn, session: AsyncSession = Depends(get_session)):
+async def client_reported_reward(
+    data: RewardIn,
+    session: AsyncSession = Depends(get_session),
+    x_client_token: str | None = Header(default=None),
+):
     """Tests en local seulement (REWARDED_ADS_TRUST_CLIENT=true) : en prod, seul le rappel signé
     d'AdMob crédite les pièces."""
     if not settings.rewarded_ads_trust_client:
         raise HTTPException(status_code=403, detail="server_verification_only")
+    await client_auth.check(session, data.client_id, x_client_token)
     try:
         wallet = await perks_service.grant_ad_reward(session, data.client_id, f"app:{data.reward_id}")
     except perks_service.PerkError as error:
