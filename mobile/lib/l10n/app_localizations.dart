@@ -3139,6 +3139,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Chacun reçoit sa propre énigme, du même niveau : impossible de copier sur le voisin !'**
   String get iqRelayHelp;
+
+  /// No description provided for @iqKindMatrix.
+  ///
+  /// In fr, this message translates to:
+  /// **'Matrice'**
+  String get iqKindMatrix;
+
+  /// No description provided for @iqKindRotation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rotation'**
+  String get iqKindRotation;
+
+  /// No description provided for @iqKindFigureOdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Intrus visuel'**
+  String get iqKindFigureOdd;
 }
 
 class _AppLocalizationsDelegate

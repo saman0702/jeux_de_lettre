@@ -1788,4 +1788,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get iqRelayHelp =>
       'Everyone gets their own puzzle, of the same level: no copying from your neighbour!';
+
+  @override
+  String get iqKindMatrix => 'Matrix';
+
+  @override
+  String get iqKindRotation => 'Rotation';
+
+  @override
+  String get iqKindFigureOdd => 'Visual odd one';
 }

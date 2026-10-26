@@ -567,4 +567,74 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets('figure puzzles are drawn and answered by tapping a figure', (
+    tester,
+  ) async {
+    tallPhone(tester);
+    Map<String, dynamic> fig(String s, int n) => {
+      's': s,
+      'c': 0,
+      'n': n,
+      'f': true,
+      'r': 0,
+    };
+    final puzzle = IqPuzzle.fromJson({
+      'id': 'matrix-1-test',
+      'kind': 'matrix',
+      'level': 1,
+      'input': 'choice',
+      'prompt': {
+        'fr': 'Quelle figure complète la grille ?',
+        'en': 'Which figure completes the grid?',
+      },
+      'choices': {
+        'fr': ['A', 'B', 'C', 'D'],
+        'en': ['A', 'B', 'C', 'D'],
+      },
+      'figures': {
+        'layout': 'grid',
+        'cells': [
+          for (final s in ['circle', 'square'])
+            for (final n in [1, 2, 3]) fig(s, n),
+          fig('star', 1),
+          fig('star', 2),
+          null,
+        ],
+        'options': [
+          fig('star', 1),
+          fig('star', 3),
+          fig('circle', 3),
+          fig('square', 3),
+        ],
+      },
+      'answer': '1',
+      'explanation': {
+        'fr': 'Forme par ligne, nombre par colonne.',
+        'en': 'Shape by row, number by column.',
+      },
+    });
+    expect(puzzle.figures!.cells, hasLength(9));
+    final h = Harness();
+    await h.start(
+      tester,
+      IqSoloScreen(
+        rounds: 1,
+        duration: 30,
+        difficulty: Difficulty.normal,
+        scoring: const IqScoring(speedBonus: false),
+        puzzles: [puzzle],
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(const Key('iq_figure_grid')), findsOneWidget);
+    expect(find.text('Matrix'.toUpperCase()), findsOneWidget);
+    await tapKey(tester, 'iq_choice_1');
+    expect(find.byKey(const Key('iq_answer')), findsOneWidget);
+    expect(find.text('Shape by row, number by column.'), findsOneWidget);
+    await tapKey(tester, 'iq_next');
+    await pumpFor(tester, const Duration(milliseconds: 600));
+    expect(find.text('1 right answers out of 1 · 10 points'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 }

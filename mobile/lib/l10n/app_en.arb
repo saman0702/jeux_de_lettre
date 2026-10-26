@@ -576,5 +576,8 @@
   "iqSeeResult": "SEE MY IQ",
   "iqBadge": "IQ",
   "iqYou": "You",
-  "iqRelayHelp": "Everyone gets their own puzzle, of the same level: no copying from your neighbour!"
+  "iqRelayHelp": "Everyone gets their own puzzle, of the same level: no copying from your neighbour!",
+  "iqKindMatrix": "Matrix",
+  "iqKindRotation": "Rotation",
+  "iqKindFigureOdd": "Visual odd one"
 }

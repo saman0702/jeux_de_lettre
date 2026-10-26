@@ -1799,4 +1799,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get iqRelayHelp =>
       'Chacun reçoit sa propre énigme, du même niveau : impossible de copier sur le voisin !';
+
+  @override
+  String get iqKindMatrix => 'Matrice';
+
+  @override
+  String get iqKindRotation => 'Rotation';
+
+  @override
+  String get iqKindFigureOdd => 'Intrus visuel';
 }

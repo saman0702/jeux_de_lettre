@@ -1,3 +1,5 @@
+import 'iq_figures.dart';
+
 /// Une énigme de QI, telle que le serveur l'envoie (sans la réponse pendant la
 /// manche, avec la réponse et l'explication après).
 class IqPuzzle {
@@ -12,6 +14,7 @@ class IqPuzzle {
     this.items = const [],
     this.answer,
     this.explanation = const {},
+    this.figures,
   });
 
   factory IqPuzzle.fromJson(Map<String, dynamic> json) => IqPuzzle(
@@ -35,6 +38,9 @@ class IqPuzzle {
     items: [for (final i in (json['items'] as List?) ?? const []) '$i'],
     answer: json['answer'] as String?,
     explanation: _texts(json['explanation']),
+    figures: json['figures'] == null
+        ? null
+        : IqFigures.fromJson(json['figures'] as Map<String, dynamic>),
   );
 
   static Map<String, String> _texts(Object? raw) => {
@@ -44,7 +50,8 @@ class IqPuzzle {
 
   final String id;
 
-  /// sequence, grid, problem, letters, calendar, analogy, odd, logic.
+  /// sequence, grid, problem, letters, calendar, analogy, odd, logic,
+  /// matrix, rotation, figure_odd (schémas).
   final String kind;
 
   /// 1 facile, 2 moyen, 3 difficile.
@@ -62,6 +69,9 @@ class IqPuzzle {
   /// Nombre, ou indice du bon choix ; connu après la manche (ou en solo).
   final String? answer;
   final Map<String, String> explanation;
+
+  /// Énigme à schémas : figures à dessiner, choix notés A à D.
+  final IqFigures? figures;
 
   bool get typed => input == 'number';
 

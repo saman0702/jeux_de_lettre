@@ -9,6 +9,7 @@ import '../../core/widgets/game_card.dart';
 import '../../core/widgets/game_icon.dart';
 import '../../core/widgets/outlined_text.dart';
 import '../../l10n/app_localizations.dart';
+import 'iq_figures.dart';
 import 'iq_models.dart';
 
 const _choiceColors = [
@@ -26,6 +27,9 @@ String iqKindLabel(AppLocalizations l10n, String kind) => switch (kind) {
   'calendar' => l10n.iqKindCalendar,
   'analogy' => l10n.iqKindAnalogy,
   'odd' => l10n.iqKindOdd,
+  'matrix' => l10n.iqKindMatrix,
+  'rotation' => l10n.iqKindRotation,
+  'figure_odd' => l10n.iqKindFigureOdd,
   _ => l10n.iqKindLogic,
 };
 
@@ -90,6 +94,10 @@ class IqPuzzleCard extends StatelessWidget {
               runSpacing: 8,
               children: [for (final item in puzzle.items) _Tile(item)],
             ),
+          ],
+          if (puzzle.figures != null && puzzle.figures!.layout != 'none') ...[
+            const SizedBox(height: 10),
+            IqFigureBoard(puzzle.figures!),
           ],
           if (puzzle.grid != null) ...[
             const SizedBox(height: 10),
@@ -197,6 +205,14 @@ class _IqAnswerPadState extends State<IqAnswerPad> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final puzzle = widget.puzzle;
+    final figures = puzzle.figures;
+    if (figures != null) {
+      return IqFigureChoices(
+        figures: figures,
+        onAnswer: widget.onAnswer,
+        enabled: widget.enabled,
+      );
+    }
     if (!puzzle.typed) {
       final choices = puzzle.choicesIn(widget.language);
       return Column(
@@ -353,6 +369,14 @@ class IqRevealCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: gameFont(size: 28, color: AppColors.green),
               ),
+              // Schémas : la bonne figure, dessinée.
+              if (puzzle.figures != null && puzzle.answer != null)
+                Center(
+                  child: IqFigureView(
+                    puzzle.figures!.options[int.parse(puzzle.answer!)],
+                    size: 72,
+                  ),
+                ),
               const SizedBox(height: 8),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

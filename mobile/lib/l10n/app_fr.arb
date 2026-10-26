@@ -1234,5 +1234,8 @@
   "iqSeeResult": "VOIR MON QI",
   "iqBadge": "QI",
   "iqYou": "Toi",
-  "iqRelayHelp": "Chacun reçoit sa propre énigme, du même niveau : impossible de copier sur le voisin !"
+  "iqRelayHelp": "Chacun reçoit sa propre énigme, du même niveau : impossible de copier sur le voisin !",
+  "iqKindMatrix": "Matrice",
+  "iqKindRotation": "Rotation",
+  "iqKindFigureOdd": "Intrus visuel"
 }

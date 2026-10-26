@@ -1,3 +1,4 @@
+import json
 import random
 
 from app.services import iq_service
@@ -19,7 +20,10 @@ def test_every_puzzle_kind_is_consistent():
             else:
                 assert not iq_service.check(p, iq_service.wrong_answer(p, rng))
             assert "answer" not in p.public()
-    assert kinds == {"sequence", "grid", "problem", "letters", "calendar", "analogy", "odd", "logic"}
+    assert kinds == {
+        "sequence", "grid", "problem", "letters", "calendar", "analogy", "odd", "logic",
+        "matrix", "rotation", "figure_odd",
+    }
 
 
 def test_numbers_are_compared_loosely():
@@ -56,3 +60,31 @@ async def test_solo_puzzles_route(client):
     assert len(puzzles) == 9 and len({p["id"] for p in puzzles}) == 9
     assert [p["level"] for p in puzzles][0] == 1 and puzzles[-1]["level"] == 3
     assert all("answer" in p and "explanation" in p for p in puzzles)
+
+
+def test_figure_puzzles_have_four_different_drawn_choices():
+    rng = random.Random(11)
+    for level in (1, 2, 3):
+        for make in (iq_service._matrix, iq_service._rotation, iq_service._figure_odd):
+            for _ in range(200):
+                p = make(rng, level)
+                options = p.figures["options"]
+                assert len(options) == 4
+                assert len({json.dumps(o, sort_keys=True) for o in options}) == 4, "four different figures"
+                assert p.choices["fr"] == ["A", "B", "C", "D"]
+                assert p.public()["figures"] == p.figures
+                if p.kind == "matrix":
+                    cells = p.figures["cells"]
+                    assert len(cells) == 9 and cells.count(None) == 1
+                if p.kind == "rotation":
+                    assert p.figures["cells"][-1] is None
+
+
+def test_matrix_answer_is_the_missing_cell():
+    rng = random.Random(3)
+    p = iq_service._matrix(rng, 2)
+    options = p.figures["options"]
+    correct = options[int(p.answer)]
+    # Niveau 2 : ligne 3 = même forme que les deux autres cases de la ligne.
+    row = p.figures["cells"][6:8]
+    assert all(c["s"] == correct["s"] for c in row)

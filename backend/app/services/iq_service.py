@@ -7,8 +7,13 @@ Deux sortes d'énigmes :
 Le texte est donné en français et en anglais : dans une partie mélangée, chacun lit dans sa langue.
 Les suites, grilles et problèmes sont générés (en nombre illimité) ; les autres viennent de
 app/data/iq_bank.py.
+
+Énigmes à schémas (matrice, rotation, intrus visuel) : les figures sont décrites en données
+(forme, couleur, nombre, plein ou vide, rotation) et dessinées par l'appli ; les 4 choix sont
+des figures notées A à D.
 """
 
+import json
 import random
 from dataclasses import dataclass, field
 
@@ -22,7 +27,7 @@ WRONG_PENALTY = 5
 @dataclass(frozen=True)
 class Puzzle:
     id: str
-    kind: str  # sequence | grid | problem | analogy | odd | logic | letters | calendar
+    kind: str  # sequence | grid | problem | analogy | odd | logic | letters | calendar | matrix | rotation | figure_odd
     level: int  # 1 facile, 2 moyen, 3 difficile
     input: str  # number | choice
     prompt: dict[str, str]
@@ -33,6 +38,8 @@ class Puzzle:
     grid: list[list[str]] | None = None
     # Suite affichée en grandes tuiles.
     items: list[str] = field(default_factory=list)
+    # Schémas : {"layout": "grid" | "row" | "none", "cells": [figure | None], "options": [figure × 4]}.
+    figures: dict | None = None
 
     def public(self) -> dict:
         """Ce que voient les joueurs pendant la manche (sans la réponse)."""
@@ -45,6 +52,7 @@ class Puzzle:
             "choices": self.choices,
             "grid": self.grid,
             "items": self.items,
+            "figures": self.figures,
         }
 
     def reveal(self) -> dict:
@@ -318,6 +326,173 @@ def _shuffled(rng: random.Random, puzzle: Puzzle) -> Puzzle:
     return Puzzle(**{**puzzle.__dict__, "choices": choices, "answer": str(order.index(0))})
 
 
+# ------------------------------------------------------------------ schémas
+
+_SHAPES = ["circle", "square", "triangle", "diamond", "pentagon", "hexagon", "star"]
+_SIDES = {"triangle": 3, "square": 4, "pentagon": 5, "hexagon": 6}
+_LABELS = ["A", "B", "C", "D"]
+
+
+def _fig(shape: str, color: int = 0, count: int = 1, filled: bool = True, rotation: int = 0) -> dict:
+    """Une figure : 1 à 4 formes identiques dans une case."""
+    return {"s": shape, "c": color, "n": count, "f": filled, "r": rotation % 360}
+
+
+def _figure_puzzle(
+    rng: random.Random,
+    kind: str,
+    level: int,
+    prompt: dict[str, str],
+    why: dict[str, str],
+    layout: str,
+    cells: list[dict | None],
+    correct: dict,
+    wrong: list[dict],
+) -> Puzzle:
+    """Mélange la bonne figure parmi 3 fausses (toutes différentes) ; les choix restent notés A à D."""
+    options = [correct]
+    for w in wrong:
+        if w not in options:
+            options.append(w)
+    while len(options) < 4:
+        extra = {**correct, "c": (correct["c"] + len(options)) % 4, "r": (correct["r"] + 45 * len(options)) % 360}
+        if extra not in options:
+            options.append(extra)
+    options = options[:4]
+    order = list(range(4))
+    rng.shuffle(order)
+    shuffled = [options[i] for i in order]
+    payload = {"layout": layout, "cells": cells, "options": shuffled}
+    digest = abs(hash(json.dumps([cells, correct], sort_keys=True))) % 10**10
+    return Puzzle(
+        id=f"{kind}-{level}-{digest}",
+        kind=kind,
+        level=level,
+        input="choice",
+        prompt=prompt,
+        answer=str(order.index(0)),
+        explanation=why,
+        choices={"fr": list(_LABELS), "en": list(_LABELS)},
+        figures=payload,
+    )
+
+
+def _matrix(rng: random.Random, level: int) -> Puzzle:
+    """Matrice 3 × 3 de figures (façon Raven) : trouver la case manquante."""
+    shapes = rng.sample(_SHAPES, 3)
+    colors = rng.sample(range(4), 3)
+    counts = [1, 2, 3]
+    rng.shuffle(counts)
+
+    def cell(r: int, c: int) -> dict:
+        if level == 1:
+            return _fig(shapes[r], colors[0], counts[c])
+        if level == 2:
+            return _fig(shapes[r], colors[(r + c) % 3], counts[c])
+        return _fig(shapes[(r + c) % 3], colors[(r + 2 * c) % 3], counts[r], filled=c != 1)
+
+    grid = [cell(r, c) for r in range(3) for c in range(3)]
+    missing = 8 if level < 3 else rng.randrange(9)
+    correct = grid[missing]
+    cells: list[dict | None] = list(grid)
+    cells[missing] = None
+    other_shape = next(x for x in _SHAPES if x != correct["s"] and x in shapes) if level > 1 else rng.choice(
+        [x for x in _SHAPES if x != correct["s"]]
+    )
+    wrong = [
+        {**correct, "s": other_shape},
+        {**correct, "n": 1 + correct["n"] % 3},
+        {**correct, "c": next(c for c in range(4) if c != correct["c"])},
+    ]
+    if level == 3:
+        wrong[2] = {**correct, "f": not correct["f"]}
+    why = {
+        1: _text("Chaque ligne garde sa forme, chaque colonne son nombre de formes.",
+                 "Each row keeps its shape, each column its number of shapes."),
+        2: _text("Forme par ligne, nombre par colonne, et chaque couleur une seule fois par ligne et par colonne.",
+                 "Shape by row, number by column, and each colour once per row and per column."),
+        3: _text("Chaque forme et chaque couleur apparaissent une fois par ligne et par colonne ; "
+                 "le nombre suit la ligne, et la colonne du milieu est vide.",
+                 "Each shape and colour appears once per row and per column; the number follows the row, "
+                 "and the middle column is hollow."),
+    }[level]
+    return _figure_puzzle(
+        rng, "matrix", level,
+        _text("Quelle figure complète la grille ?", "Which figure completes the grid?"),
+        why, "grid", cells, correct, wrong,
+    )
+
+
+def _rotation(rng: random.Random, level: int) -> Puzzle:
+    """Une figure tourne à chaque case : laquelle vient ensuite ?"""
+    shape = rng.choice(["arrow", "triangle"]) if level < 3 else "arrow"
+    start = rng.choice(range(0, 360, 45))
+    colors = rng.sample(range(4), 3)
+    if level == 1:
+        step = rng.choice([90, -90])
+        turns = [start + i * step for i in range(5)]
+        tint = [colors[0]] * 5
+        why = _text(f"La figure tourne d'un quart de tour ({abs(step)}°) à chaque fois.",
+                    f"The figure turns a quarter turn ({abs(step)}°) each time.")
+    elif level == 2:
+        step = rng.choice([45, -45, 135])
+        turns = [start + i * step for i in range(5)]
+        tint = [colors[i % 2] for i in range(5)]
+        why = _text(f"Elle tourne de {abs(step)}° à chaque fois, et les deux couleurs alternent.",
+                    f"It turns {abs(step)}° each time, and the two colours alternate.")
+    else:
+        turns = [start]
+        for i in range(4):
+            turns.append(turns[-1] + 45 * (i + 1))
+        tint = [colors[i % 3] for i in range(5)]
+        why = _text("La rotation grandit : +45°, +90°, +135°, +180° ; les trois couleurs tournent aussi.",
+                    "The turn grows: +45°, +90°, +135°, +180°; the three colours cycle too.")
+    figs = [_fig(shape, tint[i], 1, True, turns[i]) for i in range(5)]
+    correct = figs[4]
+    wrong = [
+        {**correct, "r": (correct["r"] + 45) % 360},
+        {**correct, "r": (correct["r"] + 180) % 360},
+        {**correct, "c": next(c for c in colors if c != correct["c"])}
+        if level > 1
+        else {**correct, "r": (correct["r"] + 90) % 360},
+    ]
+    return _figure_puzzle(
+        rng, "rotation", level,
+        _text("Quelle figure vient ensuite ?", "Which figure comes next?"),
+        why, "row", [*figs[:4], None], correct, wrong,
+    )
+
+
+def _figure_odd(rng: random.Random, level: int) -> Puzzle:
+    """Intrus visuel : trois figures suivent une règle, pas la quatrième."""
+    if level == 1:
+        same, odd = rng.sample(_SHAPES, 2)
+        good = [_fig(same, c, rng.randint(1, 3)) for c in rng.sample(range(4), 3)]
+        intruder = _fig(odd, rng.randrange(4), rng.randint(1, 3))
+        why = _text("Trois figures ont la même forme, pas l'intrus.", "Three figures share the same shape, the odd one doesn't.")
+    elif level == 2:
+        n = rng.randint(1, 4)
+        good = [_fig(sh, rng.randrange(4), n, rng.random() < 0.5) for sh in rng.sample(_SHAPES, 3)]
+        intruder = _fig(rng.choice(_SHAPES), rng.randrange(4), rng.choice([k for k in range(1, 5) if k != n]))
+        why = _text(f"Trois figures ont {n} forme(s), l'intrus non.", f"Three figures have {n} shape(s), the odd one doesn't.")
+    else:
+        # Côtés en tout : 2 hexagones = 3 carrés = 4 triangles = 12 côtés.
+        good = [_fig("hexagon", 0, 2), _fig("square", 0, 3), _fig("triangle", 0, 4)]
+        for g in good:
+            g["c"] = rng.randrange(4)
+        n, sh = rng.choice([(2, "pentagon"), (3, "triangle"), (1, "hexagon"), (2, "square"), (4, "square")])
+        intruder = _fig(sh, rng.randrange(4), n)
+        why = _text(
+            f"Comptez tous les côtés : 12 dans chaque figure, sauf l'intrus ({n} × {_SIDES[sh]} = {n * _SIDES[sh]}).",
+            f"Count all the sides: 12 in each figure, except the odd one ({n} × {_SIDES[sh]} = {n * _SIDES[sh]}).",
+        )
+    return _figure_puzzle(
+        rng, "figure_odd", level,
+        _text("Quelle figure est l'intrus ?", "Which figure is the odd one out?"),
+        why, "none", [], intruder, good,
+    )
+
+
 _GENERATORS = [
     ("sequence", 3, _sequence),
     ("grid", 2, _grid),
@@ -327,6 +502,9 @@ _GENERATORS = [
     ("analogy", 2, lambda rng, lvl: _bank(rng, lvl, "analogy", ANALOGIES)),
     ("odd", 2, lambda rng, lvl: _bank(rng, lvl, "odd", ODD_ONE_OUT)),
     ("logic", 2, lambda rng, lvl: _bank(rng, lvl, "logic", LOGIC)),
+    ("matrix", 2, _matrix),
+    ("rotation", 2, _rotation),
+    ("figure_odd", 2, _figure_odd),
 ]
 
 
