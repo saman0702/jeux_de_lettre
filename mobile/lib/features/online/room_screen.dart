@@ -593,6 +593,15 @@ class _RoomScreenState extends State<RoomScreen> {
                       title: _headerTitle(l10n, room),
                       onBack: _confirmLeave,
                       quitStyle: inGame,
+                      // Vocal : à droite du titre, sa place est réservée et il
+                      // ne recouvre ni les joueurs ni les réactions.
+                      trailing:
+                          room != null &&
+                              room.voice.enabled &&
+                              room.voice.open &&
+                              !_showingPodium(room)
+                          ? VoiceFab(online: _online, room: room, inHeader: true)
+                          : null,
                     ),
                     if (!_online.isOnline) const _ConnectionBanner(),
                     Expanded(
@@ -617,26 +626,9 @@ class _RoomScreenState extends State<RoomScreen> {
                   ],
                 ),
                 if (room != null && room.voice.enabled && room.voice.open) ...[
+                  // Les boutons sont dans la barre du haut (et sur le podium,
+                  // à côté du chat).
                   VoiceBridge(online: _online, room: room),
-                  // Sur le podium, les FAB audio sont dans PodiumView (alignés
-                  // au chat). Pendant la manche : en haut à droite.
-                  if (!_showingPodium(room))
-                    if (room.phase == RoomPhase.round)
-                      Positioned(
-                        right: 12,
-                        top: 8,
-                        child: VoiceFab(
-                          online: _online,
-                          room: room,
-                          compact: true,
-                        ),
-                      )
-                    else
-                      Positioned(
-                        right: 16,
-                        bottom: 16,
-                        child: VoiceFab(online: _online, room: room),
-                      ),
                 ],
               ],
             ),

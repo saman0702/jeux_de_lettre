@@ -143,6 +143,7 @@ class VoiceFab extends StatelessWidget {
     required this.room,
     this.compact = false,
     this.alignWithChat = false,
+    this.inHeader = false,
   });
 
   final OnlineController online;
@@ -153,6 +154,11 @@ class VoiceFab extends StatelessWidget {
 
   /// Même taille que le FAB chat (56) pour l'alignement podium.
   final bool alignWithChat;
+
+  /// Dans la barre du haut (à droite du titre) : petits boutons, place
+  /// réservée, rien n'est recouvert ; la liste des joueurs à couper est dans
+  /// le panneau.
+  final bool inHeader;
 
   Future<void> _openSheet(BuildContext context) {
     return showVoiceSheet(
@@ -187,8 +193,12 @@ class VoiceFab extends StatelessWidget {
             ];
             final allMuted = peers.isNotEmpty &&
                 peers.every((p) => liveRoom.voice.isMuted(p.clientId));
-            final micSize = alignWithChat ? 56.0 : (compact ? 44.0 : 52.0);
-            final hostSize = alignWithChat ? 48.0 : (compact ? 40.0 : 44.0);
+            final micSize = alignWithChat
+                ? 56.0
+                : (inHeader ? 38.0 : (compact ? 44.0 : 52.0));
+            final hostSize = alignWithChat
+                ? 48.0
+                : (inHeader ? 34.0 : (compact ? 40.0 : 44.0));
             return Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -196,7 +206,8 @@ class VoiceFab extends StatelessWidget {
                 if (isHost &&
                     session.joined &&
                     peers.isNotEmpty &&
-                    !compact) ...[
+                    !compact &&
+                    !inHeader) ...[
                   Container(
                     constraints: const BoxConstraints(maxWidth: 280),
                     padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
@@ -243,7 +254,7 @@ class VoiceFab extends StatelessWidget {
                     if (isHost && session.joined) ...[
                       // Mute all : visible hors manche compacte clavier, ou
                       // sur le podium (alignWithChat).
-                      if (!compact || alignWithChat) ...[
+                      if (!compact || alignWithChat || inHeader) ...[
                         Tooltip(
                           message: allMuted
                               ? l10n.voiceUnmuteAll
@@ -262,7 +273,7 @@ class VoiceFab extends StatelessWidget {
                             },
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: inHeader ? 6 : 8),
                       ],
                       Tooltip(
                         message: l10n.voiceChatTitle,

@@ -49,6 +49,7 @@ class OnlineHeader extends StatelessWidget {
             tooltip: quitStyle ? l10n.quit : null,
             color: quitStyle ? AppColors.red : AppColors.white,
             iconColor: quitStyle ? AppColors.white : AppColors.purple,
+            size: 40,
             onPressed: onBack,
           ),
           const SizedBox(width: 12),

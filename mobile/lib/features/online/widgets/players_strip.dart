@@ -38,7 +38,7 @@ class PlayersStrip extends StatelessWidget {
     final players = room.ranking;
     return SizedBox(
       key: const Key('players_strip'),
-      height: 52,
+      height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: padding,
@@ -84,7 +84,7 @@ class _PlayerChip extends StatelessWidget {
     return Opacity(
       opacity: out ? 0.5 : 1,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(4, 4, 10, 4),
+        padding: const EdgeInsets.fromLTRB(3, 3, 8, 3),
         decoration: BoxDecoration(
           color: isMe
               ? AppColors.yellow
@@ -95,10 +95,10 @@ class _PlayerChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            PlayerAvatar.of(player, size: 38),
+            PlayerAvatar.of(player, size: 28),
             const SizedBox(width: 6),
             if (player.country != null) ...[
-              CountryBadge(country: player.country, width: 16),
+              CountryBadge(country: player.country, width: 14),
               const SizedBox(width: 4),
             ],
             Column(
@@ -110,14 +110,14 @@ class _PlayerChip extends StatelessWidget {
                   child: StyledNickname(
                     isMe ? l10n.youBadge : player.nickname,
                     styleId: player.nameStyle,
-                    size: 13,
+                    size: 12,
                     fallbackColor: isMe ? AppColors.ink : AppColors.white,
                   ),
                 ),
                 Text(
                   l10n.pointsShort(player.score),
                   style: fredoka(
-                    size: 12,
+                    size: 11,
                     weight: FontWeight.w600,
                     color: isMe
                         ? AppColors.ink.withValues(alpha: 0.75)
@@ -130,7 +130,7 @@ class _PlayerChip extends StatelessWidget {
               const SizedBox(width: 6),
               GameIcon(
                 status,
-                size: 18,
+                size: 15,
                 color: status == GameIconKind.check
                     ? AppColors.green
                     : (isMe ? AppColors.ink : AppColors.white),
