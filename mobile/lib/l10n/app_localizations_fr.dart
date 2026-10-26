@@ -1867,4 +1867,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get iqLate => 'Trop tard !';
+
+  @override
+  String get iqKindTrace => 'Un seul trait';
+
+  @override
+  String get iqTraceRestart => 'RECOMMENCER';
+
+  @override
+  String get iqTraceStuck => 'Bloqué : il reste des lignes, recommence !';
+
+  @override
+  String get iqTraceStartHint => 'Indice : pars du point orange.';
 }

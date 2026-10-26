@@ -596,5 +596,9 @@
   "iqDailyYesterday": "Yesterday's podium",
   "iqDailyEmpty": "Nobody has played yet today: be the first!",
   "iqDailyNeedsOnline": "The daily challenge is played online.",
-  "iqLate": "Too late!"
+  "iqLate": "Too late!",
+  "iqKindTrace": "One stroke",
+  "iqTraceRestart": "START OVER",
+  "iqTraceStuck": "Stuck: lines are left, start over!",
+  "iqTraceStartHint": "Hint: start from the orange dot."
 }

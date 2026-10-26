@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Fond violet uniquement : le logo texte est rendu par Flutter (AppSplash). -->
+<!-- Fond violet et logo en tuiles « LETTER RACE » (image nette, rendue depuis le logo de l'appli). -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/splash_background" />
+    <item>
+        <bitmap android:gravity="center" android:src="@drawable/splash_logo" />
+    </item>
 </layer-list>

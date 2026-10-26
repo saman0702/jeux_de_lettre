@@ -18,6 +18,7 @@ class PlayersStrip extends StatelessWidget {
     required this.myId,
     this.showProgress = true,
     this.forceFinishedIds = const {},
+    this.padding = const EdgeInsets.symmetric(horizontal: 20),
   });
 
   final RoomState room;
@@ -29,6 +30,9 @@ class PlayersStrip extends StatelessWidget {
   /// Ids déjà soumis côté client (avant ack serveur), ex. après Finish.
   final Set<String> forceFinishedIds;
 
+  /// Marges de la liste (aucune quand elle partage sa ligne avec le chrono).
+  final EdgeInsets padding;
+
   @override
   Widget build(BuildContext context) {
     final players = room.ranking;
@@ -37,7 +41,7 @@ class PlayersStrip extends StatelessWidget {
       height: 52,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: padding,
         itemCount: players.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, i) {

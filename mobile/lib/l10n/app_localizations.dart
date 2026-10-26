@@ -3259,6 +3259,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Trop tard !'**
   String get iqLate;
+
+  /// No description provided for @iqKindTrace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un seul trait'**
+  String get iqKindTrace;
+
+  /// No description provided for @iqTraceRestart.
+  ///
+  /// In fr, this message translates to:
+  /// **'RECOMMENCER'**
+  String get iqTraceRestart;
+
+  /// No description provided for @iqTraceStuck.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bloqué : il reste des lignes, recommence !'**
+  String get iqTraceStuck;
+
+  /// No description provided for @iqTraceStartHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indice : pars du point orange.'**
+  String get iqTraceStartHint;
 }
 
 class _AppLocalizationsDelegate

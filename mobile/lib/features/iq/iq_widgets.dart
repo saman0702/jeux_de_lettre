@@ -11,6 +11,7 @@ import '../../core/widgets/outlined_text.dart';
 import '../../l10n/app_localizations.dart';
 import 'iq_figures.dart';
 import 'iq_models.dart';
+import 'iq_trace.dart';
 
 const _choiceColors = [
   AppColors.cyan,
@@ -30,6 +31,7 @@ String iqKindLabel(AppLocalizations l10n, String kind) => switch (kind) {
   'matrix' => l10n.iqKindMatrix,
   'rotation' => l10n.iqKindRotation,
   'figure_odd' => l10n.iqKindFigureOdd,
+  'trace' => l10n.iqKindTrace,
   _ => l10n.iqKindLogic,
 };
 
@@ -143,7 +145,6 @@ class _Tile extends StatelessWidget {
     return Container(
       constraints: BoxConstraints(minWidth: size, minHeight: size),
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(12),
@@ -158,9 +159,14 @@ class _Tile extends StatelessWidget {
           ),
         ],
       ),
-      child: Text(
-        text,
-        style: gameFont(size: size * 0.42, color: AppColors.ink),
+      // Taille de son texte (pas toute la ligne), centré dans la tuile.
+      child: Align(
+        widthFactor: 1,
+        heightFactor: 1,
+        child: Text(
+          text,
+          style: gameFont(size: size * 0.42, color: AppColors.ink),
+        ),
       ),
     );
   }
@@ -175,12 +181,16 @@ class IqAnswerPad extends StatefulWidget {
     required this.onAnswer,
     this.enabled = true,
     this.removed = const {},
+    this.traceStart,
   });
 
   final IqPuzzle puzzle;
   final String language;
   final ValueChanged<String> onAnswer;
   final bool enabled;
+
+  /// Indice d'un tracé : le point de départ.
+  final int? traceStart;
 
   /// Choix retirés par le joker 50/50.
   final Set<int> removed;
@@ -209,6 +219,15 @@ class _IqAnswerPadState extends State<IqAnswerPad> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final puzzle = widget.puzzle;
+    final trace = puzzle.trace;
+    if (trace != null) {
+      return IqTraceBoard(
+        trace: trace,
+        onDone: widget.onAnswer,
+        enabled: widget.enabled,
+        start: widget.traceStart,
+      );
+    }
     final figures = puzzle.figures;
     if (figures != null) {
       return IqFigureChoices(
@@ -243,27 +262,32 @@ class _IqAnswerPadState extends State<IqAnswerPad> {
         ],
       );
     }
-    Widget key(String label, {Color color = AppColors.white, int flex = 1}) =>
-        Expanded(
-          flex: flex,
-          child: Padding(
-            padding: const EdgeInsets.all(4),
-            child: CandyButton(
-              key: Key('iq_key_$label'),
-              label: label,
-              color: color,
-              height: 44,
-              fontSize: 20,
-              onPressed: widget.enabled ? () => _key(label) : null,
-            ),
-          ),
-        );
+    Widget key(
+      String label, {
+      Color color = AppColors.white,
+      int flex = 1,
+    }) => Expanded(
+      flex: flex,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: CandyButton(
+          key: Key('iq_key_$label'),
+          // Effacer : une icône (le symbole ⌫ manque dans la police du jeu).
+          label: label == '⌫' ? '' : label,
+          icon: label == '⌫' ? Icons.backspace_rounded : null,
+          color: color,
+          height: 40,
+          fontSize: 20,
+          onPressed: widget.enabled ? () => _key(label) : null,
+        ),
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
           key: const Key('iq_typed'),
-          height: 46,
+          height: 42,
           alignment: Alignment.center,
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
@@ -344,13 +368,7 @@ class IqRevealCard extends StatelessWidget {
   final String language;
   final List<IqPlayerResult> players;
 
-  String _shown(String? answer) {
-    if (answer == null || answer.isEmpty) return '—';
-    if (puzzle.typed) return answer;
-    final list = puzzle.choicesIn(language);
-    final i = int.tryParse(answer) ?? -1;
-    return i >= 0 && i < list.length ? list[i] : answer;
-  }
+  String _shown(String? answer) => puzzle.shown(answer, language);
 
   @override
   Widget build(BuildContext context) {
@@ -379,6 +397,14 @@ class IqRevealCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: gameFont(size: 28, color: AppColors.green),
               ),
+              // Un seul trait : une solution, dessinée.
+              if (puzzle.trace != null && puzzle.answer != null)
+                IqTraceView(
+                  trace: puzzle.trace!,
+                  path: [
+                    for (final n in puzzle.answer!.split('-')) int.parse(n),
+                  ],
+                ),
               // Schémas : la bonne figure, dessinée.
               if (puzzle.figures != null && puzzle.answer != null)
                 Center(
@@ -520,7 +546,7 @@ class IqJokerBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final kinds = [
-      puzzle.typed ? 'hint' : 'fifty',
+      puzzle.input == 'choice' ? 'fifty' : 'hint',
       'time',
       'skip',
     ].where(prices.containsKey).toList();

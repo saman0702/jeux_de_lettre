@@ -67,6 +67,7 @@ class _RoomScreenState extends State<RoomScreen> {
   Set<String> _iqJokersUsed = {};
   Set<int> _iqRemoved = {};
   (int, int)? _iqRange;
+  int? _iqStart;
   int _iqExtra = 0;
 
   /// Le podium final reste à l'écran jusqu'au choix du joueur, même si
@@ -269,20 +270,26 @@ class _RoomScreenState extends State<RoomScreen> {
                       style: gameFont(size: 17, color: AppColors.yellow),
                     ),
                   ),
-                IqAnswerPad(
-                  key: ValueKey(puzzle.id),
-                  puzzle: puzzle,
-                  language: language,
-                  removed: jokers ? _iqRemoved : const {},
-                  onAnswer: (answer) {
-                    setState(() => _submittedRound = round.number);
-                    _online.sendIqAnswer(round.number, answer);
-                  },
-                ),
               ],
             ],
           ),
         ),
+        // Réponse toujours visible en bas : seule l'énigme défile.
+        if (canPlay && !answered && puzzle != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+            child: IqAnswerPad(
+              key: ValueKey(puzzle.id),
+              puzzle: puzzle,
+              language: language,
+              removed: jokers ? _iqRemoved : const {},
+              traceStart: jokers ? _iqStart : null,
+              onAnswer: (answer) {
+                setState(() => _submittedRound = round.number);
+                _online.sendIqAnswer(round.number, answer);
+              },
+            ),
+          ),
       ],
     );
   }
@@ -298,6 +305,7 @@ class _RoomScreenState extends State<RoomScreen> {
         _iqJokersUsed = {};
         _iqRemoved = {};
         _iqRange = null;
+        _iqStart = null;
         _iqExtra = 0;
       }
       _iqJokersUsed = {..._iqJokersUsed, event['kind'] as String};
@@ -309,10 +317,12 @@ class _RoomScreenState extends State<RoomScreen> {
         _iqRange = (low, event['high'] as int);
       }
       if (event['extra_seconds'] case final int extra) _iqExtra = extra;
+      if (event['start'] case final int start) _iqStart = start;
       // Passer : nouvelle énigme, les choix retirés ne valent plus.
       if (event['kind'] == 'skip') {
         _iqRemoved = {};
         _iqRange = null;
+        _iqStart = null;
       }
     });
   }
@@ -724,10 +734,13 @@ class _RoomScreenState extends State<RoomScreen> {
             fields: _fields,
             onFinish: me?.frozen == true ? () {} : _submit,
             hints: _hints,
+            // « Manche 1/5 » est déjà dans le titre : une seule ligne en haut.
+            compactHeader: true,
             players: PlayersStrip(
               room: room,
               myId: _online.clientId,
               forceFinishedIds: localDone,
+              padding: EdgeInsets.zero,
             ),
             footer: FreezeControls(online: _online, opponents: opponents),
           );

@@ -45,6 +45,13 @@ async def get_room(session: AsyncSession, code: str) -> SavedRoom | None:
     return await session.get(SavedRoom, code)
 
 
+async def save_bots(session: AsyncSession, code: str, bots: list[dict]) -> None:
+    """Bots présents à la fermeture : ils reviennent quand le salon se rouvre."""
+    room = await session.get(SavedRoom, code)
+    if room is not None:
+        room.settings = {**(room.settings or {}), "bots": bots}
+
+
 async def touch(session: AsyncSession, code: str) -> None:
     room = await session.get(SavedRoom, code)
     if room is not None:

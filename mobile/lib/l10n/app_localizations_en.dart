@@ -1855,4 +1855,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get iqLate => 'Too late!';
+
+  @override
+  String get iqKindTrace => 'One stroke';
+
+  @override
+  String get iqTraceRestart => 'START OVER';
+
+  @override
+  String get iqTraceStuck => 'Stuck: lines are left, start over!';
+
+  @override
+  String get iqTraceStartHint => 'Hint: start from the orange dot.';
 }

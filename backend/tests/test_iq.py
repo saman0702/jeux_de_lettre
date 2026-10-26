@@ -22,7 +22,7 @@ def test_every_puzzle_kind_is_consistent():
             assert "answer" not in p.public()
     assert kinds == {
         "sequence", "grid", "problem", "letters", "calendar", "analogy", "odd", "logic",
-        "matrix", "rotation", "figure_odd",
+        "matrix", "rotation", "figure_odd", "trace",
     }
 
 
@@ -88,6 +88,30 @@ def test_matrix_answer_is_the_missing_cell():
     # Niveau 2 : ligne 3 = même forme que les deux autres cases de la ligne.
     row = p.figures["cells"][6:8]
     assert all(c["s"] == correct["s"] for c in row)
+
+
+def test_trace_puzzles_can_always_be_drawn_in_one_stroke():
+    rng = random.Random(21)
+    for level in (1, 2, 3):
+        for _ in range(150):
+            p = iq_service._trace(rng, level)
+            edges = p.trace["edges"]
+            assert len(p.trace["points"]) >= 3
+            assert iq_service.valid_trace(p.trace, p.answer), "the stored solution works"
+            # Un autre tracé valide est accepté aussi : le même chemin parcouru à l'envers.
+            assert iq_service.check(p, "-".join(reversed(p.answer.split("-"))))
+            assert not iq_service.check(p, iq_service.wrong_answer(p, rng))
+            assert len(edges) >= {1: 5, 2: 8, 3: 11}[level]
+            odd = [n for n in range(len(p.trace["points"])) if sum(n in e for e in edges) % 2]
+            assert len(odd) in (0, 2)
+
+
+def test_a_trace_cannot_jump_or_repeat_a_line():
+    trace = {"points": [[0, 0], [1, 0], [1, 1]], "edges": [[0, 1], [1, 2], [0, 2]]}
+    assert iq_service.valid_trace(trace, "0-1-2-0")
+    assert not iq_service.valid_trace(trace, "0-1-0-2"), "line 0-1 twice"
+    assert not iq_service.valid_trace(trace, "0-1-2"), "a line is missing"
+    assert not iq_service.valid_trace(trace, "x")
 
 
 # ------------------------------------------------------------- parties vérifiées par le serveur
@@ -159,6 +183,8 @@ async def test_jokers_cost_coins_and_help(client, session):
     effect = (await client.post(url, json={"client_id": PLAYER, "kind": help_kind})).json()
     if help_kind == "fifty":
         assert len(effect["removed"]) == 2 and puzzle.answer not in {str(i) for i in effect["removed"]}
+    elif puzzle.input == "trace":
+        assert effect["start"] == int(puzzle.answer.split("-")[0]), "the hint shows where to start"
     else:
         assert effect["low"] <= float(puzzle.answer) <= effect["high"]
     assert effect["wallet"]["coins"] == 97

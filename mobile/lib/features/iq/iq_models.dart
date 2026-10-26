@@ -1,4 +1,5 @@
 import 'iq_figures.dart';
+import 'iq_trace.dart';
 
 /// Une énigme de QI, telle que le serveur l'envoie (sans la réponse pendant la
 /// manche, avec la réponse et l'explication après).
@@ -15,6 +16,7 @@ class IqPuzzle {
     this.answer,
     this.explanation = const {},
     this.figures,
+    this.trace,
   });
 
   factory IqPuzzle.fromJson(Map<String, dynamic> json) => IqPuzzle(
@@ -41,6 +43,9 @@ class IqPuzzle {
     figures: json['figures'] == null
         ? null
         : IqFigures.fromJson(json['figures'] as Map<String, dynamic>),
+    trace: json['trace'] == null
+        ? null
+        : IqTrace.fromJson(json['trace'] as Map<String, dynamic>),
   );
 
   static Map<String, String> _texts(Object? raw) => {
@@ -73,6 +78,11 @@ class IqPuzzle {
   /// Énigme à schémas : figures à dessiner, choix notés A à D.
   final IqFigures? figures;
 
+  /// Un seul trait : la figure à tracer ; la réponse est un chemin « 0-3-1… ».
+  final IqTrace? trace;
+
+  bool get traced => input == 'trace';
+
   bool get typed => input == 'number';
 
   String promptIn(String language) => prompt[language] ?? prompt['fr'] ?? '';
@@ -84,7 +94,7 @@ class IqPuzzle {
   /// La bonne réponse, lisible (le choix lui-même pour un QCM).
   String answerText(String language) {
     final a = answer;
-    if (a == null) return '';
+    if (a == null || traced) return '';
     if (typed) return a;
     final list = choicesIn(language);
     final i = int.tryParse(a) ?? -1;
@@ -94,6 +104,7 @@ class IqPuzzle {
   /// Une réponse donnée, lisible (le texte du choix pour un QCM).
   String shown(String? raw, String language) {
     if (raw == null || raw.isEmpty) return '—';
+    if (traced) return '';
     if (typed) return raw;
     final list = choicesIn(language);
     final i = int.tryParse(raw) ?? -1;
@@ -106,6 +117,7 @@ class IqPuzzle {
     if (a == null || raw == null) return false;
     final text = raw.trim().replaceAll(' ', '').replaceAll(',', '.');
     if (text.isEmpty) return false;
+    if (traced) return trace?.isValid(text) ?? false;
     if (!typed) return text == a;
     final value = double.tryParse(text);
     return value != null && value == double.tryParse(a);

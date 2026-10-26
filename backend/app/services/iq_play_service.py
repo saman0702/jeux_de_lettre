@@ -222,7 +222,7 @@ async def use_joker(session: AsyncSession, game_id: str, client_id: str, kind: s
     if kind == "fifty":
         effect["removed"] = iq_service.fifty(puzzle, rng)
     elif kind == "hint":
-        effect["low"], effect["high"] = iq_service.hint_range(puzzle, rng)
+        effect |= iq_service.hint(puzzle, rng)
     elif kind == "time":
         game.extra_seconds += iq_service.EXTRA_TIME
         effect["extra_seconds"] = game.extra_seconds

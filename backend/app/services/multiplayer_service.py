@@ -94,7 +94,7 @@ async def start_round(session: AsyncSession, game_id: str, languages: set[str] |
     if not eligible:
         counts = await letter_service.letter_counts(session, game.language)
         eligible = set(letter_service.eligible_letters(counts, game.categories, Difficulty(game.difficulty)))
-    letter = letter_service.draw_letter(sorted(eligible), (r.letter for r in game.rounds))
+    letter = letter_service.draw_letter(eligible, (r.letter for r in game.rounds))
 
     started_at = utcnow()
     game_round = GameRound(

@@ -35,9 +35,9 @@ EXTRA_TIME = 15
 @dataclass(frozen=True)
 class Puzzle:
     id: str
-    kind: str  # sequence | grid | problem | analogy | odd | logic | letters | calendar | matrix | rotation | figure_odd
+    kind: str  # sequence, grid, problem, analogy, odd, logic, letters, calendar, matrix, rotation, figure_odd, trace
     level: int  # 1 facile, 2 moyen, 3 difficile
-    input: str  # number | choice
+    input: str  # number | choice | trace
     prompt: dict[str, str]
     answer: str  # nombre, ou indice du bon choix
     explanation: dict[str, str]
@@ -48,6 +48,8 @@ class Puzzle:
     items: list[str] = field(default_factory=list)
     # Schémas : {"layout": "grid" | "row" | "none", "cells": [figure | None], "options": [figure × 4]}.
     figures: dict | None = None
+    # Un seul trait : {"points": [[x, y]], "edges": [[a, b]]} ; la réponse est un chemin « 0-3-1… ».
+    trace: dict | None = None
 
     def public(self) -> dict:
         """Ce que voient les joueurs pendant la manche (sans la réponse)."""
@@ -61,6 +63,7 @@ class Puzzle:
             "grid": self.grid,
             "items": self.items,
             "figures": self.figures,
+            "trace": self.trace,
         }
 
     def reveal(self) -> dict:
@@ -501,6 +504,115 @@ def _figure_odd(rng: random.Random, level: int) -> Puzzle:
     )
 
 
+# ------------------------------------------------------------------ un seul trait
+
+
+def _euler_trail(edges: list[tuple[int, int]]) -> list[int]:
+    """Un chemin qui passe une fois par chaque ligne (algorithme de Hierholzer)."""
+    adjacency: dict[int, list[int]] = {}
+    for i, (a, b) in enumerate(edges):
+        adjacency.setdefault(a, []).append(i)
+        adjacency.setdefault(b, []).append(i)
+    odd = [n for n, e in adjacency.items() if len(e) % 2]
+    start = odd[0] if odd else edges[0][0]
+    used = [False] * len(edges)
+    stack, trail = [start], []
+    while stack:
+        node = stack[-1]
+        while adjacency[node] and used[adjacency[node][-1]]:
+            adjacency[node].pop()
+        if adjacency[node]:
+            i = adjacency[node].pop()
+            used[i] = True
+            a, b = edges[i]
+            stack.append(b if a == node else a)
+        else:
+            trail.append(stack.pop())
+    return trail[::-1]
+
+
+def valid_trace(trace: dict, raw: str) -> bool:
+    """Le chemin donné passe-t-il exactement une fois par chaque ligne, sans saut ?"""
+    try:
+        path = [int(x) for x in str(raw).split("-")]
+    except ValueError:
+        return False
+    remaining = {tuple(sorted(e)) for e in trace["edges"]}
+    if len(path) != len(remaining) + 1:
+        return False
+    for a, b in zip(path, path[1:]):
+        edge = (min(a, b), max(a, b))
+        if edge not in remaining:
+            return False
+        remaining.remove(edge)
+    return not remaining
+
+
+def _trace(rng: random.Random, level: int) -> Puzzle:
+    """Tracer une figure d'un seul trait, sans repasser deux fois sur une ligne."""
+    cols, rows = (3, 3) if level < 3 else (4, 3)
+    low, high = {1: (5, 7), 2: (8, 10), 3: (11, 14)}[level]
+    nodes = [(x, y) for y in range(rows) for x in range(cols)]
+    index = {p: i for i, p in enumerate(nodes)}
+    for _ in range(4000):
+        candidates = []
+        for x, y in nodes:
+            if x + 1 < cols:
+                candidates.append((index[(x, y)], index[(x + 1, y)]))
+            if y + 1 < rows:
+                candidates.append((index[(x, y)], index[(x, y + 1)]))
+            # Une seule diagonale par case : les lignes ne se croisent jamais hors d'un point.
+            if x + 1 < cols and y + 1 < rows:
+                if rng.random() < 0.5:
+                    candidates.append((index[(x, y)], index[(x + 1, y + 1)]))
+                else:
+                    candidates.append((index[(x + 1, y)], index[(x, y + 1)]))
+        edges = rng.sample(candidates, rng.randint(low, high))
+        degree: dict[int, int] = {}
+        for a, b in edges:
+            degree[a] = degree.get(a, 0) + 1
+            degree[b] = degree.get(b, 0) + 1
+        odd = [n for n, d in degree.items() if d % 2]
+        if len(odd) not in (0, 2) or (level > 1 and max(degree.values()) < 3):
+            continue
+        # Figure d'un seul morceau.
+        seen, todo = set(), [edges[0][0]]
+        while todo:
+            n = todo.pop()
+            if n in seen:
+                continue
+            seen.add(n)
+            todo += [b if a == n else a for a, b in edges if n in (a, b)]
+        if seen != set(degree):
+            continue
+        used_nodes = sorted(degree)
+        renum = {old: new for new, old in enumerate(used_nodes)}
+        edges = sorted((min(renum[a], renum[b]), max(renum[a], renum[b])) for a, b in edges)
+        break
+    trail = _euler_trail(edges)
+    odd_count = sum(1 for n in range(len(used_nodes)) if sum(n in e for e in edges) % 2)
+    why = (
+        _text("Deux points ont un nombre impair de lignes : il faut partir de l'un et finir sur l'autre.",
+              "Two dots have an odd number of lines: start at one and finish at the other.")
+        if odd_count
+        else _text("Chaque point a un nombre pair de lignes : on peut partir de n'importe où, et on revient au départ.",
+                   "Every dot has an even number of lines: start anywhere, you will come back to the start.")
+    )
+    return Puzzle(
+        id=f"trace-{level}-{'-'.join(f'{a}.{b}' for a, b in edges)}",
+        kind="trace",
+        level=level,
+        input="trace",
+        prompt=_text(
+            "Trace la figure d'un seul trait : passe sur chaque ligne une seule fois, sans lever le doigt.",
+            "Draw the figure in one stroke: go over every line exactly once, without lifting your finger.",
+        ),
+        answer="-".join(map(str, trail)),
+        explanation=why,
+        trace={"points": [list(nodes[i]) for i in used_nodes], "edges": [list(e) for e in edges]},
+    )
+
+
 _GENERATORS = [
     ("sequence", 3, _sequence),
     ("grid", 2, _grid),
@@ -513,6 +625,7 @@ _GENERATORS = [
     ("matrix", 2, _matrix),
     ("rotation", 2, _rotation),
     ("figure_odd", 2, _figure_odd),
+    ("trace", 2, _trace),
 ]
 
 
@@ -543,6 +656,8 @@ def check(puzzle: Puzzle, raw: object) -> bool:
     text = str(raw if raw is not None else "").strip().replace(" ", "").replace(",", ".")
     if not text:
         return False
+    if puzzle.input == "trace":
+        return puzzle.trace is not None and valid_trace(puzzle.trace, text)
     if puzzle.input == "choice":
         return text == puzzle.answer
     try:
@@ -565,6 +680,9 @@ def wrong_answer(puzzle: Puzzle, rng: random.Random) -> str:
     """Réponse fausse plausible (bots qui se trompent)."""
     if puzzle.input == "choice":
         return rng.choice([str(i) for i in range(4) if str(i) != puzzle.answer])
+    if puzzle.input == "trace":
+        # Tracé arrêté avant la fin : il manque une ligne.
+        return "-".join(puzzle.answer.split("-")[:-1])
     value = int(float(puzzle.answer))
     return str(value + rng.choice([-3, -2, -1, 1, 2, 3, 10]))
 
@@ -574,7 +692,7 @@ def joker_allowed(puzzle: Puzzle, kind: str) -> bool:
     if kind == "fifty":
         return puzzle.input == "choice"
     if kind == "hint":
-        return puzzle.input == "number"
+        return puzzle.input in ("number", "trace")
     return kind in ("time", "skip")
 
 
@@ -582,6 +700,14 @@ def fifty(puzzle: Puzzle, rng: random.Random) -> list[int]:
     """Deux mauvais choix à retirer."""
     wrong = [i for i in range(4) if str(i) != puzzle.answer]
     return sorted(rng.sample(wrong, 2))
+
+
+def hint(puzzle: Puzzle, rng: random.Random) -> dict:
+    """Indice : un intervalle pour un nombre, le point de départ pour un tracé."""
+    if puzzle.input == "trace":
+        return {"start": int(puzzle.answer.split("-")[0])}
+    low, high = hint_range(puzzle, rng)
+    return {"low": low, "high": high}
 
 
 def hint_range(puzzle: Puzzle, rng: random.Random) -> tuple[int, int]:
@@ -606,6 +732,7 @@ def puzzle_from(data: dict) -> Puzzle:
         grid=data.get("grid"),
         items=data.get("items") or [],
         figures=data.get("figures"),
+        trace=data.get("trace"),
     )
 
 

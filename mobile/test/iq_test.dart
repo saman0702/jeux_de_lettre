@@ -190,7 +190,7 @@ void main() {
       expect(puzzles.last.level, 3);
       for (final p in puzzles) {
         expect(p.answer, isNotNull);
-        expect(p.typed || p.choicesIn('en').length == 4, isTrue);
+        expect(p.typed || p.traced || p.choicesIn('en').length == 4, isTrue);
       }
     });
   });
@@ -878,6 +878,86 @@ void main() {
     expect(settings['kind'], 'bet');
     expect(settings['stake'], greaterThan(0));
     await tester.pump(const Duration(seconds: 1));
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('one-stroke puzzles: trace every line once by tapping the dots', (
+    tester,
+  ) async {
+    tallPhone(tester);
+    // Un « papillon » : deux triangles qui se touchent au point 2.
+    final puzzle = IqPuzzle.fromJson({
+      'id': 'trace-test',
+      'kind': 'trace',
+      'level': 1,
+      'input': 'trace',
+      'prompt': {
+        'fr': 'Trace la figure d’un seul trait.',
+        'en': 'Draw the figure in one stroke.',
+      },
+      'trace': {
+        'points': [
+          [0, 0],
+          [0, 2],
+          [1, 1],
+          [2, 0],
+          [2, 2],
+        ],
+        'edges': [
+          [0, 1],
+          [0, 2],
+          [1, 2],
+          [2, 3],
+          [2, 4],
+          [3, 4],
+        ],
+      },
+      'answer': '0-1-2-3-4-2-0',
+      'explanation': {'fr': 'Pairs partout.', 'en': 'Even everywhere.'},
+    });
+    expect(
+      puzzle.isCorrect('2-4-3-2-1-0-2'),
+      isTrue,
+      reason: 'another valid stroke',
+    );
+    expect(puzzle.isCorrect('0-1-2-0'), isFalse);
+    final h = Harness();
+    await h.start(
+      tester,
+      IqSoloScreen(
+        rounds: 1,
+        duration: 60,
+        difficulty: Difficulty.normal,
+        scoring: const IqScoring(speedBonus: false),
+        puzzles: [puzzle],
+      ),
+    );
+    await tester.pump();
+    final board = find.byKey(const Key('iq_trace_board'));
+    Future<void> tapDot(int n) async {
+      await tester.tapAt(
+        tester.getTopLeft(board) +
+            puzzle.trace!.offsetOf(n, tester.getSize(board)),
+      );
+      await tester.pump();
+    }
+
+    // Faux départ : un triangle seul, puis bloqué.
+    for (final n in [0, 1, 2, 0]) {
+      await tapDot(n);
+    }
+    expect(find.byKey(const Key('iq_trace_stuck')), findsOneWidget);
+    await tapKey(tester, 'iq_trace_reset');
+    expect(find.byKey(const Key('iq_trace_stuck')), findsNothing);
+    for (final n in [2, 4, 3, 2, 1, 0, 2]) {
+      await tapDot(n);
+    }
+    await tester.pump();
+    expect(find.byKey(const Key('iq_answer')), findsOneWidget);
+    expect(find.text('Even everywhere.'), findsOneWidget);
+    await tapKey(tester, 'iq_next');
+    await pumpFor(tester, const Duration(milliseconds: 600));
+    expect(find.text('1 right answers out of 1 · 10 points'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 }

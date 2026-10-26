@@ -32,6 +32,7 @@ class IqJokerEffect {
     this.removed = const {},
     this.low,
     this.high,
+    this.start,
     this.wallet,
     this.replaced = false,
   });
@@ -42,6 +43,9 @@ class IqJokerEffect {
   /// Indice : la réponse est entre [low] et [high].
   final int? low;
   final int? high;
+
+  /// Indice d'un tracé : le point d'où partir.
+  final int? start;
   final WalletSnapshot? wallet;
 
   /// Passer : une nouvelle énigme, chrono relancé.
@@ -242,6 +246,7 @@ class ServerIqRun implements IqRun {
       },
       low: effect['low'] as int?,
       high: effect['high'] as int?,
+      start: effect['start'] as int?,
       wallet: _wallet(effect['wallet']),
       replaced: kind == 'skip',
     );

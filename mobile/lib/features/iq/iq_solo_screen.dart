@@ -73,6 +73,7 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
   // Jokers de l'énigme en cours.
   Set<int> _removed = {};
   (int, int)? _range;
+  int? _traceStart;
 
   OnlineController? get _online =>
       context.getInheritedWidgetOfExactType<OnlineScope>()?.controller;
@@ -217,6 +218,7 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
         _startedAt = widget.now();
         _removed = {};
         _range = null;
+        _traceStart = null;
       });
     } on ApiException catch (e) {
       _error(e.code);
@@ -238,10 +240,12 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
       setState(() {
         _removed = {..._removed, ...effect.removed};
         if (effect.low != null) _range = (effect.low!, effect.high!);
+        if (effect.start != null) _traceStart = effect.start;
         if (effect.replaced) {
           _startedAt = widget.now();
           _removed = {};
           _range = null;
+          _traceStart = null;
         }
       });
     } on ApiException catch (e) {
@@ -348,6 +352,16 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
                   ),
                   const SizedBox(height: 10),
                 ],
+                if (_traceStart != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      l10n.iqTraceStartHint,
+                      key: const Key('iq_trace_hint'),
+                      textAlign: TextAlign.center,
+                      style: gameFont(size: 17, color: AppColors.yellow),
+                    ),
+                  ),
                 if (_range != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
@@ -358,14 +372,6 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
                       style: gameFont(size: 17, color: AppColors.yellow),
                     ),
                   ),
-                IqAnswerPad(
-                  key: ValueKey('pad_${puzzle.id}'),
-                  puzzle: puzzle,
-                  language: language,
-                  enabled: !_busy,
-                  removed: _removed,
-                  onAnswer: _answer,
-                ),
               ] else ...[
                 if (turn.late)
                   Padding(
@@ -389,8 +395,25 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                CandyButton(
+              ],
+            ],
+          ),
+        ),
+        // Réponse (clavier ou choix) et « Suivante » toujours visibles en bas :
+        // seule l'énigme défile au-dessus.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+          child: turn == null
+              ? IqAnswerPad(
+                  key: ValueKey('pad_${puzzle.id}'),
+                  puzzle: puzzle,
+                  language: language,
+                  enabled: !_busy,
+                  removed: _removed,
+                  traceStart: _traceStart,
+                  onAnswer: _answer,
+                )
+              : CandyButton(
                   key: const Key('iq_next'),
                   label: run.number >= run.total
                       ? l10n.iqSeeResult
@@ -401,9 +424,6 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
                   loading: _busy,
                   onPressed: _next,
                 ),
-              ],
-            ],
-          ),
         ),
       ],
     );

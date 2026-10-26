@@ -1253,6 +1253,16 @@ class RoomManager:
             settings = RoomSettings(language=saved.language, public=saved.public)
         room = Room(code=code, settings=settings, quick=False, host_id=connection.client_id)
         room.creator_id = saved.creator_id
+        # Les bots qui étaient là reviennent avec leur nom et leur niveau.
+        saved_bots = [] if settings.betting else (saved.settings or {}).get("bots", [])
+        for bot in saved_bots[: settings.max_players - 1]:
+            try:
+                level = Difficulty(bot.get("level", "normal"))
+            except ValueError:
+                level = Difficulty.NORMAL
+            added = self._add_bot(room, level)
+            if bot.get("nickname") and bot["nickname"] not in {p.nickname for p in room.players.values()}:
+                added.nickname = str(bot["nickname"])[:20]
         for m in messages:
             room.chat.append(ChatMessage(m.sender_id, m.sender_nickname, m.text, m.created_at, list(m.mentions or [])))
         self.rooms[code] = room
@@ -1342,6 +1352,19 @@ class RoomManager:
             if task and task is not asyncio.current_task():
                 task.cancel()
         self.rooms.pop(room.code, None)
+        if room.creator_id is not None:
+            # Salon gardé : ses bots (nom et niveau) l'attendront à la réouverture.
+            bots = [
+                {"nickname": p.nickname, "level": (p.bot_level or Difficulty.NORMAL).value}
+                for p in room.players.values()
+                if p.bot
+            ]
+            try:
+                async with self.session_factory() as session:
+                    await room_store.save_bots(session, room.code, bots)
+                    await session.commit()
+            except Exception:
+                logger.exception("could not save bots of room %s", room.code)
         await self._rooms_changed()
 
     def _reset_to_lobby(self, room: Room) -> None:
@@ -2074,7 +2097,7 @@ class RoomManager:
         if kind == "fifty":
             effect["removed"] = iq_service.fifty(puzzle, rng)
         elif kind == "hint":
-            effect["low"], effect["high"] = iq_service.hint_range(puzzle, rng)
+            effect |= iq_service.hint(puzzle, rng)
         elif kind == "time":
             live.iq_extra[cid] = live.iq_extra.get(cid, 0) + iq_service.EXTRA_TIME
             effect["extra_seconds"] = live.iq_extra[cid]

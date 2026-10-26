@@ -30,6 +30,7 @@ class RoundView extends StatefulWidget {
     this.goal,
     this.players,
     this.footer,
+    this.compactHeader = false,
   });
 
   /// Objectif affiché en haut (carrière, éliminatoires).
@@ -40,6 +41,10 @@ class RoundView extends StatefulWidget {
 
   /// Contrôles sous les réponses (ex. Freeze en salon).
   final Widget? footer;
+
+  /// Salon : le numéro de manche est déjà dans le titre ; joueurs, lettre et
+  /// chrono tiennent sur une seule ligne.
+  final bool compactHeader;
 
   final GameRound round;
   final int totalRounds;
@@ -239,6 +244,29 @@ class _RoundViewState extends State<RoundView> {
             ],
           ),
         );
+        final compactBar = Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Row(
+            children: [
+              Expanded(child: widget.players ?? const SizedBox.shrink()),
+              const SizedBox(width: 8),
+              if (compact)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: LetterReveal(
+                    key: ValueKey(round.number),
+                    letter: round.letter,
+                    size: 46,
+                  ),
+                ),
+              TimerBadge(
+                remaining: widget.remaining,
+                total: Duration(seconds: round.duration),
+                size: 54,
+              ),
+            ],
+          ),
+        );
         // La grande lettre fait partie de la liste : elle défile avec les
         // champs. La barre du haut (manche, chrono, joueurs) reste fixe : les
         // champs défilent en dessous, pas sous les compteurs.
@@ -246,10 +274,14 @@ class _RoundViewState extends State<RoundView> {
 
         return Column(
           children: [
-            topBar,
-            if (widget.players != null) ...[
-              const SizedBox(height: 8),
-              widget.players!,
+            if (widget.compactHeader)
+              compactBar
+            else ...[
+              topBar,
+              if (widget.players != null) ...[
+                const SizedBox(height: 8),
+                widget.players!,
+              ],
             ],
             Expanded(
               child: ClipRect(
@@ -326,10 +358,16 @@ class _RoundViewState extends State<RoundView> {
 /// Chrono circulaire. Fait tic-tac, vibre et pulse pendant les 5 dernières
 /// secondes.
 class TimerBadge extends StatefulWidget {
-  const TimerBadge({super.key, required this.remaining, required this.total});
+  const TimerBadge({
+    super.key,
+    required this.remaining,
+    required this.total,
+    this.size = 66,
+  });
 
   final Duration remaining;
   final Duration total;
+  final double size;
 
   @override
   State<TimerBadge> createState() => _TimerBadgeState();
@@ -386,7 +424,7 @@ class _TimerBadgeState extends State<TimerBadge>
         child: child,
       ),
       child: SizedBox.square(
-        dimension: 66,
+        dimension: widget.size,
         child: CustomPaint(
           painter: _RingPainter(fraction, color),
           child: Center(
@@ -394,7 +432,7 @@ class _TimerBadgeState extends State<TimerBadge>
               '$_seconds',
               key: const Key('timer'),
               style: fredoka(
-                size: 24,
+                size: widget.size * 0.36,
                 weight: FontWeight.w700,
                 color: urgent ? AppColors.red : AppColors.ink,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),

@@ -747,7 +747,9 @@ def test_private_messages_cost_coins_and_stay_between_two(client, manager, http)
         state(carol, "waiting")
 
     def private(client_id):
-        return client.get(f"/api/v1/rooms/{code}/history", params={"client_id": client_id}).json()["private"]
+        response = client.get(f"/api/v1/rooms/{code}/history", params={"client_id": client_id})
+        assert response.status_code == 200, response.text
+        return response.json()["private"]
 
     assert [m["text"] for m in private("bob-00001")] == ["Coucou"]
     assert private("carol-0001") == [], "others never see private messages"
@@ -978,3 +980,25 @@ def test_iq_jokers_in_a_room_cost_coins_and_help_only_the_buyer(client, manager,
         assert by_player["alice-0001"]["correct"] is True
         assert by_player["alice-0001"]["puzzle"]["id"] == skipped["puzzle"]["id"]
         assert by_player["bob-00001"]["correct"] is True and "puzzle" not in by_player["bob-00001"]
+
+
+def test_bots_are_back_when_a_saved_room_reopens(client):
+    with player(client, "alice-0001", "Alice") as alice:
+        alice.send_json({
+            "type": "create_room",
+            "settings": {**SETTINGS, "public": False},
+            "bots": {"count": 2, "level": "hard"},
+        })
+        room = state(alice, "waiting", lambda r: len(r["players"]) == 3)
+        code = room["code"]
+        bots = sorted(p["nickname"] for p in room["players"] if p["bot"])
+        alice.send_json({"type": "leave_room"})
+        wait_for(alice, lambda m: m["type"] == "left_room")
+
+    # Plus aucun humain : le salon est fermé ; en revenant, les mêmes bots sont là.
+    with player(client, "alice-0001", "Alice") as alice:
+        alice.send_json({"type": "join_room", "code": code})
+        reopened = state(alice, "waiting", lambda r: len(r["players"]) == 3)
+        back = [p for p in reopened["players"] if p["bot"]]
+        assert sorted(p["nickname"] for p in back) == bots
+        assert {p["bot_level"] for p in back} == {"hard"}

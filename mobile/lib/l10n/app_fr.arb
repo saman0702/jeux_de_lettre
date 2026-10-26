@@ -1278,5 +1278,9 @@
   "iqDailyYesterday": "Podium d'hier",
   "iqDailyEmpty": "Personne n'a encore joué aujourd'hui : sois le premier !",
   "iqDailyNeedsOnline": "Le défi du jour se joue en ligne.",
-  "iqLate": "Trop tard !"
+  "iqLate": "Trop tard !",
+  "iqKindTrace": "Un seul trait",
+  "iqTraceRestart": "RECOMMENCER",
+  "iqTraceStuck": "Bloqué : il reste des lignes, recommence !",
+  "iqTraceStartHint": "Indice : pars du point orange."
 }
