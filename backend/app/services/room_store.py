@@ -197,6 +197,11 @@ async def member_counts(session: AsyncSession, codes: list[str]) -> dict[str, in
     return counts
 
 
+async def delete_room(session: AsyncSession, code: str) -> None:
+    """Supprime le salon avec ses membres, ses parties et ses conversations (cascade)."""
+    await session.execute(delete(SavedRoom).where(SavedRoom.code == code))
+
+
 async def purge_inactive(session: AsyncSession, keep: set[str], now: datetime | None = None) -> int:
     """Supprime les salons sans activité depuis 30 jours (sauf ceux ouverts en ce moment)."""
     limit = (now or utcnow()) - timedelta(days=RETENTION_DAYS)

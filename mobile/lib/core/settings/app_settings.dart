@@ -12,7 +12,7 @@ class AppSettings extends ChangeNotifier {
     this._prefs, {
     required this.clientId,
     required this.clientToken,
-    this._sound = true,
+    this._sound = false,
     this._music = true,
     this._vibration = true,
     this._gameKeyboard = true,
@@ -41,9 +41,13 @@ class AppSettings extends ChangeNotifier {
 
   /// Non persisté ; utilisé par les tests (règles déjà « lues » pour ne pas
   /// bloquer les widgets).
-  AppSettings.inMemory({String? nickname, String clientId = 'test-client-id'})
-    : this._(
+  AppSettings.inMemory({
+    String? nickname,
+    String clientId = 'test-client-id',
+    bool sound = true,
+  }) : this._(
         null,
+        sound: sound,
         clientId: clientId,
         clientToken: 'test-client-token-$clientId',
         nickname: nickname,
@@ -68,7 +72,8 @@ class AppSettings extends ChangeNotifier {
       prefs,
       clientId: clientId,
       clientToken: clientToken,
-      sound: prefs.getBool(_soundKey) ?? true,
+      // Effets sonores coupés par défaut : le joueur les active dans les Réglages.
+      sound: prefs.getBool(_soundKey) ?? false,
       music: prefs.getBool(_musicKey) ?? true,
       vibration: prefs.getBool(_vibrationKey) ?? true,
       gameKeyboard: prefs.getBool(_gameKeyboardKey) ?? true,

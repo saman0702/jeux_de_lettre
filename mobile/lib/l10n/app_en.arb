@@ -600,5 +600,11 @@
   "iqKindTrace": "One stroke",
   "iqTraceRestart": "START OVER",
   "iqTraceStuck": "Stuck: lines are left, start over!",
-  "iqTraceStartHint": "Hint: start from the orange dot."
+  "iqTraceStartHint": "Hint: start from the orange dot.",
+  "errorRoomDeleted": "The creator deleted this room.",
+  "errorNotRoomCreator": "Only the room's creator can delete it.",
+  "deleteRoomTitle": "Delete the room",
+  "deleteRoomMessage": "The room, its games and its chats will be erased for everyone. Anyone inside will leave.",
+  "deleteRoomConfirm": "DELETE",
+  "roomDeleted": "Room deleted."
 }

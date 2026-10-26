@@ -3283,6 +3283,42 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Indice : pars du point orange.'**
   String get iqTraceStartHint;
+
+  /// No description provided for @errorRoomDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le créateur a supprimé ce salon.'**
+  String get errorRoomDeleted;
+
+  /// No description provided for @errorNotRoomCreator.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seul le créateur du salon peut le supprimer.'**
+  String get errorNotRoomCreator;
+
+  /// No description provided for @deleteRoomTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le salon'**
+  String get deleteRoomTitle;
+
+  /// No description provided for @deleteRoomMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le salon, ses parties et ses conversations seront effacés pour tout le monde. Ceux qui sont dedans en sortiront.'**
+  String get deleteRoomMessage;
+
+  /// No description provided for @deleteRoomConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'SUPPRIMER'**
+  String get deleteRoomConfirm;
+
+  /// No description provided for @roomDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salon supprimé.'**
+  String get roomDeleted;
 }
 
 class _AppLocalizationsDelegate

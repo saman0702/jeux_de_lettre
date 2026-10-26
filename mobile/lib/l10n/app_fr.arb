@@ -1282,5 +1282,11 @@
   "iqKindTrace": "Un seul trait",
   "iqTraceRestart": "RECOMMENCER",
   "iqTraceStuck": "Bloqué : il reste des lignes, recommence !",
-  "iqTraceStartHint": "Indice : pars du point orange."
+  "iqTraceStartHint": "Indice : pars du point orange.",
+  "errorRoomDeleted": "Le créateur a supprimé ce salon.",
+  "errorNotRoomCreator": "Seul le créateur du salon peut le supprimer.",
+  "deleteRoomTitle": "Supprimer le salon",
+  "deleteRoomMessage": "Le salon, ses parties et ses conversations seront effacés pour tout le monde. Ceux qui sont dedans en sortiront.",
+  "deleteRoomConfirm": "SUPPRIMER",
+  "roomDeleted": "Salon supprimé."
 }

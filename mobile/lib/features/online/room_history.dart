@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_card.dart';
+import '../../core/widgets/game_dialog.dart';
 import '../../core/widgets/game_icon.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/widgets/labels.dart';
@@ -590,6 +591,25 @@ class SavedRoomsSectionState extends State<SavedRoomsSection> {
     }
   }
 
+  /// Le créateur supprime son salon, après confirmation.
+  Future<void> _delete(SavedRoomSummary room) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final api = SavedRoomsApi(
+      widget.apiClient ?? ApiClient(),
+      OnlineScope.of(context).clientId,
+    );
+    final ok = await confirmDeleteRoom(context);
+    if (!ok || !mounted) return;
+    try {
+      await api.delete(room.code);
+      messenger.showSnackBar(SnackBar(content: Text(l10n.roomDeleted)));
+      await refresh();
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(errorMessage(l10n, e.code))));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -607,7 +627,13 @@ class SavedRoomsSectionState extends State<SavedRoomsSection> {
         if (_mine.isNotEmpty) ...[
           title(l10n.myRoomsTitle),
           for (final r in _mine)
-            _SavedRoomTile(room: r, onTap: () => widget.onOpen(r.code)),
+            _SavedRoomTile(
+              room: r,
+              onTap: () => widget.onOpen(r.code),
+              onDelete: r.creatorId == OnlineScope.of(context).clientId
+                  ? () => _delete(r)
+                  : null,
+            ),
         ],
         if (public.isNotEmpty) ...[
           title(l10n.allPublicRoomsTitle),
@@ -619,11 +645,27 @@ class SavedRoomsSectionState extends State<SavedRoomsSection> {
   }
 }
 
+/// Confirmation avant de supprimer un salon gardé.
+Future<bool> confirmDeleteRoom(BuildContext context) {
+  final l10n = AppLocalizations.of(context);
+  return showGameConfirm(
+    context,
+    icon: GameIconKind.door,
+    title: l10n.deleteRoomTitle,
+    message: l10n.deleteRoomMessage,
+    confirmLabel: l10n.deleteRoomConfirm,
+    cancelLabel: l10n.cancel,
+  );
+}
+
 class _SavedRoomTile extends StatelessWidget {
-  const _SavedRoomTile({required this.room, required this.onTap});
+  const _SavedRoomTile({required this.room, required this.onTap, this.onDelete});
 
   final SavedRoomSummary room;
   final VoidCallback onTap;
+
+  /// Créateur seulement : supprimer le salon.
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -680,6 +722,13 @@ class _SavedRoomTile extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onDelete != null)
+                IconButton(
+                  key: Key('delete_room_${room.code}'),
+                  tooltip: l10n.deleteRoomTitle,
+                  icon: const Icon(Icons.delete_rounded, color: AppColors.red),
+                  onPressed: onDelete,
+                ),
             ],
           ),
         ),

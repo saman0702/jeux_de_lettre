@@ -1344,6 +1344,21 @@ class RoomManager:
         self._check_all_in(room)
         await self._maybe_start(room)
 
+    async def delete_room(self, code: str) -> None:
+        """Salon supprimé par son créateur : ceux qui sont dedans en sortent et sont prévenus."""
+        room = self.rooms.get(code)
+        if room is None:
+            return
+        # Partie à mises en cours : chacun récupère sa mise.
+        await self._refund_stakes(room)
+        # Plus de salon gardé : rien à enregistrer à la fermeture.
+        room.creator_id = None
+        for player in room.humans():
+            self._room_of.pop(player.client_id, None)
+            await self._send(player.client_id, {"type": "room_deleted", "code": code})
+        room.players.clear()
+        await self._close_room(room)
+
     async def _close_room(self, room: Room) -> None:
         tasks = [room.game_task, room.quick_timer, room.bot_fill_timer]
         if room.live_round:

@@ -17,6 +17,8 @@ def _summary(request: Request, room: SavedRoom, members: int, mine: bool) -> dic
         "code": room.code,
         "public": room.public,
         "creator": room.creator_nickname,
+        # Id public du créateur : lui seul peut supprimer le salon.
+        "creator_id": room.creator_id,
         "language": room.language,
         "format": room.settings.get("format", "rounds"),
         "kind": room.settings.get("kind", "classic"),
@@ -99,3 +101,27 @@ async def room_history(
         "group": [room_store.message_dict(m) for m in group],
         "private": [room_store.message_dict(m) for m in private],
     }
+
+
+@router.delete("/{code}")
+async def delete_room(
+    code: str,
+    request: Request,
+    client_id: str = Query(pattern=CLIENT_ID),
+    session: AsyncSession = Depends(get_session),
+    x_client_token: str | None = Header(default=None),
+):
+    """Le créateur supprime son salon : parties, conversations et membres partent avec ; ceux qui
+    sont dedans en sortent."""
+    await client_auth.check(session, client_id, x_client_token)
+    code = code.strip().upper()
+    room = await room_store.get_room(session, code)
+    if room is None:
+        raise HTTPException(status_code=404, detail="room_not_found")
+    if room.creator_id != client_id:
+        raise HTTPException(status_code=403, detail="not_room_creator")
+    await room_store.delete_room(session, code)
+    await session.commit()
+    await request.app.state.room_manager.delete_room(code)
+    return {"ok": True}
+

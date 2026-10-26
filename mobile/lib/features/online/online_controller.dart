@@ -410,6 +410,11 @@ class OnlineController extends ChangeNotifier {
       case 'left_room':
         _room = null;
         _searching = false;
+      case 'room_deleted':
+        // Le créateur a supprimé le salon : on en sort, avec un message.
+        _room = null;
+        _searching = false;
+        _errors.add('room_deleted');
       case 'notice':
         final kind = _noticeKinds[event['kind']];
         if (kind != null) {

@@ -7,6 +7,7 @@ class SavedRoomSummary {
     required this.code,
     required this.public,
     required this.creator,
+    this.creatorId,
     required this.members,
     required this.mine,
     required this.open,
@@ -20,6 +21,7 @@ class SavedRoomSummary {
         code: json['code'] as String,
         public: json['public'] as bool? ?? false,
         creator: json['creator'] as String? ?? '',
+        creatorId: json['creator_id'] as String?,
         members: json['members'] as int? ?? 0,
         mine: json['mine'] as bool? ?? false,
         open: json['open'] as bool? ?? false,
@@ -31,6 +33,9 @@ class SavedRoomSummary {
   final String code;
   final bool public;
   final String creator;
+
+  /// Le créateur, seul à pouvoir supprimer le salon.
+  final String? creatorId;
 
   /// Joueurs déjà passés par le salon.
   final int members;
@@ -152,6 +157,10 @@ class SavedRoomsApi {
     ))
       SavedRoomSummary.fromJson(r as Map<String, dynamic>),
   ];
+
+  /// Le créateur supprime son salon (parties et conversations comprises).
+  Future<void> delete(String code) =>
+      _api.deleteJson('/api/v1/rooms/$code?client_id=$clientId');
 
   Future<RoomHistory> history(String code) async => RoomHistory.fromJson(
     await _api.getJson('/api/v1/rooms/$code/history?client_id=$clientId'),

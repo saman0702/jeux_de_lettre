@@ -32,11 +32,15 @@ class LobbyView extends StatelessWidget {
     this.onReport,
     this.onOpenChat,
     this.onOpenHistory,
+    this.onDeleteRoom,
   });
 
   /// Salon gardé : discussion (groupe et privé) et historique des parties.
   final VoidCallback? onOpenChat;
   final VoidCallback? onOpenHistory;
+
+  /// Créateur d'un salon gardé : le supprimer.
+  final VoidCallback? onDeleteRoom;
 
   final RoomState room;
   final String myId;
@@ -209,6 +213,22 @@ class LobbyView extends StatelessWidget {
               ],
             ),
           ],
+          if (room.saved && room.creatorId == myId && onDeleteRoom != null)
+            Center(
+              child: TextButton.icon(
+                key: const Key('lobby_delete_room'),
+                onPressed: onDeleteRoom,
+                icon: const Icon(Icons.delete_rounded, color: AppColors.white),
+                label: Text(
+                  l10n.deleteRoomTitle,
+                  style: fredoka(
+                    size: 14,
+                    weight: FontWeight.w600,
+                    color: AppColors.white,
+                  ),
+                ),
+              ),
+            ),
           if (settings.betting) ...[
             const SizedBox(height: 10),
             Center(

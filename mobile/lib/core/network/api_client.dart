@@ -86,6 +86,9 @@ class ApiClient {
     ),
   );
 
+  Future<Map<String, dynamic>> deleteJson(String path) =>
+      _send(() => _client.delete(Uri.parse('$baseUrl$path'), headers: _auth));
+
   /// Envoie un fichier en multipart (champ [field]).
   Future<Map<String, dynamic>> uploadBytes(
     String path, {

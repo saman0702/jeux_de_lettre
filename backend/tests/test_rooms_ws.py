@@ -1002,3 +1002,24 @@ def test_bots_are_back_when_a_saved_room_reopens(client):
         back = [p for p in reopened["players"] if p["bot"]]
         assert sorted(p["nickname"] for p in back) == bots
         assert {p["bot_level"] for p in back} == {"hard"}
+
+
+def test_only_the_creator_can_delete_a_saved_room(client, http):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        code = create_room(alice, public=True)["code"]
+        bob.send_json({"type": "join_room", "code": code})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        mine = client.get("/api/v1/rooms/mine", params={"client_id": "bob-00001"}).json()
+        assert [r["creator_id"] for r in mine] == ["alice-0001"]
+
+        refused = client.delete(f"/api/v1/rooms/{code}", params={"client_id": "bob-00001"})
+        assert refused.status_code == 403 and refused.json()["detail"] == "not_room_creator"
+        deleted = client.delete(f"/api/v1/rooms/{code}", params={"client_id": "alice-0001"})
+        assert deleted.status_code == 200
+        # Ceux qui étaient dedans en sortent.
+        for ws in (alice, bob):
+            assert wait_for(ws, lambda m: m["type"] == "room_deleted")["code"] == code
+
+    assert client.get("/api/v1/rooms/mine", params={"client_id": "bob-00001"}).json() == []
+    assert client.get(f"/api/v1/rooms/{code}/history", params={"client_id": "alice-0001"}).status_code == 404
+    assert client.delete(f"/api/v1/rooms/{code}", params={"client_id": "alice-0001"}).status_code == 404

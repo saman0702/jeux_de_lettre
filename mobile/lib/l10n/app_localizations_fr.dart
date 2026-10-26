@@ -1879,4 +1879,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get iqTraceStartHint => 'Indice : pars du point orange.';
+
+  @override
+  String get errorRoomDeleted => 'Le créateur a supprimé ce salon.';
+
+  @override
+  String get errorNotRoomCreator =>
+      'Seul le créateur du salon peut le supprimer.';
+
+  @override
+  String get deleteRoomTitle => 'Supprimer le salon';
+
+  @override
+  String get deleteRoomMessage =>
+      'Le salon, ses parties et ses conversations seront effacés pour tout le monde. Ceux qui sont dedans en sortiront.';
+
+  @override
+  String get deleteRoomConfirm => 'SUPPRIMER';
+
+  @override
+  String get roomDeleted => 'Salon supprimé.';
 }

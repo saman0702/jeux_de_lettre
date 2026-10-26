@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:letter_battle/core/network/api_client.dart';
 import 'package:letter_battle/features/online/room_history.dart';
+import 'package:letter_battle/features/online/room_screen.dart';
 import 'package:letter_battle/features/online/widgets/salon_social.dart';
 
 import 'online_test.dart' show Harness, me, player, pumpFor, roomEvent;
@@ -235,4 +236,95 @@ void main() {
     final field = tester.widget<TextField>(find.byType(TextField));
     expect(field.controller!.text, '@Kevin ');
   });
+
+  testWidgets('the creator can delete their room from "My rooms"', (
+    tester,
+  ) async {
+    final calls = <String>[];
+    final api = ApiClient(
+      client: MockClient((request) async {
+        calls.add('${request.method} ${request.url.path}');
+        final body = switch (request.url.path) {
+          '/api/v1/rooms/mine' => [
+            {...summary('AB123'), 'creator_id': me},
+            {...summary('CD456'), 'creator_id': 'kev'},
+          ],
+          '/api/v1/rooms/public' => <Object>[],
+          _ => {'ok': true},
+        };
+        return http.Response(
+          jsonEncode(body),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
+    );
+    final h = Harness();
+    await h.start(
+      tester,
+      Scaffold(
+        body: ListView(
+          children: [SavedRoomsSection(apiClient: api, onOpen: (_) {})],
+        ),
+      ),
+    );
+    await pumpFor(tester, const Duration(milliseconds: 500));
+    expect(find.byKey(const Key('delete_room_AB123')), findsOneWidget);
+    expect(
+      find.byKey(const Key('delete_room_CD456')),
+      findsNothing,
+      reason: 'not my room',
+    );
+    await tester.tap(find.byKey(const Key('delete_room_AB123')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('DELETE').first);
+    await pumpFor(tester, const Duration(milliseconds: 500));
+    expect(calls, contains('DELETE /api/v1/rooms/AB123'));
+    expect(find.text('Room deleted.'), findsOneWidget);
+  });
+
+  testWidgets(
+    'the creator deletes the room from the lobby and everyone leaves',
+    (tester) async {
+      final calls = <String>[];
+      final api = ApiClient(
+        client: MockClient((request) async {
+          calls.add('${request.method} ${request.url.path}');
+          return http.Response('{"ok": true}', 200);
+        }),
+      );
+      final h = Harness();
+      await h.start(
+        tester,
+        Scaffold(body: Builder(builder: (context) => const SizedBox())),
+      );
+      final navigator = tester.state<NavigatorState>(
+        find.byType(Navigator).first,
+      );
+      navigator.push(
+        MaterialPageRoute<void>(builder: (_) => RoomScreen(apiClient: api)),
+      );
+      await tester.pump();
+      final event = roomEvent('waiting');
+      (event['room'] as Map)
+        ..['saved'] = true
+        ..['creator_id'] = me;
+      h.socket.push(event);
+      await pumpFor(tester, const Duration(milliseconds: 500));
+      await tester.ensureVisible(find.byKey(const Key('lobby_delete_room')));
+      await tester.tap(find.byKey(const Key('lobby_delete_room')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('DELETE').first);
+      await pumpFor(tester, const Duration(milliseconds: 300));
+      expect(calls.single, startsWith('DELETE /api/v1/rooms/X7K92'));
+      h.socket.push({'type': 'room_deleted', 'code': 'X7K92'});
+      await pumpFor(tester, const Duration(seconds: 1));
+      expect(
+        find.byType(RoomScreen),
+        findsNothing,
+        reason: 'the room screen closes',
+      );
+      expect(find.text('Room deleted.'), findsOneWidget);
+    },
+  );
 }

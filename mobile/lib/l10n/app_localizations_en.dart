@@ -1867,4 +1867,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get iqTraceStartHint => 'Hint: start from the orange dot.';
+
+  @override
+  String get errorRoomDeleted => 'The creator deleted this room.';
+
+  @override
+  String get errorNotRoomCreator => 'Only the room\'s creator can delete it.';
+
+  @override
+  String get deleteRoomTitle => 'Delete the room';
+
+  @override
+  String get deleteRoomMessage =>
+      'The room, its games and its chats will be erased for everyone. Anyone inside will leave.';
+
+  @override
+  String get deleteRoomConfirm => 'DELETE';
+
+  @override
+  String get roomDeleted => 'Room deleted.';
 }

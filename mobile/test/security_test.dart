@@ -18,6 +18,13 @@ void main() {
     expect(first.clientToken, isNot(first.clientId));
   });
 
+  test('sound effects are off on a fresh install', () async {
+    SharedPreferences.setMockInitialValues({});
+    final settings = await AppSettings.load();
+    expect(settings.sound, isFalse);
+    expect(settings.music, isTrue, reason: 'only the sound effects change');
+  });
+
   test('every API request carries the secret token', () async {
     final seen = <String?>[];
     final api = ApiClient(

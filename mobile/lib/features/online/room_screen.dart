@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../animations/countdown/countdown_view.dart';
 import '../../core/audio/game_audio.dart';
+import '../../core/network/api_client.dart';
 import '../../core/feedback/game_feedback.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/game_dialog.dart';
@@ -24,6 +25,7 @@ import 'widgets/salon_social.dart';
 import '../perks/perks_controller.dart';
 import '../../animations/transitions/pop_route.dart';
 import '../iq/iq_widgets.dart';
+import 'data/saved_rooms.dart';
 import 'room_history.dart';
 import 'widgets/players_strip.dart';
 import 'widgets/round_wait_view.dart';
@@ -40,7 +42,11 @@ class RoomScreen extends StatefulWidget {
     super.key,
     this.tick = const Duration(milliseconds: 200),
     this.now = DateTime.now,
+    this.apiClient,
   });
+
+  /// API des salons gardés (suppression) ; injectable dans les tests.
+  final ApiClient? apiClient;
 
   /// Fréquence de rafraîchissement des comptes à rebours ; injectable dans les
   /// tests avec [now].
@@ -429,8 +435,33 @@ class _RoomScreenState extends State<RoomScreen> {
       );
   }
 
+  /// Le créateur supprime le salon : le serveur fait sortir tout le monde.
+  bool _deletingRoom = false;
+
+  Future<void> _deleteRoom(String code) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
+    if (!await confirmDeleteRoom(context) || !mounted) return;
+    _deletingRoom = true;
+    try {
+      await SavedRoomsApi(
+        widget.apiClient ?? ApiClient(),
+        _online.clientId,
+      ).delete(code);
+    } on ApiException catch (e) {
+      _deletingRoom = false;
+      messenger.showSnackBar(SnackBar(content: Text(errorMessage(l10n, e.code))));
+    }
+  }
+
   void _showError(String code) {
     if (!mounted) return;
+    if (code == 'room_deleted' && _deletingRoom) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).roomDeleted)),
+      );
+      return;
+    }
     // Envoi refusé : on annule le flag local pour ne pas rester « en attente »
     // avec une fausse icône crayon / check.
     if (code == 'round_not_current') {
@@ -686,6 +717,7 @@ class _RoomScreenState extends State<RoomScreen> {
           onOpenHistory: () => Navigator.of(context).push(
             PopRoute(builder: (_) => RoomHistoryScreen(code: room.code)),
           ),
+          onDeleteRoom: () => _deleteRoom(room.code),
         );
       case RoomPhase.finished:
         // Géré par le podium ci-dessus.
