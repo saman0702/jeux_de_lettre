@@ -1,9 +1,13 @@
 import '../../game/data/models.dart';
+import '../../iq/iq_models.dart';
 
 enum RoomPhase { waiting, countdown, round, results, lightning, finished }
 
 /// Toutes les manches (meilleur total), éliminatoires, ou relais (catégories
 /// réparties).
+/// Jeu proposé dans un salon.
+enum RoomGame { letters, iq }
+
 enum RoomFormat { rounds, elimination, relay }
 
 /// Thème du jour : score ×2 sur ces catégories.
@@ -63,6 +67,9 @@ class RoomSettings {
     this.kind = RoomKind.classic,
     this.stake = 0,
     this.format = RoomFormat.rounds,
+    this.game = RoomGame.letters,
+    this.iqSpeedBonus = true,
+    this.iqPenalty = false,
     this.theme = RoomTheme.none,
   });
 
@@ -84,6 +91,9 @@ class RoomSettings {
     kind: RoomKind.values.byName(json['kind'] as String? ?? 'classic'),
     stake: json['stake'] as int? ?? 0,
     format: RoomFormat.values.byName(json['format'] as String? ?? 'rounds'),
+    game: RoomGame.values.byName(json['game'] as String? ?? 'letters'),
+    iqSpeedBonus: json['iq_speed_bonus'] as bool? ?? true,
+    iqPenalty: json['iq_penalty'] as bool? ?? false,
     theme: RoomTheme.fromWire(json['theme'] as String?),
   );
 
@@ -104,6 +114,14 @@ class RoomSettings {
   bool get prize => kind == RoomKind.prize;
 
   final RoomFormat format;
+
+  /// Jeu du salon : Géographie & Nature (lettres) ou QI.
+  final RoomGame game;
+  bool get iq => game == RoomGame.iq;
+
+  /// QI : bonus de rapidité et malus si c'est faux.
+  final bool iqSpeedBonus;
+  final bool iqPenalty;
   bool get elimination => format == RoomFormat.elimination;
   bool get relay => format == RoomFormat.relay;
 
@@ -121,6 +139,9 @@ class RoomSettings {
     'kind': kind.name,
     'stake': stake,
     'format': format.name,
+    'game': game.name,
+    'iq_speed_bonus': iqSpeedBonus,
+    'iq_penalty': iqPenalty,
     'theme': theme.wire,
   };
 }
@@ -256,10 +277,14 @@ class PlayerRoundResult {
     required this.answers,
     required this.roundScore,
     this.elapsed,
+    this.iqAnswer,
+    this.iqCorrect = false,
   });
 
   factory PlayerRoundResult.fromJson(Map<String, dynamic> json) =>
       PlayerRoundResult(
+        iqAnswer: json['answer'] as String?,
+        iqCorrect: json['correct'] as bool? ?? false,
         clientId: json['client_id'] as String,
         nickname: json['nickname'] as String,
         answers: [
@@ -271,6 +296,10 @@ class PlayerRoundResult {
             ? null
             : Duration(milliseconds: json['elapsed_ms'] as int),
       );
+
+  /// QI : réponse donnée (nombre ou indice du choix) et si elle est juste.
+  final String? iqAnswer;
+  final bool iqCorrect;
 
   final String clientId;
   final String nickname;
@@ -286,6 +315,7 @@ class RoomRoundResults {
     required this.players,
     this.examples = const {},
     this.examplesByLanguage = const {},
+    this.puzzle,
     this.eliminated = const [],
   });
 
@@ -301,6 +331,9 @@ class RoomRoundResults {
           for (final e in ((json['examples'] as Map?) ?? const {}).entries)
             Category.fromWire(e.key as String): e.value as String,
         },
+        puzzle: json['puzzle'] == null
+            ? null
+            : IqPuzzle.fromJson(json['puzzle'] as Map<String, dynamic>),
         examplesByLanguage: {
           for (final l
               in ((json['examples_by_language'] as Map?) ?? const {}).entries)
@@ -321,6 +354,9 @@ class RoomRoundResults {
 
   /// Une réponse valide par catégorie ratée par au moins un joueur.
   final Map<Category, String> examples;
+
+  /// QI : l'énigme avec sa réponse et son explication.
+  final IqPuzzle? puzzle;
 
   /// Les mêmes dans chaque langue des joueurs (parties mélangées).
   final Map<String, Map<Category, String>> examplesByLanguage;
@@ -530,6 +566,7 @@ class RoomState {
     this.rematchNeed = 1,
     this.freezePrice = 15,
     this.chatUnlockPrice = 25,
+    this.iqPuzzle,
     this.creatorId,
     this.saved = false,
     this.voice = const RoomVoice(),
@@ -556,6 +593,9 @@ class RoomState {
           RoomPlayer.fromJson(p as Map<String, dynamic>),
       ],
       roundNumber: json['round_number'] as int,
+      iqPuzzle: roundJson?['puzzle'] == null
+          ? null
+          : IqPuzzle.fromJson(roundJson!['puzzle'] as Map<String, dynamic>),
       round: roundJson == null
           ? null
           : GameRound.fromJson({
@@ -626,6 +666,9 @@ class RoomState {
   final int freezePrice;
   final int chatUnlockPrice;
 
+  /// QI : l'énigme de la manche en cours (sans la réponse).
+  final IqPuzzle? iqPuzzle;
+
   /// Créateur du salon : il en redevient l'hôte à chaque retour.
   final String? creatorId;
 
@@ -680,6 +723,7 @@ class RoomSummary {
     this.kind = RoomKind.classic,
     this.stake = 0,
     this.format = RoomFormat.rounds,
+    this.game = RoomGame.letters,
   });
 
   factory RoomSummary.fromJson(Map<String, dynamic> json) => RoomSummary(
@@ -698,6 +742,7 @@ class RoomSummary {
     strictSpelling: json['strict_spelling'] as bool? ?? false,
     kind: RoomKind.values.byName(json['kind'] as String? ?? 'classic'),
     stake: json['stake'] as int? ?? 0,
+    game: RoomGame.values.byName(json['game'] as String? ?? 'letters'),
     format: RoomFormat.values.byName(json['format'] as String? ?? 'rounds'),
   );
 
@@ -707,6 +752,7 @@ class RoomSummary {
 
   /// Pseudos des joueurs déjà dans la salle, hôte en premier.
   final List<String> nicknames;
+  final RoomGame game;
   final RoomFormat format;
   final RoomKind kind;
   final int stake;

@@ -21,7 +21,7 @@ import '../online/data/room_models.dart';
 import '../online/nickname_dialog.dart';
 import '../online/online_controller.dart';
 import '../online/room_screen.dart';
-import '../online/rooms_screen.dart';
+import '../iq/game_hub_screen.dart';
 import '../online/widgets/online_counter.dart';
 import '../avatar/avatar_screen.dart';
 import '../online/widgets/player_avatar.dart';
@@ -122,9 +122,11 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(context).push(PopRoute(builder: (_) => const RoomScreen()));
   }
 
-  Future<void> _openRooms() async {
-    if (!await _readyForOnline() || !mounted) return;
-    Navigator.of(context).push(PopRoute(builder: (_) => const RoomsScreen()));
+  /// « Salons » : choix du jeu (Géographie & Nature ou QI). La connexion est
+  /// demandée seulement pour les salons ; le QI solo marche hors ligne.
+  void _openRooms() {
+    Navigator.of(context)
+        .push(PopRoute(builder: (_) => GameHubScreen(apiClient: _api)));
   }
 
   @override

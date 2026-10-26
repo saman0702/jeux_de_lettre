@@ -803,3 +803,57 @@ def test_french_and_english_players_share_a_room(client):
         bob_answer = {p["nickname"]: p for p in results["players"]}["Bob"]["answers"][0]
         assert bob_answer["status"] != "valid"
         assert set(results["examples_by_language"]) == {"fr", "en"}
+
+
+# ------------------------------------------------------------------ QI
+
+
+def test_an_iq_room_scores_right_and_fast_answers(client, monkeypatch):
+    from app.services import iq_service
+
+    puzzle = iq_service.Puzzle(
+        id="test-seq",
+        kind="sequence",
+        level=1,
+        input="number",
+        prompt={"fr": "Quel nombre vient ensuite ?", "en": "Which number comes next?"},
+        answer="10",
+        explanation={"fr": "+2", "en": "+2"},
+        items=["2", "4", "6", "8", "?"],
+    )
+    monkeypatch.setattr(iq_service, "draw", lambda level, exclude=None, rng=None: puzzle)
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob", "en") as bob:
+        room = create_room(alice, game="iq", iq_penalty=True)
+        assert room["settings"]["game"] == "iq"
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+
+        round_ = state(alice, "round")["round"]
+        assert round_["puzzle"]["items"] == ["2", "4", "6", "8", "?"]
+        assert "answer" not in round_["puzzle"], "the answer stays on the server"
+        alice.send_json({"type": "iq_answer", "round": 1, "answer": "10"})
+        bob.send_json({"type": "iq_answer", "round": 1, "answer": "12"})
+        results = state(alice, "results")["results"]
+        assert results["puzzle"]["answer"] == "10"
+        by_player = {p["nickname"]: p for p in results["players"]}
+        assert by_player["Alice"]["correct"] is True and by_player["Alice"]["round_score"] >= 10
+        assert by_player["Bob"]["correct"] is False and by_player["Bob"]["round_score"] == -5, "penalty on"
+
+
+def test_iq_bots_answer_by_themselves(client, monkeypatch):
+    with player(client, "alice-0001", "Alice") as alice:
+        alice.send_json({
+            "type": "create_room",
+            "settings": {**SETTINGS, "game": "iq"},
+            "bots": {"count": 2, "level": "hard"},
+        })
+        round_ = state(alice, "round")
+        assert round_["round"]["puzzle"] is not None
+        bots = [p for p in round_["players"] if p["bot"]]
+        assert len(bots) == 2
+        alice.send_json({"type": "iq_answer", "round": 1, "answer": "0"})
+        results = state(alice, "results")["results"]
+        assert {p["client_id"] for p in results["players"] if p["client_id"].startswith("bot-")}
+        assert all(p["answer"] is not None for p in results["players"]), "bots answered"

@@ -1670,4 +1670,129 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get mixedLanguages => 'FR + EN : chacun dans sa langue';
+
+  @override
+  String get iqKindSequence => 'Suite';
+
+  @override
+  String get iqKindGrid => 'Grille';
+
+  @override
+  String get iqKindProblem => 'Problème';
+
+  @override
+  String get iqKindLetters => 'Lettres';
+
+  @override
+  String get iqKindCalendar => 'Calendrier';
+
+  @override
+  String get iqKindAnalogy => 'Analogie';
+
+  @override
+  String get iqKindOdd => 'Intrus';
+
+  @override
+  String get iqKindLogic => 'Logique';
+
+  @override
+  String get iqTypeAnswer => 'Tape ta réponse';
+
+  @override
+  String get iqValidate => 'VALIDER';
+
+  @override
+  String get iqGoodAnswer => 'Bonne réponse';
+
+  @override
+  String iqQuestion(int number, int total) {
+    return 'Énigme $number / $total';
+  }
+
+  @override
+  String get iqAnswerSent => 'Réponse envoyée ! On attend les autres…';
+
+  @override
+  String get iqTitle => 'QI';
+
+  @override
+  String get gamesTitle => 'Choisis ton jeu';
+
+  @override
+  String get gameLettersTitle => 'Géographie & Nature';
+
+  @override
+  String get gameLettersInfo =>
+      'Une lettre, des catégories : villes, pays, animaux, fruits, prénoms…';
+
+  @override
+  String get gameIqTitle => 'QI';
+
+  @override
+  String get gameIqInfo =>
+      'Suites logiques, calcul, analogies, intrus, énigmes : qui a le meilleur QI ?';
+
+  @override
+  String get iqCreateRoom => 'CRÉER UN SALON QI';
+
+  @override
+  String get iqSolo => 'SOLO';
+
+  @override
+  String get iqBots => 'CONTRE LES BOTS';
+
+  @override
+  String get iqOpenRooms => 'Salons QI ouverts';
+
+  @override
+  String get iqNoRooms =>
+      'Aucun salon QI public pour le moment : crée le tien !';
+
+  @override
+  String get iqRoomTitle => 'Nouveau salon QI';
+
+  @override
+  String get iqSoloTitle => 'QI en solo';
+
+  @override
+  String get iqBotsTitle => 'QI contre les bots';
+
+  @override
+  String get iqQuestions => 'Énigmes';
+
+  @override
+  String get iqTimePerQuestion => 'Temps par énigme';
+
+  @override
+  String get iqScoring => 'Points';
+
+  @override
+  String get iqSpeedBonus => 'Bonus de rapidité (jusqu\'à +10)';
+
+  @override
+  String get iqPenalty => 'Malus si c\'est faux (−5)';
+
+  @override
+  String get iqResultTitle => 'Ton QI estimé';
+
+  @override
+  String iqResultScore(int correct, int total, int points) {
+    return '$correct bonnes réponses sur $total · $points points';
+  }
+
+  @override
+  String get iqResultNote =>
+      'Pour s\'amuser : ce n\'est pas un vrai test de QI.';
+
+  @override
+  String get iqNext => 'ÉNIGME SUIVANTE';
+
+  @override
+  String get iqSeeResult => 'VOIR MON QI';
+
+  @override
+  String get iqBadge => 'QI';
+
+  @override
+  String get iqYou => 'Toi';
 }

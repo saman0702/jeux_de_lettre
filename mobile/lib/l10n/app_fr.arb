@@ -1171,5 +1171,67 @@
   "countryPickTitle": "Ton pays d'origine",
   "countrySearch": "Rechercher un pays",
   "countryChoose": "Choisir",
-  "mixedLanguages": "FR + EN : chacun dans sa langue"
+  "mixedLanguages": "FR + EN : chacun dans sa langue",
+  "iqKindSequence": "Suite",
+  "iqKindGrid": "Grille",
+  "iqKindProblem": "Problème",
+  "iqKindLetters": "Lettres",
+  "iqKindCalendar": "Calendrier",
+  "iqKindAnalogy": "Analogie",
+  "iqKindOdd": "Intrus",
+  "iqKindLogic": "Logique",
+  "iqTypeAnswer": "Tape ta réponse",
+  "iqValidate": "VALIDER",
+  "iqGoodAnswer": "Bonne réponse",
+  "iqQuestion": "Énigme {number} / {total}",
+  "@iqQuestion": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "iqAnswerSent": "Réponse envoyée ! On attend les autres…",
+  "iqTitle": "QI",
+  "gamesTitle": "Choisis ton jeu",
+  "gameLettersTitle": "Géographie & Nature",
+  "gameLettersInfo": "Une lettre, des catégories : villes, pays, animaux, fruits, prénoms…",
+  "gameIqTitle": "QI",
+  "gameIqInfo": "Suites logiques, calcul, analogies, intrus, énigmes : qui a le meilleur QI ?",
+  "iqCreateRoom": "CRÉER UN SALON QI",
+  "iqSolo": "SOLO",
+  "iqBots": "CONTRE LES BOTS",
+  "iqOpenRooms": "Salons QI ouverts",
+  "iqNoRooms": "Aucun salon QI public pour le moment : crée le tien !",
+  "iqRoomTitle": "Nouveau salon QI",
+  "iqSoloTitle": "QI en solo",
+  "iqBotsTitle": "QI contre les bots",
+  "iqQuestions": "Énigmes",
+  "iqTimePerQuestion": "Temps par énigme",
+  "iqScoring": "Points",
+  "iqSpeedBonus": "Bonus de rapidité (jusqu'à +10)",
+  "iqPenalty": "Malus si c'est faux (−5)",
+  "iqResultTitle": "Ton QI estimé",
+  "iqResultScore": "{correct} bonnes réponses sur {total} · {points} points",
+  "@iqResultScore": {
+    "placeholders": {
+      "correct": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "iqResultNote": "Pour s'amuser : ce n'est pas un vrai test de QI.",
+  "iqNext": "ÉNIGME SUIVANTE",
+  "iqSeeResult": "VOIR MON QI",
+  "iqBadge": "QI",
+  "iqYou": "Toi"
 }

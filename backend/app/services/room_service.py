@@ -11,7 +11,9 @@ manches et réponses sont enregistrées via multiplayer_service.
 import asyncio
 import contextlib
 import logging
+import random
 import secrets
+from types import SimpleNamespace
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -51,6 +53,7 @@ from app.services import (
     bot_service,
     fact_service,
     hint_service,
+    iq_service,
     multiplayer_service,
     perks_service,
     room_store,
@@ -86,6 +89,11 @@ class RoomSettings(GameSettings):
     format: str = Field(default="rounds", pattern="^(rounds|elimination|relay)$")
     # Thème du jour : catégories à score doublé (geography | names | nature | "").
     theme: str = Field(default="", pattern="^(|geography|names|nature)$")
+    # Jeu du salon : « letters » (Géographie & Nature, le Petit Bac) ou « iq » (énigmes de QI).
+    game: str = Field(default="letters", pattern="^(letters|iq)$")
+    # QI : bonus de rapidité (jusqu'à +10) et malus si la réponse est fausse (−5), au choix de l'hôte.
+    iq_speed_bonus: bool = True
+    iq_penalty: bool = False
 
     @model_validator(mode="after")
     def _check_stake(self) -> "RoomSettings":
@@ -93,7 +101,16 @@ class RoomSettings(GameSettings):
             raise ValueError("a betting/prize room needs a stake")
         if self.kind == "classic":
             self.stake = 0
+        if self.game == "iq":
+            # Pas de lettre ni de catégories en QI : ni relais ni thème.
+            if self.format == "relay":
+                self.format = "rounds"
+            self.theme = ""
         return self
+
+    @property
+    def iq(self) -> bool:
+        return self.game == "iq"
 
     @property
     def betting(self) -> bool:
@@ -184,6 +201,8 @@ class LiveRound:
     # Freeze : client cible -> fin du gel.
     frozen_until: dict[str, datetime] = field(default_factory=dict)
     bonus: bool = False
+    # QI : l'énigme de la manche.
+    puzzle: iq_service.Puzzle | None = None
 
 
 @dataclass
@@ -447,6 +466,7 @@ class RoomManager:
             "leave_room": self._on_leave_room,
             "set_ready": self._on_set_ready,
             "submit": self._on_submit,
+            "iq_answer": self._on_iq_answer,
             "hint": self._on_hint,
             "hint_pick": self._on_hint_pick,
             "buy_hint": self._on_buy_hint,
@@ -988,6 +1008,9 @@ class RoomManager:
     async def _on_start_bonus(self, connection: Connection, message: dict) -> None:
         """L'hôte (ou n'importe qui en revanche) lance la mini-manche bonus."""
         room = self._require_room(connection.client_id)
+        if room.settings.iq:
+            # La mini-manche bonus est une manche de lettres.
+            raise RoomError("invalid_message")
         if room.phase != "finished" or room.bonus_played or room.game_task:
             raise RoomError("game_in_progress")
         if connection.client_id != room.host_id and not room.players[connection.client_id].rematch_vote:
@@ -1447,7 +1470,10 @@ class RoomManager:
                 await self._enrol_late_joiners(room)
                 if len(room.connected_players()) < MIN_ROOM_PLAYERS:
                     break
-                await self._play_round(room, number)
+                if room.settings.iq:
+                    await self._play_iq_round(room, number)
+                else:
+                    await self._play_round(room, number)
                 if number == room.settings.rounds:
                     break
                 # Éliminatoires : la partie s'arrête quand il ne reste qu'un joueur en lice.
@@ -1455,8 +1481,9 @@ class RoomManager:
                     break
                 room.next_round_at = utcnow() + timedelta(seconds=self.timings.results)
                 await self._broadcast(room)
-                # Défi éclair pendant l'écran résultats, puis on enchaîne.
-                await self._run_lightning(room)
+                # Défi éclair pendant l'écran résultats, puis on enchaîne (pas en QI).
+                if not room.settings.iq:
+                    await self._run_lightning(room)
                 remaining = (room.next_round_at - utcnow()).total_seconds()
                 if remaining > 0:
                     await asyncio.sleep(remaining)
@@ -1502,7 +1529,12 @@ class RoomManager:
         try:
             async with self.session_factory() as session:
                 await room_store.record_game(
-                    session, room.code, room.game_id, room.settings.format, room.round_number, ranking
+                    session,
+                    room.code,
+                    room.game_id,
+                    "iq" if room.settings.iq else room.settings.format,
+                    room.round_number,
+                    ranking,
                 )
                 await session.commit()
         except Exception:
@@ -1510,6 +1542,8 @@ class RoomManager:
 
     def _finalize_social(self, room: Room) -> None:
         """Titres de salon + revue des mots à la fin de partie."""
+        if room.settings.iq:
+            return
         ranking = sorted(
             [(p.client_id, p.score, p.nickname) for p in room.players.values()],
             key=lambda x: (-x[1], x[2]),
@@ -1972,6 +2006,141 @@ class RoomManager:
         await self._broadcast(room)
         self._check_all_in(room)
 
+    # ------------------------------------------------------------- QI
+
+    async def _on_iq_answer(self, connection: Connection, message: dict) -> None:
+        """Réponse à l'énigme de QI : un nombre ou l'indice du choix ; une seule par manche."""
+        room = self._require_room(connection.client_id)
+        live = room.live_round
+        if (
+            not room.settings.iq
+            or room.phase != "round"
+            or live is None
+            or live.puzzle is None
+            or message.get("round") != live.number
+            or connection.client_id not in live.participants
+        ):
+            raise RoomError("round_not_current")
+        if connection.client_id in live.submissions:
+            return
+        answer = str(message.get("answer") if message.get("answer") is not None else "")[:16]
+        live.submissions[connection.client_id] = (utcnow(), {"iq": answer})
+        await self._broadcast(room)
+        self._check_all_in(room)
+
+    async def _play_iq_round(self, room: Room, number: int) -> None:
+        """Une manche de QI : une énigme, des points selon la justesse (et la vitesse)."""
+        room.phase = "countdown"
+        room.results = None
+        room.next_round_at = None
+        room.go_at = utcnow() + timedelta(seconds=self.timings.countdown)
+        await self._broadcast(room)
+        await asyncio.sleep(self.timings.countdown)
+
+        settings = room.settings
+        level = iq_service.level_for(number, settings.rounds, settings.difficulty)
+        used = {r.get("puzzle", {}).get("id") for r in room.results_history if isinstance(r.get("puzzle"), dict)}
+        puzzle = iq_service.draw(level, exclude=used)
+        started = utcnow()
+        live = LiveRound(
+            number=number,
+            letter="",
+            started_at=started,
+            ends_at=started + timedelta(seconds=settings.round_duration),
+            participants={
+                cid: p.db_player_id or cid
+                for cid, p in room.players.items()
+                if p.eliminated_round is None
+            },
+            puzzle=puzzle,
+        )
+        room.round_number = number
+        room.live_round = live
+        room.phase = "round"
+        room.go_at = None
+        await self._broadcast(room)
+        self._launch_iq_bots(room, live)
+
+        timeout = settings.round_duration + self.timings.submit_grace
+        with contextlib.suppress(TimeoutError):
+            await asyncio.wait_for(live.all_in.wait(), timeout=timeout)
+        for task in live.bot_tasks:
+            task.cancel()
+
+        results, awards, client_of = [], [], {}
+        for cid in live.participants:
+            player = room.players.get(cid)
+            if player is None:
+                continue
+            submitted = live.submissions.get(cid)
+            answer = submitted[1].get("iq") if submitted else None
+            elapsed = (min(submitted[0], live.ends_at) - started).total_seconds() if submitted else None
+            correct = submitted is not None and iq_service.check(puzzle, answer)
+            pts = iq_service.points(
+                correct,
+                submitted is not None,
+                elapsed or 0.0,
+                settings.round_duration,
+                settings.iq_speed_bonus,
+                settings.iq_penalty,
+            )
+            player.score += pts
+            results.append(
+                {
+                    "client_id": cid,
+                    "nickname": player.nickname,
+                    "answers": [],
+                    "answer": answer,
+                    "correct": correct,
+                    "round_score": pts,
+                    "elapsed_ms": int(elapsed * 1000) if elapsed is not None else None,
+                }
+            )
+            if pts > 0 and player.db_player_id:
+                awards.append(SimpleNamespace(player_id=player.db_player_id, round_score=pts))
+                client_of[player.db_player_id] = cid
+        eliminated = self._eliminate(room, number, {r["client_id"]: r["round_score"] for r in results})
+        room.results = {
+            "number": number,
+            "letter": "",
+            "puzzle": puzzle.reveal(),
+            "players": results,
+            "examples": {},
+            "eliminated": eliminated,
+            "bonus": False,
+            "assignments": {},
+        }
+        room.results_history.append(room.results)
+        room.live_round = None
+        room.phase = "results"
+        await self._broadcast(room)
+        await self._award_round_points(room, awards, client_of)
+
+    def _launch_iq_bots(self, room: Room, live: LiveRound) -> None:
+        """Bots : plus ils sont forts, plus ils répondent vite et juste."""
+        profiles = {
+            Difficulty.EASY: (0.5, (0.55, 0.95)),
+            Difficulty.NORMAL: (0.7, (0.35, 0.8)),
+            Difficulty.HARD: (0.9, (0.2, 0.55)),
+        }
+        rng = random.Random()
+        for cid in live.participants:
+            bot = room.players.get(cid)
+            if bot is None or not bot.bot:
+                continue
+            accuracy, (low, high) = profiles.get(bot.bot_level, profiles[Difficulty.NORMAL])
+            answer = live.puzzle.answer if rng.random() < accuracy else iq_service.wrong_answer(live.puzzle, rng)
+            delay = room.settings.round_duration * rng.uniform(low, high) * self.timings.bot_speed
+            live.bot_tasks.append(asyncio.create_task(self._iq_bot_answer(room, live, cid, answer, delay)))
+
+    async def _iq_bot_answer(self, room: Room, live: LiveRound, client_id: str, answer: str, delay: float) -> None:
+        await asyncio.sleep(delay)
+        if room.live_round is not live or client_id in live.submissions:
+            return
+        live.submissions[client_id] = (utcnow(), {"iq": answer})
+        await self._broadcast(room)
+        self._check_all_in(room)
+
     def _check_all_in(self, room: Room) -> None:
         """Termine la manche plus tôt dès que chaque participant connecté a répondu."""
         live = room.live_round
@@ -2006,6 +2175,9 @@ class RoomManager:
                 "kind": settings.kind,
                 "stake": settings.stake,
                 "format": settings.format,
+                "game": settings.game,
+                "iq_speed_bonus": settings.iq_speed_bonus,
+                "iq_penalty": settings.iq_penalty,
                 "theme": settings.theme,
                 "language": settings.language,
                 "difficulty": settings.difficulty,
@@ -2061,6 +2233,8 @@ class RoomManager:
                 "ends_at": _iso(live.ends_at),
                 "bonus": live.bonus,
                 "assignments": live.assignments,
+                # QI : l'énigme, sans sa réponse.
+                "puzzle": live.puzzle.public() if live.puzzle else None,
             },
             "results": room.results,
             "lightning": None
@@ -2127,6 +2301,7 @@ class RoomManager:
                 "kind": r.settings.kind,
                 "stake": r.settings.stake,
                 "format": r.settings.format,
+                "game": r.settings.game,
                 "theme": r.settings.theme,
             }
             for r in rooms[:50]

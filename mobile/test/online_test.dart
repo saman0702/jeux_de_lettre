@@ -319,6 +319,9 @@ void main() {
 
     await tester.tap(find.text('Rooms'));
     await tester.pumpAndSettle();
+    // « Salons » propose d'abord le choix du jeu.
+    await tester.tap(find.byKey(const Key('game_letters')));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('nickname_field')), 'Arnaud');
     await tester.tap(find.text("LET'S GO!"));
     await tester.pumpAndSettle();

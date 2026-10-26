@@ -1,0 +1,444 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:letter_battle/core/network/api_client.dart';
+import 'package:letter_battle/features/game/data/models.dart';
+import 'package:letter_battle/features/iq/game_hub_screen.dart';
+import 'package:letter_battle/features/iq/iq_hub_screen.dart';
+import 'package:letter_battle/features/iq/iq_models.dart';
+import 'package:letter_battle/features/iq/iq_setup_screen.dart';
+import 'package:letter_battle/features/iq/iq_solo_screen.dart';
+import 'package:letter_battle/features/iq/iq_solo_source.dart';
+import 'package:letter_battle/features/online/room_screen.dart';
+
+import 'online_test.dart' show Harness, me, player, pumpFor, roomEvent;
+
+Map<String, dynamic> sequenceJson({bool withAnswer = true}) => {
+  'id': 'seq-1',
+  'kind': 'sequence',
+  'level': 1,
+  'input': 'number',
+  'prompt': {
+    'fr': 'Quel nombre vient ensuite ?',
+    'en': 'Which number comes next?',
+  },
+  'items': ['2', '4', '6', '?'],
+  if (withAnswer) 'answer': '8',
+  if (withAnswer)
+    'explanation': {'fr': 'On ajoute 2.', 'en': 'Add 2 each time.'},
+};
+
+Map<String, dynamic> oddJson({bool withAnswer = true}) => {
+  'id': 'odd-1',
+  'kind': 'odd',
+  'level': 3,
+  'input': 'choice',
+  'prompt': {'fr': "Quel est l'intrus ?", 'en': 'Which is the odd one out?'},
+  'choices': {
+    'fr': ['Chat', 'Chien', 'Pomme', 'Lion'],
+    'en': ['Cat', 'Dog', 'Apple', 'Lion'],
+  },
+  if (withAnswer) 'answer': '2',
+  if (withAnswer)
+    'explanation': {
+      'fr': "La pomme n'est pas un animal.",
+      'en': 'An apple is not an animal.',
+    },
+};
+
+/// Paramètres d'un salon QI, pour le faux serveur.
+Map<String, dynamic> iqRoom(Map<String, dynamic> event) {
+  final room = event['room'] as Map<String, dynamic>;
+  room['settings'] = {
+    ...room['settings'] as Map<String, dynamic>,
+    'categories': <String>[],
+    'game': 'iq',
+    'iq_speed_bonus': true,
+    'iq_penalty': true,
+  };
+  return event;
+}
+
+/// Écran de téléphone assez haut pour voir l'énigme et le clavier.
+void tallPhone(WidgetTester tester) {
+  tester.view.physicalSize = const Size(420, 1400);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+}
+
+Future<void> tapKey(WidgetTester tester, String key) async {
+  await tester.ensureVisible(find.byKey(Key(key)));
+  await tester.tap(find.byKey(Key(key)));
+  await tester.pump();
+}
+
+void main() {
+  group('IQ rules', () {
+    test('answers are compared like on the server', () {
+      final seq = IqPuzzle.fromJson(sequenceJson());
+      expect(seq.isCorrect('8'), isTrue);
+      expect(seq.isCorrect(' 8,0 '), isTrue);
+      expect(seq.isCorrect('9'), isFalse);
+      expect(seq.isCorrect(''), isFalse);
+      final odd = IqPuzzle.fromJson(oddJson());
+      expect(odd.isCorrect('2'), isTrue);
+      expect(odd.answerText('en'), 'Apple');
+      expect(odd.answerText('fr'), 'Pomme');
+    });
+
+    test('scoring options: speed bonus and wrong-answer penalty', () {
+      const total = Duration(seconds: 30);
+      const both = IqScoring(speedBonus: true, penalty: true);
+      expect(
+        both.points(
+          correct: true,
+          answered: true,
+          elapsed: Duration.zero,
+          duration: total,
+        ),
+        20,
+      );
+      expect(
+        both.points(
+          correct: true,
+          answered: true,
+          elapsed: const Duration(seconds: 15),
+          duration: total,
+        ),
+        15,
+      );
+      expect(
+        both.points(
+          correct: false,
+          answered: true,
+          elapsed: Duration.zero,
+          duration: total,
+        ),
+        -5,
+      );
+      // Pas de malus si le temps est écoulé sans réponse.
+      expect(
+        both.points(
+          correct: false,
+          answered: false,
+          elapsed: total,
+          duration: total,
+        ),
+        0,
+      );
+      const plain = IqScoring(speedBonus: false);
+      expect(
+        plain.points(
+          correct: true,
+          answered: true,
+          elapsed: Duration.zero,
+          duration: total,
+        ),
+        10,
+      );
+      expect(
+        plain.points(
+          correct: false,
+          answered: true,
+          elapsed: Duration.zero,
+          duration: total,
+        ),
+        0,
+      );
+    });
+
+    test('estimated IQ goes from 70 to 145, hard puzzles weigh more', () {
+      expect(iqEstimate([(1, false), (3, false)]), 70);
+      expect(iqEstimate([(1, true), (3, true)]), 145);
+      expect(
+        iqEstimate([(3, true), (1, false)]),
+        greaterThan(iqEstimate([(1, true), (3, false)])),
+      );
+    });
+
+    test('difficulty ramps up during the game', () {
+      expect(
+        [for (var n = 1; n <= 10; n++) iqLevelFor(n, 10, Difficulty.normal)],
+        [1, 1, 1, 1, 2, 2, 2, 3, 3, 3],
+      );
+      expect(iqLevelFor(1, 10, Difficulty.hard), 2);
+      expect(iqLevelFor(10, 10, Difficulty.easy), 2);
+    });
+
+    test('offline puzzles come from the bundled file, all different', () {
+      final raw = jsonDecode(
+        File('assets/data/iq_puzzles.json').readAsStringSync(),
+      ) as List;
+      final puzzles = offlinePuzzles(
+        raw,
+        count: 15,
+        difficulty: Difficulty.normal,
+        random: Random(1),
+      );
+      expect(puzzles, hasLength(15));
+      expect({for (final p in puzzles) p.id}, hasLength(15));
+      expect(puzzles.first.level, 1);
+      expect(puzzles.last.level, 3);
+      for (final p in puzzles) {
+        expect(p.answer, isNotNull);
+        expect(p.typed || p.choicesIn('en').length == 4, isTrue);
+      }
+    });
+  });
+
+  testWidgets('solo IQ: type a number, pick a choice, see the estimated IQ', (
+    tester,
+  ) async {
+    tallPhone(tester);
+    final h = Harness();
+    await h.start(
+      tester,
+      IqSoloScreen(
+        rounds: 2,
+        duration: 30,
+        difficulty: Difficulty.normal,
+        scoring: const IqScoring(speedBonus: false, penalty: true),
+        puzzles: [
+          IqPuzzle.fromJson(sequenceJson()),
+          IqPuzzle.fromJson(oddJson()),
+        ],
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Which number comes next?'), findsOneWidget);
+
+    await tapKey(tester, 'iq_key_8');
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('iq_typed')),
+        matching: find.text('8'),
+      ),
+      findsOneWidget,
+    );
+    await tapKey(tester, 'iq_submit');
+    expect(find.byKey(const Key('iq_answer')), findsOneWidget);
+    expect(find.text('Add 2 each time.'), findsOneWidget);
+
+    await tapKey(tester, 'iq_next');
+    expect(find.text('Which is the odd one out?'), findsOneWidget);
+    await tapKey(tester, 'iq_choice_0');
+    // Mauvaise réponse : la bonne est montrée avec l'explication.
+    expect(find.text('An apple is not an animal.'), findsOneWidget);
+
+    await tapKey(tester, 'iq_next');
+    await pumpFor(tester, const Duration(milliseconds: 600));
+    expect(find.byKey(const Key('iq_estimate')), findsOneWidget);
+    // 1 bonne sur 2 : 10 − 5 = 5 points.
+    expect(find.text('1 right answers out of 2 · 5 points'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('solo IQ without an answer moves on when time is up', (
+    tester,
+  ) async {
+    var now = DateTime(2026, 1, 1, 12);
+    tallPhone(tester);
+    final h = Harness();
+    await h.start(
+      tester,
+      IqSoloScreen(
+        rounds: 1,
+        duration: 15,
+        difficulty: Difficulty.normal,
+        scoring: const IqScoring(penalty: true),
+        puzzles: [IqPuzzle.fromJson(sequenceJson())],
+        now: () => now,
+      ),
+    );
+    now = now.add(const Duration(seconds: 16));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+    expect(find.byKey(const Key('iq_answer')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('"Rooms" lets you pick the game, IQ opens the IQ space', (
+    tester,
+  ) async {
+    tallPhone(tester);
+    final h = Harness();
+    await h.start(tester, const GameHubScreen());
+    expect(find.text('Geography & Nature'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('game_iq')));
+    await tester.pumpAndSettle();
+    expect(find.byType(IqHubScreen), findsOneWidget);
+    for (final key in ['iq_create', 'iq_join', 'iq_solo', 'iq_bots']) {
+      expect(find.byKey(Key(key)), findsOneWidget);
+    }
+    expect(h.socket.sentTypes, contains('subscribe_rooms'));
+
+    // Les salons QI publics sont listés, pas ceux du Petit Bac.
+    h.socket.push({
+      'type': 'room_list',
+      'rooms': [
+        {
+          'code': 'IQ123',
+          'quick': false,
+          'host': 'Kevin',
+          'players': 1,
+          'max_players': 8,
+          'language': 'en',
+          'rounds': 10,
+          'round_duration': 30,
+          'game': 'iq',
+        },
+        {
+          'code': 'ABC12',
+          'quick': false,
+          'host': 'Lea',
+          'players': 1,
+          'max_players': 8,
+          'language': 'en',
+          'rounds': 5,
+          'round_duration': 30,
+        },
+      ],
+    });
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('iq_room_IQ123')), findsOneWidget);
+    expect(find.byKey(const Key('iq_room_ABC12')), findsNothing);
+  });
+
+  testWidgets('IQ against bots creates an IQ room with the chosen options', (
+    tester,
+  ) async {
+    tallPhone(tester);
+    final h = Harness();
+    await h.start(tester, const IqSetupScreen(mode: IqSetupMode.bots));
+    await tester.tap(find.text('3').first);
+    await tester.ensureVisible(find.byKey(const Key('iq_penalty')));
+    await tester.tap(find.byKey(const Key('iq_penalty')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('iq_start')));
+    await tester.pump();
+
+    final create = h.socket.sent.lastWhere((m) => m['type'] == 'create_room');
+    final settings = create['settings'] as Map<String, dynamic>;
+    expect(settings['game'], 'iq');
+    expect(settings['iq_penalty'], isTrue);
+    expect(settings['iq_speed_bonus'], isTrue);
+    expect(settings['rounds'], 10);
+    expect(create['bots'], {'count': 3, 'level': 'normal'});
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(RoomScreen), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('solo setup plays offline-ready puzzles from the server', (
+    tester,
+  ) async {
+    final api = ApiClient(
+      client: MockClient(
+        (request) async => http.Response(
+          jsonEncode([sequenceJson(), oddJson()]),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        ),
+      ),
+    );
+    tallPhone(tester);
+    final h = Harness();
+    await h.start(
+      tester,
+      IqSetupScreen(mode: IqSetupMode.solo, apiClient: api),
+    );
+    await tester.tap(find.text('5'));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('iq_start')));
+    await pumpFor(tester, const Duration(milliseconds: 800));
+    expect(find.byType(IqSoloScreen), findsOneWidget);
+    // Lecture réelle du fichier embarqué, hors du temps simulé.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await pumpFor(tester, const Duration(milliseconds: 300));
+    // Le serveur n'a renvoyé que 2 énigmes au lieu de 5 : repli sur le fichier embarqué.
+    expect(find.text('Puzzle 1 / 5'), findsWidgets);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('IQ room: answer a puzzle, then see the reveal', (tester) async {
+    tallPhone(tester);
+    final h = Harness();
+    await h.start(tester, const RoomScreen());
+    final now = DateTime.now().toUtc();
+    h.socket.push(
+      iqRoom(
+        roomEvent(
+          'round',
+          round: {
+            'number': 1,
+            'letter': '',
+            'duration': 30,
+            'started_at': now.toIso8601String(),
+            'ends_at': now.add(const Duration(seconds: 30)).toIso8601String(),
+            'puzzle': oddJson(withAnswer: false),
+          },
+        ),
+      ),
+    );
+    await pumpFor(tester, const Duration(milliseconds: 300));
+    expect(find.text('Which is the odd one out?'), findsOneWidget);
+    expect(find.text('Apple'), findsWidgets);
+
+    await tapKey(tester, 'iq_choice_2');
+    expect(h.socket.sent.last, {
+      'type': 'iq_answer',
+      'round': 1,
+      'answer': '2',
+    });
+    expect(find.byKey(const Key('iq_sent')), findsOneWidget);
+
+    h.socket.push(
+      iqRoom(
+        roomEvent(
+          'results',
+          players: [
+            player(me, 'Blaise', score: 18),
+            player('kev', 'Kevin', score: -5),
+          ],
+          results: {
+            'number': 1,
+            'letter': '',
+            'puzzle': oddJson(),
+            'players': [
+              {
+                'client_id': me,
+                'nickname': 'Blaise',
+                'answers': [],
+                'answer': '2',
+                'correct': true,
+                'round_score': 18,
+              },
+              {
+                'client_id': 'kev',
+                'nickname': 'Kevin',
+                'answers': [],
+                'answer': '0',
+                'correct': false,
+                'round_score': -5,
+              },
+            ],
+            'examples': {},
+            'eliminated': [],
+          },
+          nextRoundAt: now.add(const Duration(seconds: 8)),
+        ),
+      ),
+    );
+    await pumpFor(tester, const Duration(milliseconds: 600));
+    expect(find.byKey(const Key('iq_answer')), findsOneWidget);
+    expect(find.text('An apple is not an animal.'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+}

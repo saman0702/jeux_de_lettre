@@ -23,6 +23,7 @@ import 'widgets/room_results_view.dart';
 import 'widgets/salon_social.dart';
 import '../perks/perks_controller.dart';
 import '../../animations/transitions/pop_route.dart';
+import '../iq/iq_widgets.dart';
 import 'room_history.dart';
 import 'widgets/players_strip.dart';
 import 'widgets/round_wait_view.dart';
@@ -184,6 +185,103 @@ class _RoomScreenState extends State<RoomScreen> {
     // Les comptes à rebours (début de partie rapide, 3-2-1, chrono, manche
     // suivante) suivent l'horloge.
     setState(() {});
+  }
+
+  /// QI : l'énigme et sa zone de réponse (une seule réponse par manche).
+  Widget _iqRound(RoomState room) {
+    final l10n = AppLocalizations.of(context);
+    final round = room.round!;
+    final puzzle = room.iqPuzzle;
+    final me = room.player(_online.clientId);
+    final language = Localizations.localeOf(context).languageCode;
+    final answered =
+        _submittedRound == round.number || (me?.finished ?? false);
+    final canPlay = me != null && me.playing && !me.eliminated;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: IqHeader(
+            number: round.number,
+            total: room.settings.rounds,
+            trailing: TimerBadge(
+              remaining: round.remaining(widget.now()),
+              total: Duration(seconds: round.duration),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        PlayersStrip(
+          room: room,
+          myId: _online.clientId,
+          forceFinishedIds: {if (answered) _online.clientId},
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            children: [
+              if (puzzle != null)
+                IqPuzzleCard(puzzle: puzzle, language: language),
+              const SizedBox(height: 14),
+              if (!canPlay)
+                Text(
+                  (me?.eliminated ?? false)
+                      ? l10n.youAreEliminated
+                      : l10n.spectating,
+                  textAlign: TextAlign.center,
+                  style: fredoka(size: 16, color: AppColors.white),
+                )
+              else if (answered || puzzle == null)
+                Text(
+                  l10n.iqAnswerSent,
+                  key: const Key('iq_sent'),
+                  textAlign: TextAlign.center,
+                  style: gameFont(size: 18, color: AppColors.white),
+                )
+              else
+                IqAnswerPad(
+                  key: ValueKey(puzzle.id),
+                  puzzle: puzzle,
+                  language: language,
+                  onAnswer: (answer) {
+                    setState(() => _submittedRound = round.number);
+                    _online.sendIqAnswer(round.number, answer);
+                  },
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// QI : la bonne réponse, l'explication et la réponse de chaque joueur.
+  Widget _iqResults(RoomState room) {
+    final results = room.results;
+    final puzzle = results?.puzzle;
+    if (results == null || puzzle == null) return const SizedBox.shrink();
+    final language = Localizations.localeOf(context).languageCode;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      children: [
+        IqPuzzleCard(puzzle: puzzle, language: language),
+        const SizedBox(height: 10),
+        IqRevealCard(
+          puzzle: puzzle,
+          language: language,
+          players: [
+            for (final p in results.players)
+              IqPlayerResult(
+                name: p.nickname,
+                answer: p.iqAnswer,
+                correct: p.iqCorrect,
+                points: p.roundScore,
+                isMe: p.clientId == _online.clientId,
+              ),
+          ],
+        ),
+      ],
+    );
   }
 
   bool _canAnswer(RoomState room) {
@@ -527,6 +625,7 @@ class _RoomScreenState extends State<RoomScreen> {
       case RoomPhase.lightning:
         return LightningView(online: _online);
       case RoomPhase.round:
+        if (room.settings.iq) return _iqRound(room);
         final round = room.round!;
         final me = room.player(_online.clientId);
         final localDone = {
@@ -585,7 +684,9 @@ class _RoomScreenState extends State<RoomScreen> {
               showProgress: false,
             ),
             Expanded(
-              child: RoomResultsView(room: room, myId: _online.clientId),
+              child: room.settings.iq
+                  ? _iqResults(room)
+                  : RoomResultsView(room: room, myId: _online.clientId),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),

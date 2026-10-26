@@ -142,6 +142,7 @@ class LobbyView extends StatelessWidget {
               chip(l10n.roundsCount(settings.rounds)),
               chip(durationLabel(l10n, settings.roundDuration)),
               chip(settings.difficulty.label(l10n)),
+              if (settings.iq) chip(l10n.iqBadge),
               // Partie mélangée : chacun répond dans sa langue.
               if ({
                     for (final p in room.players)
@@ -159,6 +160,8 @@ class LobbyView extends StatelessWidget {
                   RoomTheme.nature => l10n.themeNature,
                   RoomTheme.none => '',
                 }),
+              // Le QI n'a pas de catégories.
+              if (!settings.iq)
               for (final c in settings.categories)
                 Container(
                   padding: const EdgeInsets.symmetric(

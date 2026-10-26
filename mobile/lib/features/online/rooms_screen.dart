@@ -99,6 +99,12 @@ class _RoomsScreenState extends State<RoomsScreen> {
     if (mounted) _online.watchRooms(_language);
   }
 
+  /// Les salons QI ont leur propre liste (espace QI).
+  List<RoomSummary> get _letterRooms => [
+    for (final r in _online.rooms)
+      if (r.game != RoomGame.iq) r,
+  ];
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -159,7 +165,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
                       ),
                     ),
                   ),
-                  if (_online.rooms.isEmpty)
+                  if (_letterRooms.isEmpty)
                     Center(
                       child: Padding(
                         padding: const EdgeInsets.all(32),
@@ -185,7 +191,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
                       ),
                     )
                   else
-                    for (final room in _online.rooms)
+                    for (final room in _letterRooms)
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                         child: BounceIn(

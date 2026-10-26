@@ -1661,4 +1661,127 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mixedLanguages => 'FR + EN: each in their own language';
+
+  @override
+  String get iqKindSequence => 'Sequence';
+
+  @override
+  String get iqKindGrid => 'Grid';
+
+  @override
+  String get iqKindProblem => 'Problem';
+
+  @override
+  String get iqKindLetters => 'Letters';
+
+  @override
+  String get iqKindCalendar => 'Calendar';
+
+  @override
+  String get iqKindAnalogy => 'Analogy';
+
+  @override
+  String get iqKindOdd => 'Odd one out';
+
+  @override
+  String get iqKindLogic => 'Logic';
+
+  @override
+  String get iqTypeAnswer => 'Type your answer';
+
+  @override
+  String get iqValidate => 'SUBMIT';
+
+  @override
+  String get iqGoodAnswer => 'Right answer';
+
+  @override
+  String iqQuestion(int number, int total) {
+    return 'Puzzle $number / $total';
+  }
+
+  @override
+  String get iqAnswerSent => 'Answer sent! Waiting for the others…';
+
+  @override
+  String get iqTitle => 'IQ';
+
+  @override
+  String get gamesTitle => 'Pick your game';
+
+  @override
+  String get gameLettersTitle => 'Geography & Nature';
+
+  @override
+  String get gameLettersInfo =>
+      'One letter, several categories: cities, countries, animals, fruits, names…';
+
+  @override
+  String get gameIqTitle => 'IQ';
+
+  @override
+  String get gameIqInfo =>
+      'Logical sequences, maths, analogies, odd ones out, riddles: who has the best IQ?';
+
+  @override
+  String get iqCreateRoom => 'CREATE AN IQ ROOM';
+
+  @override
+  String get iqSolo => 'SOLO';
+
+  @override
+  String get iqBots => 'AGAINST BOTS';
+
+  @override
+  String get iqOpenRooms => 'Open IQ rooms';
+
+  @override
+  String get iqNoRooms => 'No public IQ room right now: create yours!';
+
+  @override
+  String get iqRoomTitle => 'New IQ room';
+
+  @override
+  String get iqSoloTitle => 'Solo IQ';
+
+  @override
+  String get iqBotsTitle => 'IQ against bots';
+
+  @override
+  String get iqQuestions => 'Puzzles';
+
+  @override
+  String get iqTimePerQuestion => 'Time per puzzle';
+
+  @override
+  String get iqScoring => 'Points';
+
+  @override
+  String get iqSpeedBonus => 'Speed bonus (up to +10)';
+
+  @override
+  String get iqPenalty => 'Penalty if wrong (−5)';
+
+  @override
+  String get iqResultTitle => 'Your estimated IQ';
+
+  @override
+  String iqResultScore(int correct, int total, int points) {
+    return '$correct right answers out of $total · $points points';
+  }
+
+  @override
+  String get iqResultNote => 'Just for fun: this is not a real IQ test.';
+
+  @override
+  String get iqNext => 'NEXT PUZZLE';
+
+  @override
+  String get iqSeeResult => 'SEE MY IQ';
+
+  @override
+  String get iqBadge => 'IQ';
+
+  @override
+  String get iqYou => 'You';
 }

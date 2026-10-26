@@ -2899,6 +2899,240 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'FR + EN : chacun dans sa langue'**
   String get mixedLanguages;
+
+  /// No description provided for @iqKindSequence.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suite'**
+  String get iqKindSequence;
+
+  /// No description provided for @iqKindGrid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Grille'**
+  String get iqKindGrid;
+
+  /// No description provided for @iqKindProblem.
+  ///
+  /// In fr, this message translates to:
+  /// **'Problème'**
+  String get iqKindProblem;
+
+  /// No description provided for @iqKindLetters.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lettres'**
+  String get iqKindLetters;
+
+  /// No description provided for @iqKindCalendar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calendrier'**
+  String get iqKindCalendar;
+
+  /// No description provided for @iqKindAnalogy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analogie'**
+  String get iqKindAnalogy;
+
+  /// No description provided for @iqKindOdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Intrus'**
+  String get iqKindOdd;
+
+  /// No description provided for @iqKindLogic.
+  ///
+  /// In fr, this message translates to:
+  /// **'Logique'**
+  String get iqKindLogic;
+
+  /// No description provided for @iqTypeAnswer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tape ta réponse'**
+  String get iqTypeAnswer;
+
+  /// No description provided for @iqValidate.
+  ///
+  /// In fr, this message translates to:
+  /// **'VALIDER'**
+  String get iqValidate;
+
+  /// No description provided for @iqGoodAnswer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonne réponse'**
+  String get iqGoodAnswer;
+
+  /// No description provided for @iqQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Énigme {number} / {total}'**
+  String iqQuestion(int number, int total);
+
+  /// No description provided for @iqAnswerSent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réponse envoyée ! On attend les autres…'**
+  String get iqAnswerSent;
+
+  /// No description provided for @iqTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'QI'**
+  String get iqTitle;
+
+  /// No description provided for @gamesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisis ton jeu'**
+  String get gamesTitle;
+
+  /// No description provided for @gameLettersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Géographie & Nature'**
+  String get gameLettersTitle;
+
+  /// No description provided for @gameLettersInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une lettre, des catégories : villes, pays, animaux, fruits, prénoms…'**
+  String get gameLettersInfo;
+
+  /// No description provided for @gameIqTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'QI'**
+  String get gameIqTitle;
+
+  /// No description provided for @gameIqInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suites logiques, calcul, analogies, intrus, énigmes : qui a le meilleur QI ?'**
+  String get gameIqInfo;
+
+  /// No description provided for @iqCreateRoom.
+  ///
+  /// In fr, this message translates to:
+  /// **'CRÉER UN SALON QI'**
+  String get iqCreateRoom;
+
+  /// No description provided for @iqSolo.
+  ///
+  /// In fr, this message translates to:
+  /// **'SOLO'**
+  String get iqSolo;
+
+  /// No description provided for @iqBots.
+  ///
+  /// In fr, this message translates to:
+  /// **'CONTRE LES BOTS'**
+  String get iqBots;
+
+  /// No description provided for @iqOpenRooms.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salons QI ouverts'**
+  String get iqOpenRooms;
+
+  /// No description provided for @iqNoRooms.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun salon QI public pour le moment : crée le tien !'**
+  String get iqNoRooms;
+
+  /// No description provided for @iqRoomTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau salon QI'**
+  String get iqRoomTitle;
+
+  /// No description provided for @iqSoloTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'QI en solo'**
+  String get iqSoloTitle;
+
+  /// No description provided for @iqBotsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'QI contre les bots'**
+  String get iqBotsTitle;
+
+  /// No description provided for @iqQuestions.
+  ///
+  /// In fr, this message translates to:
+  /// **'Énigmes'**
+  String get iqQuestions;
+
+  /// No description provided for @iqTimePerQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Temps par énigme'**
+  String get iqTimePerQuestion;
+
+  /// No description provided for @iqScoring.
+  ///
+  /// In fr, this message translates to:
+  /// **'Points'**
+  String get iqScoring;
+
+  /// No description provided for @iqSpeedBonus.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonus de rapidité (jusqu\'à +10)'**
+  String get iqSpeedBonus;
+
+  /// No description provided for @iqPenalty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Malus si c\'est faux (−5)'**
+  String get iqPenalty;
+
+  /// No description provided for @iqResultTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton QI estimé'**
+  String get iqResultTitle;
+
+  /// No description provided for @iqResultScore.
+  ///
+  /// In fr, this message translates to:
+  /// **'{correct} bonnes réponses sur {total} · {points} points'**
+  String iqResultScore(int correct, int total, int points);
+
+  /// No description provided for @iqResultNote.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour s\'amuser : ce n\'est pas un vrai test de QI.'**
+  String get iqResultNote;
+
+  /// No description provided for @iqNext.
+  ///
+  /// In fr, this message translates to:
+  /// **'ÉNIGME SUIVANTE'**
+  String get iqNext;
+
+  /// No description provided for @iqSeeResult.
+  ///
+  /// In fr, this message translates to:
+  /// **'VOIR MON QI'**
+  String get iqSeeResult;
+
+  /// No description provided for @iqBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'QI'**
+  String get iqBadge;
+
+  /// No description provided for @iqYou.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toi'**
+  String get iqYou;
 }
 
 class _AppLocalizationsDelegate

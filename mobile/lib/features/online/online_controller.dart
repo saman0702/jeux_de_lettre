@@ -286,6 +286,10 @@ class OnlineController extends ChangeNotifier {
 
   void sendChat(String text) => client.send({'type': 'chat', 'text': text});
 
+  /// QI : réponse à l'énigme de la manche (un nombre, ou l'indice du choix).
+  void sendIqAnswer(int round, String answer) =>
+      client.send({'type': 'iq_answer', 'round': round, 'answer': answer});
+
   /// Message privé à un autre membre du salon (une fois les messages privés
   /// débloqués).
   void sendPrivate(String to, String text) =>
