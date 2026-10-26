@@ -16,6 +16,8 @@ import '../../l10n/app_localizations.dart';
 Future<void> showSettingsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     isScrollControlled: true,
+    // Le titre et la croix restaient sous l'heure et les icônes du téléphone.
+    useSafeArea: true,
     context: context,
     backgroundColor: Colors.transparent,
     barrierColor: AppColors.ink.withValues(alpha: 0.6),
@@ -262,7 +264,7 @@ class _SettingRow extends StatelessWidget {
     return GestureDetector(
       onTap: () => onChanged(!value),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+        padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(16),
@@ -279,13 +281,13 @@ class _SettingRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            GameIconBadge(icon, color: color, size: 48, dimmed: !value),
+            GameIconBadge(icon, color: color, size: 36, dimmed: !value),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,
                 style: fredoka(
-                  size: 18,
+                  size: 15,
                   weight: FontWeight.w700,
                   color: value ? AppColors.ink : AppColors.inkSoft,
                 ),
@@ -311,7 +313,7 @@ class _LanguageRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Container(
       key: const Key('setting_language'),
-      padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+      padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
@@ -328,15 +330,19 @@ class _LanguageRow extends StatelessWidget {
           const GameIconBadge(
             GameIconKind.language,
             color: AppColors.cyan,
-            size: 44,
+            size: 36,
           ),
           const SizedBox(width: 10),
+          // Libellé au-dessus, choix en dessous : rien ne se chevauche.
           Expanded(
-            child: Text(
-              l10n.settingsLanguage,
-              style: fredoka(size: 17, weight: FontWeight.w700),
-            ),
-          ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.settingsLanguage,
+                  style: fredoka(size: 15, weight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
           PillSelector<String?>(
             options: const [null, 'fr', 'en'],
             isSelected: (code) => code == value,
@@ -346,6 +352,9 @@ class _LanguageRow extends StatelessWidget {
               _ => l10n.languageAuto,
             },
             onTap: onChanged,
+          ),
+              ],
+            ),
           ),
         ],
       ),
@@ -365,7 +374,7 @@ class _CountryRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Container(
       key: const Key('setting_country'),
-      padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+      padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
@@ -382,13 +391,13 @@ class _CountryRow extends StatelessWidget {
           const GameIconBadge(
             GameIconKind.country,
             color: AppColors.green,
-            size: 44,
+            size: 36,
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               l10n.settingsCountry,
-              style: fredoka(size: 17, weight: FontWeight.w700),
+              style: fredoka(size: 15, weight: FontWeight.w700),
             ),
           ),
           Flexible(child: CountryButton(value: value, onChanged: onChanged)),
@@ -409,7 +418,7 @@ class _GenderRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Container(
       key: const Key('setting_gender'),
-      padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+      padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
@@ -426,15 +435,19 @@ class _GenderRow extends StatelessWidget {
           const GameIconBadge(
             GameIconKind.person,
             color: AppColors.pink,
-            size: 44,
+            size: 36,
           ),
           const SizedBox(width: 10),
+          // Libellé au-dessus, choix en dessous : rien ne se chevauche.
           Expanded(
-            child: Text(
-              l10n.settingsGender,
-              style: fredoka(size: 17, weight: FontWeight.w700),
-            ),
-          ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.settingsGender,
+                  style: fredoka(size: 15, weight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
           PillSelector<String?>(
             options: const ['male', 'female', 'other'],
             isSelected: (code) => code == value,
@@ -444,6 +457,9 @@ class _GenderRow extends StatelessWidget {
               _ => l10n.genderOther,
             },
             onTap: onChanged,
+          ),
+              ],
+            ),
           ),
         ],
       ),
@@ -489,12 +505,14 @@ class _MusicVolumeRow extends StatelessWidget {
                 const GameIconBadge(
                   GameIconKind.music,
                   color: AppColors.pink,
-                  size: 40,
+                  size: 36,
                 ),
                 const SizedBox(width: 10),
-                Text(
-                  l10n.settingsMusicVolume,
-                  style: fredoka(size: 16, weight: FontWeight.w700),
+                Flexible(
+                  child: Text(
+                    l10n.settingsMusicVolume,
+                    style: fredoka(size: 15, weight: FontWeight.w700),
+                  ),
                 ),
               ],
             ),
