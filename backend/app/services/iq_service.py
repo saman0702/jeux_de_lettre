@@ -736,11 +736,22 @@ def puzzle_from(data: dict) -> Puzzle:
     )
 
 
+# Réussite (pondérée) d'un joueur moyen : elle donne 100.
+AVERAGE_SUCCESS = 0.6
+
+
 def iq_estimate(results: list[tuple[int, bool]]) -> int:
-    """QI estimé (pour s'amuser) à partir de (niveau, juste) : 70 à 145."""
+    """QI estimé (pour s'amuser) à partir de (niveau, juste) : 70 à 145.
+
+    Les énigmes difficiles comptent davantage (facile 1, moyen 1,5, difficile 2). 100 correspond à
+    la réussite d'un joueur moyen (60 %) : en dessous, on descend vers 70 (rien de juste) ; au-dessus,
+    on monte vers 145 (tout juste)."""
     if not results:
         return 100
     weight = {1: 1.0, 2: 1.5, 3: 2.0}
     total = sum(weight[level] for level, _ in results)
     got = sum(weight[level] for level, ok in results if ok)
-    return round(70 + 75 * got / total)
+    success = got / total
+    if success <= AVERAGE_SUCCESS:
+        return round(70 + 30 * success / AVERAGE_SUCCESS)
+    return round(100 + 45 * (success - AVERAGE_SUCCESS) / (1 - AVERAGE_SUCCESS))

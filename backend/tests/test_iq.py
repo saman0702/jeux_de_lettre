@@ -53,6 +53,9 @@ def test_iq_estimate_for_fun():
     assert iq_service.iq_estimate([(1, False)] * 5) == 70
     assert iq_service.iq_estimate([(3, True)] * 5) == 145
     assert 95 < iq_service.iq_estimate([(1, True), (2, True), (3, False)]) < 120
+    # 2 justes sur 5 (une facile, une difficile) : sous la moyenne, pas 100.
+    assert iq_service.iq_estimate([(1, True), (1, False), (2, False), (3, True), (3, False)]) == 90
+    assert iq_service.iq_estimate([(1, True), (1, True), (2, True), (3, False), (3, True)]) == 115
 
 
 async def test_solo_puzzles_route(client):

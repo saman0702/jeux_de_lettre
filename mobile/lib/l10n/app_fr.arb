@@ -1288,5 +1288,13 @@
   "deleteRoomTitle": "Supprimer le salon",
   "deleteRoomMessage": "Le salon, ses parties et ses conversations seront effacés pour tout le monde. Ceux qui sont dedans en sortiront.",
   "deleteRoomConfirm": "SUPPRIMER",
-  "roomDeleted": "Salon supprimé."
+  "roomDeleted": "Salon supprimé.",
+  "publicRoomAudience": "{count} autre(s) joueur(s) en ligne pourront le voir et le rejoindre.",
+  "@publicRoomAudience": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

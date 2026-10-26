@@ -154,11 +154,15 @@ class IqScoring {
 }
 
 /// QI estimé, pour s'amuser : 70 à 145 selon les bonnes réponses, les plus
-/// difficiles comptant davantage. Même calcul que le serveur.
+/// difficiles comptant davantage. 100 = la réussite d'un joueur moyen (60 %).
+/// Même calcul que le serveur.
 int iqEstimate(List<(int level, bool correct)> results) {
   if (results.isEmpty) return 100;
   const weight = {1: 1.0, 2: 1.5, 3: 2.0};
+  const average = 0.6;
   final total = results.fold(0.0, (s, r) => s + weight[r.$1]!);
   final got = results.fold(0.0, (s, r) => r.$2 ? s + weight[r.$1]! : s);
-  return (70 + 75 * got / total).round();
+  final success = got / total;
+  if (success <= average) return (70 + 30 * success / average).round();
+  return (100 + 45 * (success - average) / (1 - average)).round();
 }

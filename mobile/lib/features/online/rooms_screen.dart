@@ -120,7 +120,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
               header: OnlineHeader(
                 title: l10n.roomsTitle,
                 onBack: () => Navigator.of(context).pop(),
-                trailing: const OnlineCounter(),
+                trailing: const OnlineCounter(offlineOnly: true),
               ),
               builder: (context, padding) => ListView(
                 padding: padding.copyWith(bottom: padding.bottom + 12),

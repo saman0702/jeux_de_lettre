@@ -18,6 +18,7 @@ import '../game/widgets/pill_selector.dart';
 import '../online/data/room_models.dart';
 import '../online/online_controller.dart';
 import '../online/room_screen.dart';
+import '../online/widgets/online_counter.dart';
 import '../online/widgets/online_header.dart';
 import 'iq_models.dart';
 import 'iq_solo_screen.dart';
@@ -244,13 +245,19 @@ class _IqSetupScreenState extends State<IqSetupScreen> {
                   icon: GameIconKind.public,
                   color: AppColors.cyan,
                   help: l10n.visibilityHelp,
-                  child: PillSelector<bool>(
-                    options: const [true, false],
-                    isSelected: (p) => p == _public,
-                    label: (p) =>
-                        p ? l10n.visibilityPublic : l10n.visibilityPrivate,
-                    icon: (p) => p ? GameIconKind.public : GameIconKind.private,
-                    onTap: (p) => setState(() => _public = p),
+                  child: Column(
+                    children: [
+                      PillSelector<bool>(
+                        options: const [true, false],
+                        isSelected: (p) => p == _public,
+                        label: (p) =>
+                            p ? l10n.visibilityPublic : l10n.visibilityPrivate,
+                        icon: (p) =>
+                            p ? GameIconKind.public : GameIconKind.private,
+                        onTap: (p) => setState(() => _public = p),
+                      ),
+                      if (_public) const PublicAudience(),
+                    ],
                   ),
                 ),
               ],

@@ -157,6 +157,8 @@ void main() {
     });
 
     test('estimated IQ goes from 70 to 145, hard puzzles weigh more', () {
+      // 2 justes sur 5 (une facile, une difficile) : 90, sous la moyenne.
+      expect(iqEstimate([(1, true), (1, false), (2, false), (3, true), (3, false)]), 90);
       expect(iqEstimate([(1, false), (3, false)]), 70);
       expect(iqEstimate([(1, true), (3, true)]), 145);
       expect(

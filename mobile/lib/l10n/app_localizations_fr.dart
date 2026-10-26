@@ -1899,4 +1899,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get roomDeleted => 'Salon supprimé.';
+
+  @override
+  String publicRoomAudience(int count) {
+    return '$count autre(s) joueur(s) en ligne pourront le voir et le rejoindre.';
+  }
 }

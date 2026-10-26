@@ -156,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         alignment: Alignment.centerLeft,
                         child: Row(
                           children: [
-                            OnlineCounter(),
+                            OnlineCounter(offlineOnly: true),
                             SizedBox(width: 8),
                             CoinCounter(),
                           ],

@@ -3319,6 +3319,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Salon supprimé.'**
   String get roomDeleted;
+
+  /// No description provided for @publicRoomAudience.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} autre(s) joueur(s) en ligne pourront le voir et le rejoindre.'**
+  String publicRoomAudience(int count);
 }
 
 class _AppLocalizationsDelegate

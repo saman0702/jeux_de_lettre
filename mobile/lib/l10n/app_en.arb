@@ -606,5 +606,6 @@
   "deleteRoomTitle": "Delete the room",
   "deleteRoomMessage": "The room, its games and its chats will be erased for everyone. Anyone inside will leave.",
   "deleteRoomConfirm": "DELETE",
-  "roomDeleted": "Room deleted."
+  "roomDeleted": "Room deleted.",
+  "publicRoomAudience": "{count} other player(s) online will see it and can join."
 }
