@@ -1891,4 +1891,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String publicRoomAudience(int count) {
     return '$count other player(s) online will see it and can join.';
   }
+
+  @override
+  String get gameLettersTag => 'Letters & categories';
+
+  @override
+  String get gameIqTag => 'Logic & puzzles';
 }

@@ -3325,6 +3325,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{count} autre(s) joueur(s) en ligne pourront le voir et le rejoindre.'**
   String publicRoomAudience(int count);
+
+  /// No description provided for @gameLettersTag.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lettres & catégories'**
+  String get gameLettersTag;
+
+  /// No description provided for @gameIqTag.
+  ///
+  /// In fr, this message translates to:
+  /// **'Logique & énigmes'**
+  String get gameIqTag;
 }
 
 class _AppLocalizationsDelegate

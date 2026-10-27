@@ -5,7 +5,6 @@ import '../../animations/transitions/pop_route.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/floating_bars_layout.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_icon.dart';
 import '../../l10n/app_localizations.dart';
@@ -33,7 +32,8 @@ Future<bool> readyForOnline(BuildContext context) async {
   return ensureNickname(context);
 }
 
-/// « Salons » : choisir le jeu — Géographie & Nature (le Petit Bac) ou QI.
+/// « Salons » : choisir le jeu — Géographie & Nature (le Petit Bac) ou QI,
+/// deux grandes tuiles côte à côte.
 class GameHubScreen extends StatelessWidget {
   const GameHubScreen({super.key, this.apiClient});
 
@@ -45,41 +45,68 @@ class GameHubScreen extends StatelessWidget {
     return Scaffold(
       body: GameBackground(
         child: SafeArea(
-          child: FloatingBarsLayout(
-            header: OnlineHeader(
-              title: l10n.gamesTitle,
-              onBack: () => Navigator.of(context).pop(),
-            ),
+          child: Column(
             children: [
-              const SizedBox(height: 12),
-              BounceIn(
-                from: 0.7,
-                child: _GameCard(
-                  key: const Key('game_letters'),
-                  title: l10n.gameLettersTitle,
-                  info: l10n.gameLettersInfo,
-                  icon: GameIconKind.country,
-                  color: AppColors.green,
-                  onTap: () async {
-                    final ready = await readyForOnline(context);
-                    if (!ready || !context.mounted) return;
-                    await Navigator.of(context)
-                        .push(PopRoute(builder: (_) => const RoomsScreen()));
-                  },
-                ),
+              OnlineHeader(
+                title: l10n.gamesTitle,
+                onBack: () => Navigator.of(context).pop(),
               ),
-              const SizedBox(height: 12),
-              BounceIn(
-                from: 0.7,
-                delay: const Duration(milliseconds: 120),
-                child: _GameCard(
-                  key: const Key('game_iq'),
-                  title: l10n.gameIqTitle,
-                  info: l10n.gameIqInfo,
-                  icon: GameIconKind.hint,
-                  color: AppColors.purpleLight,
-                  onTap: () => Navigator.of(context).push(
-                    PopRoute(builder: (_) => IqHubScreen(apiClient: apiClient)),
+              Expanded(
+                child: Align(
+                  alignment: const Alignment(0, -0.35),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: BounceIn(
+                            from: 0.7,
+                            child: _GameCard(
+                              key: const Key('game_letters'),
+                              title: l10n.gameLettersTitle,
+                              tag: l10n.gameLettersTag,
+                              icon: const GameIcon(
+                                GameIconKind.country,
+                                size: 48,
+                                color: AppColors.green,
+                              ),
+                              color: AppColors.green,
+                              onTap: () async {
+                                final ready = await readyForOnline(context);
+                                if (!ready || !context.mounted) return;
+                                await Navigator.of(context).push(
+                                  PopRoute(builder: (_) => const RoomsScreen()),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: BounceIn(
+                            from: 0.7,
+                            delay: const Duration(milliseconds: 120),
+                            child: _GameCard(
+                              key: const Key('game_iq'),
+                              title: l10n.gameIqTitle,
+                              tag: l10n.gameIqTag,
+                              icon: const Icon(
+                                Icons.psychology_rounded,
+                                size: 52,
+                                color: AppColors.purple,
+                              ),
+                              color: AppColors.purpleLight,
+                              onTap: () => Navigator.of(context).push(
+                                PopRoute(
+                                  builder: (_) =>
+                                      IqHubScreen(apiClient: apiClient),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -91,19 +118,20 @@ class GameHubScreen extends StatelessWidget {
   }
 }
 
+/// Tuile d'un jeu : grosse icône, nom, et une étiquette de quelques mots.
 class _GameCard extends StatelessWidget {
   const _GameCard({
     super.key,
     required this.title,
-    required this.info,
+    required this.tag,
     required this.icon,
     required this.color,
     required this.onTap,
   });
 
   final String title;
-  final String info;
-  final GameIconKind icon;
+  final String tag;
+  final Widget icon;
   final Color color;
   final VoidCallback onTap;
 
@@ -113,51 +141,78 @@ class _GameCard extends StatelessWidget {
     final ink = light ? AppColors.ink : AppColors.white;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color.lerp(color, AppColors.white, 0.25)!, color],
+      child: AspectRatio(
+        aspectRatio: 0.78,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(10, 16, 10, 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color.lerp(color, AppColors.white, 0.3)!, color],
+            ),
+            border: Border.all(color: AppColors.white, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.depthOf(color),
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-          border: Border.all(color: AppColors.white, width: 2.5),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.depthOf(color),
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.9),
-                shape: BoxShape.circle,
-              ),
-              child: GameIcon(icon, size: 28, color: AppColors.depthOf(color)),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: gameFont(size: 19, color: ink)),
-                  const SizedBox(height: 2),
-                  Text(
-                    info,
-                    style: fredoka(size: 13, color: ink.withValues(alpha: 0.9)),
+          child: Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: Container(
+                    width: 86,
+                    height: 86,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.depthOf(color)
+                              .withValues(alpha: 0.6),
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: icon,
                   ),
-                ],
+                ),
               ),
-            ),
-            Icon(Icons.chevron_right_rounded, color: ink, size: 26),
-          ],
+              // Deux lignes réservées au nom : les icônes restent alignées.
+              SizedBox(
+                height: 42,
+                child: Center(
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    style: gameFont(size: 18, color: ink, height: 1.1),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.white.withValues(alpha: light ? 0.55 : 0.25),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  tag,
+                  textAlign: TextAlign.center,
+                  style: fredoka(size: 12, weight: FontWeight.w600, color: ink),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

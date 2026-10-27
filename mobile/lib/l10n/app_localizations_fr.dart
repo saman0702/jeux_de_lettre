@@ -1904,4 +1904,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String publicRoomAudience(int count) {
     return '$count autre(s) joueur(s) en ligne pourront le voir et le rejoindre.';
   }
+
+  @override
+  String get gameLettersTag => 'Lettres & catégories';
+
+  @override
+  String get gameIqTag => 'Logique & énigmes';
 }

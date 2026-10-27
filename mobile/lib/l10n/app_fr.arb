@@ -1296,5 +1296,7 @@
         "type": "int"
       }
     }
-  }
+  },
+  "gameLettersTag": "Lettres & catégories",
+  "gameIqTag": "Logique & énigmes"
 }
