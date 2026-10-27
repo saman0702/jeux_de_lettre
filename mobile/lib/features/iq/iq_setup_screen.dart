@@ -11,7 +11,6 @@ import '../../core/widgets/game_icon.dart';
 import '../../core/widgets/game_toggle.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/data/models.dart';
-import '../game/solo_setup_screen.dart';
 import '../game/widgets/labels.dart';
 import '../game/widgets/option_section.dart';
 import '../game/widgets/pill_selector.dart';
@@ -22,7 +21,6 @@ import '../online/widgets/online_counter.dart';
 import '../online/widgets/online_header.dart';
 import 'iq_models.dart';
 import 'iq_solo_screen.dart';
-import 'solo_game_picker.dart';
 
 enum IqSetupMode { room, bots, solo }
 
@@ -145,16 +143,6 @@ class _IqSetupScreenState extends State<IqSetupScreen> {
               ),
             ),
             children: [
-              // Le QI solo se lance depuis « Solo libre » : on peut revenir au
-              // Petit Bac d'ici.
-              if (widget.mode == IqSetupMode.solo)
-                SoloGamePicker(
-                  current: RoomGame.iq,
-                  onPick: (_) => switchSoloScreen(
-                    context,
-                    SoloSetupScreen(apiClient: widget.apiClient ?? ApiClient()),
-                  ),
-                ),
               if (widget.mode == IqSetupMode.bots) ...[
                 OptionSection(
                   index: index++,

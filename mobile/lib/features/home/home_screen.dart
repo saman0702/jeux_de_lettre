@@ -22,6 +22,7 @@ import '../online/nickname_dialog.dart';
 import '../online/online_controller.dart';
 import '../online/room_screen.dart';
 import '../iq/game_hub_screen.dart';
+import '../iq/iq_setup_screen.dart';
 import '../online/widgets/online_counter.dart';
 import '../avatar/avatar_screen.dart';
 import '../online/widgets/player_avatar.dart';
@@ -83,9 +84,22 @@ class _HomeScreenState extends State<HomeScreen> {
       );
   }
 
+  /// Solo libre : d'abord le choix du jeu (Géographie & Nature ou QI).
   void _openSolo() {
-    Navigator.of(context)
-        .push(PopRoute(builder: (_) => SoloSetupScreen(apiClient: _api)));
+    Navigator.of(context).push(PopRoute(
+      builder: (context) => GameChoiceScreen(
+        title: AppLocalizations.of(context).modeFreeSolo,
+        onLetters: (context) => Navigator.of(context).push(
+          PopRoute(builder: (_) => SoloSetupScreen(apiClient: _api)),
+        ),
+        onIq: (context) => Navigator.of(context).push(
+          PopRoute(
+            builder: (_) =>
+                IqSetupScreen(mode: IqSetupMode.solo, apiClient: _api),
+          ),
+        ),
+      ),
+    ));
   }
 
   void _openCareer() {
@@ -93,9 +107,22 @@ class _HomeScreenState extends State<HomeScreen> {
         .push(PopRoute(builder: (_) => CareerScreen(apiClient: _api)));
   }
 
+  /// Éliminatoires : d'abord le choix du jeu (Géographie & Nature ou QI).
   void _openElimination() {
-    Navigator.of(context)
-        .push(PopRoute(builder: (_) => EliminationScreen(apiClient: _api)));
+    Navigator.of(context).push(PopRoute(
+      builder: (context) => GameChoiceScreen(
+        title: AppLocalizations.of(context).modeElimination,
+        onLetters: (context) => Navigator.of(context).push(
+          PopRoute(builder: (_) => EliminationScreen(apiClient: _api)),
+        ),
+        onIq: (context) => Navigator.of(context).push(
+          PopRoute(
+            builder: (_) =>
+                EliminationScreen(apiClient: _api, game: RoomGame.iq),
+          ),
+        ),
+      ),
+    ));
   }
 
   /// Les modes en ligne demandent une connexion et un pseudo.

@@ -12,8 +12,6 @@ import '../../core/widgets/game_dialog.dart';
 import '../../core/widgets/game_icon.dart';
 import '../../core/widgets/game_toggle.dart';
 import '../../l10n/app_localizations.dart';
-import '../iq/iq_setup_screen.dart';
-import '../iq/solo_game_picker.dart';
 import '../online/data/room_models.dart';
 import '../online/nickname_dialog.dart';
 import '../online/online_controller.dart';
@@ -182,17 +180,6 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
               ),
             ),
             children: [
-              // Solo libre : Géographie & Nature ou QI.
-              SoloGamePicker(
-                current: RoomGame.letters,
-                onPick: (_) => switchSoloScreen(
-                  context,
-                  IqSetupScreen(
-                    mode: IqSetupMode.solo,
-                    apiClient: widget.apiClient,
-                  ),
-                ),
-              ),
               OptionSection(
                 index: 0,
                 title: l10n.rounds,

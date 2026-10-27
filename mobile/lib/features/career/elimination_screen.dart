@@ -29,9 +29,16 @@ import '../shop/shop_screen.dart';
 
 /// Éliminatoires multijoueur : amis, duel, ou bots — jamais seul.
 class EliminationScreen extends StatefulWidget {
-  const EliminationScreen({super.key, required this.apiClient});
+  const EliminationScreen({
+    super.key,
+    required this.apiClient,
+    this.game = RoomGame.letters,
+  });
 
   final ApiClient apiClient;
+
+  /// Choisi avant, sur l'écran « Géographie & Nature / QI ».
+  final RoomGame game;
 
   @override
   State<EliminationScreen> createState() => _EliminationScreenState();
@@ -45,7 +52,7 @@ class _EliminationScreenState extends State<EliminationScreen> {
   int _maxPlayers = 8;
 
   /// Éliminatoires de Géographie & Nature ou de QI.
-  RoomGame _game = RoomGame.letters;
+  late final RoomGame _game = widget.game;
   bool _iqSpeedBonus = true;
   bool _iqPenalty = false;
 
@@ -95,16 +102,6 @@ class _EliminationScreenState extends State<EliminationScreen> {
   void dispose() {
     _prizeField.dispose();
     super.dispose();
-  }
-
-  void _setGame(RoomGame game) {
-    setState(() {
-      _game = game;
-      // Temps par énigme en QI : 15 à 60 s.
-      if (!_durationOptions.contains(_duration)) {
-        _duration = EliminationChallenge.defaultDuration;
-      }
-    });
   }
 
   void _setStrictSpelling(bool value) {
@@ -230,7 +227,9 @@ class _EliminationScreenState extends State<EliminationScreen> {
         child: SafeArea(
           child: FloatingBarsLayout(
             header: OnlineHeader(
-              title: l10n.modeElimination,
+              title: _iq
+                  ? '${l10n.modeElimination} · ${l10n.gameIqTitle}'
+                  : l10n.modeElimination,
               onBack: () => Navigator.of(context).pop(),
               helpTitle: l10n.eliminationRulesTitle,
               helpLabel: l10n.rulesButton,
@@ -238,22 +237,6 @@ class _EliminationScreenState extends State<EliminationScreen> {
               helpIcon: GameIconKind.flag,
             ),
             children: [
-              OptionSection(
-                index: 0,
-                title: l10n.gamesTitle,
-                icon: GameIconKind.trophy,
-                color: AppColors.purpleLight,
-                child: PillSelector<RoomGame>(
-                  options: RoomGame.values,
-                  isSelected: (g) => g == _game,
-                  label: (g) => g == RoomGame.iq
-                      ? l10n.gameIqTitle
-                      : l10n.gameLettersTitle,
-                  icon: (g) =>
-                      g == RoomGame.iq ? GameIconKind.hint : GameIconKind.country,
-                  onTap: _setGame,
-                ),
-              ),
               OptionSection(
                 index: 0,
                 title: l10n.roomType,

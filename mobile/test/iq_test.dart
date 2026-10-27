@@ -11,6 +11,8 @@ import 'package:letter_battle/features/game/data/models.dart';
 import 'package:letter_battle/features/iq/game_hub_screen.dart';
 import 'package:letter_battle/features/iq/iq_daily_screen.dart';
 import 'package:letter_battle/features/iq/iq_hub_screen.dart';
+import 'package:letter_battle/features/home/home_screen.dart';
+import 'package:letter_battle/features/online/data/room_models.dart';
 import 'package:letter_battle/features/iq/iq_models.dart';
 import 'package:letter_battle/features/iq/iq_setup_screen.dart';
 import 'package:letter_battle/features/iq/iq_solo_screen.dart';
@@ -20,6 +22,7 @@ import 'package:letter_battle/features/game/solo_setup_screen.dart';
 import 'package:letter_battle/features/online/room_screen.dart';
 
 import 'solo_game_test.dart' show FakeServer;
+import 'widget_test.dart' show fakeApi;
 import 'online_test.dart' show Harness, me, player, pumpFor, roomEvent;
 
 Map<String, dynamic> sequenceJson({bool withAnswer = true}) => {
@@ -158,7 +161,10 @@ void main() {
 
     test('estimated IQ goes from 70 to 145, hard puzzles weigh more', () {
       // 2 justes sur 5 (une facile, une difficile) : 90, sous la moyenne.
-      expect(iqEstimate([(1, true), (1, false), (2, false), (3, true), (3, false)]), 90);
+      expect(
+        iqEstimate([(1, true), (1, false), (2, false), (3, true), (3, false)]),
+        90,
+      );
       expect(iqEstimate([(1, false), (3, false)]), 70);
       expect(iqEstimate([(1, true), (3, true)]), 145);
       expect(
@@ -679,8 +685,10 @@ void main() {
   testWidgets('knockout mode can be played with IQ puzzles', (tester) async {
     tallPhone(tester);
     final h = Harness();
-    await h.start(tester, EliminationScreen(apiClient: FakeServer().api));
-    await tester.tap(find.text('IQ'));
+    await h.start(
+      tester,
+      EliminationScreen(apiClient: FakeServer().api, game: RoomGame.iq),
+    );
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('elim_iq_penalty')), findsOneWidget);
     await tester.tap(find.byKey(const Key('elim_iq_penalty')));
@@ -774,23 +782,25 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('free solo offers IQ and can switch back', (tester) async {
+  testWidgets('free solo and knockout start with the game choice', (
+    tester,
+  ) async {
     tallPhone(tester);
     final h = Harness();
-    await h.start(tester, SoloSetupScreen(apiClient: FakeServer().api));
-    final picker = find.byKey(const Key('solo_game_picker'));
-    await tester.tap(find.descendant(of: picker, matching: find.text('IQ')));
+    await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
+    await tester.tap(find.byKey(const Key('mode_solo')));
+    await tester.pumpAndSettle();
+    expect(find.byType(GameChoiceScreen), findsOneWidget);
+    await tester.tap(find.byKey(const Key('game_iq')));
     await tester.pumpAndSettle();
     expect(find.byType(IqSetupScreen), findsOneWidget);
-    expect(find.byType(SoloSetupScreen), findsNothing);
-    await tester.tap(
-      find.descendant(
-        of: find.byKey(const Key('solo_game_picker')),
-        matching: find.text('Geography & Nature'),
-      ),
-    );
+    tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('game_letters')));
     await tester.pumpAndSettle();
     expect(find.byType(SoloSetupScreen), findsOneWidget);
+    // Plus de choix du jeu dans les réglages eux-mêmes.
+    expect(find.text('IQ'), findsNothing);
   });
 
   testWidgets('IQ room jokers: 50/50 greys out two wrong choices for me', (

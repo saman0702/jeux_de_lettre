@@ -32,12 +32,40 @@ Future<bool> readyForOnline(BuildContext context) async {
   return ensureNickname(context);
 }
 
-/// « Salons » : choisir le jeu — Géographie & Nature (le Petit Bac) ou QI,
-/// deux grandes tuiles côte à côte.
+/// « Salons » : choisir le jeu — Géographie & Nature (le Petit Bac) ou QI.
 class GameHubScreen extends StatelessWidget {
   const GameHubScreen({super.key, this.apiClient});
 
   final ApiClient? apiClient;
+
+  @override
+  Widget build(BuildContext context) => GameChoiceScreen(
+    title: AppLocalizations.of(context).gamesTitle,
+    onLetters: (context) async {
+      final ready = await readyForOnline(context);
+      if (!ready || !context.mounted) return;
+      await Navigator.of(context)
+          .push(PopRoute(builder: (_) => const RoomsScreen()));
+    },
+    onIq: (context) =>
+        Navigator.of(context)
+            .push(PopRoute(builder: (_) => IqHubScreen(apiClient: apiClient))),
+  );
+}
+
+/// Choix du jeu (Salons, Solo libre, Éliminatoires) : deux grandes tuiles
+/// côte à côte, Géographie & Nature et QI.
+class GameChoiceScreen extends StatelessWidget {
+  const GameChoiceScreen({
+    super.key,
+    required this.title,
+    required this.onLetters,
+    required this.onIq,
+  });
+
+  final String title;
+  final Future<void> Function(BuildContext context) onLetters;
+  final Future<void> Function(BuildContext context) onIq;
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +76,7 @@ class GameHubScreen extends StatelessWidget {
           child: Column(
             children: [
               OnlineHeader(
-                title: l10n.gamesTitle,
+                title: title,
                 onBack: () => Navigator.of(context).pop(),
               ),
               Expanded(
@@ -71,13 +99,7 @@ class GameHubScreen extends StatelessWidget {
                                 color: AppColors.green,
                               ),
                               color: AppColors.green,
-                              onTap: () async {
-                                final ready = await readyForOnline(context);
-                                if (!ready || !context.mounted) return;
-                                await Navigator.of(context).push(
-                                  PopRoute(builder: (_) => const RoomsScreen()),
-                                );
-                              },
+                              onTap: () => onLetters(context),
                             ),
                           ),
                         ),
@@ -96,12 +118,7 @@ class GameHubScreen extends StatelessWidget {
                                 color: AppColors.purple,
                               ),
                               color: AppColors.purpleLight,
-                              onTap: () => Navigator.of(context).push(
-                                PopRoute(
-                                  builder: (_) =>
-                                      IqHubScreen(apiClient: apiClient),
-                                ),
-                              ),
+                              onTap: () => onIq(context),
                             ),
                           ),
                         ),
