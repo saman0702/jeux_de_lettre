@@ -42,8 +42,10 @@ d'envoyer l'appli aux stores (les relecteurs d'Apple et de Google la testent).
 - [ ] Vérifier : `https://gamelr-api.optisoftw.com/health` répond `ok`, et
       `/api/v1/iq/puzzles?count=1` renvoie une énigme.
 - [ ] Supprimer le joueur de test « Probe » (`client_id = probe-test-1`) de la table `profiles`.
-- [ ] Variables d'environnement de prod (Dokploy) — voir la section 5 pour les pubs et la boutique :
-      `RATE_LIMIT_PER_MINUTE=240`, `REWARDED_ADS_TRUST_CLIENT=false`.
+- [ ] Variables d'environnement de prod : toutes sont listées dans `backend/.env.production`
+      (hors git), avec un exemple en commentaire pour chaque valeur à remplir et les interrupteurs
+      pubs / boutique coupés (`false`). Les recopier dans Dokploy si la prod lit ses variables
+      là-bas. Détails : section 5.
 
 > Les anciennes versions de l'appli (sans jeton secret) ne peuvent plus se connecter : c'est normal,
 > tout le monde aura la version des stores.
