@@ -1,0 +1,117 @@
+# Codemagic : compilation et envoi de Mind Race sur l'App Store (TestFlight) et le Play Store
+# (piste de tests internes). Mode d'emploi complet : docs/PLAYBOOK_DEPLOIEMENT.md
+#
+# À créer une fois dans Codemagic (Team settings / application settings) :
+#   - intégration App Store Connect nommée « mind_race_asc » (clé API App Store Connect) ;
+#   - clé d'envoi Android nommée « mind_race_upload » (fichier .jks + mots de passe) ;
+#   - groupes de variables :
+#       mind_race_common : API_BASE_URL
+#       mind_race_ios    : ADMOB_APP_ID_IOS, ADMOB_REWARDED_IOS, ADMOB_INTERSTITIAL_IOS
+#       mind_race_android: ADMOB_APP_ID_ANDROID, ADMOB_REWARDED_ANDROID, ADMOB_INTERSTITIAL_ANDROID,
+#                          GCLOUD_SERVICE_ACCOUNT_CREDENTIALS (clé JSON du compte de service Play)
+# Sans les variables AdMob, l'appli utilise les pubs de test de Google (aucun revenu).
+
+definitions:
+  flutter_env: &flutter_env
+    flutter: stable
+    cocoapods: default
+  triggers: &on_release_tags
+    events:
+      - tag
+    tag_patterns:
+      - pattern: "v*"
+
+workflows:
+  ios-release:
+    name: iOS — TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    working_directory: mobile
+    integrations:
+      app_store_connect: mind_race_asc
+    environment:
+      <<: *flutter_env
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.letterbattle.letterBattle
+      groups:
+        - mind_race_common
+        - mind_race_ios
+      vars:
+        # Identifiant numérique de l'appli dans App Store Connect (Infos de l'app > Apple ID).
+        APP_STORE_APPLE_ID: "0000000000"
+    triggering: *on_release_tags
+    scripts:
+      - name: Dépendances
+        script: flutter pub get
+      - name: Identifiant AdMob iOS
+        script: |
+          if [ -n "$ADMOB_APP_ID_IOS" ]; then
+            /usr/libexec/PlistBuddy -c "Set :GADApplicationIdentifier $ADMOB_APP_ID_IOS" ios/Runner/Info.plist
+          fi
+      - name: Profils de signature
+        script: xcode-project use-profiles
+      - name: Compilation (IPA)
+        script: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //; s/+.*//')
+          LAST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo 0)
+          flutter build ipa --release \
+            --build-name="$VERSION" \
+            --build-number=$((LAST + 1)) \
+            --export-options-plist=/Users/builder/export_options.plist \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=ADMOB_REWARDED_IOS="$ADMOB_REWARDED_IOS" \
+            --dart-define=ADMOB_INTERSTITIAL_IOS="$ADMOB_INTERSTITIAL_IOS"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
+  android-release:
+    name: Android — Play Store (tests internes)
+    instance_type: linux_x2
+    max_build_duration: 60
+    working_directory: mobile
+    environment:
+      <<: *flutter_env
+      android_signing:
+        - mind_race_upload
+      groups:
+        - mind_race_common
+        - mind_race_android
+      vars:
+        PACKAGE_NAME: com.letterbattle.letter_battle
+    triggering: *on_release_tags
+    scripts:
+      - name: Dépendances
+        script: flutter pub get
+      - name: Clé d'envoi (key.properties)
+        script: |
+          cat > android/key.properties <<EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=$CM_KEYSTORE_PATH
+          EOF
+      - name: Compilation (AAB)
+        script: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //; s/+.*//')
+          LAST=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME" || echo 0)
+          export ADMOB_APP_ID="$ADMOB_APP_ID_ANDROID"
+          flutter build appbundle --release \
+            --build-name="$VERSION" \
+            --build-number=$((LAST + 1)) \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=ADMOB_REWARDED_ANDROID="$ADMOB_REWARDED_ANDROID" \
+            --dart-define=ADMOB_INTERSTITIAL_ANDROID="$ADMOB_INTERSTITIAL_ANDROID"
+    artifacts:
+      - build/app/outputs/bundle/release/*.aab
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
