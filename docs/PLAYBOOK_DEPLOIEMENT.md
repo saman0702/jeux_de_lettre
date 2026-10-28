@@ -1,9 +1,11 @@
 # Playbook — publier Mind Race sur l'App Store et le Play Store
 
 Ce document suit l'ordre à respecter. Chaque étape a sa liste de cases à cocher.
-La compilation et l'envoi aux stores passent par **Codemagic** (fichier `codemagic.yaml` à la
-racine du dépôt) : on ne peut pas compiler pour iPhone depuis Linux, et Codemagic le fait sur des
-Mac dans le cloud.
+
+- **iOS** : compilé et envoyé sur TestFlight par **Codemagic** (fichier `codemagic.yaml` à la racine
+  du dépôt) : on ne peut pas compiler pour iPhone depuis Linux, Codemagic le fait sur des Mac dans le
+  cloud.
+- **Android** : compilé ici, à la main, puis envoyé dans la Play Console.
 
 Documents liés : `docs/BOUTIQUE.md` (pièces), `docs/REVENUS.md` (pubs, Sans pub, Pass).
 
@@ -48,39 +50,51 @@ d'envoyer l'appli aux stores (les relecteurs d'Apple et de Google la testent).
 
 ---
 
-## 2. Android (Play Console)
+## 2. Android (Play Console) — à la main
 
-### 2.1 La clé d'envoi (une seule fois, à garder précieusement)
+### 2.1 La clé d'envoi (déjà créée)
 
 Elle signe chaque version envoyée au Play Store. **Perdue = impossible de mettre l'appli à jour**
-(sauf procédure de récupération Google). La garder dans un gestionnaire de mots de passe.
+(sauf procédure de récupération Google).
+
+| Fichier | Rôle |
+|---|---|
+| `secrets/mind-race-upload.jks` | la clé d'envoi (alias `upload`) |
+| `secrets/ANDROID_UPLOAD_KEY.txt` | son mot de passe et son empreinte |
+| `mobile/android/key.properties` | relie la clé à la compilation (lu par `build.gradle.kts`) |
+
+Ces trois fichiers sont exclus de git.
+
+- [ ] **Sauvegarder** `secrets/mind-race-upload.jks` et son mot de passe hors de ce PC
+      (gestionnaire de mots de passe + clé USB ou cloud privé).
+
+Sans `key.properties`, la version release est signée avec la clé de debug : bon pour tester,
+refusé par le Play Store.
+
+### 2.2 Compiler la version à envoyer
+
+Depuis `mobile/` :
 
 ```bash
-keytool -genkey -v -keystore mind-race-upload.jks -keyalg RSA -keysize 2048 \
-  -validity 10000 -alias upload
+ADMOB_APP_ID=ca-app-pub-…~… \
+flutter build appbundle --release \
+  --build-number=2 \
+  --dart-define=API_BASE_URL=https://gamelr-api.optisoftw.com \
+  --dart-define=ADMOB_REWARDED_ANDROID=ca-app-pub-…/… \
+  --dart-define=ADMOB_INTERSTITIAL_ANDROID=ca-app-pub-…/…
 ```
 
-- [ ] Créer la clé, noter le mot de passe et l'alias (`upload`).
-- [ ] Ne jamais la mettre dans git (déjà exclue par `mobile/android/.gitignore`).
-- [ ] La téléverser dans Codemagic : *Team settings > Code signing identities > Android keystores*,
-      nom de référence **`mind_race_upload`**.
+- Le fichier à envoyer : `mobile/build/app/outputs/bundle/release/app-release.aab`.
+- `--build-number` : **augmenter de 1 à chaque envoi** (le Play Store refuse un numéro déjà
+  utilisé). La version affichée (`1.0.0`) vient de `version:` dans `mobile/pubspec.yaml`.
+- Sans les valeurs AdMob (tant que le compte AdMob n'est pas prêt), enlever ces trois réglages :
+  l'appli affiche les pubs de test de Google.
 
-Pour compiler à la main (sans Codemagic), créer `mobile/android/key.properties` :
-
-```
-storePassword=…
-keyPassword=…
-keyAlias=upload
-storeFile=/chemin/vers/mind-race-upload.jks
-```
-
-Sans ce fichier, la version release est signée avec la clé de debug : bon pour tester, refusé par
-le Play Store.
-
-### 2.2 Créer l'appli
+### 2.3 Créer l'appli
 
 - [ ] Play Console > *Créer une application* : nom « Mind Race », jeu, gratuit.
-- [ ] Activer **Play App Signing** (Google garde la clé finale ; la nôtre ne sert qu'à l'envoi).
+- [ ] Laisser **Play App Signing** activé (Google garde la clé finale ; la nôtre ne sert qu'à
+      l'envoi).
 - [ ] *Fiche du Play Store* : description courte et longue, icône 512 px
       (`mobile/assets/branding/mind_race_icon.png` redimensionnée), image de présentation
       1024 × 500, au moins 2 captures d'écran (dossier `docs/screenshots/`).
@@ -96,51 +110,46 @@ le Play Store.
   - **Public cible** : 13 ans et plus (le chat et le vocal entre inconnus excluent les moins de
     13 ans).
 
-### 2.3 Premier envoi (obligatoire avant de créer les produits)
+### 2.4 Premier envoi (obligatoire avant de créer les produits)
 
-- [ ] Créer le compte de service Google Cloud (voir section 4.1, étape 4) et mettre sa clé JSON dans
-      le groupe Codemagic `mind_race_android` sous le nom `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS`.
-- [ ] Lancer le workflow **android-release** (section 3) : l'AAB part en **brouillon** sur la piste
-      *Tests internes*.
-- [ ] Le tout premier envoi doit parfois être fait à la main : télécharger l'AAB depuis Codemagic
-      (artefacts) et le glisser dans *Tests internes > Créer une version*.
-- [ ] Ajouter les testeurs (adresses Gmail) et ouvrir le lien de test sur ton téléphone.
+- [ ] *Tester > Tests internes > Créer une version* : glisser `app-release.aab`, puis
+      *Enregistrer* et *Envoyer pour examen* (les tests internes sont disponibles en quelques
+      minutes).
+- [ ] *Testeurs* : ajouter les adresses Gmail, ouvrir le lien de participation sur ton téléphone,
+      installer depuis le Play Store.
 
 ---
 
-## 3. Codemagic
+## 3. Codemagic (iOS seulement)
 
 ### 3.1 Brancher le dépôt
 
 - [ ] codemagic.io > *Add application* > choisir le dépôt Git > type **Flutter**.
-- [ ] Codemagic lit automatiquement `codemagic.yaml` (deux workflows : `ios-release` et
-      `android-release`).
+- [ ] Codemagic lit `codemagic.yaml` : un seul workflow, **`ios-release`**.
 
-### 3.2 Les variables (Application settings > Environment variables)
+### 3.2 Réglages à faire une fois
 
-| Groupe | Variable | Valeur |
-|---|---|---|
-| `mind_race_common` | `API_BASE_URL` | `https://gamelr-api.optisoftw.com` |
-| `mind_race_ios` | `ADMOB_APP_ID_IOS` | `ca-app-pub-…~…` (appli iOS dans AdMob) |
-| | `ADMOB_REWARDED_IOS` | `ca-app-pub-…/…` (bloc « Avec récompense » iOS) |
-| | `ADMOB_INTERSTITIAL_IOS` | `ca-app-pub-…/…` (bloc « Interstitiel » iOS) |
-| `mind_race_android` | `ADMOB_APP_ID_ANDROID` | `ca-app-pub-…~…` |
-| | `ADMOB_REWARDED_ANDROID` | `ca-app-pub-…/…` |
-| | `ADMOB_INTERSTITIAL_ANDROID` | `ca-app-pub-…/…` |
-| | `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` | contenu de la clé JSON du compte de service (cocher *Secure*) |
-
-Cocher **Secure** pour toutes les valeurs. Tant que les variables AdMob sont vides, l'appli
-affiche les **pubs de test** de Google (aucun revenu, aucun risque).
+- [ ] *Team settings > Integrations > Apple Developer Portal* : ajouter la clé API App Store Connect
+      (section 4.1) sous le nom **`Mind Race Codemagic`**.
+- [ ] Groupe d'environnement **`ios_signing`** (sur l'Application), variable
+      `CERTIFICATE_PRIVATE_KEY` (cocher *Secret*) = **contenu** du fichier `secrets/ios_cert_key`
+      (déjà créé, clé RSA au format PEM). Codemagic s'en sert pour créer puis réutiliser le
+      certificat de distribution et le profil App Store.
+- [ ] Groupe **`admob_ios`** (facultatif tant qu'AdMob n'est pas prêt) : `ADMOB_APP_ID_IOS`
+      (`ca-app-pub-…~…`), `ADMOB_REWARDED_IOS` et `ADMOB_INTERSTITIAL_IOS` (`ca-app-pub-…/…`),
+      cocher *Secret*. Vides : pubs de test de Google.
+- [ ] Dans `codemagic.yaml`, remplacer `APP_STORE_APPLE_ID: "0000000000"` par l'Apple ID numérique
+      de l'appli (section 4.1).
 
 ### 3.3 Lancer une compilation
 
-Deux façons :
-- **à la main** : Codemagic > *Start new build* > choisir le workflow ;
-- **automatiquement** : pousser une étiquette Git qui commence par `v`
-  (`git tag v1.0.0 && git push origin v1.0.0`) lance les deux workflows.
-
-Le numéro de version vient de `pubspec.yaml` (`1.0.0`) ; le numéro de build est calculé tout seul
-(dernier numéro envoyé + 1). Pour une nouvelle version : changer `version:` dans `pubspec.yaml`.
+- **Automatiquement** : chaque push sur `main` (ou `release/…`) qui touche `mobile/` ou
+  `codemagic.yaml`, et chaque étiquette Git.
+- **À la main** : Codemagic > *Start new build* > `ios-release`.
+- `[skip ci]` dans le message de commit : aucune compilation.
+- Le numéro de build est calculé tout seul (dernier build TestFlight + 1) ; la version affichée
+  vient de `version:` dans `mobile/pubspec.yaml`.
+- Un e-mail arrive à la fin (réussite ou échec), avec l'IPA et les journaux en pièces jointes.
 
 ---
 
@@ -157,8 +166,8 @@ Le numéro de version vient de `pubspec.yaml` (`1.0.0`) ; le numéro de build es
       bancaires et fiscales). Sans lui, les achats intégrés ne marchent pas.
 - [ ] *Utilisateurs et accès > Intégrations > App Store Connect API* : créer une clé (rôle
       **App Manager**), télécharger le `.p8`, noter **Issuer ID** et **Key ID**.
-- [ ] Codemagic > *Team settings > Integrations > Developer Portal* : ajouter cette clé sous le nom
-      **`mind_race_asc`**. Codemagic crée tout seul le certificat et le profil de distribution.
+- [ ] Codemagic > *Team settings > Integrations > Apple Developer Portal* : ajouter cette clé sous
+      le nom **`Mind Race Codemagic`** (section 3.2).
 
 ### 4.2 Fiche de l'appli
 
@@ -174,7 +183,8 @@ Le numéro de version vient de `pubspec.yaml` (`1.0.0`) ; le numéro de build es
 
 ### 4.3 Envoi sur TestFlight
 
-- [ ] Lancer le workflow **ios-release** : l'IPA est envoyée sur **TestFlight**.
+- [ ] Lancer le workflow **ios-release** : l'IPA est envoyée sur App Store Connect, puis apparaît
+      dans **TestFlight** après le traitement d'Apple (10 à 30 min).
 - [ ] App Store Connect > *TestFlight* : ajouter les testeurs (ton compte Apple en premier).
 - [ ] Installer l'appli TestFlight sur l'iPhone, tester la partie, le QI, les pubs de test et la
       boutique avec un compte **Sandbox** (section 5.2).
@@ -182,6 +192,12 @@ Le numéro de version vient de `pubspec.yaml` (`1.0.0`) ; le numéro de build es
       (24 à 48 h en général).
 
 ---
+
+
+
+========================BOUTIQUE ET PUB===================================
+
+
 
 ## 5. Pubs et boutique
 
@@ -194,7 +210,8 @@ pour allumer ou couper une option.
 - [ ] admob.google.com > *Applications* > ajouter **Mind Race Android** et **Mind Race iOS**
       (d'abord « pas encore publiée », à relier au store après publication).
 - [ ] Pour chaque plateforme, créer deux blocs d'annonces : **Avec récompense** et
-      **Interstitiel**. Copier les identifiants dans les variables Codemagic (section 3.2).
+      **Interstitiel**. Identifiants iOS : groupe Codemagic `admob_ios` (section 3.2) ;
+      identifiants Android : dans la commande de compilation (section 2.2).
 - [ ] Bloc « Avec récompense » > **Vérification côté serveur** > URL de rappel :
       `https://gamelr-api.optisoftw.com/api/v1/ads/reward-callback`
       (le serveur vérifie la signature de Google avant de créditer les pièces).
@@ -271,7 +288,8 @@ PASS_BONUS_HINTS=2
 3. Produits Play créés, achats de test OK (section 5.2).
 4. iOS : App Store Connect, clé API dans Codemagic, envoi TestFlight (section 4).
 5. Produits App Store créés, achats Sandbox OK (section 5.2).
-6. AdMob : applis et blocs créés, variables dans Codemagic, nouvelle compilation (section 5.1).
+6. AdMob : applis et blocs créés ; identifiants iOS dans Codemagic, identifiants Android dans la
+   commande de compilation ; nouvelles compilations (sections 2.2, 3.2 et 5.1).
 7. Tests sur de vrais téléphones (TestFlight + tests internes) : partie, QI, salons, vocal, pubs,
    boutique.
 8. Envoi en relecture : Play (*Production* ou *Test fermé* d'abord) et App Store.
