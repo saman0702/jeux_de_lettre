@@ -58,6 +58,28 @@ android {
         }
     }
 
+    // Vocal Agora : on n'utilise que la voix. Les extensions vidéo, visage, lèvres, son 3D…
+    // ne sont jamais chargées (aucune bibliothèque gardée n'en dépend) : environ 20 Mo de
+    // moins à télécharger. On garde la réduction de bruit et l'annulation d'écho.
+    packaging {
+        jniLibs {
+            excludes += listOf(
+                "lib/*/libagora_lip_sync_extension.so",
+                "lib/*/libagora_clear_vision_extension.so",
+                "lib/*/libagora_spatial_audio_extension.so",
+                "lib/*/libagora_segmentation_extension.so",
+                "lib/*/libagora_face_capture_extension.so",
+                "lib/*/libagora_face_detection_extension.so",
+                "lib/*/libagora_audio_beauty_extension.so",
+                "lib/*/libagora_content_inspect_extension.so",
+                "lib/*/libagora_video_quality_analyzer_extension.so",
+                "lib/*/libagora_video_av1_encoder_extension.so",
+                "lib/*/libagora_video_encoder_extension.so",
+                "lib/*/libagora_screen_capture_extension.so",
+            )
+        }
+    }
+
     buildTypes {
         release {
             signingConfig = if (keyProperties.isNotEmpty()) {
