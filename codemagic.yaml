@@ -10,9 +10,9 @@
 # 3. Groupe d'environnement « ios_signing » (sur l'Application) :
 #      CERTIFICATE_PRIVATE_KEY (Secret) = contenu de secrets/ios_cert_key (clé RSA PEM).
 #    Codemagic crée puis réutilise le certificat de distribution et le profil App Store.
-# 4. Groupe d'environnement « admob_ios » (facultatif) :
-#      ADMOB_APP_ID_IOS, ADMOB_REWARDED_IOS, ADMOB_INTERSTITIAL_IOS.
-#    Vides : l'appli affiche les pubs de test de Google (aucun revenu).
+# 4. AdMob (plus tard) : créer le groupe « admob_ios » avec ADMOB_APP_ID_IOS,
+#    ADMOB_REWARDED_IOS, ADMOB_INTERSTITIAL_IOS, puis l'ajouter sous groups: ci-dessous.
+#    Sans ça : pubs de test Google.
 # 5. Commit message `[skip ci]` pour ne lancer aucun build.
 
 workflows:
@@ -30,7 +30,6 @@ workflows:
       cocoapods: default
       groups:
         - ios_signing
-        - admob_ios
       vars:
         APP_STORE_APPLE_ID: "6828438803"
         BUNDLE_ID: com.letterbattle.letterBattle
