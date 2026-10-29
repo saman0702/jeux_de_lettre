@@ -11,7 +11,11 @@ import '../online_controller.dart';
 /// Capsule d'affichage de jeu : un voyant lumineux qui pulse quand on est
 /// connecté, et le nombre de joueurs en ligne en gros chiffres.
 class OnlineCounter extends StatefulWidget {
-  const OnlineCounter({super.key});
+  const OnlineCounter({super.key, this.offlineOnly = false});
+
+  /// Ne s'affiche que hors ligne (le nombre de joueurs n'est montré qu'à la
+  /// création d'un salon public).
+  final bool offlineOnly;
 
   @override
   State<OnlineCounter> createState() => _OnlineCounterState();
@@ -47,6 +51,7 @@ class _OnlineCounterState extends State<OnlineCounter>
       listenable: Listenable.merge([online, _pulse]),
       builder: (context, _) {
         final connected = online.isOnline;
+        if (connected && widget.offlineOnly) return const SizedBox.shrink();
         final led = connected ? const Color(0xFF39FF88) : AppColors.red;
         final glow = connected
             ? 0.45 + 0.4 * (0.5 + 0.5 * sin(_pulse.value * 2 * pi))
@@ -149,6 +154,29 @@ class _OnlineCounterState extends State<OnlineCounter>
           ),
         );
       },
+    );
+  }
+}
+
+/// Création d'un salon public : combien d'autres joueurs connectés le verront.
+class PublicAudience extends StatelessWidget {
+  const PublicAudience({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final online = OnlineScope.of(context);
+    return ListenableBuilder(
+      listenable: online,
+      builder: (context, _) => Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(
+          l10n.publicRoomAudience(max(0, online.onlineCount - 1)),
+          key: const Key('public_audience'),
+          textAlign: TextAlign.center,
+          style: fredoka(size: 13, color: AppColors.inkSoft),
+        ),
+      ),
     );
   }
 }

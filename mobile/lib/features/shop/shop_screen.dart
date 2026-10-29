@@ -15,6 +15,8 @@ import '../../core/widgets/game_icon.dart';
 import '../../l10n/app_localizations.dart';
 import '../online/online_controller.dart';
 import '../online/widgets/online_header.dart';
+import '../perks/perks_controller.dart';
+import '../perks/perks_section.dart';
 import 'shop_controller.dart';
 import 'looks_section.dart';
 
@@ -36,7 +38,9 @@ class _ShopScreenState extends State<ShopScreen> {
     if (_shop != null) return;
     final shop = _shop = ShopScope.of(context);
     _messages = shop.messages.listen(_onMessage);
-    shop.load();
+    final perks = PerksScope.of(context);
+    shop.load(extraProducts: perks.storeProducts);
+    perks.refreshProfile();
   }
 
   void _onMessage(String message) {
@@ -46,13 +50,18 @@ class _ShopScreenState extends State<ShopScreen> {
       _ when message.startsWith('bought:') => l10n.shopBought(
         int.parse(message.substring(7)),
       ),
+      'perk:remove_ads' => l10n.perksRemoveAdsDone,
+      'perk:pass_monthly' => l10n.perksPassDone,
       'pending' => l10n.shopPending,
       'invalid_purchase' || 'purchase_already_used' => l10n.shopInvalid,
       'store_error' => l10n.shopStoreError,
       // Le serveur n'a pas pu vérifier : l'achat sera repris plus tard.
       _ => l10n.shopRetryLater,
     };
-    if (message.startsWith('bought:')) {
+    if (message.startsWith('perk:')) {
+      PerksScope.of(context).refreshProfile();
+    }
+    if (message.startsWith('bought:') || message.startsWith('perk:')) {
       GameFeedbackScope.of(context).play(Sfx.victory);
     }
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
@@ -100,6 +109,7 @@ class _ShopScreenState extends State<ShopScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
+                const PerksSection(),
                 switch (shop.status) {
                   ShopStatus.loading => const Padding(
                     padding: EdgeInsets.all(40),

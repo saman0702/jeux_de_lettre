@@ -1,5 +1,5 @@
 name: letter_battle
-description: "Letter Race — jeu de rapidité par lettres."
+description: "Mind Race — jeux de rapidité : lettres (Géographie & Nature) et QI."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -49,6 +49,7 @@ dependencies:
   share_plus: ^13.3.1
   agora_rtc_engine: ^6.6.4
   permission_handler: ^13.0.2
+  google_mobile_ads: ^9.1.0
 
 dev_dependencies:
   flutter_test:

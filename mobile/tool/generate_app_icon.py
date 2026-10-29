@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Génère l'icône Letter Race (fond blanc, bordure jaune, LR violet + motifs)."""
+"""Génère l'icône Mind Race (fond blanc, bordure jaune, MR violet + motifs)."""
 
 from __future__ import annotations
 
@@ -275,7 +275,7 @@ def render(size: int = 1024) -> Image.Image:
     font_deco = _font(deco_size)
     font_tiny = _font(tiny_size)
 
-    lw = font_lr.getlength("L")
+    lw = font_lr.getlength("M")
     rw = font_lr.getlength("R")
     gap = size * 0.01
     total = lw + gap + rw
@@ -309,9 +309,9 @@ def render(size: int = 1024) -> Image.Image:
     _draw_medal(img, cx + size * 0.34, cy - size * 0.08, size * 0.09, YELLOW, RED)
     _draw_trophy(img, cx - size * 0.34, cy + size * 0.18, size * 0.1, ORANGE)
 
-    # LR central.
+    # MR central.
     _draw_outlined_text(
-        img, "L", (left, baseline), font_lr, PURPLE, YELLOW, stroke_lr, shadow
+        img, "M", (left, baseline), font_lr, PURPLE, YELLOW, stroke_lr, shadow
     )
     _draw_outlined_text(
         img,
@@ -327,7 +327,7 @@ def render(size: int = 1024) -> Image.Image:
     # Initiales principales (taille actuelle).
     decos = [
         ("E", (-0.30, -0.22), -0.25),
-        ("B", (-0.28, 0.02), 0.18),
+        ("B", (-0.36, 0.06), 0.18),
         ("S", (-0.20, 0.22), -0.12),
         ("J", (0.18, -0.18), 0.22),
         ("A", (0.24, 0.18), -0.18),

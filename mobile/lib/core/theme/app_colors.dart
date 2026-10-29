@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Palette de Letter Race : couleurs vives « bonbon » sur fond violet.
+/// Palette de Mind Race : couleurs vives « bonbon » sur fond violet.
 abstract final class AppColors {
   static const purple = Color(0xFF6C3CE1);
   static const purpleDeep = Color(0xFF4421A8);

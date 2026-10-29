@@ -16,6 +16,8 @@ class ChatMessage:
     nickname: str
     text: str
     at: datetime
+    # Joueurs tagués « @pseudo ».
+    mentions: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -194,6 +196,7 @@ def trim_chat(messages: deque[ChatMessage], limit: int) -> list[dict]:
             "nickname": m.nickname,
             "text": m.text,
             "at": m.at.isoformat(),
+            "mentions": m.mentions,
         }
         for m in list(messages)[-limit:]
     ]

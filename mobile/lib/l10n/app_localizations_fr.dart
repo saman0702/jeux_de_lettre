@@ -10,7 +10,7 @@ class AppLocalizationsFr extends AppLocalizations {
   AppLocalizationsFr([String locale = 'fr']) : super(locale);
 
   @override
-  String get appTitle => 'Letter Race';
+  String get appTitle => 'Mind Race';
 
   @override
   String get tagline => 'Une lettre. Quatre catégories. Le plus rapide gagne.';
@@ -334,21 +334,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get chatHint => 'Écris un message…';
 
   @override
-  String get chatUnlockTitle => 'Débloquer le chat';
+  String get chatUnlockTitle => 'Débloquer les messages privés';
 
   @override
   String chatUnlockHelp(int price) {
-    return 'Tout le monde pourra te lire dans ce salon. Coût : $price pièces (une fois).';
+    return 'Écris en privé à n\'importe quel joueur de ce salon (personne d\'autre ne vous lit). Coût : $price pièces, une fois pour ce salon.';
   }
 
   @override
   String chatUnlockButton(int price) {
-    return 'CHAT · $price';
+    return 'PRIVÉ · $price';
   }
 
   @override
   String get chatInfoHelp =>
-      'Les stickers sont gratuits. Pour écrire du vrai texte, débloque le chat une fois avec des pièces dans ce salon.';
+      'La discussion de groupe est gratuite et reste dans le salon, même après la partie. Tague un joueur en touchant son pseudo. Les messages privés se débloquent une fois avec des pièces.';
 
   @override
   String get reactionsTitle => 'Réactions';
@@ -532,7 +532,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String inviteMessage(String code) {
-    return 'Rejoins ma partie Letter Race ! Code : $code';
+    return 'Rejoins ma partie Mind Race ! Code : $code';
   }
 
   @override
@@ -1493,4 +1493,421 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get looksMint => 'Menthe';
+
+  @override
+  String get perksFreeCoins => 'Pièces gratuites';
+
+  @override
+  String perksWatchInfo(int coins, int left) {
+    return 'Regarde une courte vidéo et gagne $coins pièces. Encore $left aujourd\'hui.';
+  }
+
+  @override
+  String perksWatch(int coins) {
+    return 'REGARDER (+$coins)';
+  }
+
+  @override
+  String get perksAdLimit =>
+      'Plus de vidéo pour aujourd\'hui : reviens demain !';
+
+  @override
+  String get perksAdPending =>
+      'Vidéo vue ! Tes pièces arrivent dans un instant.';
+
+  @override
+  String get perksNoAd => 'Pas de vidéo disponible pour le moment.';
+
+  @override
+  String get perksPassTitle => 'Pass Mind Race';
+
+  @override
+  String get perksPassNoAds => 'Aucune pub entre les parties';
+
+  @override
+  String perksPassDaily(int coins) {
+    return '$coins pièces offertes chaque jour';
+  }
+
+  @override
+  String perksPassHints(int hints) {
+    return '$hints jokers en plus dans chaque partie';
+  }
+
+  @override
+  String perksPassActive(String date) {
+    return 'Pass actif jusqu\'au $date';
+  }
+
+  @override
+  String perksPassPrice(String price) {
+    return 'S\'ABONNER · $price / mois';
+  }
+
+  @override
+  String perksClaimDaily(int coins) {
+    return 'PRENDRE MES $coins PIÈCES';
+  }
+
+  @override
+  String get perksDailyTaken => 'BONUS DU JOUR PRIS';
+
+  @override
+  String get perksPassDone => 'Bienvenue dans le Pass !';
+
+  @override
+  String get perksRemoveAdsTitle => 'Sans pub';
+
+  @override
+  String get perksRemoveAdsInfo =>
+      'Plus aucune pub entre les parties, pour toujours. Les vidéos pour gagner des pièces restent possibles.';
+
+  @override
+  String get perksRemoveAdsOwned => 'Sans pub : activé';
+
+  @override
+  String get perksRemoveAdsDone => 'C\'est fini les pubs, merci !';
+
+  @override
+  String get shopUnavailableShort => 'Indisponible';
+
+  @override
+  String roomHistoryTitle(String code) {
+    return 'Salon $code';
+  }
+
+  @override
+  String get historyGames => 'Parties';
+
+  @override
+  String get historyGroup => 'Groupe';
+
+  @override
+  String get historyPrivate => 'Privé';
+
+  @override
+  String get historyUnavailable => 'Historique indisponible pour le moment.';
+
+  @override
+  String get historyNoGames =>
+      'Aucune partie terminée dans ce salon pour l\'instant.';
+
+  @override
+  String get historyNoMessages => 'Personne n\'a encore écrit dans le groupe.';
+
+  @override
+  String get historyNoPrivate =>
+      'Aucune conversation privée. Ouvre la discussion du salon, puis « Privé », pour écrire à un joueur.';
+
+  @override
+  String privateChatEmpty(String name) {
+    return 'Écris ton premier message à $name.';
+  }
+
+  @override
+  String get privateChatJoinRoom => 'Rejoins le salon pour répondre.';
+
+  @override
+  String privateChatUnlock(int price) {
+    return 'Débloquer les messages privés ($price pièces)';
+  }
+
+  @override
+  String privateChatHint(String name) {
+    return 'Message à $name';
+  }
+
+  @override
+  String get myRoomsTitle => 'Mes salons';
+
+  @override
+  String get allPublicRoomsTitle => 'Tous les salons publics';
+
+  @override
+  String savedRoomInfo(int members, String date) {
+    return '$members joueurs · $date';
+  }
+
+  @override
+  String savedRoomOpen(int count) {
+    return '$count dedans';
+  }
+
+  @override
+  String get savedRoomClosed => 'Fermé';
+
+  @override
+  String get roomChatButton => 'DISCUSSION';
+
+  @override
+  String get roomHistoryButton => 'HISTORIQUE';
+
+  @override
+  String get chatPrivateButton => 'Privé';
+
+  @override
+  String get chatPrivatePick => 'À qui veux-tu écrire ?';
+
+  @override
+  String chatMentionedBy(String name) {
+    return '$name t\'a tagué dans la discussion';
+  }
+
+  @override
+  String get chatTagHint => 'Touche un pseudo pour le taguer (@pseudo).';
+
+  @override
+  String get settingsCountry => 'Pays d\'origine';
+
+  @override
+  String get countryPickTitle => 'Ton pays d\'origine';
+
+  @override
+  String get countrySearch => 'Rechercher un pays';
+
+  @override
+  String get countryChoose => 'Choisir';
+
+  @override
+  String get mixedLanguages => 'FR + EN : chacun dans sa langue';
+
+  @override
+  String get iqKindSequence => 'Suite';
+
+  @override
+  String get iqKindGrid => 'Grille';
+
+  @override
+  String get iqKindProblem => 'Problème';
+
+  @override
+  String get iqKindLetters => 'Lettres';
+
+  @override
+  String get iqKindCalendar => 'Calendrier';
+
+  @override
+  String get iqKindAnalogy => 'Analogie';
+
+  @override
+  String get iqKindOdd => 'Intrus';
+
+  @override
+  String get iqKindLogic => 'Logique';
+
+  @override
+  String get iqTypeAnswer => 'Tape ta réponse';
+
+  @override
+  String get iqValidate => 'VALIDER';
+
+  @override
+  String get iqGoodAnswer => 'Bonne réponse';
+
+  @override
+  String iqQuestion(int number, int total) {
+    return 'Énigme $number / $total';
+  }
+
+  @override
+  String get iqAnswerSent => 'Réponse envoyée ! On attend les autres…';
+
+  @override
+  String get iqTitle => 'QI';
+
+  @override
+  String get gamesTitle => 'Choisis ton jeu';
+
+  @override
+  String get gameLettersTitle => 'Géographie & Nature';
+
+  @override
+  String get gameLettersInfo =>
+      'Une lettre, des catégories : villes, pays, animaux, fruits, prénoms…';
+
+  @override
+  String get gameIqTitle => 'QI';
+
+  @override
+  String get gameIqInfo =>
+      'Suites logiques, calcul, analogies, intrus, énigmes : qui a le meilleur QI ?';
+
+  @override
+  String get iqCreateRoom => 'CRÉER UN SALON QI';
+
+  @override
+  String get iqSolo => 'SOLO';
+
+  @override
+  String get iqBots => 'CONTRE LES BOTS';
+
+  @override
+  String get iqOpenRooms => 'Salons QI ouverts';
+
+  @override
+  String get iqNoRooms =>
+      'Aucun salon QI public pour le moment : crée le tien !';
+
+  @override
+  String get iqRoomTitle => 'Nouveau salon QI';
+
+  @override
+  String get iqSoloTitle => 'QI en solo';
+
+  @override
+  String get iqBotsTitle => 'QI contre les bots';
+
+  @override
+  String get iqQuestions => 'Énigmes';
+
+  @override
+  String get iqTimePerQuestion => 'Temps par énigme';
+
+  @override
+  String get iqScoring => 'Points';
+
+  @override
+  String get iqSpeedBonus => 'Bonus de rapidité (jusqu\'à +10)';
+
+  @override
+  String get iqPenalty => 'Malus si c\'est faux (−5)';
+
+  @override
+  String get iqResultTitle => 'Ton QI estimé';
+
+  @override
+  String iqResultScore(int correct, int total, int points) {
+    return '$correct bonnes réponses sur $total · $points points';
+  }
+
+  @override
+  String get iqResultNote =>
+      'Pour s\'amuser : ce n\'est pas un vrai test de QI.';
+
+  @override
+  String get iqNext => 'ÉNIGME SUIVANTE';
+
+  @override
+  String get iqSeeResult => 'VOIR MON QI';
+
+  @override
+  String get iqBadge => 'QI';
+
+  @override
+  String get iqYou => 'Toi';
+
+  @override
+  String get iqRelayHelp =>
+      'Chacun reçoit sa propre énigme, du même niveau : impossible de copier sur le voisin !';
+
+  @override
+  String get iqKindMatrix => 'Matrice';
+
+  @override
+  String get iqKindRotation => 'Rotation';
+
+  @override
+  String get iqKindFigureOdd => 'Intrus visuel';
+
+  @override
+  String get iqJokerFifty => '50/50';
+
+  @override
+  String get iqJokerHint => 'Indice';
+
+  @override
+  String get iqJokerTime => '+15 s';
+
+  @override
+  String get iqJokerSkip => 'Passer';
+
+  @override
+  String iqHintRange(int low, int high) {
+    return 'Indice : entre $low et $high';
+  }
+
+  @override
+  String iqCoinsWon(int coins) {
+    return '+$coins pièce(s) gagnée(s)';
+  }
+
+  @override
+  String get iqOfflineNoCoins => 'Hors ligne : partie sans pièces ni jokers.';
+
+  @override
+  String get iqDailyTitle => 'Défi du jour';
+
+  @override
+  String get iqDailyInfo =>
+      '10 énigmes, les mêmes pour tous, une seule tentative par jour, sans jokers. Podium récompensé : 50, 30 et 20 pièces.';
+
+  @override
+  String get iqDailyPlay => 'JOUER LE DÉFI';
+
+  @override
+  String get iqDailyDone => 'Déjà joué aujourd\'hui : reviens demain !';
+
+  @override
+  String iqDailyRank(int rank) {
+    return 'Ton rang : $rank';
+  }
+
+  @override
+  String get iqDailyLeaderboard => 'Classement du jour';
+
+  @override
+  String get iqDailyYesterday => 'Podium d\'hier';
+
+  @override
+  String get iqDailyEmpty =>
+      'Personne n\'a encore joué aujourd\'hui : sois le premier !';
+
+  @override
+  String get iqDailyNeedsOnline => 'Le défi du jour se joue en ligne.';
+
+  @override
+  String get iqLate => 'Trop tard !';
+
+  @override
+  String get iqKindTrace => 'Un seul trait';
+
+  @override
+  String get iqTraceRestart => 'RECOMMENCER';
+
+  @override
+  String get iqTraceStuck => 'Bloqué : il reste des lignes, recommence !';
+
+  @override
+  String get iqTraceStartHint => 'Indice : pars du point orange.';
+
+  @override
+  String get errorRoomDeleted => 'Le créateur a supprimé ce salon.';
+
+  @override
+  String get errorNotRoomCreator =>
+      'Seul le créateur du salon peut le supprimer.';
+
+  @override
+  String get deleteRoomTitle => 'Supprimer le salon';
+
+  @override
+  String get deleteRoomMessage =>
+      'Le salon, ses parties et ses conversations seront effacés pour tout le monde. Ceux qui sont dedans en sortiront.';
+
+  @override
+  String get deleteRoomConfirm => 'SUPPRIMER';
+
+  @override
+  String get roomDeleted => 'Salon supprimé.';
+
+  @override
+  String publicRoomAudience(int count) {
+    return '$count autre(s) joueur(s) en ligne pourront le voir et le rejoindre.';
+  }
+
+  @override
+  String get gameLettersTag => 'Lettres & catégories';
+
+  @override
+  String get gameIqTag => 'Logique & énigmes';
 }

@@ -18,6 +18,7 @@ import '../../animations/transitions/pop_route.dart';
 import '../shop/shop_screen.dart';
 import 'online_controller.dart';
 import 'room_screen.dart';
+import 'widgets/online_counter.dart';
 import 'widgets/online_header.dart';
 
 /// Options de la salle ; ouvre le lobby par-dessus pour que Retour revienne ici.
@@ -251,13 +252,18 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                 icon: GameIconKind.public,
                 color: AppColors.cyan,
                 help: l10n.visibilityHelp,
-                child: PillSelector<bool>(
-                  options: const [true, false],
-                  isSelected: (p) => p == _public,
-                  label: (p) =>
-                      p ? l10n.visibilityPublic : l10n.visibilityPrivate,
-                  icon: (p) => p ? GameIconKind.public : GameIconKind.private,
-                  onTap: (p) => setState(() => _public = p),
+                child: Column(
+                  children: [
+                    PillSelector<bool>(
+                      options: const [true, false],
+                      isSelected: (p) => p == _public,
+                      label: (p) =>
+                          p ? l10n.visibilityPublic : l10n.visibilityPrivate,
+                      icon: (p) => p ? GameIconKind.public : GameIconKind.private,
+                      onTap: (p) => setState(() => _public = p),
+                    ),
+                    if (_public) const PublicAudience(),
+                  ],
                 ),
               ),
               OptionSection(

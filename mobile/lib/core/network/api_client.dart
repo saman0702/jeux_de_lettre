@@ -23,6 +23,14 @@ class ApiClient {
   final http.Client _client;
   final String baseUrl;
 
+  /// Jeton secret de l'appli (voir AppSettings.clientToken), envoyé avec
+  /// chaque requête : le serveur refuse d'agir sur un profil sans lui.
+  static String? clientToken;
+
+  static Map<String, String> get _auth => {
+    if (clientToken != null) 'X-Client-Token': clientToken!,
+  };
+
   static const _timeout = Duration(seconds: 10);
 
   /// Renvoie vrai quand l'API et ses dépendances répondent.
@@ -36,14 +44,14 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> getJson(String path) =>
-      _send(() => _client.get(Uri.parse('$baseUrl$path')));
+      _send(() => _client.get(Uri.parse('$baseUrl$path'), headers: _auth));
 
   /// Pour les réponses qui sont une liste JSON.
   Future<List<dynamic>> getJsonList(String path) async {
     final http.Response response;
     try {
       response = await _client
-          .get(Uri.parse('$baseUrl$path'))
+          .get(Uri.parse('$baseUrl$path'), headers: _auth)
           .timeout(_timeout);
     } catch (_) {
       throw ApiException('network_error');
@@ -61,7 +69,7 @@ class ApiClient {
   ]) => _send(
     () => _client.post(
       Uri.parse('$baseUrl$path'),
-      headers: {'content-type': 'application/json'},
+      headers: {'content-type': 'application/json', ..._auth},
       body: jsonEncode(body ?? {}),
     ),
     timeout: timeout,
@@ -73,10 +81,13 @@ class ApiClient {
   ) => _send(
     () => _client.put(
       Uri.parse('$baseUrl$path'),
-      headers: {'content-type': 'application/json'},
+      headers: {'content-type': 'application/json', ..._auth},
       body: jsonEncode(body),
     ),
   );
+
+  Future<Map<String, dynamic>> deleteJson(String path) =>
+      _send(() => _client.delete(Uri.parse('$baseUrl$path'), headers: _auth));
 
   /// Envoie un fichier en multipart (champ [field]).
   Future<Map<String, dynamic>> uploadBytes(
@@ -86,6 +97,7 @@ class ApiClient {
     required String filename,
   }) => _send(() async {
     final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'))
+      ..headers.addAll(_auth)
       ..files.add(
         http.MultipartFile.fromBytes(field, bytes, filename: filename),
       );

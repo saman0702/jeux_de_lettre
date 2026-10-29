@@ -67,16 +67,18 @@ class _CountdownViewState extends State<CountdownView>
       _ => AppColors.yellow,
     };
 
-    return Center(
+    // Plus petit et un peu au-dessus du milieu : de l'air au-dessus des joueurs.
+    return Align(
+      alignment: const Alignment(0, -0.3),
       child: SizedBox.square(
-        dimension: 300,
+        dimension: 220,
         child: Stack(
           alignment: Alignment.center,
           children: [
             AnimatedBuilder(
               animation: _wave,
               builder: (context, _) => CustomPaint(
-                size: const Size.square(300),
+                size: const Size.square(220),
                 painter: _ShockwavePainter(_wave.value, color),
               ),
             ),
@@ -90,24 +92,24 @@ class _CountdownViewState extends State<CountdownView>
               ),
               child: Container(
                 key: ValueKey(widget.value),
-                width: isGo ? 230 : 170,
-                height: 170,
+                width: isGo ? 170 : 120,
+                height: 120,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: BorderRadius.circular(isGo ? 48 : 85),
-                  border: Border.all(color: AppColors.white, width: 6),
+                  borderRadius: BorderRadius.circular(isGo ? 36 : 60),
+                  border: Border.all(color: AppColors.white, width: 5),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.depthOf(color),
-                      offset: const Offset(0, 10),
+                      offset: const Offset(0, 7),
                     ),
                   ],
                 ),
                 child: Text(
                   isGo ? l10n.go : '${widget.value}',
                   style: fredoka(
-                    size: isGo ? 64 : 100,
+                    size: isGo ? 46 : 70,
                     weight: FontWeight.w700,
                     color: isGo ? AppColors.ink : AppColors.white,
                     height: 1,

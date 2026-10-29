@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Letter Race'**
+  /// **'Mind Race'**
   String get appTitle;
 
   /// No description provided for @tagline.
@@ -671,25 +671,25 @@ abstract class AppLocalizations {
   /// No description provided for @chatUnlockTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Débloquer le chat'**
+  /// **'Débloquer les messages privés'**
   String get chatUnlockTitle;
 
   /// No description provided for @chatUnlockHelp.
   ///
   /// In fr, this message translates to:
-  /// **'Tout le monde pourra te lire dans ce salon. Coût : {price} pièces (une fois).'**
+  /// **'Écris en privé à n\'importe quel joueur de ce salon (personne d\'autre ne vous lit). Coût : {price} pièces, une fois pour ce salon.'**
   String chatUnlockHelp(int price);
 
   /// No description provided for @chatUnlockButton.
   ///
   /// In fr, this message translates to:
-  /// **'CHAT · {price}'**
+  /// **'PRIVÉ · {price}'**
   String chatUnlockButton(int price);
 
   /// No description provided for @chatInfoHelp.
   ///
   /// In fr, this message translates to:
-  /// **'Les stickers sont gratuits. Pour écrire du vrai texte, débloque le chat une fois avec des pièces dans ce salon.'**
+  /// **'La discussion de groupe est gratuite et reste dans le salon, même après la partie. Tague un joueur en touchant son pseudo. Les messages privés se débloquent une fois avec des pièces.'**
   String get chatInfoHelp;
 
   /// No description provided for @reactionsTitle.
@@ -1019,7 +1019,7 @@ abstract class AppLocalizations {
   /// No description provided for @inviteMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Rejoins ma partie Letter Race ! Code : {code}'**
+  /// **'Rejoins ma partie Mind Race ! Code : {code}'**
   String inviteMessage(String code);
 
   /// No description provided for @waitingForPlayers.
@@ -2611,6 +2611,732 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Menthe'**
   String get looksMint;
+
+  /// No description provided for @perksFreeCoins.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pièces gratuites'**
+  String get perksFreeCoins;
+
+  /// No description provided for @perksWatchInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Regarde une courte vidéo et gagne {coins} pièces. Encore {left} aujourd\'hui.'**
+  String perksWatchInfo(int coins, int left);
+
+  /// No description provided for @perksWatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'REGARDER (+{coins})'**
+  String perksWatch(int coins);
+
+  /// No description provided for @perksAdLimit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus de vidéo pour aujourd\'hui : reviens demain !'**
+  String get perksAdLimit;
+
+  /// No description provided for @perksAdPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéo vue ! Tes pièces arrivent dans un instant.'**
+  String get perksAdPending;
+
+  /// No description provided for @perksNoAd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de vidéo disponible pour le moment.'**
+  String get perksNoAd;
+
+  /// No description provided for @perksPassTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pass Mind Race'**
+  String get perksPassTitle;
+
+  /// No description provided for @perksPassNoAds.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune pub entre les parties'**
+  String get perksPassNoAds;
+
+  /// No description provided for @perksPassDaily.
+  ///
+  /// In fr, this message translates to:
+  /// **'{coins} pièces offertes chaque jour'**
+  String perksPassDaily(int coins);
+
+  /// No description provided for @perksPassHints.
+  ///
+  /// In fr, this message translates to:
+  /// **'{hints} jokers en plus dans chaque partie'**
+  String perksPassHints(int hints);
+
+  /// No description provided for @perksPassActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pass actif jusqu\'au {date}'**
+  String perksPassActive(String date);
+
+  /// No description provided for @perksPassPrice.
+  ///
+  /// In fr, this message translates to:
+  /// **'S\'ABONNER · {price} / mois'**
+  String perksPassPrice(String price);
+
+  /// No description provided for @perksClaimDaily.
+  ///
+  /// In fr, this message translates to:
+  /// **'PRENDRE MES {coins} PIÈCES'**
+  String perksClaimDaily(int coins);
+
+  /// No description provided for @perksDailyTaken.
+  ///
+  /// In fr, this message translates to:
+  /// **'BONUS DU JOUR PRIS'**
+  String get perksDailyTaken;
+
+  /// No description provided for @perksPassDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bienvenue dans le Pass !'**
+  String get perksPassDone;
+
+  /// No description provided for @perksRemoveAdsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans pub'**
+  String get perksRemoveAdsTitle;
+
+  /// No description provided for @perksRemoveAdsInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus aucune pub entre les parties, pour toujours. Les vidéos pour gagner des pièces restent possibles.'**
+  String get perksRemoveAdsInfo;
+
+  /// No description provided for @perksRemoveAdsOwned.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans pub : activé'**
+  String get perksRemoveAdsOwned;
+
+  /// No description provided for @perksRemoveAdsDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'C\'est fini les pubs, merci !'**
+  String get perksRemoveAdsDone;
+
+  /// No description provided for @shopUnavailableShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indisponible'**
+  String get shopUnavailableShort;
+
+  /// No description provided for @roomHistoryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salon {code}'**
+  String roomHistoryTitle(String code);
+
+  /// No description provided for @historyGames.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parties'**
+  String get historyGames;
+
+  /// No description provided for @historyGroup.
+  ///
+  /// In fr, this message translates to:
+  /// **'Groupe'**
+  String get historyGroup;
+
+  /// No description provided for @historyPrivate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Privé'**
+  String get historyPrivate;
+
+  /// No description provided for @historyUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Historique indisponible pour le moment.'**
+  String get historyUnavailable;
+
+  /// No description provided for @historyNoGames.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune partie terminée dans ce salon pour l\'instant.'**
+  String get historyNoGames;
+
+  /// No description provided for @historyNoMessages.
+  ///
+  /// In fr, this message translates to:
+  /// **'Personne n\'a encore écrit dans le groupe.'**
+  String get historyNoMessages;
+
+  /// No description provided for @historyNoPrivate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune conversation privée. Ouvre la discussion du salon, puis « Privé », pour écrire à un joueur.'**
+  String get historyNoPrivate;
+
+  /// No description provided for @privateChatEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écris ton premier message à {name}.'**
+  String privateChatEmpty(String name);
+
+  /// No description provided for @privateChatJoinRoom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoins le salon pour répondre.'**
+  String get privateChatJoinRoom;
+
+  /// No description provided for @privateChatUnlock.
+  ///
+  /// In fr, this message translates to:
+  /// **'Débloquer les messages privés ({price} pièces)'**
+  String privateChatUnlock(int price);
+
+  /// No description provided for @privateChatHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Message à {name}'**
+  String privateChatHint(String name);
+
+  /// No description provided for @myRoomsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes salons'**
+  String get myRoomsTitle;
+
+  /// No description provided for @allPublicRoomsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les salons publics'**
+  String get allPublicRoomsTitle;
+
+  /// No description provided for @savedRoomInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'{members} joueurs · {date}'**
+  String savedRoomInfo(int members, String date);
+
+  /// No description provided for @savedRoomOpen.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} dedans'**
+  String savedRoomOpen(int count);
+
+  /// No description provided for @savedRoomClosed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermé'**
+  String get savedRoomClosed;
+
+  /// No description provided for @roomChatButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'DISCUSSION'**
+  String get roomChatButton;
+
+  /// No description provided for @roomHistoryButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'HISTORIQUE'**
+  String get roomHistoryButton;
+
+  /// No description provided for @chatPrivateButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Privé'**
+  String get chatPrivateButton;
+
+  /// No description provided for @chatPrivatePick.
+  ///
+  /// In fr, this message translates to:
+  /// **'À qui veux-tu écrire ?'**
+  String get chatPrivatePick;
+
+  /// No description provided for @chatMentionedBy.
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} t\'a tagué dans la discussion'**
+  String chatMentionedBy(String name);
+
+  /// No description provided for @chatTagHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Touche un pseudo pour le taguer (@pseudo).'**
+  String get chatTagHint;
+
+  /// No description provided for @settingsCountry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pays d\'origine'**
+  String get settingsCountry;
+
+  /// No description provided for @countryPickTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton pays d\'origine'**
+  String get countryPickTitle;
+
+  /// No description provided for @countrySearch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un pays'**
+  String get countrySearch;
+
+  /// No description provided for @countryChoose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir'**
+  String get countryChoose;
+
+  /// No description provided for @mixedLanguages.
+  ///
+  /// In fr, this message translates to:
+  /// **'FR + EN : chacun dans sa langue'**
+  String get mixedLanguages;
+
+  /// No description provided for @iqKindSequence.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suite'**
+  String get iqKindSequence;
+
+  /// No description provided for @iqKindGrid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Grille'**
+  String get iqKindGrid;
+
+  /// No description provided for @iqKindProblem.
+  ///
+  /// In fr, this message translates to:
+  /// **'Problème'**
+  String get iqKindProblem;
+
+  /// No description provided for @iqKindLetters.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lettres'**
+  String get iqKindLetters;
+
+  /// No description provided for @iqKindCalendar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calendrier'**
+  String get iqKindCalendar;
+
+  /// No description provided for @iqKindAnalogy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analogie'**
+  String get iqKindAnalogy;
+
+  /// No description provided for @iqKindOdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Intrus'**
+  String get iqKindOdd;
+
+  /// No description provided for @iqKindLogic.
+  ///
+  /// In fr, this message translates to:
+  /// **'Logique'**
+  String get iqKindLogic;
+
+  /// No description provided for @iqTypeAnswer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tape ta réponse'**
+  String get iqTypeAnswer;
+
+  /// No description provided for @iqValidate.
+  ///
+  /// In fr, this message translates to:
+  /// **'VALIDER'**
+  String get iqValidate;
+
+  /// No description provided for @iqGoodAnswer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonne réponse'**
+  String get iqGoodAnswer;
+
+  /// No description provided for @iqQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Énigme {number} / {total}'**
+  String iqQuestion(int number, int total);
+
+  /// No description provided for @iqAnswerSent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réponse envoyée ! On attend les autres…'**
+  String get iqAnswerSent;
+
+  /// No description provided for @iqTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'QI'**
+  String get iqTitle;
+
+  /// No description provided for @gamesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisis ton jeu'**
+  String get gamesTitle;
+
+  /// No description provided for @gameLettersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Géographie & Nature'**
+  String get gameLettersTitle;
+
+  /// No description provided for @gameLettersInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une lettre, des catégories : villes, pays, animaux, fruits, prénoms…'**
+  String get gameLettersInfo;
+
+  /// No description provided for @gameIqTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'QI'**
+  String get gameIqTitle;
+
+  /// No description provided for @gameIqInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suites logiques, calcul, analogies, intrus, énigmes : qui a le meilleur QI ?'**
+  String get gameIqInfo;
+
+  /// No description provided for @iqCreateRoom.
+  ///
+  /// In fr, this message translates to:
+  /// **'CRÉER UN SALON QI'**
+  String get iqCreateRoom;
+
+  /// No description provided for @iqSolo.
+  ///
+  /// In fr, this message translates to:
+  /// **'SOLO'**
+  String get iqSolo;
+
+  /// No description provided for @iqBots.
+  ///
+  /// In fr, this message translates to:
+  /// **'CONTRE LES BOTS'**
+  String get iqBots;
+
+  /// No description provided for @iqOpenRooms.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salons QI ouverts'**
+  String get iqOpenRooms;
+
+  /// No description provided for @iqNoRooms.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun salon QI public pour le moment : crée le tien !'**
+  String get iqNoRooms;
+
+  /// No description provided for @iqRoomTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau salon QI'**
+  String get iqRoomTitle;
+
+  /// No description provided for @iqSoloTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'QI en solo'**
+  String get iqSoloTitle;
+
+  /// No description provided for @iqBotsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'QI contre les bots'**
+  String get iqBotsTitle;
+
+  /// No description provided for @iqQuestions.
+  ///
+  /// In fr, this message translates to:
+  /// **'Énigmes'**
+  String get iqQuestions;
+
+  /// No description provided for @iqTimePerQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Temps par énigme'**
+  String get iqTimePerQuestion;
+
+  /// No description provided for @iqScoring.
+  ///
+  /// In fr, this message translates to:
+  /// **'Points'**
+  String get iqScoring;
+
+  /// No description provided for @iqSpeedBonus.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonus de rapidité (jusqu\'à +10)'**
+  String get iqSpeedBonus;
+
+  /// No description provided for @iqPenalty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Malus si c\'est faux (−5)'**
+  String get iqPenalty;
+
+  /// No description provided for @iqResultTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton QI estimé'**
+  String get iqResultTitle;
+
+  /// No description provided for @iqResultScore.
+  ///
+  /// In fr, this message translates to:
+  /// **'{correct} bonnes réponses sur {total} · {points} points'**
+  String iqResultScore(int correct, int total, int points);
+
+  /// No description provided for @iqResultNote.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour s\'amuser : ce n\'est pas un vrai test de QI.'**
+  String get iqResultNote;
+
+  /// No description provided for @iqNext.
+  ///
+  /// In fr, this message translates to:
+  /// **'ÉNIGME SUIVANTE'**
+  String get iqNext;
+
+  /// No description provided for @iqSeeResult.
+  ///
+  /// In fr, this message translates to:
+  /// **'VOIR MON QI'**
+  String get iqSeeResult;
+
+  /// No description provided for @iqBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'QI'**
+  String get iqBadge;
+
+  /// No description provided for @iqYou.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toi'**
+  String get iqYou;
+
+  /// No description provided for @iqRelayHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chacun reçoit sa propre énigme, du même niveau : impossible de copier sur le voisin !'**
+  String get iqRelayHelp;
+
+  /// No description provided for @iqKindMatrix.
+  ///
+  /// In fr, this message translates to:
+  /// **'Matrice'**
+  String get iqKindMatrix;
+
+  /// No description provided for @iqKindRotation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rotation'**
+  String get iqKindRotation;
+
+  /// No description provided for @iqKindFigureOdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Intrus visuel'**
+  String get iqKindFigureOdd;
+
+  /// No description provided for @iqJokerFifty.
+  ///
+  /// In fr, this message translates to:
+  /// **'50/50'**
+  String get iqJokerFifty;
+
+  /// No description provided for @iqJokerHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indice'**
+  String get iqJokerHint;
+
+  /// No description provided for @iqJokerTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'+15 s'**
+  String get iqJokerTime;
+
+  /// No description provided for @iqJokerSkip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passer'**
+  String get iqJokerSkip;
+
+  /// No description provided for @iqHintRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indice : entre {low} et {high}'**
+  String iqHintRange(int low, int high);
+
+  /// No description provided for @iqCoinsWon.
+  ///
+  /// In fr, this message translates to:
+  /// **'+{coins} pièce(s) gagnée(s)'**
+  String iqCoinsWon(int coins);
+
+  /// No description provided for @iqOfflineNoCoins.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hors ligne : partie sans pièces ni jokers.'**
+  String get iqOfflineNoCoins;
+
+  /// No description provided for @iqDailyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Défi du jour'**
+  String get iqDailyTitle;
+
+  /// No description provided for @iqDailyInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'10 énigmes, les mêmes pour tous, une seule tentative par jour, sans jokers. Podium récompensé : 50, 30 et 20 pièces.'**
+  String get iqDailyInfo;
+
+  /// No description provided for @iqDailyPlay.
+  ///
+  /// In fr, this message translates to:
+  /// **'JOUER LE DÉFI'**
+  String get iqDailyPlay;
+
+  /// No description provided for @iqDailyDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déjà joué aujourd\'hui : reviens demain !'**
+  String get iqDailyDone;
+
+  /// No description provided for @iqDailyRank.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton rang : {rank}'**
+  String iqDailyRank(int rank);
+
+  /// No description provided for @iqDailyLeaderboard.
+  ///
+  /// In fr, this message translates to:
+  /// **'Classement du jour'**
+  String get iqDailyLeaderboard;
+
+  /// No description provided for @iqDailyYesterday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Podium d\'hier'**
+  String get iqDailyYesterday;
+
+  /// No description provided for @iqDailyEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Personne n\'a encore joué aujourd\'hui : sois le premier !'**
+  String get iqDailyEmpty;
+
+  /// No description provided for @iqDailyNeedsOnline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le défi du jour se joue en ligne.'**
+  String get iqDailyNeedsOnline;
+
+  /// No description provided for @iqLate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop tard !'**
+  String get iqLate;
+
+  /// No description provided for @iqKindTrace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un seul trait'**
+  String get iqKindTrace;
+
+  /// No description provided for @iqTraceRestart.
+  ///
+  /// In fr, this message translates to:
+  /// **'RECOMMENCER'**
+  String get iqTraceRestart;
+
+  /// No description provided for @iqTraceStuck.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bloqué : il reste des lignes, recommence !'**
+  String get iqTraceStuck;
+
+  /// No description provided for @iqTraceStartHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indice : pars du point orange.'**
+  String get iqTraceStartHint;
+
+  /// No description provided for @errorRoomDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le créateur a supprimé ce salon.'**
+  String get errorRoomDeleted;
+
+  /// No description provided for @errorNotRoomCreator.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seul le créateur du salon peut le supprimer.'**
+  String get errorNotRoomCreator;
+
+  /// No description provided for @deleteRoomTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le salon'**
+  String get deleteRoomTitle;
+
+  /// No description provided for @deleteRoomMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le salon, ses parties et ses conversations seront effacés pour tout le monde. Ceux qui sont dedans en sortiront.'**
+  String get deleteRoomMessage;
+
+  /// No description provided for @deleteRoomConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'SUPPRIMER'**
+  String get deleteRoomConfirm;
+
+  /// No description provided for @roomDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salon supprimé.'**
+  String get roomDeleted;
+
+  /// No description provided for @publicRoomAudience.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} autre(s) joueur(s) en ligne pourront le voir et le rejoindre.'**
+  String publicRoomAudience(int count);
+
+  /// No description provided for @gameLettersTag.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lettres & catégories'**
+  String get gameLettersTag;
+
+  /// No description provided for @gameIqTag.
+  ///
+  /// In fr, this message translates to:
+  /// **'Logique & énigmes'**
+  String get gameIqTag;
 }
 
 class _AppLocalizationsDelegate

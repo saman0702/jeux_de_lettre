@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, utcnow
@@ -12,6 +12,9 @@ class Profile(TimestampMixin, Base):
     __tablename__ = "profiles"
 
     client_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    # Empreinte (SHA-256) du jeton secret gardé par l'appli. Le client_id est public (les autres
+    # joueurs le voient) : sans ce jeton, impossible d'agir sur le profil.
+    secret_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     nickname: Mapped[str] = mapped_column(String(32), default="Joueur")
     coins: Mapped[int] = mapped_column(Integer, default=0)
     # Points gagnés depuis toujours (statistique).
@@ -28,6 +31,16 @@ class Profile(TimestampMixin, Base):
     cosmetic_hat: Mapped[str] = mapped_column(String(32), default="", server_default="")
     cosmetic_frame: Mapped[str] = mapped_column(String(32), default="", server_default="")
     cosmetic_name: Mapped[str] = mapped_column(String(32), default="", server_default="")
+    # Pays d'origine (nom anglais), affiché en drapeau à côté du pseudo.
+    country: Mapped[str | None] = mapped_column(String(48), nullable=True)
+    # Achat « Sans pub ».
+    ads_removed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # Abonnement « Pass » : fin de la période payée, et l'achat pour la redemander au store.
+    pass_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    pass_platform: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    pass_token: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # Dernier jour (UTC) où le bonus quotidien du Pass a été pris.
+    daily_bonus_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     cosmetic_tiles: Mapped[str] = mapped_column(String(32), default="", server_default="")
     cosmetic_victory: Mapped[str] = mapped_column(String(32), default="", server_default="")
     # Infos catégories débloquées une fois pour toutes (`country:france,city:paris`…).

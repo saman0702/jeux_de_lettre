@@ -13,6 +13,7 @@ import 'package:letter_battle/features/online/room_screen.dart';
 import 'package:letter_battle/features/online/online_controller.dart';
 import 'package:letter_battle/features/online/create_room_screen.dart';
 import 'package:letter_battle/features/online/rooms_screen.dart';
+import 'package:letter_battle/features/perks/perks_controller.dart';
 import 'package:letter_battle/features/shop/shop_controller.dart';
 import 'package:letter_battle/features/wallet/wallet.dart';
 import 'package:letter_battle/main.dart';
@@ -81,6 +82,7 @@ class Harness {
     WidgetTester tester,
     Widget home, {
     ShopController? shop,
+    PerksController? perks,
   }) async {
     tester.platformDispatcher.localesTestValue = const [Locale('en')];
     await tester.pumpWidget(
@@ -88,6 +90,7 @@ class Harness {
         feedback: feedback,
         online: online,
         shop: shop,
+        perks: perks,
         home: home,
       ),
     );
@@ -184,19 +187,30 @@ Map<String, dynamic> round1() {
 }
 
 void main() {
-  testWidgets('home shows how many players are online', (tester) async {
+  testWidgets('home only shows the counter when offline; public rooms show the audience', (tester) async {
     final h = Harness();
     await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
 
-    expect(find.text('7'), findsOneWidget);
-    expect(find.text('ONLINE'), findsOneWidget);
-    h.socket.push({'type': 'online_count', 'count': 12});
-    await tester.pumpAndSettle();
-    expect(find.text('12'), findsOneWidget);
+    // En ligne : pas de compteur sur l'accueil.
+    expect(find.text('7'), findsNothing);
+    expect(find.text('ONLINE'), findsNothing);
     expect(h.uris.single.queryParameters, {
       'client_id': me,
       'nickname': 'Blaise',
+      // Langue de l'appli : le serveur valide les réponses dans celle-ci.
+      'language': 'fr',
     });
+
+    // À la création d'un salon public : combien d'autres joueurs le verront.
+    await tester.pumpWidget(const SizedBox());
+    final h2 = Harness();
+    await h2.start(tester, const CreateRoomScreen());
+    h2.socket.push({'type': 'online_count', 'count': 12});
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Public'));
+    await tester.tap(find.text('Public'));
+    await tester.pumpAndSettle();
+    expect(find.text('11 other player(s) online will see it and can join.'), findsOneWidget);
   });
 
   testWidgets('quick match: search, play a round, results and podium', (
@@ -313,6 +327,9 @@ void main() {
     await h.start(tester, HomeScreen(apiClient: fakeApi(healthy: true)));
 
     await tester.tap(find.text('Rooms'));
+    await tester.pumpAndSettle();
+    // « Salons » propose d'abord le choix du jeu.
+    await tester.tap(find.byKey(const Key('game_letters')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('nickname_field')), 'Arnaud');
     await tester.tap(find.text("LET'S GO!"));

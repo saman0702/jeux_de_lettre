@@ -6,9 +6,13 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.games.router import router as games_router
 from app.api.profiles.router import router as profiles_router
+from app.api.ads.router import router as ads_router
+from app.api.iq.router import router as iq_router
+from app.api.rooms.router import router as rooms_router
 from app.api.shop.router import router as shop_router
 from app.api.health import router as health_router
 from app.core.config import settings
+from app.core.rate_limit import limit_requests
 from app.core.database import engine
 from app.core.redis import redis_client
 from app.services import avatar_service
@@ -28,10 +32,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 app.state.room_manager = room_manager
+app.middleware("http")(limit_requests)
 app.include_router(health_router)
 app.include_router(games_router)
 app.include_router(profiles_router)
 app.include_router(shop_router)
+app.include_router(ads_router)
+app.include_router(rooms_router)
+app.include_router(iq_router)
 app.include_router(ws_router)
 avatar_service.avatars_dir()
 app.mount("/media", StaticFiles(directory=settings.media_dir), name="media")

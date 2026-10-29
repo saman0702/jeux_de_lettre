@@ -16,6 +16,7 @@ import '../game/widgets/labels.dart';
 import 'create_room_screen.dart';
 import 'data/room_models.dart';
 import 'online_controller.dart';
+import 'room_history.dart';
 import 'room_screen.dart';
 import 'widgets/online_counter.dart';
 import 'widgets/online_header.dart';
@@ -70,10 +71,15 @@ class _RoomsScreenState extends State<RoomsScreen> {
     super.dispose();
   }
 
+  final _saved = GlobalKey<SavedRoomsSectionState>();
+
   Future<void> _openRoom() async {
     await Navigator.of(context)
         .push(PopRoute(builder: (_) => const RoomScreen()));
-    if (mounted) _online.watchRooms(_language);
+    if (mounted) {
+      _online.watchRooms(_language);
+      _saved.currentState?.refresh();
+    }
   }
 
   void _join(String code) {
@@ -93,6 +99,12 @@ class _RoomsScreenState extends State<RoomsScreen> {
     if (mounted) _online.watchRooms(_language);
   }
 
+  /// Les salons QI ont leur propre liste (espace QI).
+  List<RoomSummary> get _letterRooms => [
+    for (final r in _online.rooms)
+      if (r.game != RoomGame.iq) r,
+  ];
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -108,7 +120,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
               header: OnlineHeader(
                 title: l10n.roomsTitle,
                 onBack: () => Navigator.of(context).pop(),
-                trailing: const OnlineCounter(),
+                trailing: const OnlineCounter(offlineOnly: true),
               ),
               builder: (context, padding) => ListView(
                 padding: padding.copyWith(bottom: padding.bottom + 12),
@@ -153,7 +165,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
                       ),
                     ),
                   ),
-                  if (_online.rooms.isEmpty)
+                  if (_letterRooms.isEmpty)
                     Center(
                       child: Padding(
                         padding: const EdgeInsets.all(32),
@@ -179,7 +191,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
                       ),
                     )
                   else
-                    for (final room in _online.rooms)
+                    for (final room in _letterRooms)
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                         child: BounceIn(
@@ -191,6 +203,13 @@ class _RoomsScreenState extends State<RoomsScreen> {
                           ),
                         ),
                       ),
+                  // Salons déjà fréquentés (publics ou privés) et salons publics
+                  // fermés : on les rouvre en les touchant.
+                  SavedRoomsSection(
+                    key: _saved,
+                    onOpen: _join,
+                    liveCodes: {for (final r in _online.rooms) r.code},
+                  ),
                 ],
               ),
             ),

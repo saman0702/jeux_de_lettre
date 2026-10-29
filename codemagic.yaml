@@ -1,0 +1,139 @@
+# Codemagic — Mind Race, iOS uniquement (Android se compile et s'envoie à la main).
+# Docs : https://docs.codemagic.io/yaml-quick-start/building-a-flutter-app/
+# Mode d'emploi complet : docs/PLAYBOOK_DEPLOIEMENT.md
+#
+# À configurer dans Codemagic avant le 1er build :
+# 1. Team settings → Integrations → Apple Developer Portal : une clé API App Store Connect
+#    (rôle Admin ou App Manager) nommée « Mind Race Codemagic ».
+# 2. APP_STORE_APPLE_ID ci-dessous : l'Apple ID numérique de l'appli (App Store Connect →
+#    Infos de l'app). À remplacer.
+# 3. Groupe d'environnement « ios_signing » (sur l'Application) :
+#      CERTIFICATE_PRIVATE_KEY (Secret) = contenu de secrets/ios_cert_key (clé RSA PEM).
+#    Codemagic crée puis réutilise le certificat de distribution et le profil App Store.
+# 4. Groupe d'environnement « admob_ios » (facultatif) :
+#      ADMOB_APP_ID_IOS, ADMOB_REWARDED_IOS, ADMOB_INTERSTITIAL_IOS.
+#    Vides : l'appli affiche les pubs de test de Google (aucun revenu).
+# 5. Commit message `[skip ci]` pour ne lancer aucun build.
+
+workflows:
+  ios-release:
+    name: Mind Race iOS (TestFlight)
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+
+    integrations:
+      app_store_connect: Mind Race Codemagic
+
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - ios_signing
+        - admob_ios
+      vars:
+        APP_STORE_APPLE_ID: "0000000000"
+        BUNDLE_ID: com.letterbattle.letterBattle
+        API_BASE_URL: https://gamelr-api.optisoftw.com
+
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+        - $CM_BUILD_DIR/mobile/.dart_tool
+        - $CM_BUILD_DIR/mobile/ios/Pods
+
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+        - pattern: release/*
+          include: true
+          source: true
+      cancel_previous_builds: true
+
+    # Seulement si l'appli (ou ce fichier) change — pas pour le backend ou la doc.
+    when:
+      changeset:
+        includes:
+          - mobile/
+          - codemagic.yaml
+
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          cd "$CM_BUILD_DIR/mobile"
+          flutter pub get
+
+      - name: Identifiant AdMob iOS (Info.plist)
+        script: |
+          cd "$CM_BUILD_DIR/mobile"
+          if [ -n "$ADMOB_APP_ID_IOS" ]; then
+            /usr/libexec/PlistBuddy -c "Set :GADApplicationIdentifier $ADMOB_APP_ID_IOS" ios/Runner/Info.plist
+            echo "AdMob iOS : $ADMOB_APP_ID_IOS"
+          else
+            echo "AdMob iOS : identifiant de test de Google"
+          fi
+
+      - name: Install CocoaPods
+        script: |
+          cd "$CM_BUILD_DIR/mobile/ios"
+          pod install
+
+      - name: Fetch iOS signing files (certificat + profil App Store)
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --create
+          keychain add-certificates
+
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles \
+            --project "$CM_BUILD_DIR/mobile/ios/Runner.xcodeproj"
+
+      - name: Increment build number (TestFlight)
+        script: |
+          cd "$CM_BUILD_DIR/mobile"
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo 0)
+          NEW_BUILD=$((LATEST + 1))
+          echo "NEW_BUILD_NUMBER=$NEW_BUILD" >> "$CM_ENV"
+          echo "Build number → $NEW_BUILD"
+
+      - name: Flutter build IPA
+        script: |
+          cd "$CM_BUILD_DIR/mobile"
+          flutter build ipa --release \
+            --build-number="$NEW_BUILD_NUMBER" \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=ADMOB_REWARDED_IOS="$ADMOB_REWARDED_IOS" \
+            --dart-define=ADMOB_INTERSTITIAL_IOS="$ADMOB_INTERSTITIAL_IOS" \
+            --export-options-plist=/Users/builder/export_options.plist
+
+    artifacts:
+      - mobile/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - blaisesamanjeanarnaud@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        # false : Codemagic s'arrête après l'envoi, sans attendre le traitement Apple ; les
+        # testeurs internes reçoivent le build ensuite. true (+ beta_groups) pour des
+        # testeurs externes.
+        submit_to_testflight: false
+        # beta_groups:
+        #   - Internal Testers
+        submit_to_app_store: false

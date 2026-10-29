@@ -1,4 +1,4 @@
-# Letter Race API — image de production
+# Mind Race API — image de production
 # Domaine : https://gamelr-api.optisoftw.com
 #
 # Build (contexte = ce dossier) :

@@ -20,8 +20,8 @@ class CandyButton extends StatefulWidget {
     this.badge,
     this.loading = false,
     // Aligné sur les boutons salon (podium / freeze / lobby).
-    this.fontSize = 17,
-    this.height = 48,
+    this.fontSize = 16,
+    this.height = 44,
   });
 
   final String label;

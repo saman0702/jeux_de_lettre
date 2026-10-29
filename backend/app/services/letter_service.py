@@ -59,10 +59,11 @@ def eligible_letters(
     }
 
 
-def draw_letter(eligible: set[str], used: Iterable[str]) -> str:
+def draw_letter(eligible: Iterable[str], used: Iterable[str]) -> str:
     """Choisit une lettre pas encore utilisée dans la partie ; réutilise les lettres seulement quand
     toutes ont servi.
     """
+    eligible = set(eligible)
     if not eligible:
         raise NoLetterAvailable
     fresh = eligible - set(used)

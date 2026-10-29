@@ -4,7 +4,7 @@ L'orchestration en direct se trouve dans room_service ; ce module ne fait que di
 de données, en réutilisant les modèles des parties solo.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 
 from sqlalchemy import select
@@ -15,6 +15,7 @@ from app.models import Game, GameRound, Player, PlayerAnswer, Submission
 from app.models.base import utcnow
 from app.schemas.game import GameSettings
 from app.services import letter_service, suggestion_service
+from app.services.concept_service import concept_key
 from app.services.scoring_service import score_round
 from app.services.validation_service import Status, ValidationResult, validate_answer
 
@@ -42,6 +43,8 @@ class RoundOutcome:
     results: list[PlayerRoundResult] = field(default_factory=list)
     # Une réponse valide par catégorie ratée par au moins un joueur.
     examples: dict[str, str] = field(default_factory=dict)
+    # Les mêmes, par langue de joueur (parties où chacun joue dans sa langue).
+    examples_by_language: dict[str, dict[str, str]] = field(default_factory=dict)
 
 
 async def create_game(
@@ -79,10 +82,18 @@ async def _game(session: AsyncSession, game_id: str) -> Game:
     return await session.scalar(select(Game).where(Game.id == game_id))
 
 
-async def start_round(session: AsyncSession, game_id: str) -> RoundInfo:
+async def start_round(session: AsyncSession, game_id: str, languages: set[str] | None = None) -> RoundInfo:
+    """Tire la lettre de la manche. Quand les joueurs jouent dans plusieurs langues, la lettre doit
+    être jouable dans chacune."""
     game = await _game(session, game_id)
-    counts = await letter_service.letter_counts(session, game.language)
-    eligible = letter_service.eligible_letters(counts, game.categories, Difficulty(game.difficulty))
+    eligible: set[str] | None = None
+    for language in sorted(languages or {game.language}):
+        counts = await letter_service.letter_counts(session, language)
+        letters = set(letter_service.eligible_letters(counts, game.categories, Difficulty(game.difficulty)))
+        eligible = letters if eligible is None else eligible & letters
+    if not eligible:
+        counts = await letter_service.letter_counts(session, game.language)
+        eligible = set(letter_service.eligible_letters(counts, game.categories, Difficulty(game.difficulty)))
     letter = letter_service.draw_letter(eligible, (r.letter for r in game.rounds))
 
     started_at = utcnow()
@@ -104,6 +115,7 @@ async def close_round(
     participants: list[str],
     submissions: dict[str, tuple[datetime, dict[Category, str]]],
     hints: dict[str, dict[str, bool]] | None = None,
+    languages: dict[str, str] | None = None,
     ) -> RoundOutcome:
     """Valide et note les réponses de tous les joueurs pour la manche en cours.
 
@@ -111,6 +123,8 @@ async def close_round(
     marquent zéro. `hints` associe id joueur -> catégorie -> si le joker choisi était le bon.
     """
     hints = hints or {}
+    # Langue de chaque joueur (id joueur -> fr/en) : chacun est validé dans la sienne.
+    languages = languages or {}
     game = await _game(session, game_id)
     game_round = game.current_round
     players = {p.id: p for p in game.players}
@@ -129,17 +143,28 @@ async def close_round(
                 result = await validate_answer(
                     session,
                     Category(category),
-                    game.language,
+                    languages.get(player_id, game.language),
                     game_round.letter,
                     raw,
                     strict_spelling=game.strict_spelling,
                 )
+                # « Spain » et « Espagne » : même réponse pour le partage des points.
+                if result.is_valid:
+                    result = replace(result, match_key=concept_key(category, result.match_key))
             validated[player_id][category] = result
 
     points = score_round(validated, {pid: set(h) for pid, h in hints.items()})
     missed = sorted({c for by_cat in validated.values() for c, r in by_cat.items() if not r.is_valid})
     examples = await suggestion_service.example_answers(session, game.language, missed, game_round.letter)
-    outcome = RoundOutcome(game_round.number, game_round.letter, examples=examples)
+    # Réponse possible dans la langue de chaque joueur.
+    examples_by_language = {game.language: examples}
+    for language in set(languages.values()) - {game.language}:
+        examples_by_language[language] = await suggestion_service.example_answers(
+            session, language, missed, game_round.letter
+        )
+    outcome = RoundOutcome(
+        game_round.number, game_round.letter, examples=examples, examples_by_language=examples_by_language
+    )
     for player_id in participants:
         submitted_at, answers = submissions.get(player_id, (game_round.ends_at, {}))
         answer_rows = [
@@ -150,7 +175,9 @@ async def close_round(
                 status=result.status,
                 points=points[player_id][category],
                 hinted=category in hints.get(player_id, {}),
-                suggestion=None if result.is_valid else examples.get(category),
+                suggestion=None
+                if result.is_valid
+                else examples_by_language.get(languages.get(player_id, game.language), examples).get(category),
             )
             for category, result in validated[player_id].items()
         ]

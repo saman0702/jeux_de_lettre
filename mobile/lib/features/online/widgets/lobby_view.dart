@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../home/country_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -29,7 +30,17 @@ class LobbyView extends StatelessWidget {
     this.onAddBot,
     this.onRemoveBot,
     this.onReport,
+    this.onOpenChat,
+    this.onOpenHistory,
+    this.onDeleteRoom,
   });
+
+  /// Salon gardé : discussion (groupe et privé) et historique des parties.
+  final VoidCallback? onOpenChat;
+  final VoidCallback? onOpenHistory;
+
+  /// Créateur d'un salon gardé : le supprimer.
+  final VoidCallback? onDeleteRoom;
 
   final RoomState room;
   final String myId;
@@ -135,6 +146,14 @@ class LobbyView extends StatelessWidget {
               chip(l10n.roundsCount(settings.rounds)),
               chip(durationLabel(l10n, settings.roundDuration)),
               chip(settings.difficulty.label(l10n)),
+              if (settings.iq) chip(l10n.iqBadge),
+              // Partie mélangée : chacun répond dans sa langue.
+              if ({
+                    for (final p in room.players)
+                      if (!p.bot) p.language,
+                  }.length >
+                  1)
+                chip(l10n.mixedLanguages),
               if (settings.strictSpelling) chip(l10n.strictSpellingChip),
               if (settings.elimination) chip(l10n.formatElimination),
               if (settings.relay) chip(l10n.formatRelay),
@@ -145,6 +164,8 @@ class LobbyView extends StatelessWidget {
                   RoomTheme.nature => l10n.themeNature,
                   RoomTheme.none => '',
                 }),
+              // Le QI n'a pas de catégories.
+              if (!settings.iq)
               for (final c in settings.categories)
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -159,6 +180,55 @@ class LobbyView extends StatelessWidget {
                 ),
             ],
           ),
+          if (room.saved && (onOpenChat != null || onOpenHistory != null)) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (onOpenChat != null)
+                  Expanded(
+                    child: CandyButton(
+                      key: const Key('lobby_chat'),
+                      label: l10n.roomChatButton,
+                      icon: Icons.chat_bubble_rounded,
+                      color: AppColors.cyan,
+                      height: 46,
+                      fontSize: 16,
+                      onPressed: onOpenChat,
+                    ),
+                  ),
+                if (onOpenChat != null && onOpenHistory != null)
+                  const SizedBox(width: 10),
+                if (onOpenHistory != null)
+                  Expanded(
+                    child: CandyButton(
+                      key: const Key('lobby_history'),
+                      label: l10n.roomHistoryButton,
+                      icon: Icons.history_rounded,
+                      color: AppColors.white,
+                      height: 46,
+                      fontSize: 16,
+                      onPressed: onOpenHistory,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+          if (room.saved && room.creatorId == myId && onDeleteRoom != null)
+            Center(
+              child: TextButton.icon(
+                key: const Key('lobby_delete_room'),
+                onPressed: onDeleteRoom,
+                icon: const Icon(Icons.delete_rounded, color: AppColors.white),
+                label: Text(
+                  l10n.deleteRoomTitle,
+                  style: fredoka(
+                    size: 14,
+                    weight: FontWeight.w600,
+                    color: AppColors.white,
+                  ),
+                ),
+              ),
+            ),
           if (settings.betting) ...[
             const SizedBox(height: 10),
             Center(
@@ -455,11 +525,21 @@ class _PlayerSeat extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        StyledNickname(
-          isMe ? l10n.youBadge : player.nickname,
-          styleId: player.nameStyle,
-          size: 13,
-          weight: isMe ? FontWeight.w700 : FontWeight.w600,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drapeau du pays d'origine.
+            CountryBadge(country: player.country, width: 16),
+            if (player.country != null) const SizedBox(width: 3),
+            Flexible(
+              child: StyledNickname(
+                isMe ? l10n.youBadge : player.nickname,
+                styleId: player.nameStyle,
+                size: 13,
+                weight: isMe ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ],
     );

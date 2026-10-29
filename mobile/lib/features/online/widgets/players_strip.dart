@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../home/country_picker.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/game_icon.dart';
@@ -17,6 +18,7 @@ class PlayersStrip extends StatelessWidget {
     required this.myId,
     this.showProgress = true,
     this.forceFinishedIds = const {},
+    this.padding = const EdgeInsets.symmetric(horizontal: 20),
   });
 
   final RoomState room;
@@ -28,15 +30,18 @@ class PlayersStrip extends StatelessWidget {
   /// Ids déjà soumis côté client (avant ack serveur), ex. après Finish.
   final Set<String> forceFinishedIds;
 
+  /// Marges de la liste (aucune quand elle partage sa ligne avec le chrono).
+  final EdgeInsets padding;
+
   @override
   Widget build(BuildContext context) {
     final players = room.ranking;
     return SizedBox(
       key: const Key('players_strip'),
-      height: 52,
+      height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: padding,
         itemCount: players.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, i) {
@@ -79,7 +84,7 @@ class _PlayerChip extends StatelessWidget {
     return Opacity(
       opacity: out ? 0.5 : 1,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(4, 4, 10, 4),
+        padding: const EdgeInsets.fromLTRB(3, 3, 8, 3),
         decoration: BoxDecoration(
           color: isMe
               ? AppColors.yellow
@@ -90,8 +95,12 @@ class _PlayerChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            PlayerAvatar.of(player, size: 38),
+            PlayerAvatar.of(player, size: 28),
             const SizedBox(width: 6),
+            if (player.country != null) ...[
+              CountryBadge(country: player.country, width: 14),
+              const SizedBox(width: 4),
+            ],
             Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,14 +110,14 @@ class _PlayerChip extends StatelessWidget {
                   child: StyledNickname(
                     isMe ? l10n.youBadge : player.nickname,
                     styleId: player.nameStyle,
-                    size: 13,
+                    size: 12,
                     fallbackColor: isMe ? AppColors.ink : AppColors.white,
                   ),
                 ),
                 Text(
                   l10n.pointsShort(player.score),
                   style: fredoka(
-                    size: 12,
+                    size: 11,
                     weight: FontWeight.w600,
                     color: isMe
                         ? AppColors.ink.withValues(alpha: 0.75)
@@ -121,7 +130,7 @@ class _PlayerChip extends StatelessWidget {
               const SizedBox(width: 6),
               GameIcon(
                 status,
-                size: 18,
+                size: 15,
                 color: status == GameIconKind.check
                     ? AppColors.green
                     : (isMe ? AppColors.ink : AppColors.white),

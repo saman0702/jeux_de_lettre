@@ -174,6 +174,8 @@ class WalletOut(BaseModel):
     level: int
     level_xp: int
     level_xp_needed: int
+    ads_removed: bool = False
+    pass_expires_at: datetime | None = None
 
 
 class SubmitResultOut(BaseModel):
@@ -203,6 +205,11 @@ class ProfileOut(BaseModel):
     avatar_preset: int
     avatar_url: str | None
     look: LookOut
+    ads_removed: bool = False
+    pass_expires_at: datetime | None = None
+    # Pubs récompensées encore possibles aujourd'hui ; bonus du Pass à prendre.
+    ad_rewards_left: int = 0
+    daily_bonus_available: bool = False
 
 
 class CosmeticIn(BaseModel):
@@ -279,3 +286,5 @@ class GameConfigOut(BaseModel):
     category_info_price_found: int
     category_info_price_missed: int
     extra_hint_price: int
+    # Options de revenus activées dans le .env (voir perks_service.features).
+    features: dict = Field(default_factory=dict)

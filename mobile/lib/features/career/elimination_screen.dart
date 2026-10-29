@@ -18,6 +18,7 @@ import '../game/widgets/option_section.dart';
 import '../game/widgets/pill_selector.dart';
 import '../../animations/transitions/pop_route.dart';
 import '../game/widgets/labels.dart';
+import '../iq/iq_setup_screen.dart';
 import '../online/data/room_models.dart';
 import '../online/nickname_dialog.dart';
 import '../online/online_controller.dart';
@@ -28,9 +29,16 @@ import '../shop/shop_screen.dart';
 
 /// Éliminatoires multijoueur : amis, duel, ou bots — jamais seul.
 class EliminationScreen extends StatefulWidget {
-  const EliminationScreen({super.key, required this.apiClient});
+  const EliminationScreen({
+    super.key,
+    required this.apiClient,
+    this.game = RoomGame.letters,
+  });
 
   final ApiClient apiClient;
+
+  /// Choisi avant, sur l'écran « Géographie & Nature / QI ».
+  final RoomGame game;
 
   @override
   State<EliminationScreen> createState() => _EliminationScreenState();
@@ -43,11 +51,20 @@ class _EliminationScreenState extends State<EliminationScreen> {
   bool _strictSpelling = false;
   int _maxPlayers = 8;
 
+  /// Éliminatoires de Géographie & Nature ou de QI.
+  late final RoomGame _game = widget.game;
+  bool _iqSpeedBonus = true;
+  bool _iqPenalty = false;
+
+  bool get _iq => _game == RoomGame.iq;
+
   /// 0 = pas de dotation ; sinon pièces placées par le créateur.
   int _prize = 0;
   late final TextEditingController _prizeField;
 
-  List<int> get _durationOptions => [
+  List<int> get _durationOptions => _iq
+      ? IqSetupScreen.durationOptions
+      : [
         for (final d in SoloGameSettings.durationOptions)
           if (!_strictSpelling || d >= Category.strictSpellingMinDuration) d,
       ];
@@ -139,9 +156,12 @@ class _EliminationScreenState extends State<EliminationScreen> {
         difficulty: _difficulty,
         rounds: _rounds,
         roundDuration: _duration,
-        strictSpelling: _strictSpelling,
+        strictSpelling: _strictSpelling && !_iq,
         maxPlayers: _maxPlayers,
         format: RoomFormat.elimination,
+        game: _game,
+        iqSpeedBonus: _iqSpeedBonus,
+        iqPenalty: _iqPenalty,
         kind: _prize > 0 ? RoomKind.prize : RoomKind.classic,
         stake: _prize,
       );
@@ -203,10 +223,13 @@ class _EliminationScreenState extends State<EliminationScreen> {
 
     return Scaffold(
       body: GameBackground(
+        theme: _iq ? BackgroundTheme.iq : BackgroundTheme.letters,
         child: SafeArea(
           child: FloatingBarsLayout(
             header: OnlineHeader(
-              title: l10n.modeElimination,
+              title: _iq
+                  ? '${l10n.modeElimination} · ${l10n.gameIqTitle}'
+                  : l10n.modeElimination,
               onBack: () => Navigator.of(context).pop(),
               helpTitle: l10n.eliminationRulesTitle,
               helpLabel: l10n.rulesButton,
@@ -265,6 +288,8 @@ class _EliminationScreenState extends State<EliminationScreen> {
                       label: (d) => d.label(l10n),
                       onTap: (d) => setState(() => _difficulty = d),
                     ),
+                    // Pas d'orthographe en QI.
+                    if (!_iq) ...[
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -293,9 +318,53 @@ class _EliminationScreenState extends State<EliminationScreen> {
                         ),
                       ],
                     ),
+                    ],
                   ],
                 ),
               ),
+              if (_iq)
+                OptionSection(
+                  index: 3,
+                  title: l10n.iqScoring,
+                  icon: GameIconKind.trophy,
+                  color: AppColors.pink,
+                  child: Column(
+                    children: [
+                      for (final (label, value, onChanged, key) in [
+                        (
+                          l10n.iqSpeedBonus,
+                          _iqSpeedBonus,
+                          (bool v) => setState(() => _iqSpeedBonus = v),
+                          'elim_iq_speed_bonus',
+                        ),
+                        (
+                          l10n.iqPenalty,
+                          _iqPenalty,
+                          (bool v) => setState(() => _iqPenalty = v),
+                          'elim_iq_penalty',
+                        ),
+                      ])
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  label,
+                                  style: fredoka(size: 15, color: AppColors.ink),
+                                ),
+                              ),
+                              GameToggle(
+                                key: Key(key),
+                                value: value,
+                                onChanged: onChanged,
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               OptionSection(
                 index: 4,
                 title: l10n.winnerPrize,

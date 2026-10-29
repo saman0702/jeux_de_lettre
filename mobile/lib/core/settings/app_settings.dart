@@ -11,7 +11,8 @@ class AppSettings extends ChangeNotifier {
   AppSettings._(
     this._prefs, {
     required this.clientId,
-    this._sound = true,
+    required this.clientToken,
+    this._sound = false,
     this._music = true,
     this._vibration = true,
     this._gameKeyboard = true,
@@ -20,6 +21,7 @@ class AppSettings extends ChangeNotifier {
     this._nickname,
     this._languageCode,
     this._gender,
+    this._country,
     this._onboardingDone = false,
     this._avatarPreset = 0,
     this._avatarPending = false,
@@ -39,10 +41,15 @@ class AppSettings extends ChangeNotifier {
 
   /// Non persisté ; utilisé par les tests (règles déjà « lues » pour ne pas
   /// bloquer les widgets).
-  AppSettings.inMemory({String? nickname, String clientId = 'test-client-id'})
-    : this._(
+  AppSettings.inMemory({
+    String? nickname,
+    String clientId = 'test-client-id',
+    bool sound = true,
+  }) : this._(
         null,
+        sound: sound,
         clientId: clientId,
+        clientToken: 'test-client-token-$clientId',
         nickname: nickname,
         careerRulesSeen: true,
         eliminationRulesSeen: true,
@@ -55,10 +62,18 @@ class AppSettings extends ChangeNotifier {
       clientId = _randomId();
       await prefs.setString(_clientIdKey, clientId);
     }
+    // Jeton secret, créé une fois : jamais montré aux autres joueurs.
+    var clientToken = prefs.getString(_clientTokenKey);
+    if (clientToken == null) {
+      clientToken = _randomId(length: 48);
+      await prefs.setString(_clientTokenKey, clientToken);
+    }
     return AppSettings._(
       prefs,
       clientId: clientId,
-      sound: prefs.getBool(_soundKey) ?? true,
+      clientToken: clientToken,
+      // Effets sonores coupés par défaut : le joueur les active dans les Réglages.
+      sound: prefs.getBool(_soundKey) ?? false,
       music: prefs.getBool(_musicKey) ?? true,
       vibration: prefs.getBool(_vibrationKey) ?? true,
       gameKeyboard: prefs.getBool(_gameKeyboardKey) ?? true,
@@ -67,6 +82,7 @@ class AppSettings extends ChangeNotifier {
       nickname: prefs.getString(_nicknameKey),
       languageCode: prefs.getString(_languageKey),
       gender: prefs.getString(_genderKey),
+      country: prefs.getString(_countryKey),
       // Déjà joué avant l'écran d'accueil : ne pas reforcer l'onboarding.
       onboardingDone: prefs.getBool(_onboardingDoneKey) ??
           (prefs.getString(_nicknameKey) != null ||
@@ -128,10 +144,10 @@ class AppSettings extends ChangeNotifier {
     }
   }
 
-  static String _randomId() {
+  static String _randomId({int length = 24}) {
     final random = Random.secure();
     return List.generate(
-      24,
+      length,
       (_) => random.nextInt(16).toRadixString(16),
     ).join();
   }
@@ -144,9 +160,11 @@ class AppSettings extends ChangeNotifier {
   static const _voiceKey = 'settings.voice';
   static const _languageKey = 'settings.language';
   static const _genderKey = 'player.gender';
+  static const _countryKey = 'player.country';
   static const _onboardingDoneKey = 'onboarding.done';
   static const _nicknameKey = 'player.nickname';
   static const _clientIdKey = 'player.client_id';
+  static const _clientTokenKey = 'player.client_token';
   static const _avatarPresetKey = 'player.avatar_preset';
   static const _avatarPendingKey = 'player.avatar_pending';
   static const _careerRulesSeenKey = 'career.rules_seen';
@@ -161,8 +179,13 @@ class AppSettings extends ChangeNotifier {
   final SharedPreferences? _prefs;
 
   /// Identifiant aléatoire gardé sur l'appareil : il permet à un invité de
-  /// retrouver sa place après une perte de connexion.
+  /// retrouver sa place après une perte de connexion. Il est public : les
+  /// autres joueurs du salon le voient.
   final String clientId;
+
+  /// Secret gardé sur l'appareil, envoyé seulement au serveur : sans lui,
+  /// personne ne peut agir sur le profil (pièces, achats, messages privés).
+  final String clientToken;
   bool _sound;
   bool _music;
   bool _vibration;
@@ -172,6 +195,7 @@ class AppSettings extends ChangeNotifier {
   String? _nickname;
   String? _languageCode;
   String? _gender;
+  String? _country;
   bool _onboardingDone;
   int _avatarPreset;
   bool _avatarPending;
@@ -351,6 +375,20 @@ class AppSettings extends ChangeNotifier {
 
   /// Genre déclaré : `male`, `female`, `other`, ou null.
   String? get gender => _gender;
+
+  /// Pays d'origine (nom anglais, ex. « Ivory Coast ») : drapeau à côté du
+  /// pseudo dans les salons ; null tant qu'il n'est pas choisi.
+  String? get country => _country;
+
+  set country(String? value) {
+    _country = value;
+    if (value == null) {
+      _prefs?.remove(_countryKey);
+    } else {
+      _prefs?.setString(_countryKey, value);
+    }
+    notifyListeners();
+  }
 
   /// Premier paramétrage déjà terminé.
   bool get onboardingDone => _onboardingDone;

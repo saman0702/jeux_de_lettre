@@ -5,6 +5,7 @@ coin_transactions."""
 
 import re
 from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,9 +37,14 @@ class WalletUpdate:
     # Points gagnés dans le niveau actuel / points à gagner pour passer au suivant.
     level_xp: int = 0
     level_xp_needed: int = LEVEL_XP_STEP
+    # Avantages achetés : « Sans pub » et fin de l'abonnement Pass.
+    ads_removed: bool = False
+    pass_expires_at: datetime | None = None
 
     def as_dict(self) -> dict:
         return {
+            "ads_removed": self.ads_removed,
+            "pass_expires_at": self.pass_expires_at.isoformat() if self.pass_expires_at else None,
             "coins": self.coins,
             "coins_gained": self.coins_gained,
             "points_to_next_coin": self.points_to_next_coin,
@@ -109,7 +115,16 @@ async def report_avatar(session: AsyncSession, reporter_id: str, reported_id: st
 
 def snapshot(profile: Profile, gained: int = 0) -> WalletUpdate:
     level, xp, needed = level_of(profile.total_points)
-    return WalletUpdate(profile.coins, gained, POINTS_PER_COIN - profile.points_balance, level, xp, needed)
+    return WalletUpdate(
+        profile.coins,
+        gained,
+        POINTS_PER_COIN - profile.points_balance,
+        level,
+        xp,
+        needed,
+        ads_removed=bool(profile.ads_removed),
+        pass_expires_at=profile.pass_expires_at,
+    )
 
 
 async def award_points(

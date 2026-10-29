@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import NullPool
 from starlette.testclient import TestClient
 
+from tests.conftest import sign_as_owner, token_for
+
 from app.main import app
 from app.services import letter_service, wallet_service
 from app.services.presence_service import MemoryPresence
@@ -32,7 +34,7 @@ def manager(monkeypatch):
 
     async def truncate():
         async with engine.begin() as conn:
-            await conn.execute(text("TRUNCATE games, profiles CASCADE"))
+            await conn.execute(text("TRUNCATE games, profiles, saved_rooms CASCADE"))
 
     asyncio.run(truncate())
     letter_service.clear_cache()
@@ -52,12 +54,17 @@ def manager(monkeypatch):
 @pytest.fixture
 def client(manager):
     with TestClient(app) as client:
+        client.event_hooks = {"request": [sign_as_owner]}
         yield client
 
 
 @contextmanager
-def player(client, client_id, nickname):
-    with client.websocket_connect(f"/ws?client_id={client_id}&nickname={nickname}") as ws:
+def player(client, client_id, nickname, language="fr", country=""):
+    url = (
+        f"/ws?client_id={client_id}&nickname={nickname}&language={language}&country={country}"
+        f"&token={token_for(client_id)}"
+    )
+    with client.websocket_connect(url) as ws:
         welcome = ws.receive_json()
         assert welcome["type"] == "welcome"
         yield ws
@@ -180,11 +187,13 @@ def test_quick_match_groups_players_and_starts_automatically(client):
         assert state(alice, "round")["round"]["letter"] == "M"
 
 
-def test_quick_match_keeps_languages_apart(client):
-    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+def test_quick_match_mixes_languages(client):
+    """Chacun répond dans sa langue : un francophone et un anglophone jouent ensemble."""
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob", "en") as bob:
         alice.send_json({"type": "quick_match", "language": "fr"})
+        code = state(alice, "waiting")["code"]
         bob.send_json({"type": "quick_match", "language": "en"})
-        assert state(alice, "waiting")["code"] != state(bob, "waiting")["code"]
+        assert state(bob, "waiting")["code"] == code
 
 
 def test_public_rooms_are_listed(client):
@@ -417,9 +426,9 @@ def play_bet_game(alice, bob, room, alice_answers, bob_answers):
 
 def test_welcome_carries_the_wallet(client, manager):
     give_coins(manager, "alice-0001", 7)
-    with client.websocket_connect("/ws?client_id=alice-0001&nickname=Alice") as ws:
+    with client.websocket_connect(f"/ws?client_id=alice-0001&nickname=Alice&token={token_for('alice-0001')}") as ws:
         welcome = ws.receive_json()
-        assert welcome["wallet"] == {"coins": 7, "coins_gained": 0, "points_to_next_coin": 20, "level": 1, "level_xp": 0, "level_xp_needed": 100}
+        assert welcome["wallet"] == {"coins": 7, "coins_gained": 0, "points_to_next_coin": 20, "level": 1, "level_xp": 0, "level_xp_needed": 100, "ads_removed": False, "pass_expires_at": None}
 
 
 def test_round_points_become_coins(client):
@@ -433,7 +442,7 @@ def test_round_points_become_coins(client):
         alice.send_json({"type": "submit", "round": 1, "answers": {"city": "Madrid", "country": "Maroc"}})
         bob.send_json({"type": "submit", "round": 1, "answers": {}})
         wallet = wait_for(alice, lambda m: m["type"] == "wallet")
-        assert wallet == {"type": "wallet", "coins": 1, "coins_gained": 1, "points_to_next_coin": 20, "level": 1, "level_xp": 20, "level_xp_needed": 100}
+        assert wallet == {"type": "wallet", "coins": 1, "coins_gained": 1, "points_to_next_coin": 20, "level": 1, "level_xp": 20, "level_xp_needed": 100, "ads_removed": False, "pass_expires_at": None}
 
 
 def test_betting_room_needs_coins(client, manager):
@@ -632,3 +641,385 @@ def test_knockout_rooms_cannot_be_joined_during_a_game(client):
         state(alice, "round")
         carol.send_json({"type": "join_room", "code": room["code"]})
         assert error(carol) == "game_in_progress"
+
+
+# ------------------------------------------------------------------ salons gardés et historique
+
+
+@pytest.fixture
+def http(manager):
+    """Routes HTTP sur la même base de test que le gestionnaire de salons."""
+    from app.core.database import get_session
+
+    async def session():
+        async with manager.session_factory() as s:
+            yield s
+
+    app.dependency_overrides[get_session] = session
+    yield
+    app.dependency_overrides.pop(get_session, None)
+
+
+def test_a_closed_room_reopens_with_its_chat_and_creator_as_host(client, http):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice, public=False)
+        code = room["code"]
+        assert room["saved"] is True
+        bob.send_json({"type": "join_room", "code": code})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        bob.send_json({"type": "chat", "text": "Salut @Alice !"})
+        chat = state(alice, check=lambda r: len(r["chat"]) == 1)["chat"]
+        assert chat[0]["mentions"] == ["alice-0001"], "@Alice is tagged"
+        assert wait_for(alice, lambda m: m["type"] == "mention")["from"] == "Bob"
+        for ws in (alice, bob):
+            ws.send_json({"type": "leave_room"})
+            wait_for(ws, lambda m: m["type"] == "left_room")
+
+    # Plus personne : le salon est fermé, mais gardé.
+    with player(client, "bob-00001", "Bob") as bob:
+        bob.send_json({"type": "join_room", "code": code})
+        reopened = state(bob, "waiting")
+        assert reopened["code"] == code
+        assert [m["text"] for m in reopened["chat"]] == ["Salut @Alice !"]
+        assert reopened["host_id"] == "bob-00001", "creator away: first back is host"
+        with player(client, "alice-0001", "Alice") as alice:
+            alice.send_json({"type": "join_room", "code": code})
+            assert state(alice, check=lambda r: len(r["players"]) == 2)["host_id"] == "alice-0001"
+
+    mine = client.get("/api/v1/rooms/mine", params={"client_id": "bob-00001"}).json()
+    assert [r["code"] for r in mine] == [code]
+    assert mine[0]["members"] == 2
+
+
+def test_private_rooms_are_listed_only_for_members(client, http):
+    with player(client, "alice-0001", "Alice") as alice:
+        private = create_room(alice, public=False)["code"]
+        alice.send_json({"type": "leave_room"})
+        wait_for(alice, lambda m: m["type"] == "left_room")
+        public = create_room(alice, public=True)["code"]
+
+    others = client.get("/api/v1/rooms/public", params={"language": "fr"}).json()
+    assert [r["code"] for r in others] == [public], "private room hidden from strangers"
+    assert client.get(f"/api/v1/rooms/{private}/history", params={"client_id": "carol-0001"}).status_code == 404
+    history = client.get(f"/api/v1/rooms/{public}/history", params={"client_id": "carol-0001"})
+    assert history.status_code == 200, "anyone can read a public room"
+    assert client.get(f"/api/v1/rooms/{private}/history", params={"client_id": "alice-0001"}).status_code == 200
+
+
+def test_finished_games_are_kept_in_the_room_history(client, http):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        code = create_room(alice)["code"]
+        bob.send_json({"type": "join_room", "code": code})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        for number in range(1, 6):
+            state(alice, "round", lambda r, n=number: r["round"]["number"] == n)
+            answers = {"city": "Madrid"} if number == 1 else {}
+            alice.send_json({"type": "submit", "round": number, "answers": answers})
+            bob.send_json({"type": "submit", "round": number, "answers": {}})
+        state(alice, "finished")
+
+    games = client.get(f"/api/v1/rooms/{code}/history", params={"client_id": "bob-00001"}).json()["games"]
+    assert len(games) == 1
+    assert [p["nickname"] for p in games[0]["ranking"]] == ["Alice", "Bob"]
+    assert games[0]["ranking"][0]["score"] == 10
+
+
+def test_private_messages_cost_coins_and_stay_between_two(client, manager, http):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        code = create_room(alice)["code"]
+        bob.send_json({"type": "join_room", "code": code})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+
+        alice.send_json({"type": "dm", "to": "bob-00001", "text": "Coucou"})
+        assert error(alice) == "chat_locked"
+
+        give_coins(manager, "alice-0001", 100)
+        alice.send_json({"type": "unlock_chat"})
+        wait_for(alice, lambda m: m["type"] == "chat_unlocked")
+        alice.send_json({"type": "dm", "to": "bob-00001", "text": "Coucou"})
+        received = wait_for(bob, lambda m: m["type"] == "dm")["message"]
+        assert (received["nickname"], received["to"], received["text"]) == ("Alice", "bob-00001", "Coucou")
+
+    with player(client, "carol-0001", "Carol") as carol:
+        carol.send_json({"type": "join_room", "code": code})
+        state(carol, "waiting")
+
+    def private(client_id):
+        response = client.get(f"/api/v1/rooms/{code}/history", params={"client_id": client_id})
+        assert response.status_code == 200, response.text
+        return response.json()["private"]
+
+    assert [m["text"] for m in private("bob-00001")] == ["Coucou"]
+    assert private("carol-0001") == [], "others never see private messages"
+
+
+def test_rooms_without_activity_for_30_days_are_deleted(manager):
+    from datetime import timedelta
+
+    from app.models.base import utcnow
+    from app.services import room_store
+
+    async def run():
+        async with manager.session_factory() as session:
+            await room_store.save_room(session, "OLD01", "alice-0001", "Alice", True, "fr", {})
+            await room_store.save_room(session, "NEW01", "alice-0001", "Alice", True, "fr", {})
+            await session.flush()
+            (await room_store.get_room(session, "OLD01")).last_activity_at = utcnow() - timedelta(days=31)
+            await session.commit()
+            removed = await room_store.purge_inactive(session, keep=set())
+            await session.commit()
+            return removed, await room_store.get_room(session, "OLD01"), await room_store.get_room(session, "NEW01")
+
+    removed, old, new = asyncio.run(run())
+    assert removed == 1 and old is None and new is not None
+
+
+# ------------------------------------------------------------------ langues mélangées et pays
+
+
+def test_french_and_english_players_share_a_room(client):
+    with (
+        player(client, "alice-0001", "Alice", "fr", "France") as alice,
+        player(client, "bob-00001", "Bob", "en", "Ivory%20Coast") as bob,
+    ):
+        room = create_room(alice, categories=["country"])
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        room = state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        assert {p["client_id"]: (p["language"], p["country"]) for p in room["players"]} == {
+            "alice-0001": ("fr", "France"),
+            "bob-00001": ("en", "Ivory Coast"),
+        }
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        state(alice, "round")
+        # Chacun dans sa langue : « Maroc » et « Morocco » sont la même réponse (partagée).
+        alice.send_json({"type": "submit", "round": 1, "answers": {"country": "Maroc"}})
+        bob.send_json({"type": "submit", "round": 1, "answers": {"country": "Morocco"}})
+        results = state(alice, "results")["results"]
+        by_player = {p["nickname"]: p for p in results["players"]}
+        assert by_player["Alice"]["answers"][0]["status"] == "valid"
+        assert by_player["Bob"]["answers"][0]["status"] == "valid"
+        assert by_player["Alice"]["round_score"] == by_player["Bob"]["round_score"] == 5
+
+        # Un anglophone qui répond en français n'est pas validé (il joue en anglais).
+        state(alice, "round", lambda r: r["round"]["number"] == 2)
+        alice.send_json({"type": "submit", "round": 2, "answers": {}})
+        bob.send_json({"type": "submit", "round": 2, "answers": {"country": "Maroc"}})
+        results = state(bob, "results", lambda r: r["results"]["number"] == 2)["results"]
+        bob_answer = {p["nickname"]: p for p in results["players"]}["Bob"]["answers"][0]
+        assert bob_answer["status"] != "valid"
+        assert set(results["examples_by_language"]) == {"fr", "en"}
+
+
+# ------------------------------------------------------------------ QI
+
+
+def test_an_iq_room_scores_right_and_fast_answers(client, monkeypatch):
+    from app.services import iq_service
+
+    puzzle = iq_service.Puzzle(
+        id="test-seq",
+        kind="sequence",
+        level=1,
+        input="number",
+        prompt={"fr": "Quel nombre vient ensuite ?", "en": "Which number comes next?"},
+        answer="10",
+        explanation={"fr": "+2", "en": "+2"},
+        items=["2", "4", "6", "8", "?"],
+    )
+    monkeypatch.setattr(iq_service, "draw", lambda level, exclude=None, rng=None: puzzle)
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob", "en") as bob:
+        room = create_room(alice, game="iq", iq_penalty=True)
+        assert room["settings"]["game"] == "iq"
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+
+        round_ = state(alice, "round")["round"]
+        assert round_["puzzle"]["items"] == ["2", "4", "6", "8", "?"]
+        assert "answer" not in round_["puzzle"], "the answer stays on the server"
+        alice.send_json({"type": "iq_answer", "round": 1, "answer": "10"})
+        bob.send_json({"type": "iq_answer", "round": 1, "answer": "12"})
+        results = state(alice, "results")["results"]
+        assert results["puzzle"]["answer"] == "10"
+        by_player = {p["nickname"]: p for p in results["players"]}
+        assert by_player["Alice"]["correct"] is True and by_player["Alice"]["round_score"] >= 10
+        assert by_player["Bob"]["correct"] is False and by_player["Bob"]["round_score"] == -5, "penalty on"
+
+
+def test_iq_relay_gives_each_player_their_own_puzzle(client, monkeypatch):
+    from app.services import iq_service
+
+    drawn = []
+
+    def draw(level, exclude=None, rng=None):
+        n = len(drawn) + 1
+        drawn.append(
+            iq_service.Puzzle(
+                id=f"relay-{n}",
+                kind="sequence",
+                level=level,
+                input="number",
+                prompt={"fr": "Suite ?", "en": "Next?"},
+                answer=str(n * 100),
+                explanation={"fr": "", "en": ""},
+                items=[str(n), "?"],
+            )
+        )
+        assert exclude is None or drawn[-1].id not in exclude
+        return drawn[-1]
+
+    monkeypatch.setattr(iq_service, "draw", draw)
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        room = create_room(alice, game="iq", format="relay")
+        assert room["settings"]["format"] == "relay", "relay is allowed in IQ"
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+
+        round_ = state(alice, "round")["round"]
+        puzzles = round_["puzzles"]
+        assert set(puzzles) == {"alice-0001", "bob-00001"}
+        assert puzzles["alice-0001"]["id"] != puzzles["bob-00001"]["id"]
+        assert all("answer" not in p for p in puzzles.values())
+        answers = {p.id: p.answer for p in drawn}
+        alice.send_json({"type": "iq_answer", "round": 1, "answer": answers[puzzles["alice-0001"]["id"]]})
+        # Bob donne la réponse de l'énigme d'Alice : faux pour la sienne.
+        bob.send_json({"type": "iq_answer", "round": 1, "answer": answers[puzzles["alice-0001"]["id"]]})
+        results = state(alice, "results")["results"]
+        by_player = {p["client_id"]: p for p in results["players"]}
+        assert by_player["alice-0001"]["correct"] is True
+        assert by_player["bob-00001"]["correct"] is False
+        assert by_player["bob-00001"]["puzzle"]["id"] == puzzles["bob-00001"]["id"]
+        assert by_player["bob-00001"]["puzzle"]["answer"] == answers[puzzles["bob-00001"]["id"]]
+
+
+def test_iq_bots_answer_by_themselves(client, monkeypatch):
+    with player(client, "alice-0001", "Alice") as alice:
+        alice.send_json({
+            "type": "create_room",
+            "settings": {**SETTINGS, "game": "iq"},
+            "bots": {"count": 2, "level": "hard"},
+        })
+        round_ = state(alice, "round")
+        assert round_["round"]["puzzle"] is not None
+        bots = [p for p in round_["players"] if p["bot"]]
+        assert len(bots) == 2
+        alice.send_json({"type": "iq_answer", "round": 1, "answer": "0"})
+        results = state(alice, "results")["results"]
+        assert {p["client_id"] for p in results["players"] if p["client_id"].startswith("bot-")}
+        assert all(p["answer"] is not None for p in results["players"]), "bots answered"
+
+
+def test_the_live_connection_needs_the_secret_token(client):
+    from starlette.websockets import WebSocketDisconnect
+
+    # Le vrai joueur se connecte : son jeton est associé à son profil.
+    with player(client, "alice-0001", "Alice"):
+        pass
+    for token in ("", "pirate-token-0123456789"):
+        try:
+            with client.websocket_connect(f"/ws?client_id=alice-0001&nickname=Pirate&token={token}"):
+                raise AssertionError("an impostor must not get in")
+        except WebSocketDisconnect as closed:
+            assert closed.code == 4401
+    with player(client, "alice-0001", "Alice") as alice:
+        alice.send_json({"type": "subscribe_rooms", "language": "fr"})
+
+
+
+def test_iq_jokers_in_a_room_cost_coins_and_help_only_the_buyer(client, manager, monkeypatch):
+    from app.services import iq_service
+
+    counter = iter(range(1, 100))
+
+    def draw(level, exclude=None, rng=None):
+        n = next(counter)
+        return iq_service.Puzzle(
+            id=f"j-{n}", kind="sequence", level=level, input="number",
+            prompt={"fr": "Suite ?", "en": "Next?"}, answer=str(n * 10),
+            explanation={"fr": "", "en": ""}, items=[str(n), "?"],
+        )
+
+    monkeypatch.setattr(iq_service, "draw", draw)
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        give_coins(manager, "alice-0001", 20)
+        room = create_room(alice, game="iq")
+        bob.send_json({"type": "join_room", "code": room["code"]})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        alice.send_json({"type": "set_ready", "ready": True})
+        bob.send_json({"type": "set_ready", "ready": True})
+        common = state(alice, "round")["round"]["puzzle"]
+
+        alice.send_json({"type": "iq_joker", "round": 1, "kind": "fifty"})
+        refused = wait_for(alice, lambda m: m["type"] == "error")
+        assert refused["code"] == "joker_unavailable", "no 50/50 on a number puzzle"
+        alice.send_json({"type": "iq_joker", "round": 1, "kind": "hint"})
+        hint = wait_for(alice, lambda m: m["type"] == "iq_joker")
+        assert hint["low"] <= 10 <= hint["high"] and hint["wallet"]["coins"] == 17
+        alice.send_json({"type": "iq_joker", "round": 1, "kind": "time"})
+        assert wait_for(alice, lambda m: m["type"] == "iq_joker")["extra_seconds"] == 15
+        alice.send_json({"type": "iq_joker", "round": 1, "kind": "skip"})
+        skipped = wait_for(alice, lambda m: m["type"] == "iq_joker")
+        assert skipped["puzzle"]["id"] != common["id"] and "answer" not in skipped["puzzle"]
+        assert coins_of(manager, "alice-0001") == 9
+
+        bob.send_json({"type": "iq_joker", "round": 1, "kind": "time"})
+        assert wait_for(bob, lambda m: m["type"] == "error")["code"] == "not_enough_coins"
+
+        # Alice répond à sa nouvelle énigme, Bob à l'énigme commune.
+        new_answer = str(int(skipped["puzzle"]["items"][0]) * 10)
+        alice.send_json({"type": "iq_answer", "round": 1, "answer": new_answer})
+        bob.send_json({"type": "iq_answer", "round": 1, "answer": "10"})
+        results = state(alice, "results")["results"]
+        by_player = {p["client_id"]: p for p in results["players"]}
+        assert by_player["alice-0001"]["correct"] is True
+        assert by_player["alice-0001"]["puzzle"]["id"] == skipped["puzzle"]["id"]
+        assert by_player["bob-00001"]["correct"] is True and "puzzle" not in by_player["bob-00001"]
+
+
+def test_bots_are_back_when_a_saved_room_reopens(client):
+    with player(client, "alice-0001", "Alice") as alice:
+        alice.send_json({
+            "type": "create_room",
+            "settings": {**SETTINGS, "public": False},
+            "bots": {"count": 2, "level": "hard"},
+        })
+        room = state(alice, "waiting", lambda r: len(r["players"]) == 3)
+        code = room["code"]
+        bots = sorted(p["nickname"] for p in room["players"] if p["bot"])
+        alice.send_json({"type": "leave_room"})
+        wait_for(alice, lambda m: m["type"] == "left_room")
+
+    # Plus aucun humain : le salon est fermé ; en revenant, les mêmes bots sont là.
+    with player(client, "alice-0001", "Alice") as alice:
+        alice.send_json({"type": "join_room", "code": code})
+        reopened = state(alice, "waiting", lambda r: len(r["players"]) == 3)
+        back = [p for p in reopened["players"] if p["bot"]]
+        assert sorted(p["nickname"] for p in back) == bots
+        assert {p["bot_level"] for p in back} == {"hard"}
+
+
+def test_only_the_creator_can_delete_a_saved_room(client, http):
+    with player(client, "alice-0001", "Alice") as alice, player(client, "bob-00001", "Bob") as bob:
+        code = create_room(alice, public=True)["code"]
+        bob.send_json({"type": "join_room", "code": code})
+        state(bob, "waiting", lambda r: len(r["players"]) == 2)
+        mine = client.get("/api/v1/rooms/mine", params={"client_id": "bob-00001"}).json()
+        assert [r["creator_id"] for r in mine] == ["alice-0001"]
+
+        refused = client.delete(f"/api/v1/rooms/{code}", params={"client_id": "bob-00001"})
+        assert refused.status_code == 403 and refused.json()["detail"] == "not_room_creator"
+        deleted = client.delete(f"/api/v1/rooms/{code}", params={"client_id": "alice-0001"})
+        assert deleted.status_code == 200
+        # Ceux qui étaient dedans en sortent.
+        for ws in (alice, bob):
+            assert wait_for(ws, lambda m: m["type"] == "room_deleted")["code"] == code
+
+    assert client.get("/api/v1/rooms/mine", params={"client_id": "bob-00001"}).json() == []
+    assert client.get(f"/api/v1/rooms/{code}/history", params={"client_id": "alice-0001"}).status_code == 404
+    assert client.delete(f"/api/v1/rooms/{code}", params={"client_id": "alice-0001"}).status_code == 404

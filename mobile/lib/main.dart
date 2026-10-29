@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -13,6 +16,8 @@ import 'features/home/app_splash.dart';
 import 'features/online/online_controller.dart';
 import 'core/network/api_client.dart';
 import 'features/avatar/avatar_sync.dart';
+import 'features/perks/ads_service.dart';
+import 'features/perks/perks_controller.dart';
 import 'features/shop/coin_store.dart';
 import 'features/shop/shop_controller.dart';
 import 'features/wallet/coin_counter.dart';
@@ -21,6 +26,7 @@ import 'l10n/app_localizations.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final settings = await AppSettings.load();
+  ApiClient.clientToken = settings.clientToken;
   final feedback = GameFeedback(
     audio: await AudioplayersGameAudio.create(),
     settings: settings,
@@ -30,7 +36,18 @@ Future<void> main() async {
   final online = OnlineController(
     RealtimeClient(
       clientId: settings.clientId,
+      token: settings.clientToken,
       nickname: settings.nickname ?? 'Joueur',
+      language: appLanguage(settings),
+      country: settings.country,
+    ),
+  );
+  // Chacun répond dans la langue de son appli : le serveur doit la connaître,
+  // ainsi que le pays d'origine (drapeau vu par les autres).
+  settings.addListener(
+    () => online.client.updateIdentity(
+      language: appLanguage(settings),
+      country: settings.country,
     ),
   );
   // Une seule connexion pour toute l'appli : compteur en ligne, salons et
@@ -48,9 +65,33 @@ Future<void> main() async {
     clientId: settings.clientId,
     onWallet: online.applyWallet,
   )..start();
+  // Pubs, « Sans pub » et Pass : seulement les options activées dans le .env
+  // du serveur.
+  final perks = PerksController(
+    api: ApiClient(),
+    online: online,
+    ads: AdMobAdsService(),
+    storage: await PrefsPerksStorage.load(),
+  );
+  unawaited(perks.load());
   // Prêt pour les parties solo hors ligne, sans retarder le démarrage.
   OfflineDictionary.load();
-  runApp(LetterBattleApp(feedback: feedback, online: online, shop: shop));
+  runApp(
+    LetterBattleApp(
+      feedback: feedback,
+      online: online,
+      shop: shop,
+      perks: perks,
+    ),
+  );
+}
+
+/// Langue réellement affichée : celle choisie, sinon celle du téléphone si
+/// l'appli la parle (français), sinon l'anglais.
+String appLanguage(AppSettings settings) {
+  final code =
+      settings.languageCode ?? PlatformDispatcher.instance.locale.languageCode;
+  return code == 'fr' ? 'fr' : 'en';
 }
 
 class LetterBattleApp extends StatefulWidget {
@@ -60,6 +101,7 @@ class LetterBattleApp extends StatefulWidget {
     this.feedback,
     this.online,
     this.shop,
+    this.perks,
   });
 
   final Widget home;
@@ -73,6 +115,9 @@ class LetterBattleApp extends StatefulWidget {
   /// Par défaut, une boutique sans store (tests).
   final ShopController? shop;
 
+  /// Par défaut, aucune pub ni option (tests).
+  final PerksController? perks;
+
   @override
   State<LetterBattleApp> createState() => _LetterBattleAppState();
 }
@@ -85,6 +130,7 @@ class _LetterBattleAppState extends State<LetterBattleApp>
       OnlineController(
         RealtimeClient(
           clientId: _feedback.settings.clientId,
+          token: _feedback.settings.clientToken,
           nickname: 'Joueur',
         ),
       );
@@ -96,6 +142,8 @@ class _LetterBattleAppState extends State<LetterBattleApp>
         clientId: _online.clientId,
         onWallet: _online.applyWallet,
       );
+  late final PerksController _perks =
+      widget.perks ?? PerksController(api: ApiClient(), online: _online);
 
   @override
   void initState() {
@@ -130,26 +178,34 @@ class _LetterBattleAppState extends State<LetterBattleApp>
         controller: _online,
         child: ShopScope(
           controller: _shop,
-          child: ListenableBuilder(
-            listenable: _feedback.settings,
-            builder: (context, _) => MaterialApp(
-              locale: _feedback.settings.languageCode == null
-                  ? null
-                  : Locale(_feedback.settings.languageCode!),
-              onGenerateTitle: (context) =>
-                  AppLocalizations.of(context).appTitle,
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.light(),
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: AppLocalizations.supportedLocales,
-              builder: (context, child) =>
-                  CoinGainOverlay(child: child ?? const SizedBox.shrink()),
-              home: widget.home,
+          child: PerksScope(
+            controller: _perks,
+            child: ListenableBuilder(
+              listenable: _feedback.settings,
+              builder: (context, _) => MaterialApp(
+                locale: _feedback.settings.languageCode == null
+                    ? null
+                    : Locale(_feedback.settings.languageCode!),
+                onGenerateTitle: (context) =>
+                    AppLocalizations.of(context).appTitle,
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.light(),
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: AppLocalizations.supportedLocales,
+                // La police agrandie du téléphone faisait déborder cadres et
+                // boutons : on la suit, mais pas au-delà de 10 %.
+                builder: (context, child) => MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: 1.1,
+                  child:
+                      CoinGainOverlay(child: child ?? const SizedBox.shrink()),
+                ),
+                home: widget.home,
+              ),
             ),
           ),
         ),

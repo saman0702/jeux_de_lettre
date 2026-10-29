@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../animations/countdown/countdown_view.dart';
 import '../../core/audio/game_audio.dart';
+import '../../core/network/api_client.dart';
 import '../../core/feedback/game_feedback.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/game_dialog.dart';
@@ -21,6 +22,11 @@ import 'widgets/online_header.dart';
 import 'widgets/podium_view.dart';
 import 'widgets/room_results_view.dart';
 import 'widgets/salon_social.dart';
+import '../perks/perks_controller.dart';
+import '../../animations/transitions/pop_route.dart';
+import '../iq/iq_widgets.dart';
+import 'data/saved_rooms.dart';
+import 'room_history.dart';
 import 'widgets/players_strip.dart';
 import 'widgets/round_wait_view.dart';
 import 'widgets/searching_view.dart';
@@ -36,7 +42,11 @@ class RoomScreen extends StatefulWidget {
     super.key,
     this.tick = const Duration(milliseconds: 200),
     this.now = DateTime.now,
+    this.apiClient,
   });
+
+  /// API des salons gardés (suppression) ; injectable dans les tests.
+  final ApiClient? apiClient;
 
   /// Fréquence de rafraîchissement des comptes à rebours ; injectable dans les
   /// tests avec [now].
@@ -58,6 +68,14 @@ class _RoomScreenState extends State<RoomScreen> {
   HintController? _hints;
   int? _submittedRound;
 
+  // Jokers QI pris pendant la manche en cours (effets pour ce joueur seul).
+  int? _iqJokerRound;
+  Set<String> _iqJokersUsed = {};
+  Set<int> _iqRemoved = {};
+  (int, int)? _iqRange;
+  int? _iqStart;
+  int _iqExtra = 0;
+
   /// Le podium final reste à l'écran jusqu'au choix du joueur, même si
   /// quelqu'un a déjà relancé la salle.
   List<RoomPlayer>? _podium;
@@ -76,11 +94,14 @@ class _RoomScreenState extends State<RoomScreen> {
     super.didChangeDependencies();
     _online = OnlineScope.of(context);
     _feedback = GameFeedbackScope.of(context);
+    _perks ??= PerksScope.maybeOf(context);
     if (_online.room != null || _online.searching) _active = true;
     if (_subscriptions.isEmpty) {
       _subscriptions
         ..add(_online.notices.listen(_showNotice))
-        ..add(_online.errors.listen(_showError));
+        ..add(_online.mentions.listen(_showMention))
+        ..add(_online.errors.listen(_showError))
+        ..add(_online.iqJokers.listen(_onIqJoker));
       _online.addListener(_onRoomChanged);
       _ticker = Timer.periodic(widget.tick, (_) => _onTick());
     }
@@ -88,6 +109,7 @@ class _RoomScreenState extends State<RoomScreen> {
 
   @override
   void dispose() {
+    if (_podium != null) _perks?.onGameFinished();
     _ticker?.cancel();
     _online.removeListener(_onRoomChanged);
     for (final s in _subscriptions) {
@@ -136,9 +158,8 @@ class _RoomScreenState extends State<RoomScreen> {
         round != null &&
         _fieldsRound != round.number) {
       final me = room.player(_online.clientId);
-      final cats = room.settings.relay &&
-              me != null &&
-              me.assignments.isNotEmpty
+      final cats =
+          room.settings.relay && me != null && me.assignments.isNotEmpty
           ? me.assignments
           : room.settings.categories;
       _prepareFields(cats, round.number);
@@ -147,7 +168,7 @@ class _RoomScreenState extends State<RoomScreen> {
     if (_podium != null &&
         room.phase != RoomPhase.finished &&
         room.phase != RoomPhase.results) {
-      _podium = null;
+      _leavePodium();
     }
     if (mounted) setState(() {});
   }
@@ -181,6 +202,176 @@ class _RoomScreenState extends State<RoomScreen> {
     setState(() {});
   }
 
+  /// QI : l'énigme et sa zone de réponse (une seule réponse par manche).
+  Widget _iqRound(RoomState room) {
+    final l10n = AppLocalizations.of(context);
+    final round = room.round!;
+    // Relais : chacun a sa propre énigme.
+    final puzzle = room.iqPuzzleFor(_online.clientId);
+    final me = room.player(_online.clientId);
+    final language = Localizations.localeOf(context).languageCode;
+    final answered =
+        _submittedRound == round.number || (me?.finished ?? false);
+    final canPlay = me != null && me.playing && !me.eliminated;
+    final jokers = _iqJokerRound == round.number;
+    final extra = Duration(seconds: jokers ? _iqExtra : 0);
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: IqHeader(
+            number: round.number,
+            total: room.settings.rounds,
+            trailing: TimerBadge(
+              remaining: round.remaining(widget.now()) + extra,
+              total: Duration(seconds: round.duration) + extra,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        PlayersStrip(
+          room: room,
+          myId: _online.clientId,
+          forceFinishedIds: {if (answered) _online.clientId},
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            children: [
+              if (puzzle != null)
+                IqPuzzleCard(puzzle: puzzle, language: language),
+              const SizedBox(height: 14),
+              if (!canPlay)
+                Text(
+                  (me?.eliminated ?? false)
+                      ? l10n.youAreEliminated
+                      : l10n.spectating,
+                  textAlign: TextAlign.center,
+                  style: fredoka(size: 16, color: AppColors.white),
+                )
+              else if (answered || puzzle == null)
+                Text(
+                  l10n.iqAnswerSent,
+                  key: const Key('iq_sent'),
+                  textAlign: TextAlign.center,
+                  style: gameFont(size: 18, color: AppColors.white),
+                )
+              else ...[
+                if (room.iqJokerPrices.isNotEmpty && !(me.bot)) ...[
+                  IqJokerBar(
+                    puzzle: puzzle,
+                    prices: room.iqJokerPrices,
+                    used: jokers ? _iqJokersUsed : const {},
+                    onUse: (kind) => _online.sendIqJoker(round.number, kind),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                if (jokers && _iqRange != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      l10n.iqHintRange(_iqRange!.$1, _iqRange!.$2),
+                      key: const Key('iq_hint_range'),
+                      textAlign: TextAlign.center,
+                      style: gameFont(size: 17, color: AppColors.yellow),
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
+        // Réponse toujours visible en bas : seule l'énigme défile.
+        if (canPlay && !answered && puzzle != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+            child: IqAnswerPad(
+              key: ValueKey(puzzle.id),
+              puzzle: puzzle,
+              language: language,
+              removed: jokers ? _iqRemoved : const {},
+              traceStart: jokers ? _iqStart : null,
+              onAnswer: (answer) {
+                setState(() => _submittedRound = round.number);
+                _online.sendIqAnswer(round.number, answer);
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Joker QI acheté : on garde son effet pour la manche en cours.
+  void _onIqJoker(Map<String, dynamic> event) {
+    if (!mounted) return;
+    final round = event['round'] as int?;
+    _feedback.play(Sfx.reveal);
+    setState(() {
+      if (_iqJokerRound != round) {
+        _iqJokerRound = round;
+        _iqJokersUsed = {};
+        _iqRemoved = {};
+        _iqRange = null;
+        _iqStart = null;
+        _iqExtra = 0;
+      }
+      _iqJokersUsed = {..._iqJokersUsed, event['kind'] as String};
+      _iqRemoved = {
+        ..._iqRemoved,
+        for (final i in (event['removed'] as List?) ?? const []) i as int,
+      };
+      if (event['low'] case final int low) {
+        _iqRange = (low, event['high'] as int);
+      }
+      if (event['extra_seconds'] case final int extra) _iqExtra = extra;
+      if (event['start'] case final int start) _iqStart = start;
+      // Passer : nouvelle énigme, les choix retirés ne valent plus.
+      if (event['kind'] == 'skip') {
+        _iqRemoved = {};
+        _iqRange = null;
+        _iqStart = null;
+      }
+    });
+  }
+
+  /// QI : la bonne réponse, l'explication et la réponse de chaque joueur.
+  Widget _iqResults(RoomState room) {
+    final results = room.results;
+    final language = Localizations.localeOf(context).languageCode;
+    PlayerRoundResult? mine;
+    for (final p in results?.players ?? const <PlayerRoundResult>[]) {
+      if (p.clientId == _online.clientId) mine = p;
+    }
+    // Relais : on corrige sa propre énigme (un spectateur voit la première).
+    // Sa propre énigme d'abord (relais ou joker « passer »).
+    final puzzle =
+        mine?.iqPuzzle ??
+        results?.puzzle ??
+        results?.players.firstOrNull?.iqPuzzle;
+    if (results == null || puzzle == null) return const SizedBox.shrink();
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      children: [
+        IqPuzzleCard(puzzle: puzzle, language: language),
+        const SizedBox(height: 10),
+        IqRevealCard(
+          puzzle: puzzle,
+          language: language,
+          players: [
+            for (final p in results.players)
+              IqPlayerResult(
+                name: p.nickname,
+                answer: p.iqAnswer,
+                correct: p.iqCorrect,
+                points: p.roundScore,
+                isMe: p.clientId == _online.clientId,
+                shownAnswer: p.iqPuzzle?.shown(p.iqAnswer, language),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
   bool _canAnswer(RoomState room) {
     final me = room.player(_online.clientId);
     return me != null &&
@@ -202,27 +393,30 @@ class _RoomScreenState extends State<RoomScreen> {
   void _showNotice(RoomNotice notice) {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context);
-    final inGame = _room != null &&
+    final inGame =
+        _room != null &&
         _room!.phase != RoomPhase.waiting &&
         _room!.phase != RoomPhase.finished;
     final text = switch (notice.kind) {
       NoticeKind.joined => l10n.noticeJoined(notice.nickname),
-      NoticeKind.left => inGame
-          ? l10n.noticeLeftGame(notice.nickname)
-          : l10n.noticeLeft(notice.nickname),
+      NoticeKind.left =>
+        inGame
+            ? l10n.noticeLeftGame(notice.nickname)
+            : l10n.noticeLeft(notice.nickname),
       NoticeKind.disconnected => l10n.noticeDisconnected(notice.nickname),
       NoticeKind.reconnected => l10n.noticeReconnected(notice.nickname),
       NoticeKind.botsJoined => l10n.noticeBotsJoined,
       NoticeKind.hintUsed => () {
-          var category = notice.detail;
-          try {
-            category = Category.fromWire(notice.detail).label(l10n);
-          } catch (_) {}
-          return l10n.noticeHintUsed(notice.nickname, category);
-        }(),
+        var category = notice.detail;
+        try {
+          category = Category.fromWire(notice.detail).label(l10n);
+        } catch (_) {}
+        return l10n.noticeHintUsed(notice.nickname, category);
+      }(),
       NoticeKind.error => l10n.errorGeneric,
     };
-    final important = notice.kind == NoticeKind.left ||
+    final important =
+        notice.kind == NoticeKind.left ||
         notice.kind == NoticeKind.disconnected ||
         notice.kind == NoticeKind.hintUsed;
     ScaffoldMessenger.of(context)
@@ -241,8 +435,33 @@ class _RoomScreenState extends State<RoomScreen> {
       );
   }
 
+  /// Le créateur supprime le salon : le serveur fait sortir tout le monde.
+  bool _deletingRoom = false;
+
+  Future<void> _deleteRoom(String code) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
+    if (!await confirmDeleteRoom(context) || !mounted) return;
+    _deletingRoom = true;
+    try {
+      await SavedRoomsApi(
+        widget.apiClient ?? ApiClient(),
+        _online.clientId,
+      ).delete(code);
+    } on ApiException catch (e) {
+      _deletingRoom = false;
+      messenger.showSnackBar(SnackBar(content: Text(errorMessage(l10n, e.code))));
+    }
+  }
+
   void _showError(String code) {
     if (!mounted) return;
+    if (code == 'room_deleted' && _deletingRoom) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).roomDeleted)),
+      );
+      return;
+    }
     // Envoi refusé : on annule le flag local pour ne pas rester « en attente »
     // avec une fausse icône crayon / check.
     if (code == 'round_not_current') {
@@ -284,13 +503,35 @@ class _RoomScreenState extends State<RoomScreen> {
     if (leave && mounted) _close();
   }
 
+  PerksController? _perks;
+
+  /// Quelqu'un m'a tagué dans la discussion du salon.
+  void _showMention(String from) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context).chatMentionedBy(from)),
+        action: SnackBarAction(
+          label: AppLocalizations.of(context).roomChatButton,
+          onPressed: () => showRoomChatSheet(context, _online),
+        ),
+      ),
+    );
+  }
+
+  /// On quitte le podium : une pub peut passer, selon les options du serveur.
+  void _leavePodium() {
+    if (_podium != null) _perks?.onGameFinished();
+    _podium = null;
+  }
+
   void _playAgain() {
     // Vote revanche : le podium reste jusqu'au quorum, puis le lobby reprend.
     _online.voteRematch(true);
   }
 
   void _startBonus() {
-    setState(() => _podium = null);
+    setState(_leavePodium);
     _online.startBonus();
   }
 
@@ -339,6 +580,10 @@ class _RoomScreenState extends State<RoomScreen> {
       child: Scaffold(
         body: GameBackground(
           palette: _palette(room),
+          // Salon QI : chiffres, symboles et cerveaux au lieu des lettres.
+          theme: (room?.settings.iq ?? false)
+              ? BackgroundTheme.iq
+              : BackgroundTheme.letters,
           child: SafeArea(
             child: Stack(
               children: [
@@ -348,6 +593,15 @@ class _RoomScreenState extends State<RoomScreen> {
                       title: _headerTitle(l10n, room),
                       onBack: _confirmLeave,
                       quitStyle: inGame,
+                      // Vocal : à droite du titre, sa place est réservée et il
+                      // ne recouvre ni les joueurs ni les réactions.
+                      trailing:
+                          room != null &&
+                              room.voice.enabled &&
+                              room.voice.open &&
+                              !_showingPodium(room)
+                          ? VoiceFab(online: _online, room: room, inHeader: true)
+                          : null,
                     ),
                     if (!_online.isOnline) const _ConnectionBanner(),
                     Expanded(
@@ -356,8 +610,10 @@ class _RoomScreenState extends State<RoomScreen> {
                         transitionBuilder: (child, animation) => FadeTransition(
                           opacity: animation,
                           child: ScaleTransition(
-                            scale:
-                                Tween(begin: 0.94, end: 1.0).animate(animation),
+                            scale: Tween(
+                              begin: 0.94,
+                              end: 1.0,
+                            ).animate(animation),
                             child: child,
                           ),
                         ),
@@ -370,26 +626,9 @@ class _RoomScreenState extends State<RoomScreen> {
                   ],
                 ),
                 if (room != null && room.voice.enabled && room.voice.open) ...[
+                  // Les boutons sont dans la barre du haut (et sur le podium,
+                  // à côté du chat).
                   VoiceBridge(online: _online, room: room),
-                  // Sur le podium, les FAB audio sont dans PodiumView (alignés
-                  // au chat). Pendant la manche : en haut à droite.
-                  if (!_showingPodium(room))
-                    if (room.phase == RoomPhase.round)
-                      Positioned(
-                        right: 12,
-                        top: 8,
-                        child: VoiceFab(
-                          online: _online,
-                          room: room,
-                          compact: true,
-                        ),
-                      )
-                    else
-                      Positioned(
-                        right: 16,
-                        bottom: 16,
-                        child: VoiceFab(online: _online, room: room),
-                      ),
                 ],
               ],
             ),
@@ -466,6 +705,11 @@ class _RoomScreenState extends State<RoomScreen> {
           onAddBot: isHost && !room.settings.betting ? _online.addBot : null,
           onRemoveBot: isHost ? _online.removeBot : null,
           onReport: _report,
+          onOpenChat: () => showRoomChatSheet(context, _online),
+          onOpenHistory: () => Navigator.of(context).push(
+            PopRoute(builder: (_) => RoomHistoryScreen(code: room.code)),
+          ),
+          onDeleteRoom: () => _deleteRoom(room.code),
         );
       case RoomPhase.finished:
         // Géré par le podium ci-dessus.
@@ -491,6 +735,7 @@ class _RoomScreenState extends State<RoomScreen> {
       case RoomPhase.lightning:
         return LightningView(online: _online);
       case RoomPhase.round:
+        if (room.settings.iq) return _iqRound(room);
         final round = room.round!;
         final me = room.player(_online.clientId);
         final localDone = {
@@ -508,17 +753,18 @@ class _RoomScreenState extends State<RoomScreen> {
           ];
           return RoundView(
             round: round,
-            totalRounds: room.round?.bonus == true
-                ? 1
-                : room.settings.rounds,
+            totalRounds: room.round?.bonus == true ? 1 : room.settings.rounds,
             remaining: round.remaining(widget.now()),
             fields: _fields,
             onFinish: me?.frozen == true ? () {} : _submit,
             hints: _hints,
+            // « Manche 1/5 » est déjà dans le titre : une seule ligne en haut.
+            compactHeader: true,
             players: PlayersStrip(
               room: room,
               myId: _online.clientId,
               forceFinishedIds: localDone,
+              padding: EdgeInsets.zero,
             ),
             footer: FreezeControls(online: _online, opponents: opponents),
           );
@@ -551,7 +797,9 @@ class _RoomScreenState extends State<RoomScreen> {
               showProgress: false,
             ),
             Expanded(
-              child: RoomResultsView(room: room, myId: _online.clientId),
+              child: room.settings.iq
+                  ? _iqResults(room)
+                  : RoomResultsView(room: room, myId: _online.clientId),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),

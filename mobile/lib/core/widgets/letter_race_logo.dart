@@ -8,7 +8,7 @@ import '../feedback/game_feedback.dart';
 import '../theme/app_colors.dart';
 import 'letter_tile.dart';
 
-/// Logo écrit en tuiles « LETTER / RACE » (accueil + splash).
+/// Logo écrit en tuiles « MIND / RACE » (accueil + splash).
 class LetterRaceLogo extends StatefulWidget {
   const LetterRaceLogo({super.key, this.animate = true, this.tileSize = 44});
 
@@ -31,7 +31,7 @@ class _LetterRaceLogoState extends State<LetterRaceLogo>
   ];
 
   static const _loop = 5.0;
-  static const _tiles = 12;
+  static const _tiles = 8;
   static const _start = 1.6;
 
   late final Ticker _ticker = createTicker(
@@ -121,13 +121,13 @@ class _LetterRaceLogoState extends State<LetterRaceLogo>
     );
 
     return Semantics(
-      label: 'Letter Race',
+      label: 'Mind Race',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          row('LETTER', 0),
+          row('MIND', 0),
           const SizedBox(height: 8),
-          row('RACE', 6),
+          row('RACE', 4),
         ],
       ),
     );

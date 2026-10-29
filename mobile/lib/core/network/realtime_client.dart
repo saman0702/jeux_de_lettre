@@ -45,12 +45,26 @@ class RealtimeClient extends ChangeNotifier {
   RealtimeClient({
     required this.clientId,
     required this._nickname,
+    this.token,
+    String language = 'fr',
+    String? country,
     RealtimeConnector? connector,
     this.baseUrl = apiBaseUrl,
     this.pingInterval = const Duration(seconds: 20),
-  }) : _connector = connector ?? _WebSocketConnection.connect;
+  }) : _language = language,
+       _country = country,
+       _connector = connector ?? _WebSocketConnection.connect;
+
+  /// Langue de l'appli (le serveur valide les réponses dans celle-ci) et pays
+  /// d'origine (drapeau vu par les autres joueurs).
+  String _language;
+  String? _country;
 
   final String clientId;
+
+  /// Jeton secret de l'appli : prouve au serveur que c'est bien ce joueur
+  /// (le clientId, lui, est vu par les autres joueurs).
+  final String? token;
   final String baseUrl;
 
   /// Garde les connexions inactives en vie à travers les proxys ; null
@@ -81,7 +95,13 @@ class RealtimeClient extends ChangeNotifier {
     return base.replace(
       scheme: base.scheme == 'https' ? 'wss' : 'ws',
       path: '/ws',
-      queryParameters: {'client_id': clientId, 'nickname': _nickname},
+      queryParameters: {
+        'client_id': clientId,
+        'nickname': _nickname,
+        'language': _language,
+        if (_country != null) 'country': _country,
+        if (token != null) 'token': token,
+      },
     );
   }
 
@@ -109,6 +129,18 @@ class RealtimeClient extends ChangeNotifier {
   }
 
   /// Se reconnecte pour que le serveur voie le nouveau pseudo.
+  /// Reconnecte pour que le serveur voie la nouvelle langue ou le nouveau pays.
+  Future<void> updateIdentity({String? language, String? country}) async {
+    final nextLanguage = language ?? _language;
+    final nextCountry = country ?? _country;
+    if (nextLanguage == _language && nextCountry == _country) return;
+    _language = nextLanguage;
+    _country = nextCountry;
+    if (_status == RealtimeStatus.offline && _attempt == 0) return;
+    _drop();
+    await connect();
+  }
+
   Future<void> updateNickname(String nickname) async {
     if (nickname == _nickname) return;
     _nickname = nickname;

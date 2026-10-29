@@ -8,6 +8,7 @@ import base64
 import json
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
 
@@ -35,10 +36,24 @@ class StoreError(Exception):
 class VerifiedPurchase:
     product_id: str
     order_id: str | None
+    # Abonnements : fin de la période payée.
+    expires_at: datetime | None = None
 
 
 class StoreVerifier(Protocol):
     async def verify(self, platform: str, product_id: str, token: str) -> VerifiedPurchase: ...
+
+    async def verify_subscription(self, platform: str, product_id: str, token: str) -> VerifiedPurchase: ...
+
+
+def _decode_jws(signed: str) -> dict:
+    """Charge utile d'un JWS d'Apple, obtenu directement d'Apple en HTTPS."""
+    payload = signed.split(".")[1]
+    return json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+
+
+def _from_millis(value) -> datetime | None:
+    return datetime.fromtimestamp(int(value) / 1000, tz=timezone.utc) if value else None
 
 
 class GooglePlayVerifier:
@@ -96,6 +111,28 @@ class GooglePlayVerifier:
             raise StoreError("invalid_purchase")
         return VerifiedPurchase(product_id, body.get("orderId"))
 
+    async def verify_subscription(self, platform: str, product_id: str, token: str) -> VerifiedPurchase:
+        """Abonnement Google Play (API subscriptionsv2) : actif ou non, et jusqu'à quand."""
+        async with httpx.AsyncClient(timeout=15, transport=self.transport) as client:
+            access = await self._access_token(client)
+            response = await client.get(
+                f"{GOOGLE_API}/applications/{self.package}/purchases/subscriptionsv2/tokens/{token}",
+                headers={"Authorization": f"Bearer {access}"},
+            )
+        if response.status_code in (400, 404, 410):
+            raise StoreError("invalid_purchase")
+        if response.status_code != 200:
+            raise StoreError("store_unavailable", 503)
+        body = response.json()
+        state = body.get("subscriptionState", "")
+        if state == "SUBSCRIPTION_STATE_PENDING":
+            raise StoreError("purchase_pending", 409)
+        items = [i for i in body.get("lineItems", []) if i.get("productId") == product_id]
+        if not items:
+            raise StoreError("invalid_purchase")
+        expiry = max(datetime.fromisoformat(i["expiryTime"].replace("Z", "+00:00")) for i in items)
+        return VerifiedPurchase(product_id, body.get("latestOrderId"), expiry)
+
 
 class AppStoreVerifier:
     """App Store Server API, avec une clé « In-App Purchase » (jeton signé en ES256)."""
@@ -136,10 +173,40 @@ class AppStoreVerifier:
             raise StoreError("invalid_purchase")
         if response.status_code != 200:
             raise StoreError("store_unavailable", 503)
-        signed = response.json()["signedTransactionInfo"]
-        # Réponse obtenue directement d'Apple en HTTPS : on lit la charge utile du JWS.
-        payload = signed.split(".")[1]
-        return json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+        return _decode_jws(response.json()["signedTransactionInfo"])
+
+    async def _statuses(self, client: httpx.AsyncClient, environment: str, transaction_id: str) -> dict | None:
+        response = await client.get(
+            f"{APPLE_API[environment]}/inApps/v1/subscriptions/{transaction_id}",
+            headers={"Authorization": f"Bearer {self._token()}"},
+        )
+        if response.status_code == 404:
+            return None
+        if response.status_code == 400:
+            raise StoreError("invalid_purchase")
+        if response.status_code != 200:
+            raise StoreError("store_unavailable", 503)
+        return response.json()
+
+    async def verify_subscription(self, platform: str, product_id: str, token: str) -> VerifiedPurchase:
+        """Dernier état de l'abonnement (renouvellements compris) via l'App Store Server API."""
+        async with httpx.AsyncClient(timeout=15, transport=self.transport) as client:
+            statuses = await self._statuses(client, self.environment, token)
+            if statuses is None and self.environment == "production":
+                statuses = await self._statuses(client, "sandbox", token)
+        if statuses is None or statuses.get("bundleId", self.bundle_id) != self.bundle_id:
+            raise StoreError("invalid_purchase")
+        best: dict | None = None
+        for group in statuses.get("data", []):
+            for last in group.get("lastTransactions", []):
+                info = _decode_jws(last["signedTransactionInfo"])
+                if info.get("productId") != product_id or info.get("revocationDate"):
+                    continue
+                if best is None or int(info.get("expiresDate", 0)) > int(best.get("expiresDate", 0)):
+                    best = info
+        if best is None:
+            raise StoreError("invalid_purchase")
+        return VerifiedPurchase(product_id, best.get("originalTransactionId"), _from_millis(best.get("expiresDate")))
 
     async def verify(self, platform: str, product_id: str, token: str) -> VerifiedPurchase:
         async with httpx.AsyncClient(timeout=15, transport=self.transport) as client:
@@ -167,6 +234,12 @@ class StoreVerifiers:
         if verifier is None:
             raise StoreError("store_not_configured", 503)
         return await verifier.verify(platform, product_id, token)
+
+    async def verify_subscription(self, platform: str, product_id: str, token: str) -> VerifiedPurchase:
+        verifier = self.by_platform.get(platform)
+        if verifier is None:
+            raise StoreError("store_not_configured", 503)
+        return await verifier.verify_subscription(platform, product_id, token)
 
 
 def _read(path: str | None) -> str | None:

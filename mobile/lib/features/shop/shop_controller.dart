@@ -51,6 +51,11 @@ class ShopController extends ChangeNotifier {
 
   ShopStatus _status = ShopStatus.loading;
   List<CoinPack> _packs = const [];
+  Map<String, StoreProduct> _extras = const {};
+
+  /// « Sans pub » ou Pass, avec son prix dans la monnaie du joueur (null si
+  /// le store ne le vend pas).
+  StoreProduct? product(String id) => _extras[id];
   String? _buying;
 
   ShopStatus get status => _status;
@@ -65,7 +70,9 @@ class ShopController extends ChangeNotifier {
   /// Reprend les achats non terminés d'une session précédente.
   Future<void> start() => store.resumePending();
 
-  Future<void> load() async {
+  /// [extraProducts] : produits en plus des packs (« Sans pub », Pass), selon
+  /// les options activées sur le serveur.
+  Future<void> load({Set<String> extraProducts = const {}}) async {
     _status = ShopStatus.loading;
     notifyListeners();
     try {
@@ -79,7 +86,11 @@ class ShopController extends ChangeNotifier {
         for (final p in response)
           (p as Map)['product_id'] as String: p['coins'] as int,
       };
-      final products = await store.products(coins.keys.toSet());
+      final products = await store.products({...coins.keys, ...extraProducts});
+      _extras = {
+        for (final p in products)
+          if (extraProducts.contains(p.id)) p.id: p,
+      };
       _packs = [
         for (final p in products)
           if (coins[p.id] != null)
@@ -92,12 +103,14 @@ class ShopController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> buy(CoinPack pack) async {
+  Future<void> buy(CoinPack pack) => buyProduct(pack.productId);
+
+  Future<void> buyProduct(String productId) async {
     if (_buying != null) return;
-    _buying = pack.productId;
+    _buying = productId;
     notifyListeners();
     try {
-      await store.buy(pack.productId);
+      await store.buy(productId);
     } catch (_) {
       _done('store_error');
     }
@@ -131,7 +144,11 @@ class ShopController extends ChangeNotifier {
       final wallet = WalletSnapshot.fromJson(body);
       onWallet(wallet);
       await purchase.finish();
-      _done('bought:${wallet.coinsGained}');
+      _done(
+        isConsumable(purchase.productId)
+            ? 'bought:${wallet.coinsGained}'
+            : 'perk:${purchase.productId}',
+      );
     } on ApiException catch (e) {
       // Achat refusé par le store : on le clôt. Problème de réseau ou de
       // serveur : on le garde pour réessayer au prochain lancement.

@@ -1,4 +1,4 @@
-/// URL de base de l'API Letter Race.
+/// URL de base de l'API Mind Race.
 ///
 /// À changer à la compilation : `flutter run
 /// --dart-define=API_BASE_URL=http://192.168.1.88:8010`

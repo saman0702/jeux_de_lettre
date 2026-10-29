@@ -1,6 +1,6 @@
 {
   "@@locale": "fr",
-  "appTitle": "Letter Race",
+  "appTitle": "Mind Race",
   "tagline": "Une lettre. Quatre catégories. Le plus rapide gagne.",
   "modeSolo": "Solo",
   "modeDuel": "Duel",
@@ -133,7 +133,9 @@
   "publicRoomInvite": "Nouveau salon public de {host}",
   "@publicRoomInvite": {
     "placeholders": {
-      "host": { "type": "String" }
+      "host": {
+        "type": "String"
+      }
     }
   },
   "joinPublicRoom": "REJOINDRE",
@@ -148,14 +150,18 @@
   "freezeUse": "FREEZE ({count})",
   "@freezeUse": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "freezeBuyTitle": "Acheter un Freeze",
   "freezeBuyHelp": "Bloque un adversaire 10 secondes. Coût : {price} pièces.\nTu en as 1 gratuit par partie.",
   "@freezeBuyHelp": {
     "placeholders": {
-      "price": { "type": "int" }
+      "price": {
+        "type": "int"
+      }
     }
   },
   "freezeInfoHelp": "Pendant la manche, gèle un adversaire 10 secondes : il ne peut pas valider. 1 Freeze gratuit par partie, puis 15 pièces pour en racheter.",
@@ -166,35 +172,47 @@
   "lightningHelp": "{category} en {letter} — {seconds}s",
   "@lightningHelp": {
     "placeholders": {
-      "category": { "type": "String" },
-      "letter": { "type": "String" },
-      "seconds": { "type": "int" }
+      "category": {
+        "type": "String"
+      },
+      "letter": {
+        "type": "String"
+      },
+      "seconds": {
+        "type": "int"
+      }
     }
   },
   "lightningInfoHelp": "Entre deux manches : un mini QCM de 10 secondes. La bonne réponse te donne +2 points bonus. Sois rapide !",
   "lightningHit": "Bien joué ! +{points}",
   "@lightningHit": {
     "placeholders": {
-      "points": { "type": "int" }
+      "points": {
+        "type": "int"
+      }
     }
   },
   "lightningMiss": "Raté !",
   "chatTitle": "Chat du salon",
   "chatHint": "Écris un message…",
-  "chatUnlockTitle": "Débloquer le chat",
-  "chatUnlockHelp": "Tout le monde pourra te lire dans ce salon. Coût : {price} pièces (une fois).",
+  "chatUnlockTitle": "Débloquer les messages privés",
+  "chatUnlockHelp": "Écris en privé à n'importe quel joueur de ce salon (personne d'autre ne vous lit). Coût : {price} pièces, une fois pour ce salon.",
   "@chatUnlockHelp": {
     "placeholders": {
-      "price": { "type": "int" }
+      "price": {
+        "type": "int"
+      }
     }
   },
-  "chatUnlockButton": "CHAT · {price}",
+  "chatUnlockButton": "PRIVÉ · {price}",
   "@chatUnlockButton": {
     "placeholders": {
-      "price": { "type": "int" }
+      "price": {
+        "type": "int"
+      }
     }
   },
-  "chatInfoHelp": "Les stickers sont gratuits. Pour écrire du vrai texte, débloque le chat une fois avec des pièces dans ce salon.",
+  "chatInfoHelp": "La discussion de groupe est gratuite et reste dans le salon, même après la partie. Tague un joueur en touchant son pseudo. Les messages privés se débloquent une fois avec des pièces.",
   "reactionsTitle": "Réactions",
   "reactionsInfoHelp": "Envoie une réaction (feu, dodo, clap, surprise) pendant les résultats ou à la fin. Gratuit, sans modération.",
   "wordReviewTitle": "Revue des mots",
@@ -207,8 +225,12 @@
   "rematchVote": "REVANCHE ({votes}/{need})",
   "@rematchVote": {
     "placeholders": {
-      "votes": { "type": "int" },
-      "need": { "type": "int" }
+      "votes": {
+        "type": "int"
+      },
+      "need": {
+        "type": "int"
+      }
     }
   },
   "rematchHelp": "Vote pour rejouer. Quand la majorité des joueurs humains a voté, une nouvelle partie démarre avec les mêmes réglages.",
@@ -262,7 +284,7 @@
   "copyCode": "Copier",
   "codeCopied": "Code copié !",
   "shareInvite": "Inviter",
-  "inviteMessage": "Rejoins ma partie Letter Race ! Code : {code}",
+  "inviteMessage": "Rejoins ma partie Mind Race ! Code : {code}",
   "@inviteMessage": {
     "placeholders": {
       "code": {
@@ -291,8 +313,12 @@
   "noticeHintUsed": "{name} utilise un joker ({category})",
   "@noticeHintUsed": {
     "placeholders": {
-      "name": { "type": "String" },
-      "category": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "category": {
+        "type": "String"
+      }
     }
   },
   "noticeJoined": "{name} a rejoint la salle",
@@ -896,7 +922,6 @@
   },
   "eliminationBestTitle": "Ton record",
   "eliminationNoRecord": "Pas encore de record",
-  "roomFormat": "Format",
   "formatRounds": "Par manches",
   "formatElimination": "Éliminatoires",
   "formatRoundsHelp": "Toutes les manches sont jouées : le meilleur total gagne.",
@@ -924,7 +949,6 @@
   "strictSpelling": "Orthographe stricte",
   "strictSpellingHelp": "Casse, accents et espaces doivent coller à la fiche. Manches d'au moins 2 minutes.",
   "strictSpellingChip": "Orthographe stricte",
-
   "preparingGame": "Préparation de la partie…",
   "playAlone": "JOUER SEUL",
   "withFriends": "Lancer la compétition",
@@ -995,5 +1019,284 @@
   "looksCyan": "Cyan",
   "looksViolet": "Violet",
   "looksOrange": "Orange",
-  "looksMint": "Menthe"
+  "looksMint": "Menthe",
+  "perksFreeCoins": "Pièces gratuites",
+  "perksWatchInfo": "Regarde une courte vidéo et gagne {coins} pièces. Encore {left} aujourd'hui.",
+  "@perksWatchInfo": {
+    "placeholders": {
+      "coins": {
+        "type": "int"
+      },
+      "left": {
+        "type": "int"
+      }
+    }
+  },
+  "perksWatch": "REGARDER (+{coins})",
+  "@perksWatch": {
+    "placeholders": {
+      "coins": {
+        "type": "int"
+      }
+    }
+  },
+  "perksAdLimit": "Plus de vidéo pour aujourd'hui : reviens demain !",
+  "perksAdPending": "Vidéo vue ! Tes pièces arrivent dans un instant.",
+  "perksNoAd": "Pas de vidéo disponible pour le moment.",
+  "perksPassTitle": "Pass Mind Race",
+  "perksPassNoAds": "Aucune pub entre les parties",
+  "perksPassDaily": "{coins} pièces offertes chaque jour",
+  "@perksPassDaily": {
+    "placeholders": {
+      "coins": {
+        "type": "int"
+      }
+    }
+  },
+  "perksPassHints": "{hints} jokers en plus dans chaque partie",
+  "@perksPassHints": {
+    "placeholders": {
+      "hints": {
+        "type": "int"
+      }
+    }
+  },
+  "perksPassActive": "Pass actif jusqu'au {date}",
+  "@perksPassActive": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "perksPassPrice": "S'ABONNER · {price} / mois",
+  "@perksPassPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "perksClaimDaily": "PRENDRE MES {coins} PIÈCES",
+  "@perksClaimDaily": {
+    "placeholders": {
+      "coins": {
+        "type": "int"
+      }
+    }
+  },
+  "perksDailyTaken": "BONUS DU JOUR PRIS",
+  "perksPassDone": "Bienvenue dans le Pass !",
+  "perksRemoveAdsTitle": "Sans pub",
+  "perksRemoveAdsInfo": "Plus aucune pub entre les parties, pour toujours. Les vidéos pour gagner des pièces restent possibles.",
+  "perksRemoveAdsOwned": "Sans pub : activé",
+  "perksRemoveAdsDone": "C'est fini les pubs, merci !",
+  "shopUnavailableShort": "Indisponible",
+  "roomHistoryTitle": "Salon {code}",
+  "@roomHistoryTitle": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "historyGames": "Parties",
+  "historyGroup": "Groupe",
+  "historyPrivate": "Privé",
+  "historyUnavailable": "Historique indisponible pour le moment.",
+  "historyNoGames": "Aucune partie terminée dans ce salon pour l'instant.",
+  "historyNoMessages": "Personne n'a encore écrit dans le groupe.",
+  "historyNoPrivate": "Aucune conversation privée. Ouvre la discussion du salon, puis « Privé », pour écrire à un joueur.",
+  "privateChatEmpty": "Écris ton premier message à {name}.",
+  "@privateChatEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "privateChatJoinRoom": "Rejoins le salon pour répondre.",
+  "privateChatUnlock": "Débloquer les messages privés ({price} pièces)",
+  "@privateChatUnlock": {
+    "placeholders": {
+      "price": {
+        "type": "int"
+      }
+    }
+  },
+  "privateChatHint": "Message à {name}",
+  "@privateChatHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "myRoomsTitle": "Mes salons",
+  "allPublicRoomsTitle": "Tous les salons publics",
+  "savedRoomInfo": "{members} joueurs · {date}",
+  "@savedRoomInfo": {
+    "placeholders": {
+      "members": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "savedRoomOpen": "{count} dedans",
+  "@savedRoomOpen": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "savedRoomClosed": "Fermé",
+  "roomChatButton": "DISCUSSION",
+  "roomHistoryButton": "HISTORIQUE",
+  "chatPrivateButton": "Privé",
+  "chatPrivatePick": "À qui veux-tu écrire ?",
+  "chatMentionedBy": "{name} t'a tagué dans la discussion",
+  "@chatMentionedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTagHint": "Touche un pseudo pour le taguer (@pseudo).",
+  "settingsCountry": "Pays d'origine",
+  "countryPickTitle": "Ton pays d'origine",
+  "countrySearch": "Rechercher un pays",
+  "countryChoose": "Choisir",
+  "mixedLanguages": "FR + EN : chacun dans sa langue",
+  "iqKindSequence": "Suite",
+  "iqKindGrid": "Grille",
+  "iqKindProblem": "Problème",
+  "iqKindLetters": "Lettres",
+  "iqKindCalendar": "Calendrier",
+  "iqKindAnalogy": "Analogie",
+  "iqKindOdd": "Intrus",
+  "iqKindLogic": "Logique",
+  "iqTypeAnswer": "Tape ta réponse",
+  "iqValidate": "VALIDER",
+  "iqGoodAnswer": "Bonne réponse",
+  "iqQuestion": "Énigme {number} / {total}",
+  "@iqQuestion": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "iqAnswerSent": "Réponse envoyée ! On attend les autres…",
+  "iqTitle": "QI",
+  "gamesTitle": "Choisis ton jeu",
+  "gameLettersTitle": "Géographie & Nature",
+  "gameLettersInfo": "Une lettre, des catégories : villes, pays, animaux, fruits, prénoms…",
+  "gameIqTitle": "QI",
+  "gameIqInfo": "Suites logiques, calcul, analogies, intrus, énigmes : qui a le meilleur QI ?",
+  "iqCreateRoom": "CRÉER UN SALON QI",
+  "iqSolo": "SOLO",
+  "iqBots": "CONTRE LES BOTS",
+  "iqOpenRooms": "Salons QI ouverts",
+  "iqNoRooms": "Aucun salon QI public pour le moment : crée le tien !",
+  "iqRoomTitle": "Nouveau salon QI",
+  "iqSoloTitle": "QI en solo",
+  "iqBotsTitle": "QI contre les bots",
+  "iqQuestions": "Énigmes",
+  "iqTimePerQuestion": "Temps par énigme",
+  "iqScoring": "Points",
+  "iqSpeedBonus": "Bonus de rapidité (jusqu'à +10)",
+  "iqPenalty": "Malus si c'est faux (−5)",
+  "iqResultTitle": "Ton QI estimé",
+  "iqResultScore": "{correct} bonnes réponses sur {total} · {points} points",
+  "@iqResultScore": {
+    "placeholders": {
+      "correct": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "iqResultNote": "Pour s'amuser : ce n'est pas un vrai test de QI.",
+  "iqNext": "ÉNIGME SUIVANTE",
+  "iqSeeResult": "VOIR MON QI",
+  "iqBadge": "QI",
+  "iqYou": "Toi",
+  "iqRelayHelp": "Chacun reçoit sa propre énigme, du même niveau : impossible de copier sur le voisin !",
+  "iqKindMatrix": "Matrice",
+  "iqKindRotation": "Rotation",
+  "iqKindFigureOdd": "Intrus visuel",
+  "iqJokerFifty": "50/50",
+  "iqJokerHint": "Indice",
+  "iqJokerTime": "+15 s",
+  "iqJokerSkip": "Passer",
+  "iqHintRange": "Indice : entre {low} et {high}",
+  "@iqHintRange": {
+    "placeholders": {
+      "low": {
+        "type": "int"
+      },
+      "high": {
+        "type": "int"
+      }
+    }
+  },
+  "iqCoinsWon": "+{coins} pièce(s) gagnée(s)",
+  "@iqCoinsWon": {
+    "placeholders": {
+      "coins": {
+        "type": "int"
+      }
+    }
+  },
+  "iqOfflineNoCoins": "Hors ligne : partie sans pièces ni jokers.",
+  "iqDailyTitle": "Défi du jour",
+  "iqDailyInfo": "10 énigmes, les mêmes pour tous, une seule tentative par jour, sans jokers. Podium récompensé : 50, 30 et 20 pièces.",
+  "iqDailyPlay": "JOUER LE DÉFI",
+  "iqDailyDone": "Déjà joué aujourd'hui : reviens demain !",
+  "iqDailyRank": "Ton rang : {rank}",
+  "@iqDailyRank": {
+    "placeholders": {
+      "rank": {
+        "type": "int"
+      }
+    }
+  },
+  "iqDailyLeaderboard": "Classement du jour",
+  "iqDailyYesterday": "Podium d'hier",
+  "iqDailyEmpty": "Personne n'a encore joué aujourd'hui : sois le premier !",
+  "iqDailyNeedsOnline": "Le défi du jour se joue en ligne.",
+  "iqLate": "Trop tard !",
+  "iqKindTrace": "Un seul trait",
+  "iqTraceRestart": "RECOMMENCER",
+  "iqTraceStuck": "Bloqué : il reste des lignes, recommence !",
+  "iqTraceStartHint": "Indice : pars du point orange.",
+  "errorRoomDeleted": "Le créateur a supprimé ce salon.",
+  "errorNotRoomCreator": "Seul le créateur du salon peut le supprimer.",
+  "deleteRoomTitle": "Supprimer le salon",
+  "deleteRoomMessage": "Le salon, ses parties et ses conversations seront effacés pour tout le monde. Ceux qui sont dedans en sortiront.",
+  "deleteRoomConfirm": "SUPPRIMER",
+  "roomDeleted": "Salon supprimé.",
+  "publicRoomAudience": "{count} autre(s) joueur(s) en ligne pourront le voir et le rejoindre.",
+  "@publicRoomAudience": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gameLettersTag": "Lettres & catégories",
+  "gameIqTag": "Logique & énigmes"
 }
