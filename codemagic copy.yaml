@@ -1,0 +1,245 @@
+# Codemagic — monorepo KATIAN_MOBILITY
+# Docs: https://docs.codemagic.io/yaml-quick-start/building-a-flutter-app/
+#
+# Fichier unique à la RACINE du dépôt : chaque "Application" Codemagic
+# connectée à ce repo (MonXpress Client, MonXpress Pro, ...) lit ce même
+# fichier et propose tous les workflows ci-dessous — chaque workflow fait
+# son propre `cd` vers le sous-dossier de l'app concernée, donc ils restent
+# indépendants même partagés.
+#
+# Optimisations builds :
+# - `when.changeset` : ne build que l'app modifiée (évite 2 builds à chaque
+#   push backend/docs). Le 1er build après ajout du filtre tourne toujours.
+# - `cancel_previous_builds` : un nouveau push annule le build encore en cours
+#   sur la même branche (évite la file d'attente).
+# - Caches pub / CocoaPods / Pods pour les builds suivants.
+#
+# À configurer dans Codemagic UI avant le 1er build :
+# 1. Team settings → Integrations → Apple Developer Portal → deux
+#    intégrations (une clé API App Store Connect par app, rôle Admin) :
+#    "MonXpress Codemagic" (client) et "MonXpress Pro Codemagic" (chauffeur).
+# 2. APP_STORE_APPLE_ID déjà rempli ci-dessous pour les deux apps.
+# 2b. Signature iOS : groupe d'env "ios_signing" (sur chaque Application)
+#    avec CERTIFICATE_PRIVATE_KEY (Secret) = clé RSA PEM générée par
+#    `ssh-keygen -t rsa -b 2048 -m PEM -f cert_key -q -N ""`. Codemagic crée
+#    puis réutilise le certificat de distribution et le profil App Store.
+# 3. Android : les AAB ne sont plus construits ici (iOS uniquement).
+# 4. Commit message `[skip ci]` pour ne lancer aucun build.
+
+workflows:
+  client-ios-release:
+    name: MonXpress Client iOS (TestFlight)
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+
+    integrations:
+      app_store_connect: MonXpress Codemagic
+
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - ios_signing
+      vars:
+        APP_STORE_APPLE_ID: "6817951066"
+        BUNDLE_ID: com.katianmobility.katianMobilityApp
+        API_BASE_URL: https://mobility-api.katianlogistique.com
+
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+        - $CM_BUILD_DIR/mobile/katian_mobility_app/.dart_tool
+        - $CM_BUILD_DIR/mobile/katian_mobility_app/ios/Pods
+
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+        - pattern: release/*
+          include: true
+          source: true
+      cancel_previous_builds: true
+
+    # iOS uniquement si l'app client (ou ce YAML) change — pas le backend.
+    when:
+      changeset:
+        includes:
+          - mobile/katian_mobility_app/
+          - codemagic.yaml
+
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          cd "$CM_BUILD_DIR/mobile/katian_mobility_app"
+          flutter pub get
+
+      - name: Install CocoaPods
+        script: |
+          cd "$CM_BUILD_DIR/mobile/katian_mobility_app/ios"
+          pod install
+
+      - name: Fetch iOS signing files (certificat + profil App Store)
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --create
+          keychain add-certificates
+
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles \
+            --project "$CM_BUILD_DIR/mobile/katian_mobility_app/ios/Runner.xcodeproj"
+
+      - name: Increment build number (TestFlight)
+        script: |
+          cd "$CM_BUILD_DIR/mobile/katian_mobility_app"
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo 0)
+          NEW_BUILD=$((LATEST + 1))
+          echo "NEW_BUILD_NUMBER=$NEW_BUILD" >> "$CM_ENV"
+          echo "Build number → $NEW_BUILD"
+
+      - name: Flutter build IPA
+        script: |
+          cd "$CM_BUILD_DIR/mobile/katian_mobility_app"
+          flutter build ipa --release \
+            --build-number="$NEW_BUILD_NUMBER" \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --export-options-plist=/Users/builder/export_options.plist
+
+    artifacts:
+      - mobile/katian_mobility_app/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - blaisesaman34@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        # false : Codemagic s'arrête après l'envoi, sans attendre le
+        # traitement Apple ; les testeurs internes reçoivent le build
+        # ensuite. true (+ beta_groups) pour des testeurs externes.
+        submit_to_testflight: false
+        # beta_groups:
+        #   - Internal Testers
+        submit_to_app_store: false
+
+  driver-ios-release:
+    name: MonXpress Pro iOS (TestFlight)
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+
+    integrations:
+      app_store_connect: MonXpress Pro Codemagic
+
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - ios_signing
+      vars:
+        APP_STORE_APPLE_ID: "6817951827"
+        BUNDLE_ID: com.katianmobility.katianDriverApp
+        API_BASE_URL: https://mobility-api.katianlogistique.com
+
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+        - $CM_BUILD_DIR/mobile/katian_driver_app/.dart_tool
+        - $CM_BUILD_DIR/mobile/katian_driver_app/ios/Pods
+
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+        - pattern: release/*
+          include: true
+          source: true
+      cancel_previous_builds: true
+
+    when:
+      changeset:
+        includes:
+          - mobile/katian_driver_app/
+          - codemagic.yaml
+
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          cd "$CM_BUILD_DIR/mobile/katian_driver_app"
+          flutter pub get
+
+      - name: Install CocoaPods
+        script: |
+          cd "$CM_BUILD_DIR/mobile/katian_driver_app/ios"
+          pod install
+
+      - name: Fetch iOS signing files (certificat + profil App Store)
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --create
+          keychain add-certificates
+
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles \
+            --project "$CM_BUILD_DIR/mobile/katian_driver_app/ios/Runner.xcodeproj"
+
+      - name: Increment build number (TestFlight)
+        script: |
+          cd "$CM_BUILD_DIR/mobile/katian_driver_app"
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo 0)
+          NEW_BUILD=$((LATEST + 1))
+          echo "NEW_BUILD_NUMBER=$NEW_BUILD" >> "$CM_ENV"
+          echo "Build number → $NEW_BUILD"
+
+      - name: Flutter build IPA
+        script: |
+          cd "$CM_BUILD_DIR/mobile/katian_driver_app"
+          flutter build ipa --release \
+            --build-number="$NEW_BUILD_NUMBER" \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --export-options-plist=/Users/builder/export_options.plist
+
+    artifacts:
+      - mobile/katian_driver_app/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - blaisesamanjeanarnaud@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        # false : Codemagic s'arrête après l'envoi, sans attendre le
+        # traitement Apple ; les testeurs internes reçoivent le build
+        # ensuite. true (+ beta_groups) pour des testeurs externes.
+        submit_to_testflight: false
+        # beta_groups:
+        #   - Internal Testers
+        submit_to_app_store: false
