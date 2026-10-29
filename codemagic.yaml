@@ -32,10 +32,10 @@ workflows:
         - ios_signing
         - admob_ios
       vars:
-        APP_STORE_APPLE_ID: "0000000000"
+        APP_STORE_APPLE_ID: "6828438803"
         BUNDLE_ID: com.letterbattle.letterBattle
         API_BASE_URL: https://gamelr-api.optisoftw.com
-
+        
     cache:
       cache_paths:
         - $HOME/.pub-cache
