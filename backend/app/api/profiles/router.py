@@ -6,7 +6,7 @@ from app.core.database import get_session
 from app.models import Profile
 from app.schemas.game import CosmeticIn, CosmeticResult, LookOut, ProfileOut, ProfileUpdate, UnequipIn, WalletOut
 from app.api.shop.router import get_store_verifier
-from app.services import avatar_service, perks_service, shop_service, wallet_service
+from app.services import account_service, avatar_service, perks_service, shop_service, wallet_service
 from app.services.store_service import StoreVerifier
 
 # Toutes ces routes agissent sur le profil d'un joueur : son jeton secret est exigé.
@@ -169,3 +169,13 @@ async def unequip_cosmetic(
     await session.commit()
     await _apply_look(request, profile)
     return _cosmetic_result(profile)
+
+
+@router.delete("/{client_id}")
+async def delete_my_account(client_id: str, session: AsyncSession = Depends(get_session)):
+    """Réglages > Supprimer mon compte : efface le profil et tout ce qui lui appartient."""
+    if not await account_service.delete_account(session, client_id):
+        raise HTTPException(status_code=404, detail="profile_not_found")
+    await session.commit()
+    return {"ok": True}
+

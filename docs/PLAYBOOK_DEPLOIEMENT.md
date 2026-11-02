@@ -104,6 +104,9 @@ flutter build appbundle --release \
   - politique de confidentialité (URL) ;
   - **Annonces** : oui ;
   - **Accès à l'appli** : aucun compte nécessaire (joueurs invités) ;
+  - **Suppression des données** : **Oui** — dans l'appli (*Réglages > Supprimer mon compte*) ou par
+    e-mail (blaisesaman34@gmail.com) ; lien à donner : la page de confidentialité, ancre
+    `#suppression` (ex. `https://…/confidentialite.html#suppression`) ;
   - **Sécurité des données** : identifiant d'appareil (client_id), pseudo, pays, photo d'avatar
     (facultative), enregistrement audio pendant le vocal (non conservé), identifiant publicitaire
     (AdMob) ; données chiffrées en transit ;
