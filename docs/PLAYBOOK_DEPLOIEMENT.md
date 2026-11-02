@@ -26,7 +26,7 @@ Identifiants techniques (ne pas les changer, sinon ce sont d'autres applis) :
 
 | | Android | iOS |
 |---|---|---|
-| Identifiant | `com.letterbattle.letter_battle` | `com.letterbattle.letterBattle` |
+| Identifiant | `com.letterbattle.letterBattle` | `com.letterbattle.letterBattle` |
 | Nom affiché | Mind Race | Mind Race |
 | Version | `version:` dans `mobile/pubspec.yaml` (ex. `1.0.0+1`) | idem |
 
@@ -236,22 +236,21 @@ pour allumer ou couper une option.
 > vidéos récompensées seulement : les joueurs choisissent de les regarder, ça passe mieux à la
 > relecture et dans les avis.
 
-### 5.2 Boutique de pièces (achats intégrés)
+### 5.2 Boutique : vidéos et abonnement Premium
 
-Produits à créer **avec ces identifiants exacts** dans les deux stores :
+**On ne vend pas de pièces.** Dans la boutique, le joueur regarde des vidéos pour gagner des pièces
+(section 5.1) ; s'il ne veut plus de pubs, il prend l'abonnement **Premium**. L'achat unique
+« Sans pub » n'est pas utilisé (`FEATURE_REMOVE_ADS=false`).
+
+Un seul produit à créer, **avec cet identifiant exact**, dans les deux stores :
 
 | Identifiant | Type | Contenu | Prix conseillé |
 |---|---|---|---|
-| `coins_100` | consommable | 100 pièces | 0,99 € |
-| `coins_550` | consommable | 550 pièces | 4,99 € |
-| `coins_1200` | consommable | 1 200 pièces | 9,99 € |
-| `coins_2500` | consommable | 2 500 pièces | 19,99 € |
-| `remove_ads` | non consommable | Sans pub | 2,99 € |
-| `pass_monthly` | abonnement mensuel | Pass Mind Race | 2,99 €/mois |
+| `pass_monthly` | abonnement mensuel | Premium : sans pub, pièces chaque jour, jokers en plus | 2,99 €/mois |
 
 **Google Play**
-- [ ] Après le premier envoi (section 2.3) : *Monétiser > Produits intégrés* : créer les
-      4 packs et `remove_ads` ; *Abonnements* : créer `pass_monthly`. Les activer.
+- [ ] Après le premier envoi (section 2.4) : *Monétiser > Abonnements* : créer `pass_monthly`
+      (offre de base mensuelle, renouvellement automatique) et l'activer.
 - [ ] Google Cloud : créer un **compte de service**, activer l'« API Google Play Android
       Developer », télécharger la clé JSON (la même que pour Codemagic peut servir).
 - [ ] Play Console > *Utilisateurs et autorisations* : inviter l'adresse du compte de service
@@ -259,9 +258,8 @@ Produits à créer **avec ces identifiants exacts** dans les deux stores :
 - [ ] *Configuration > Test de licence* : ajouter les Gmail des testeurs (achats non facturés).
 
 **App Store**
-- [ ] App Store Connect > l'appli > *Achats intégrés* : les 4 packs (consommables) et
-      `remove_ads` (non consommable) ; *Abonnements* : groupe « Pass », produit `pass_monthly`.
-      Chaque produit a besoin d'un nom, d'une description et d'une capture d'écran pour la relecture.
+- [ ] App Store Connect > l'appli > *Abonnements* : groupe « Premium », produit `pass_monthly`
+      (1 mois). Il a besoin d'un nom, d'une description et d'une capture d'écran pour la relecture.
 - [ ] *Intégrations > Achat intégré* : générer une clé, noter **Key ID** et **Issuer ID**,
       télécharger le `.p8` (une seule fois possible).
 - [ ] *Utilisateurs et accès > Testeurs Sandbox* : créer un compte de test.
@@ -273,13 +271,14 @@ APPLE_ISSUER_ID=…
 APPLE_KEY_ID=…
 APPLE_PRIVATE_KEY_FILE=secrets/apple-iap.p8
 APPLE_ENVIRONMENT=sandbox          # « production » une fois l'appli publiée
-FEATURE_REMOVE_ADS=true
+FEATURE_REMOVE_ADS=false         # pas d'achat « Sans pub » : c'est l'abonnement qui retire les pubs
 FEATURE_SUBSCRIPTION=true
 PASS_DAILY_COINS=20
 PASS_BONUS_HINTS=2
 ```
 - [ ] Redémarrer l'API, ouvrir la boutique dans l'appli de test : les prix viennent du store.
-- [ ] Faire un achat de test sur chaque plateforme et vérifier que les pièces arrivent.
+- [ ] S'abonner en test sur chaque plateforme (compte de test de licence / Sandbox) et vérifier
+      que les pubs disparaissent et que les pièces du jour arrivent.
 
 ---
 

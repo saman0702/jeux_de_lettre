@@ -1,5 +1,10 @@
 # Boutique de pièces — mise en route
 
+> **Plus utilisé (décision n° 94).** On ne vend plus de pièces : dans la boutique, le joueur regarde
+> des vidéos pour en gagner, et l'abonnement Premium retire les pubs (voir
+> `docs/PLAYBOOK_DEPLOIEMENT.md` §5). Ce document reste pour mémoire : le code de vérification des
+> achats est gardé (il sert aussi à l'abonnement et aux achats déjà faits).
+
 Les joueurs achètent des packs de pièces avec le moyen de paiement de leur store (carte, PayPal,
 carte cadeau, facturation opérateur…). Le store encaisse, garde sa commission (15 % jusqu'à 1 M$ de
 ventes par an) et reverse le reste chaque mois.
@@ -38,7 +43,7 @@ un pack absent du store n'est simplement pas affiché. Les stores convertissent 
 
 ## Google Play
 
-1. Créer le compte développeur (25 $ une fois) et l'appli `com.letterbattle.letter_battle`.
+1. Créer le compte développeur (25 $ une fois) et l'appli `com.letterbattle.letterBattle`.
 2. Envoyer un premier APK/AAB sur la piste **Tests internes** (la permission de facturation est
    ajoutée automatiquement par le module `in_app_purchase`) : les produits ne sont visibles
    qu'après ça.
