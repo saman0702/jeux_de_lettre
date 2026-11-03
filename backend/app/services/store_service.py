@@ -242,16 +242,21 @@ class StoreVerifiers:
         return await verifier.verify_subscription(platform, product_id, token)
 
 
-def _read(path: str | None) -> str | None:
-    return Path(path).read_text() if path and Path(path).is_file() else None
+def _read(path: str | None, encoded: str | None = None) -> str | None:
+    """Clé lue depuis un fichier, sinon depuis sa version base64 (variable d'environnement)."""
+    if path and Path(path).is_file():
+        return Path(path).read_text()
+    if encoded and encoded.strip():
+        return base64.b64decode(encoded.strip()).decode()
+    return None
 
 
 def build_verifiers() -> StoreVerifiers:
     google = None
-    if account := _read(settings.google_service_account_file):
+    if account := _read(settings.google_service_account_file, settings.google_service_account_base64):
         google = GooglePlayVerifier(json.loads(account), settings.google_play_package)
     apple = None
-    key = _read(settings.apple_private_key_file)
+    key = _read(settings.apple_private_key_file, settings.apple_private_key_base64)
     if key and settings.apple_issuer_id and settings.apple_key_id:
         apple = AppStoreVerifier(
             settings.apple_issuer_id, settings.apple_key_id, key, settings.apple_bundle_id, settings.apple_environment

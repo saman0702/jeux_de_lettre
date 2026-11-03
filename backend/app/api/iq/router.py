@@ -162,6 +162,30 @@ async def resume_session(
     return await _run(session, iq_play_service.resume(session, game_id, data.client_id))
 
 
+@router.post("/sessions/{game_id}/ad-break")
+async def start_ad_break(
+    game_id: str,
+    data: JokerIn,
+    session: AsyncSession = Depends(get_session),
+    x_client_token: str | None = Header(default=None),
+):
+    """Pas assez de pièces pour ce joker : chrono figé pendant la vidéo (une fois par énigme)."""
+    await client_auth.check(session, data.client_id, x_client_token)
+    return await _run(session, iq_play_service.start_ad_break(session, game_id, data.client_id, data.kind))
+
+
+@router.post("/sessions/{game_id}/ad-break/end")
+async def end_ad_break(
+    game_id: str,
+    data: PlayerIn,
+    session: AsyncSession = Depends(get_session),
+    x_client_token: str | None = Header(default=None),
+):
+    """Fin de la vidéo : le chrono reprend là où il était."""
+    await client_auth.check(session, data.client_id, x_client_token)
+    return await _run(session, iq_play_service.end_ad_break(session, game_id, data.client_id))
+
+
 @router.post("/sessions/{game_id}/joker")
 async def joker(
     game_id: str,

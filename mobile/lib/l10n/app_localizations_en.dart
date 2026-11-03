@@ -2030,4 +2030,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteAccountDone =>
       'Account deleted. The app will now close: next time, you start from scratch.';
+
+  @override
+  String get lowCoinsTitle => 'Not enough coins';
+
+  @override
+  String lowCoinsMessage(int price, int coins) {
+    return 'This joker costs $price coins and you have $coins. Watch a short video to earn some: the timer is paused during the video.';
+  }
+
+  @override
+  String lowCoinsWatch(int coins) {
+    return 'VIDEO (+$coins)';
+  }
+
+  @override
+  String get lowCoinsLater => 'LATER';
 }

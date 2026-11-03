@@ -3583,6 +3583,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Compte supprimé. L\'appli va se fermer : au prochain lancement, tu repars de zéro.'**
   String get deleteAccountDone;
+
+  /// No description provided for @lowCoinsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas assez de pièces'**
+  String get lowCoinsTitle;
+
+  /// No description provided for @lowCoinsMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce joker coûte {price} pièces, tu en as {coins}. Regarde une courte vidéo pour en gagner : le chrono est en pause pendant la vidéo.'**
+  String lowCoinsMessage(int price, int coins);
+
+  /// No description provided for @lowCoinsWatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'VIDÉO (+{coins})'**
+  String lowCoinsWatch(int coins);
+
+  /// No description provided for @lowCoinsLater.
+  ///
+  /// In fr, this message translates to:
+  /// **'PLUS TARD'**
+  String get lowCoinsLater;
 }
 
 class _AppLocalizationsDelegate

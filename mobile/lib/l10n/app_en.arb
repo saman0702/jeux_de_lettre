@@ -662,5 +662,11 @@
   "deleteAccountTitle": "Delete your account?",
   "deleteAccountMessage": "Your nickname, coins, avatar, rooms, messages and progress will be erased for good. A Premium subscription is cancelled separately, in Google Play or the App Store.",
   "deleteAccountConfirm": "DELETE",
-  "deleteAccountDone": "Account deleted. The app will now close: next time, you start from scratch."
+  "deleteAccountDone": "Account deleted. The app will now close: next time, you start from scratch.",
+  "lowCoinsTitle": "Not enough coins",
+  "lowCoinsMessage": "This joker costs {price} coins and you have {coins}. Watch a short video to earn some: the timer is paused during the video.",
+  "@lowCoinsMessage": {"placeholders": {"price": {"type": "int"}, "coins": {"type": "int"}}},
+  "lowCoinsWatch": "VIDEO (+{coins})",
+  "@lowCoinsWatch": {"placeholders": {"coins": {"type": "int"}}},
+  "lowCoinsLater": "LATER"
 }

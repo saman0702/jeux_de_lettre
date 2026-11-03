@@ -28,11 +28,15 @@ class Settings(BaseSettings):
     google_play_package: str = "com.letterbattle.letterBattle"
     # Fichier JSON du compte de service ayant accès à l'API Google Play Developer.
     google_service_account_file: str | None = None
+    # Ou son contenu, en base64 sur une ligne (hébergeurs sans fichier : `base64 -w0 cle.json`).
+    google_service_account_base64: str | None = None
     apple_bundle_id: str = "com.letterbattle.letterBattle"
     apple_issuer_id: str | None = None
     apple_key_id: str | None = None
     # Clé privée « In-App Purchase » (.p8) téléchargée depuis App Store Connect.
     apple_private_key_file: str | None = None
+    # Ou son contenu, en base64 sur une ligne (`base64 -w0 cle.p8`).
+    apple_private_key_base64: str | None = None
     # « sandbox » pendant les tests, « production » une fois l'appli publiée.
     apple_environment: str = "sandbox"
 

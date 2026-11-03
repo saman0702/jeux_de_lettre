@@ -158,3 +158,21 @@ async def test_app_store_verifier_with_sandbox_fallback():
     for transaction, product in [("refunded", "coins_100"), ("2000002", "coins_550"), ("missing", "coins_100")]:
         with pytest.raises(StoreError, match="invalid_purchase"):
             await verifier.verify("ios", product, transaction)
+
+
+def test_store_keys_can_come_from_base64(tmp_path, monkeypatch):
+    """Hébergeur sans fichier (Dokploy) : la clé JSON passe en base64 dans une variable."""
+    from app.services import store_service
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    pem = key.private_bytes(
+        serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()
+    ).decode()
+    account = json.dumps({"client_email": "robot@example.iam.gserviceaccount.com", "private_key": pem})
+    monkeypatch.setattr(store_service.settings, "google_service_account_file", str(tmp_path / "absent.json"))
+    monkeypatch.setattr(
+        store_service.settings, "google_service_account_base64", base64.b64encode(account.encode()).decode()
+    )
+    assert store_service.build_verifiers().by_platform["android"] is not None
+    monkeypatch.setattr(store_service.settings, "google_service_account_base64", None)
+    assert store_service.build_verifiers().by_platform["android"] is None

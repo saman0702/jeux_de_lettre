@@ -269,14 +269,14 @@ Un seul produit à créer, **avec cet identifiant exact**, dans les deux stores 
 
 **Serveur** (fichiers dans `secrets/`, jamais dans git)
 
-Sur Dokploy : *Advanced → Mounts → Add Mount → File Mount*, chemin `secrets/google-service-account.json`,
-contenu = le fichier JSON du compte de service (même chose pour `secrets/apple-iap.p8`).
-`backend/docker-compose.yml` monte ce dossier dans `/code/secrets`.
+Sur Dokploy, **pas de File Mount** (il empêchait le conteneur de démarrer) : les clés vont dans
+l'onglet *Environment*, encodées en base64 sur une ligne :
+`base64 -w0 secrets/google-service-account.json` et `base64 -w0 secrets/apple-iap.p8`.
 ```
-GOOGLE_SERVICE_ACCOUNT_FILE=/code/secrets/google-service-account.json
+GOOGLE_SERVICE_ACCOUNT_BASE64=ewogICJ0eXBlIjog…   # la ligne entière
+APPLE_PRIVATE_KEY_BASE64=LS0tLS1CRUdJTi…
 APPLE_ISSUER_ID=…
 APPLE_KEY_ID=…
-APPLE_PRIVATE_KEY_FILE=secrets/apple-iap.p8
 APPLE_ENVIRONMENT=sandbox          # « production » une fois l'appli publiée
 FEATURE_REMOVE_ADS=false         # pas d'achat « Sans pub » : c'est l'abonnement qui retire les pubs
 FEATURE_SUBSCRIPTION=true

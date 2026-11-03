@@ -1351,5 +1351,11 @@
   "deleteAccountTitle": "Supprimer ton compte ?",
   "deleteAccountMessage": "Ton pseudo, tes pièces, ton avatar, tes salons, tes messages et ta progression seront effacés pour toujours. Un abonnement Premium se résilie à part, dans Google Play ou l'App Store.",
   "deleteAccountConfirm": "SUPPRIMER",
-  "deleteAccountDone": "Compte supprimé. L'appli va se fermer : au prochain lancement, tu repars de zéro."
+  "deleteAccountDone": "Compte supprimé. L'appli va se fermer : au prochain lancement, tu repars de zéro.",
+  "lowCoinsTitle": "Pas assez de pièces",
+  "lowCoinsMessage": "Ce joker coûte {price} pièces, tu en as {coins}. Regarde une courte vidéo pour en gagner : le chrono est en pause pendant la vidéo.",
+  "@lowCoinsMessage": {"placeholders": {"price": {"type": "int"}, "coins": {"type": "int"}}},
+  "lowCoinsWatch": "VIDÉO (+{coins})",
+  "@lowCoinsWatch": {"placeholders": {"coins": {"type": "int"}}},
+  "lowCoinsLater": "PLUS TARD"
 }

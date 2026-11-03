@@ -2045,4 +2045,20 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get deleteAccountDone =>
       'Compte supprimé. L\'appli va se fermer : au prochain lancement, tu repars de zéro.';
+
+  @override
+  String get lowCoinsTitle => 'Pas assez de pièces';
+
+  @override
+  String lowCoinsMessage(int price, int coins) {
+    return 'Ce joker coûte $price pièces, tu en as $coins. Regarde une courte vidéo pour en gagner : le chrono est en pause pendant la vidéo.';
+  }
+
+  @override
+  String lowCoinsWatch(int coins) {
+    return 'VIDÉO (+$coins)';
+  }
+
+  @override
+  String get lowCoinsLater => 'PLUS TARD';
 }

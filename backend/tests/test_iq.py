@@ -175,7 +175,7 @@ def test_flow_puzzles_accept_only_non_crossing_paths():
 
 # ------------------------------------------------------------- parties vérifiées par le serveur
 
-from datetime import date, timedelta  # noqa: E402
+from datetime import UTC, date, datetime, timedelta  # noqa: E402
 
 from app.models import IqSession  # noqa: E402
 from app.services import iq_play_service  # noqa: E402
@@ -277,6 +277,41 @@ async def test_jokers_need_coins(client, session):
     game = (await client.post("/api/v1/iq/solo", json={"client_id": PLAYER, "rounds": 5, "duration": 30})).json()
     broke = await client.post(f"/api/v1/iq/sessions/{game['id']}/joker", json={"client_id": PLAYER, "kind": "time"})
     assert broke.status_code == 402 and broke.json()["detail"] == "not_enough_coins"
+
+
+async def test_ad_break_freezes_the_clock_once_per_puzzle(client, session):
+    game = (await client.post("/api/v1/iq/solo", json={"client_id": PLAYER, "rounds": 5, "duration": 30})).json()
+    url = f"/api/v1/iq/sessions/{game['id']}/ad-break"
+    stored = await session.get(IqSession, game["id"])
+    served = stored.served_at
+    paused = await client.post(url, json={"client_id": PLAYER, "kind": "time"})
+    assert paused.status_code == 200 and paused.json()["jokers_used"] == []
+    # Vidéo de 40 s : la pause commence 40 s plus tôt.
+    await session.refresh(stored)
+    stored.jokers = [f"ad@{(datetime.now(UTC) - timedelta(seconds=40)).isoformat()}"]
+    await session.commit()
+    resumed = (await client.post(f"{url}/end", json={"client_id": PLAYER})).json()
+    assert 40 <= resumed["paused_seconds"] <= 41
+    await session.refresh(stored)
+    assert (stored.served_at - served).total_seconds() >= 40, "le chrono reprend où il était"
+    again = await client.post(url, json={"client_id": PLAYER, "kind": "time"})
+    assert again.status_code == 409 and again.json()["detail"] == "ad_break_unavailable"
+
+
+async def test_ad_break_only_without_enough_coins(client, session):
+    await _give_coins(client, session, PLAYER, 100)
+    game = (await client.post("/api/v1/iq/solo", json={"client_id": PLAYER, "rounds": 5, "duration": 30})).json()
+    rich = await client.post(f"/api/v1/iq/sessions/{game['id']}/ad-break", json={"client_id": PLAYER, "kind": "time"})
+    assert rich.status_code == 409 and rich.json()["detail"] == "ad_break_unavailable"
+
+
+def test_ad_break_is_capped():
+    game = IqSession(client_id=PLAYER, served_at=datetime.now(UTC), jokers=[])
+    start = game.served_at
+    game.jokers = [f"ad@{(datetime.now(UTC) - timedelta(minutes=10)).isoformat()}"]
+    assert iq_play_service._close_ad_break(game) == iq_play_service.AD_BREAK_MAX_SECONDS
+    assert (game.served_at - start).total_seconds() == iq_play_service.AD_BREAK_MAX_SECONDS
+    assert game.jokers == ["ad"] and iq_play_service._close_ad_break(game) == 0
 
 
 def test_daily_puzzles_are_the_same_for_everyone():

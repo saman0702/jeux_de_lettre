@@ -19,6 +19,7 @@ import '../game/widgets/labels.dart';
 import '../game/widgets/round_view.dart';
 import '../online/online_controller.dart';
 import '../online/widgets/online_header.dart';
+import '../perks/coins_video_offer.dart';
 import '../perks/perks_controller.dart';
 import 'iq_daily_screen.dart';
 import 'iq_models.dart';
@@ -71,6 +72,9 @@ class IqSoloScreen extends StatefulWidget {
 class _IqSoloScreenState extends State<IqSoloScreen> {
   IqRun? _run;
   DateTime _startedAt = DateTime.now();
+
+  /// Vidéo en cours (pas assez de pièces pour un joker) : chrono figé.
+  DateTime? _pausedAt;
   IqTurn? _turn;
   final _turns = <IqTurn>[];
   Timer? _ticker;
@@ -340,6 +344,8 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
     _ticker = Timer.periodic(const Duration(milliseconds: 250), (_) => _tick());
   }
 
+  Duration _elapsed() => (_pausedAt ?? widget.now()).difference(_startedAt);
+
   void _tick() {
     final run = _run;
     if (!mounted || run == null || _turn != null || _done || _busy) return;
@@ -348,7 +354,7 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
       setState(() {});
       return;
     }
-    if (widget.now().difference(_startedAt) >= run.allowed) {
+    if (_elapsed() >= run.allowed) {
       _answer(null);
     } else {
       setState(() {});
@@ -368,7 +374,7 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
     final feedback = GameFeedbackScope.of(context);
     setState(() => _busy = true);
     try {
-      final turn = await run.answer(raw, widget.now().difference(_startedAt));
+      final turn = await run.answer(raw, _elapsed());
       if (!mounted) return;
       feedback.play(turn.correct ? Sfx.valid : Sfx.invalid);
       _applyWallet(turn);
@@ -420,6 +426,7 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
     final run = _run;
     if (run == null || _turn != null || _busy) return;
     setState(() => _busy = true);
+    bool? credited;
     try {
       final effect = await run.joker(kind);
       if (!mounted) return;
@@ -451,9 +458,55 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
         }
       });
     } on ApiException catch (e) {
-      _error(e.code);
+      if (e.code == 'not_enough_coins') {
+        credited = await _videoForJoker(kind);
+        if (credited == null) _error(e.code);
+      } else {
+        _error(e.code);
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+    // Pièces gagnées avec la vidéo : le joker est pris tout de suite.
+    if (credited == true && mounted) await _joker(kind);
+  }
+
+  /// Pas assez de pièces : chrono en pause et vidéo proposée. Renvoie null si
+  /// aucune vidéo n'est disponible, vrai si les pièces ont été créditées.
+  Future<bool?> _videoForJoker(String kind) async {
+    final perks = _perks;
+    final run = _run;
+    if (perks == null || run == null || !canOfferCoinsVideo(perks)) return null;
+    final server = run is ServerIqRun && run.allowed > Duration.zero ? run : null;
+    var frozen = false;
+    _pausedAt = widget.now();
+    try {
+      if (server != null) {
+        try {
+          await server.startAdBreak(kind);
+          frozen = true;
+        } on ApiException {
+          // Pause déjà prise sur cette énigme : la vidéo reste possible, sans pause.
+        }
+      }
+      if (!mounted) return false;
+      return await offerCoinsVideo(
+        context,
+        perks: perks,
+        price: run.jokerPrices[kind] ?? 0,
+        coins: _online?.wallet?.coins ?? 0,
+      );
+    } finally {
+      var paused = Duration.zero;
+      if (frozen) {
+        try {
+          paused = await server!.endAdBreak();
+        } on ApiException {
+          paused = Duration.zero;
+        }
+      }
+      _pausedAt = null;
+      if (mounted) setState(() => _startedAt = _startedAt.add(paused));
     }
   }
 
@@ -538,7 +591,7 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
     final language = Localizations.localeOf(context).languageCode;
     final turn = _turn;
     final puzzle = turn?.puzzle ?? run.puzzle;
-    final remaining = run.allowed - widget.now().difference(_startedAt);
+    final remaining = run.allowed - _elapsed();
     // Chrono en haut, réponse en bas ; l'énigme se compacte et n'affiche un
     // indice de scroll que si le contenu dépasse vraiment.
     final compact = iqCompactScreen(context);

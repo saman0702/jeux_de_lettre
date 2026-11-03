@@ -283,6 +283,23 @@ class ServerIqRun implements IqRun {
     }),
   );
 
+  /// Pas assez de pièces pour [kind] : le serveur fige le chrono le temps d'une vidéo.
+  Future<void> startAdBreak(String kind) async => _apply(
+    await _api.postJson('/api/v1/iq/sessions/$_id/ad-break', {
+      'client_id': _clientId,
+      'kind': kind,
+    }),
+  );
+
+  /// Fin de la vidéo : renvoie la durée de la pause retenue par le serveur.
+  Future<Duration> endAdBreak() async {
+    final game = await _api.postJson('/api/v1/iq/sessions/$_id/ad-break/end', {
+      'client_id': _clientId,
+    });
+    _apply(game);
+    return Duration(seconds: game['paused_seconds'] as int? ?? 0);
+  }
+
   @override
   Future<IqJokerEffect> joker(String kind) async {
     final effect = await _api.postJson('/api/v1/iq/sessions/$_id/joker', {

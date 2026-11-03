@@ -30,6 +30,9 @@ SOLO_ROUNDS = (5, 10, 15)
 SOLO_DURATIONS = (0, 15, 30, 45, 60)
 MIN_CUSTOM_DURATION = 10
 MAX_CUSTOM_DURATION = 900
+# Pause vidéo (pas assez de pièces pour un joker) : notée dans game.jokers, une par énigme.
+AD_BREAK = "ad"
+AD_BREAK_MAX_SECONDS = 120
 
 
 def _valid_duration(duration: int) -> bool:
@@ -99,7 +102,7 @@ def _public(game: IqSession) -> dict:
         "speed_bonus": game.speed_bonus,
         "penalty": game.penalty,
         "score": game.score,
-        "jokers_used": list(game.jokers),
+        "jokers_used": [j for j in game.jokers if j != AD_BREAK and not j.startswith(f"{AD_BREAK}@")],
         "joker_prices": (
             iq_service.joker_prices(game.duration) if game.mode == "solo" else {}
         ),
@@ -295,10 +298,53 @@ async def active_solo(session: AsyncSession, client_id: str) -> dict | None:
     }
 
 
+def _ad_mark(game: IqSession) -> str | None:
+    """Marque de la pause vidéo de l'énigme en cours (« ad@<début> » ouverte, « ad » finie)."""
+    return next((j for j in game.jokers if j == AD_BREAK or j.startswith(f"{AD_BREAK}@")), None)
+
+
+def _close_ad_break(game: IqSession) -> int:
+    """Termine la pause vidéo ouverte : le chrono repart d'où il était (served_at décalé)."""
+    mark = _ad_mark(game)
+    if mark is None or mark == AD_BREAK:
+        return 0
+    started = datetime.fromisoformat(mark.split("@", 1)[1])
+    paused = int(min(max((_now() - started).total_seconds(), 0), AD_BREAK_MAX_SECONDS))
+    if game.served_at is not None:
+        game.served_at += timedelta(seconds=paused)
+    game.jokers = [AD_BREAK if j == mark else j for j in game.jokers]
+    return paused
+
+
+async def start_ad_break(session: AsyncSession, game_id: str, client_id: str, kind: str) -> dict:
+    """Pas assez de pièces pour un joker : chrono figé le temps d'une vidéo (une fois par énigme)."""
+    game = await _game(session, game_id, client_id)
+    if game.mode != "solo":
+        raise IqPlayError("jokers_not_allowed", 403)
+    if game.finished or game.answered or game.served_at is None or _ad_mark(game) is not None:
+        raise IqPlayError("ad_break_unavailable")
+    price = iq_service.joker_prices(game.duration).get(kind)
+    if price is None:
+        raise IqPlayError("joker_unavailable")
+    profile = await wallet_service.get_profile(session, client_id)
+    if profile.coins >= price:
+        raise IqPlayError("ad_break_unavailable")
+    game.jokers = [*game.jokers, f"{AD_BREAK}@{_now().isoformat()}"]
+    return _public(game)
+
+
+async def end_ad_break(session: AsyncSession, game_id: str, client_id: str) -> dict:
+    """Fin de la vidéo : le chrono reprend (pause plafonnée à AD_BREAK_MAX_SECONDS)."""
+    game = await _game(session, game_id, client_id)
+    paused = _close_ad_break(game)
+    return _public(game) | {"paused_seconds": paused}
+
+
 async def answer(session: AsyncSession, game_id: str, client_id: str, raw: str | None) -> dict:
     game = await _game(session, game_id, client_id)
     if game.finished or game.answered:
         raise IqPlayError("already_answered")
+    _close_ad_break(game)
     if game.served_at is None:
         game.served_at = _now()
     puzzle = _current(game)
@@ -366,6 +412,7 @@ async def use_joker(session: AsyncSession, game_id: str, client_id: str, kind: s
         raise IqPlayError("joker_unavailable")
     if game.finished or game.answered or kind in game.jokers:
         raise IqPlayError("joker_unavailable")
+    _close_ad_break(game)
     puzzle = _current(game)
     prices = iq_service.joker_prices(game.duration)
     if kind not in prices or not iq_service.joker_allowed(puzzle, kind):
