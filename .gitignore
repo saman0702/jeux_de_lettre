@@ -21,3 +21,9 @@ backend/media/
 # Clés des stores (boutique)
 secrets/*
 !secrets/.gitkeep
+
+# Hors du dépôt : autre projet, bundles Play (> 100 Mo, refusés par GitHub), archives, builds
+/OS-Hotel/
+mobile/dist/
+*.zip
+mobile/scripts/build/

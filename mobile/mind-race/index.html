@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mind Race — Petit Bac, QI et défis entre amis</title>
+  <meta name="description" content="Mind Race, le jeu mobile gratuit : Petit Bac, énigmes de QI, chrono et vocabulaire. Seul, contre des bots ou en salon avec tes amis, en français et en anglais.">
+  <meta name="theme-color" content="#2d1480">
+  <meta property="og:title" content="Mind Race — Petit Bac, QI et défis entre amis">
+  <meta property="og:description" content="Une lettre, des catégories, des énigmes de QI : le plus rapide gagne. Gratuit, sans compte.">
+  <meta property="og:image" content="img/icon-256.png">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="img/icon-256.png" type="image/png">
+  <link rel="apple-touch-icon" href="img/icon-256.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Lilita+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=5">
+</head>
+<body>
+  <div class="sky">
+    <header class="top wrap">
+      <a class="logo" href="index.html">
+        <img src="img/icon-256.png" width="44" height="44" alt="">
+        <b>Mind Race</b>
+      </a>
+      <nav aria-label="Navigation">
+        <a href="#jeux">Les jeux</a>
+        <a href="#captures">Captures</a>
+        <a href="#faq">FAQ</a>
+        <a class="nav-cta" href="#telecharger">Télécharger</a>
+      </nav>
+    </header>
+
+    <main>
+      <!-- Accroche -->
+      <section class="hero wrap">
+        <div class="hero-text reveal">
+          <p class="eyebrow">Jeu mobile gratuit · Français &amp; anglais</p>
+          <h1>Petit Bac, QI et défis éclair <span class="hl">entre amis</span>.</h1>
+          <p class="lead">Une lettre, quatre catégories, un chrono : le plus rapide gagne. Et quand les lettres ne suffisent plus, place aux énigmes de QI, au quiz chrono et aux mots.</p>
+          <div class="stores" id="telecharger">
+            <a class="store" href="https://play.google.com/store/apps/details?id=com.letterbattle.letterBattle" rel="noopener">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2.5v19l10.2-9.5L4 2.5Zm11.6 10.8 2.7 2.5-11.6 6.3 8.9-8.8Zm0-2.6L6.7 1.9l11.6 6.3-2.7 2.5Zm3.9-1.7 2.5 1.4c.8.5.8 1.7 0 2.2l-2.5 1.4-3-2.5 3-2.5Z"/></svg>
+              <span><small>Bientôt sur</small>Google Play</span>
+            </a>
+            <a class="store" href="#telecharger" aria-disabled="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-1.9-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.2 2.5-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9 0 0-2.8-1-2.9-4.3ZM13.9 5.4c.7-.8 1.2-2 1-3.2-1 .1-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3.1 1.1.1 2.2-.6 2.9-1.4Z"/></svg>
+              <span><small>Bientôt sur</small>l'App Store</span>
+            </a>
+          </div>
+          <ul class="perks" aria-label="En bref">
+            <li>Gratuit</li>
+            <li>Sans compte</li>
+            <li>Jusqu'à 8 joueurs</li>
+            <li>Vocal en partie</li>
+          </ul>
+        </div>
+        <div class="hero-art reveal" aria-hidden="true">
+          <div class="phone tilt-left"><img src="img/accueil.webp" alt="" width="390" height="844"></div>
+          <div class="phone tilt-right"><img src="img/manche.webp" alt="" width="390" height="844"></div>
+          <span class="tile t1">M</span>
+          <span class="tile t2">R</span>
+          <img class="sticker" src="img/icon-256.png" alt="" width="96" height="96">
+        </div>
+      </section>
+
+      <!-- Les jeux -->
+      <section class="section wrap" id="jeux">
+        <h2 class="title reveal">Quatre jeux dans une seule appli</h2>
+        <p class="subtitle reveal">Choisis ton terrain de jeu, puis joue seul, contre des bots ou en salon.</p>
+        <div class="games">
+          <article class="reveal game g-green">
+            <span class="badge">Lettres &amp; catégories</span>
+            <h3>Géographie &amp; Nature</h3>
+            <p>Le Petit Bac revisité : une lettre tombe, trouve une ville, un pays, un animal, un fruit… avant les autres. Jokers, gel de l'adversaire, défi éclair.</p>
+          </article>
+          <article class="reveal game g-purple">
+            <span class="badge">Logique &amp; énigmes</span>
+            <h3>QI</h3>
+            <p>Suites, matrices de formes, rotations, intrus, calcul et figures à tracer d'un seul trait. Un défi du jour, le même pour tout le monde, avec son classement.</p>
+          </article>
+          <article class="reveal game g-orange">
+            <span class="badge">Histoire &amp; dates</span>
+            <h3>Chrono</h3>
+            <p>Dates clés, ordre des événements, grands personnages et civilisations : un quiz d'histoire où chaque seconde compte.</p>
+          </article>
+          <article class="reveal game g-pink">
+            <span class="badge">Vocabulaire</span>
+            <h3>Mot &amp; Sens</h3>
+            <p>Synonymes, contraires, définitions, expressions et intrus : joue avec les mots, en français comme en anglais.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- Modes -->
+      <section class="section wrap">
+        <h2 class="title reveal">Joue comme tu veux</h2>
+        <div class="modes-grid">
+          <div class="mode reveal"><b>Solo libre</b><span>Tes réglages, ton rythme, même hors ligne.</span></div>
+          <div class="mode reveal"><b>Carrière</b><span>30 niveaux en 3 mondes, jusqu'à 3 étoiles par niveau.</span></div>
+          <div class="mode reveal"><b>Éliminatoires</b><span>Le plus petit score sort à chaque manche.</span></div>
+          <div class="mode reveal"><b>Salons</b><span>Invite tes amis avec un code, discute et parle en vocal.</span></div>
+          <div class="mode reveal"><b>Partie rapide</b><span>Un adversaire en quelques secondes.</span></div>
+          <div class="mode reveal"><b>Contre les bots</b><span>Trois niveaux de difficulté pour t'entraîner.</span></div>
+        </div>
+      </section>
+
+      <!-- Captures -->
+      <section class="section" id="captures">
+        <div class="wrap">
+          <h2 class="title reveal">Aperçu du jeu</h2>
+          <p class="subtitle reveal">Un aperçu des écrans du jeu.</p>
+        </div>
+        <div class="marquee reveal" aria-label="Captures d'écran">
+          <div class="marquee-track">
+            <figure><div class="phone"><img src="img/accueil.webp" alt="Écran d'accueil de Mind Race" width="390" height="844" loading="lazy"></div><figcaption>L'accueil</figcaption></figure>
+            <figure><div class="phone"><img src="img/choix.webp" alt="Choix du jeu : Géographie & Nature, QI, Chrono, Mot & Sens" width="390" height="844" loading="lazy"></div><figcaption>Quatre jeux</figcaption></figure>
+            <figure><div class="phone"><img src="img/manche.webp" alt="Une manche de Petit Bac avec la lettre M" width="390" height="844" loading="lazy"></div><figcaption>Une manche de Petit Bac</figcaption></figure>
+            <figure><div class="phone"><img src="img/qi_matrix.webp" alt="Énigme de QI : quelle figure complète la grille ?" width="390" height="844" loading="lazy"></div><figcaption>Énigmes à schémas</figcaption></figure>
+            <figure><div class="phone"><img src="img/qi_trace.webp" alt="Énigme de QI : tracer la figure d'un seul trait" width="390" height="844" loading="lazy"></div><figcaption>Un seul trait</figcaption></figure>
+            <figure aria-hidden="true"><div class="phone"><img src="img/accueil.webp" alt="" width="390" height="844" loading="lazy"></div><figcaption>L'accueil</figcaption></figure>
+            <figure aria-hidden="true"><div class="phone"><img src="img/choix.webp" alt="" width="390" height="844" loading="lazy"></div><figcaption>Quatre jeux</figcaption></figure>
+            <figure aria-hidden="true"><div class="phone"><img src="img/manche.webp" alt="" width="390" height="844" loading="lazy"></div><figcaption>Une manche de Petit Bac</figcaption></figure>
+            <figure aria-hidden="true"><div class="phone"><img src="img/qi_matrix.webp" alt="" width="390" height="844" loading="lazy"></div><figcaption>Énigmes à schémas</figcaption></figure>
+            <figure aria-hidden="true"><div class="phone"><img src="img/qi_trace.webp" alt="" width="390" height="844" loading="lazy"></div><figcaption>Un seul trait</figcaption></figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- Comment jouer -->
+      <section class="section wrap">
+        <h2 class="title reveal">Comment jouer</h2>
+        <ol class="steps">
+          <li class="reveal"><b>Choisis ton pseudo</b><span>Pas de compte à créer : un pseudo et c'est parti.</span></li>
+          <li class="reveal"><b>Choisis ton jeu</b><span>Petit Bac, QI, Chrono ou Mot &amp; Sens, seul ou à plusieurs.</span></li>
+          <li class="reveal"><b>Sois le plus rapide</b><span>Marque des points, gagne des pièces et grimpe au classement.</span></li>
+        </ol>
+      </section>
+
+      <!-- FAQ -->
+      <section class="section wrap" id="faq">
+        <h2 class="title reveal">Questions fréquentes</h2>
+        <div class="faq">
+          <details class="reveal">
+            <summary>Mind Race est-il gratuit ?</summary>
+            <p>Oui. Le jeu est entièrement gratuit. Des vidéos facultatives permettent de gagner des pièces, et un abonnement Premium retire les publicités.</p>
+          </details>
+          <details class="reveal">
+            <summary>Faut-il créer un compte ?</summary>
+            <p>Non. Tu choisis simplement un pseudo. Ta progression est liée à ton téléphone.</p>
+          </details>
+          <details class="reveal">
+            <summary>À quoi servent les pièces ?</summary>
+            <p>À acheter des jokers, des apparences ou à miser dans les salons entre amis. Elles se gagnent en jouant ou en regardant des vidéos, et n'ont aucune valeur monétaire.</p>
+          </details>
+          <details class="reveal">
+            <summary>Que comprend l'abonnement Premium ?</summary>
+            <p>Plus aucune publicité, des pièces offertes chaque jour et des jokers en plus dans chaque partie. Il se résilie à tout moment dans Google Play ou l'App Store.</p>
+          </details>
+          <details class="reveal">
+            <summary>Peut-on jouer hors ligne ?</summary>
+            <p>Oui, en solo. Les salons, la partie rapide et le défi du jour demandent une connexion.</p>
+          </details>
+          <details class="reveal">
+            <summary>Pour quel âge ?</summary>
+            <p>Mind Race s'adresse aux joueurs de 13 ans et plus, car il propose un chat et un vocal entre joueurs.</p>
+          </details>
+          <details class="reveal">
+            <summary>Comment supprimer mon compte et mes données ?</summary>
+            <p>Dans l'appli : <em>Réglages → Supprimer mon compte</em>. Ou par e-mail : voir la <a href="confidentialite.html#suppression">page de confidentialité</a>.</p>
+          </details>
+        </div>
+      </section>
+
+      <!-- Contact -->
+      <section class="section wrap contact">
+        <h2 class="title reveal">Une question, une idée ?</h2>
+        <p class="subtitle reveal">Écris-nous, on lit tout.</p>
+        <a class="btn btn-sun reveal" href="mailto:blaisesaman34@gmail.com?subject=Mind%20Race">blaisesaman34@gmail.com</a>
+      </section>
+    </main>
+
+    <footer class="foot wrap">
+      <span>© 2026 Mind Race</span>
+      <nav aria-label="Liens légaux">
+        <a href="confidentialite.html">Confidentialité</a>
+        <a href="cgu.html">CGU</a>
+        <a href="confidentialite.html#suppression">Supprimer mon compte</a>
+        <a href="mailto:blaisesaman34@gmail.com">Contact</a>
+      </nav>
+    </footer>
+  </div>
+  <script>
+    // Apparition des blocs au défilement ; sans JavaScript, tout reste visible.
+    (function () {
+      var blocks = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) return;
+      document.documentElement.classList.add('anim');
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('in');
+          observer.unobserve(entry.target);
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+      blocks.forEach(function (block) { observer.observe(block); });
+    })();
+  </script>
+</body>
+</html>
