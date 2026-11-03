@@ -44,6 +44,8 @@ from app.core.game_rules import (
     Category,
     Difficulty,
     Language,
+    clamp_round_duration,
+    is_unlimited_duration,
 )
 from app.models import Profile
 from app.models.base import utcnow
@@ -56,6 +58,7 @@ from app.services import (
     iq_service,
     multiplayer_service,
     perks_service,
+    quiz_service,
     room_store,
     voice_service,
     wallet_service,
@@ -89,9 +92,9 @@ class RoomSettings(GameSettings):
     format: str = Field(default="rounds", pattern="^(rounds|elimination|relay)$")
     # Thème du jour : catégories à score doublé (geography | names | nature | "").
     theme: str = Field(default="", pattern="^(|geography|names|nature)$")
-    # Jeu du salon : « letters » (Géographie & Nature, le Petit Bac) ou « iq » (énigmes de QI).
-    game: str = Field(default="letters", pattern="^(letters|iq)$")
-    # QI : bonus de rapidité (jusqu'à +10) et malus si la réponse est fausse (−5), au choix de l'hôte.
+    # Jeu : letters | iq | chrono | mots. Les trois derniers utilisent le pipeline énigmes/QCM.
+    game: str = Field(default="letters", pattern="^(letters|iq|chrono|mots)$")
+    # QI / quiz : bonus de rapidité (jusqu'à +10) et malus si la réponse est fausse (−5).
     iq_speed_bonus: bool = True
     iq_penalty: bool = False
 
@@ -101,14 +104,15 @@ class RoomSettings(GameSettings):
             raise ValueError("a betting/prize room needs a stake")
         if self.kind == "classic":
             self.stake = 0
-        if self.game == "iq":
-            # Pas de catégories en QI : pas de thème. Le relais répartit les énigmes.
+        if self.game in ("iq", "chrono", "mots"):
+            # Pas de catégories lettre : pas de thème.
             self.theme = ""
         return self
 
     @property
     def iq(self) -> bool:
-        return self.game == "iq"
+        """True pour QI, Chrono et Mot & Sens (même pipeline de manches)."""
+        return self.game in ("iq", "chrono", "mots")
 
     @property
     def betting(self) -> bool:
@@ -531,6 +535,8 @@ class RoomManager:
         await self._leave(connection.client_id)
         room = self._new_room(settings, quick=False, host=connection, code=await self._free_code())
         room.creator_id = connection.client_id
+        # Salon gardé (public ou privé) : créateur déjà membre pour « Mes salons »
+        # même s'il ferme tout de suite.
         async with self.session_factory() as session:
             await room_store.save_room(
                 session,
@@ -540,6 +546,9 @@ class RoomManager:
                 settings.public,
                 settings.language,
                 settings.model_dump(mode="json"),
+            )
+            await room_store.join(
+                session, room.code, connection.client_id, connection.nickname
             )
             await session.commit()
         await self._add_player(room, connection)
@@ -648,7 +657,10 @@ class RoomManager:
             raise RoomError("round_already_submitted")
 
         now = utcnow()
-        if now > live.ends_at + timedelta(seconds=self.timings.submit_grace):
+        if (
+            not is_unlimited_duration(room.settings.round_duration)
+            and now > live.ends_at + timedelta(seconds=self.timings.submit_grace)
+        ):
             raise RoomError("round_over")
         until = live.frozen_until.get(client_id)
         if until is not None and now < until:
@@ -2037,7 +2049,12 @@ class RoomManager:
             answers = bot_service.choose_answers(
                 profile, {c: values[: profile.pool] for c, values in options.items()}
             )
-            delay = bot_service.answer_delay(profile, room.settings.round_duration) * self.timings.bot_speed
+            delay = (
+                bot_service.answer_delay(
+                    profile, clamp_round_duration(room.settings.round_duration)
+                )
+                * self.timings.bot_speed
+            )
             live.bot_tasks.append(asyncio.create_task(self._bot_submit(room, live, bot.client_id, answers, delay)))
 
     async def _bot_submit(
@@ -2067,7 +2084,8 @@ class RoomManager:
             raise RoomError("round_not_current")
         if connection.client_id in live.submissions:
             return
-        answer = str(message.get("answer") if message.get("answer") is not None else "")[:16]
+        # Tracés « 0-1-2-… » et Flow (JSON des chemins) : jusqu'à ~150 car.
+        answer = str(message.get("answer") if message.get("answer") is not None else "")[:512]
         live.submissions[connection.client_id] = (utcnow(), {"iq": answer})
         await self._broadcast(room)
         self._check_all_in(room)
@@ -2090,15 +2108,17 @@ class RoomManager:
             raise RoomError("round_not_current")
         player = room.players[cid]
         puzzle = live.puzzle_for(cid)
+        prices = iq_service.joker_prices(room.settings.round_duration)
         if (
             player.bot
             or puzzle is None
-            or kind not in iq_service.JOKER_PRICES
+            or kind not in prices
             or not iq_service.joker_allowed(puzzle, kind)
             or kind in live.iq_jokers.get(cid, set())
+            or (kind == "time" and is_unlimited_duration(room.settings.round_duration))
         ):
             raise RoomError("joker_unavailable")
-        price = iq_service.JOKER_PRICES[kind]
+        price = prices[kind]
         async with self.session_factory() as session:
             try:
                 profile = await wallet_service.debit(session, cid, price, f"iq_joker_{kind}", room.code)
@@ -2116,6 +2136,16 @@ class RoomManager:
         elif kind == "time":
             live.iq_extra[cid] = live.iq_extra.get(cid, 0) + iq_service.EXTRA_TIME
             effect["extra_seconds"] = live.iq_extra[cid]
+        elif kind == "reveal":
+            # Temps illimité : voit la solution (0 pt) et compte comme ayant répondu.
+            live.submissions[cid] = (utcnow(), {"iq": "", "revealed": True})
+            effect["revealed"] = True
+            effect["puzzle"] = puzzle.reveal()
+            effect["wallet"] = wallet.as_dict()
+            await self._send(cid, effect)
+            await self._broadcast(room)
+            self._check_all_in(room)
+            return
         else:  # skip : une autre énigme du même niveau, rien que pour lui
             used = {p.id for p in live.puzzles.values()} | ({live.puzzle.id} if live.puzzle else set())
             live.puzzles[cid] = iq_service.draw(puzzle.level, exclude=used, rng=rng)
@@ -2148,18 +2178,28 @@ class RoomManager:
             cid: p.db_player_id or cid for cid, p in room.players.items() if p.eliminated_round is None
         }
         puzzle, puzzles = None, {}
+
+        def _draw(exclude: set) -> iq_service.Puzzle:
+            if settings.game in quiz_service.BANKS:
+                return quiz_service.draw(settings.game, level, exclude=exclude)
+            return iq_service.draw(level, exclude=exclude)
+
         if settings.relay:
             # Chacun son énigme : personne ne peut s'aider de l'écran du voisin.
             for cid in participants:
-                puzzles[cid] = iq_service.draw(level, exclude=used)
+                puzzles[cid] = _draw(used)
                 used.add(puzzles[cid].id)
         else:
-            puzzle = iq_service.draw(level, exclude=used)
+            puzzle = _draw(used)
         live = LiveRound(
             number=number,
             letter="",
             started_at=started,
-            ends_at=started + timedelta(seconds=settings.round_duration),
+            ends_at=(
+                started + timedelta(days=365)
+                if is_unlimited_duration(settings.round_duration)
+                else started + timedelta(seconds=settings.round_duration)
+            ),
             participants=participants,
             puzzle=puzzle,
             puzzles=puzzles,
@@ -2191,18 +2231,30 @@ class RoomManager:
                 continue
             submitted = live.submissions.get(cid)
             answer = submitted[1].get("iq") if submitted else None
+            revealed = bool(submitted and submitted[1].get("revealed"))
             own_end = live.ends_at + timedelta(seconds=live.iq_extra.get(cid, 0))
             elapsed = (min(submitted[0], own_end) - started).total_seconds() if submitted else None
             mine = live.puzzle_for(cid)
-            correct = submitted is not None and mine is not None and iq_service.check(mine, answer)
-            pts = iq_service.points(
-                correct,
-                submitted is not None,
-                elapsed or 0.0,
-                settings.round_duration,
-                settings.iq_speed_bonus,
-                settings.iq_penalty,
-            )
+            # Solution achetée : 0 point (ni bonus ni malus).
+            level = mine.level if mine is not None else 2
+            if revealed:
+                correct, pts, speed = False, 0, None
+            else:
+                correct = submitted is not None and mine is not None and iq_service.check(mine, answer)
+                pts = iq_service.points(
+                    correct,
+                    submitted is not None,
+                    elapsed or 0.0,
+                    settings.round_duration,
+                    settings.iq_speed_bonus,
+                    settings.iq_penalty,
+                    level=level,
+                )
+                speed = (
+                    iq_service.speed_of(elapsed, level)
+                    if submitted is not None and elapsed is not None
+                    else None
+                )
             player.score += pts
             results.append(
                 {
@@ -2213,6 +2265,7 @@ class RoomManager:
                     "correct": correct,
                     "round_score": pts,
                     "elapsed_ms": int(elapsed * 1000) if elapsed is not None else None,
+                    "speed": speed,
                     # Relais (ou joker « passer ») : l'énigme de ce joueur, avec sa réponse.
                     **({"puzzle": mine.reveal()} if mine is not None and mine is not puzzle else {}),
                 }
@@ -2253,8 +2306,17 @@ class RoomManager:
             puzzle = live.puzzle_for(cid)
             if puzzle is None:
                 continue
-            answer = puzzle.answer if rng.random() < accuracy else iq_service.wrong_answer(puzzle, rng)
-            delay = room.settings.round_duration * rng.uniform(low, high) * self.timings.bot_speed
+            if rng.random() < accuracy:
+                answer = puzzle.answer
+            elif room.settings.game in quiz_service.BANKS:
+                answer = quiz_service.wrong_answer(puzzle, rng)
+            else:
+                answer = iq_service.wrong_answer(puzzle, rng)
+            delay = (
+                clamp_round_duration(room.settings.round_duration)
+                * rng.uniform(low, high)
+                * self.timings.bot_speed
+            )
             live.bot_tasks.append(asyncio.create_task(self._iq_bot_answer(room, live, cid, answer, delay)))
 
     async def _iq_bot_answer(self, room: Room, live: LiveRound, client_id: str, answer: str, delay: float) -> None:
@@ -2394,8 +2456,13 @@ class RoomManager:
                 "freeze": FREEZE_PRICE,
                 "chat_unlock": CHAT_UNLOCK_PRICE,
                 "extra_hint": EXTRA_HINT_PRICE,
-                # Jokers du QI (fifty, hint, time, skip).
-                **{f"iq_{kind}": price for kind, price in iq_service.JOKER_PRICES.items()},
+                # Jokers du QI ; pas de +15 s si le temps est illimité.
+                **{
+                    f"iq_{kind}": price
+                    for kind, price in iq_service.joker_prices(
+                        room.settings.round_duration if room.settings.iq else None
+                    ).items()
+                },
             },
             "starts_at": _iso(room.starts_at),
             "go_at": _iso(room.go_at),

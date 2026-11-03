@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<!-- Captures des stores. Paramètres : ?n=1..6&w=1080&h=1920 (Google Play 9:16, App Store 1290 × 2796…) — rendu : tool/store_shots/export.sh -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+  @font-face { font-family: Fredoka; src: url(../../assets/fonts/Fredoka.ttf); }
+  @font-face { font-family: Lilita; src: url(../../assets/fonts/LilitaOne.ttf); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; overflow: hidden; }
+  /* Mise en page dessinée sur 1080 px de large ; zoom pour les autres tailles. */
+  body { width: 1080px; height: var(--h, 1920px); }
+  body {
+    position: relative;
+    font-family: Fredoka, sans-serif;
+    color: #fff;
+    background: var(--bg);
+  }
+  .deco span {
+    position: absolute;
+    font-family: Lilita;
+    color: #ffffff12;
+    line-height: 1;
+  }
+  .head { position: absolute; left: 70px; right: 70px; top: 96px; text-align: center; }
+  .chip {
+    display: inline-block;
+    padding: 10px 26px;
+    border-radius: 999px;
+    background: #ffffff26;
+    border: 2px solid #ffffff40;
+    font-weight: 600;
+    font-size: 34px;
+    letter-spacing: 0.5px;
+  }
+  h1 {
+    margin: 26px 0 0;
+    font-family: Lilita;
+    font-weight: 400;
+    font-size: 88px;
+    line-height: 1.02;
+    text-shadow: 0 6px 0 #0000002e;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+  .phone {
+    position: absolute;
+    left: 50%;
+    top: 470px;
+    width: 700px;
+    margin-left: -350px;
+    padding: 16px;
+    border-radius: 74px;
+    background: #0d0620;
+    border: 3px solid #ffffff35;
+    box-shadow: 0 50px 100px #00000070, 0 0 0 10px #ffffff10;
+  }
+  .phone img { display: block; width: 100%; border-radius: 58px; }
+  .tile {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 130px;
+    height: 130px;
+    border-radius: 34px;
+    font-family: Lilita;
+    font-size: 76px;
+    color: #2a1763;
+    box-shadow: 0 10px 0 #00000040;
+    z-index: 2;
+  }
+</style>
+</head>
+<body>
+  <div class="deco" aria-hidden="true">
+    <span style="left:-30px;top:520px;font-size:300px">?</span>
+    <span style="right:-40px;top:900px;font-size:320px">A</span>
+    <span style="left:-50px;top:1400px;font-size:280px">÷</span>
+  </div>
+  <div class="head">
+    <span class="chip" id="chip"></span>
+    <h1 id="title"></h1>
+  </div>
+  <div class="phone"><img id="shot" alt=""></div>
+  <span class="tile" id="t1" style="left:60px;top:1500px;transform:rotate(-10deg)"></span>
+  <span class="tile" id="t2" style="right:60px;top:1280px;transform:rotate(9deg)"></span>
+
+  <script>
+    var screens = {
+      1: { img: 'accueil', chip: 'Jeu de mots & logique', title: 'Petit Bac, QI et<br><em>défis entre amis</em>',
+           bg: 'linear-gradient(165deg,#6b3df0,#3a1aa8 55%,#1f0d63)', accent: '#ffc93c', t: ['M', 'R'], c: ['#ffc93c', '#3cc8ff'] },
+      2: { img: 'choix', chip: '4 jeux en 1', title: 'Choisis ton jeu,<br><em>relève le défi</em>',
+           bg: 'linear-gradient(165deg,#3e8bff,#3a1aa8 60%,#1f0d63)', accent: '#7ff0ff', t: ['Q', 'I'], c: ['#ff7eb6', '#ffc93c'] },
+      3: { img: 'manche', chip: 'Petit Bac', title: 'Une lettre, 4 catégories :<br><em>sois le plus rapide</em>',
+           bg: 'linear-gradient(165deg,#22b8ff,#2f50e0 55%,#1d1a8a)', accent: '#ffe066', t: ['M', 'B'], c: ['#ffc93c', '#4ee38a'] },
+      4: { img: 'qi_matrix', chip: 'Énigmes de QI', title: 'Muscle ton cerveau<br><em>avec les schémas</em>',
+           bg: 'linear-gradient(165deg,#ff5fa2,#b02a8a 55%,#5a1270)', accent: '#ffe066', t: ['?', '÷'], c: ['#ffc93c', '#3cc8ff'] },
+      5: { img: 'qi_trace', chip: 'Un seul trait', title: 'Trace la figure<br><em>sans lever le doigt</em>',
+           bg: 'linear-gradient(165deg,#ff8a3d,#d23a7a 55%,#6a1670)', accent: '#ffe066', t: ['π', '+'], c: ['#3cc8ff', '#4ee38a'] },
+      6: { img: 'salon', chip: 'Salons privés', title: 'Jusqu’à 8 amis,<br><em>chat et vocal</em>',
+           bg: 'linear-gradient(165deg,#9b5cff,#4a22c9 55%,#1f0d63)', accent: '#4ee38a', t: ['8', '★'], c: ['#4ee38a', '#ffc93c'] }
+    };
+    var query = new URLSearchParams(location.search);
+    var n = query.get('n') || '1';
+    var w = Number(query.get('w') || 1080), h = Number(query.get('h') || 1920);
+    var designHeight = Math.round(h * 1080 / w);
+    document.body.style.setProperty('--h', designHeight + 'px');
+    document.body.style.zoom = w / 1080;
+    // Écran plus haut (iPhone) : le téléphone grandit pour remplir la place sous le titre.
+    var phone = document.querySelector('.phone');
+    if (designHeight > 1920) {
+      var phoneWidth = Math.min(860, Math.round((designHeight - 470 - 90) / 2.21));
+      phone.style.width = phoneWidth + 'px';
+      phone.style.marginLeft = -phoneWidth / 2 + 'px';
+      document.getElementById('t1').style.top = (designHeight - 420) + 'px';
+      document.getElementById('t2').style.top = (designHeight - 760) + 'px';
+    }
+    var s = screens[n];
+    document.body.style.setProperty('--bg', s.bg);
+    document.body.style.setProperty('--accent', s.accent);
+    document.getElementById('chip').textContent = s.chip;
+    document.getElementById('title').innerHTML = s.title;
+    document.getElementById('shot').src = s.img + '.png';
+    ['t1', 't2'].forEach(function (id, i) {
+      var tile = document.getElementById(id);
+      tile.textContent = s.t[i];
+      tile.style.background = s.c[i];
+    });
+  </script>
+</body>
+</html>

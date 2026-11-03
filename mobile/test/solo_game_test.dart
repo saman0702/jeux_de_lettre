@@ -11,6 +11,7 @@ import 'package:letter_battle/core/network/api_client.dart';
 import 'package:letter_battle/core/settings/app_settings.dart';
 import 'package:letter_battle/features/game/data/models.dart';
 import 'package:letter_battle/features/game/data/solo_game_api.dart';
+import 'package:letter_battle/features/game/offline/offline_dictionary.dart';
 import 'package:letter_battle/features/game/solo_game_controller.dart';
 import 'package:letter_battle/features/game/solo_game_screen.dart';
 import 'package:letter_battle/features/game/solo_setup_screen.dart';
@@ -164,6 +165,11 @@ Future<SoloGameController> pumpGame(
 }
 
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    await OfflineDictionary.load();
+  });
+
   testWidgets('plays a full round and reaches the final screen', (
     tester,
   ) async {
@@ -351,7 +357,7 @@ void main() {
     expect(server.submissions.single['city'], 'Madrid');
   });
 
-  testWidgets('typing plays tile sounds and a ding on the right letter', (
+  testWidgets('typing plays tile sounds; ding only when the word is known', (
     tester,
   ) async {
     final feedback = testFeedback();
@@ -360,19 +366,26 @@ void main() {
     for (var i = 0; i < 5; i++) {
       await tester.pump(const Duration(milliseconds: 10));
     }
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const Key('field_city')), findsOneWidget);
     audio.played.clear();
 
-    final field = find.byKey(const Key('field_city'));
-    await tester.showKeyboard(field);
-    await tester.enterText(field, 'M');
-    await tester.pumpAndSettle();
-    await tester.enterText(field, 'Ma');
-    await tester.pumpAndSettle();
-    await tester.enterText(field, 'M');
-    await tester.pumpAndSettle();
+    Future<void> press(String key) async {
+      await tester.tap(find.byKey(Key('key_$key')));
+      await tester.pump();
+    }
 
-    expect(audio.played, [Sfx.key, Sfx.match, Sfx.key, Sfx.erase]);
+    // « MA » : bonne lettre, pas un mot connu → pas de ding.
+    await press('M');
+    await press('A');
+    expect(audio.played, isNot(contains(Sfx.match)));
+
+    // Complète « MADRID » → ding de validation.
+    for (final key in ['D', 'R', 'I', 'D']) {
+      await press(key);
+    }
+    await tester.pump();
+    expect(audio.played, contains(Sfx.match));
   });
 
   testWidgets('the game keyboard types, erases, moves on and finishes', (
@@ -385,7 +398,8 @@ void main() {
     for (var i = 0; i < 5; i++) {
       await tester.pump(const Duration(milliseconds: 10));
     }
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const Key('key_M')), findsOneWidget);
     audio.played.clear();
 
     Future<void> press(String key) async {
@@ -404,7 +418,7 @@ void main() {
     for (final key in ['M', 'E', 'L', 'O', 'N']) {
       await press(key);
     }
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     final city = tester
         .widget<TextField>(find.byKey(const Key('field_city')))
@@ -415,7 +429,8 @@ void main() {
         .controller!
         .text;
     expect((city, fruit), ('MADRID', 'MELON'));
-    expect(audio.played, containsAllInOrder([Sfx.key, Sfx.match, Sfx.erase]));
+    // Ding seulement quand le mot devient connu (pas dès la 1re lettre).
+    expect(audio.played, containsAllInOrder([Sfx.key, Sfx.erase, Sfx.match]));
 
     await press('finish');
     await tester.pumpAndSettle();

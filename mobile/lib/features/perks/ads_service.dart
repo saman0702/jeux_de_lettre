@@ -69,12 +69,23 @@ class AdMobAdsService implements AdsService {
         () => ConsentForm.loadAndShowConsentFormIfRequired(
           (_) => consent.complete(),
         ),
-        (_) => consent.complete(),
+        (error) {
+          debugPrint('Ads consent info error: $error');
+          consent.complete();
+        },
       );
       await consent.future;
-      if (!await ConsentInformation.instance.canRequestAds()) return;
+      final canRequest = await ConsentInformation.instance.canRequestAds();
+      if (!canRequest) {
+        debugPrint('Ads: canRequestAds=false (consentement / UMP)');
+        return;
+      }
       await MobileAds.instance.initialize();
       _ready = true;
+      debugPrint(
+        'Ads ready (test OK) — interstitial=$_interstitialUnit '
+        'rewarded=$_rewardedUnit',
+      );
     } catch (error) {
       debugPrint('Ads unavailable: $error');
     }
@@ -83,14 +94,20 @@ class AdMobAdsService implements AdsService {
   @override
   Future<String?> showRewarded({required String userId}) async {
     await initialize();
-    if (!_ready) return null;
+    if (!_ready) {
+      debugPrint('Ads: not ready (consent or init failed)');
+      return null;
+    }
     final loaded = Completer<RewardedAd?>();
     await RewardedAd.load(
       adUnitId: _rewardedUnit,
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: loaded.complete,
-        onAdFailedToLoad: (_) => loaded.complete(null),
+        onAdFailedToLoad: (error) {
+          debugPrint('Rewarded failed to load ($_rewardedUnit): $error');
+          loaded.complete(null);
+        },
       ),
     );
     final ad = await loaded.future;
@@ -121,14 +138,24 @@ class AdMobAdsService implements AdsService {
   @override
   Future<void> showInterstitial() async {
     await initialize();
-    if (!_ready) return;
+    if (!_ready) {
+      debugPrint('Interstitial: SDK not ready');
+      return;
+    }
+    debugPrint('Interstitial: loading $_interstitialUnit …');
     final loaded = Completer<InterstitialAd?>();
     await InterstitialAd.load(
       adUnitId: _interstitialUnit,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: loaded.complete,
-        onAdFailedToLoad: (_) => loaded.complete(null),
+        onAdLoaded: (ad) {
+          debugPrint('Interstitial: loaded');
+          loaded.complete(ad);
+        },
+        onAdFailedToLoad: (error) {
+          debugPrint('Interstitial failed to load ($_interstitialUnit): $error');
+          loaded.complete(null);
+        },
       ),
     );
     final ad = await loaded.future;
@@ -139,12 +166,14 @@ class AdMobAdsService implements AdsService {
         ad.dispose();
         done.complete();
       },
-      onAdFailedToShowFullScreenContent: (ad, _) {
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        debugPrint('Interstitial failed to show: $error');
         ad.dispose();
         done.complete();
       },
     );
     await ad.show();
+    debugPrint('Interstitial: shown');
     return done.future;
   }
 }

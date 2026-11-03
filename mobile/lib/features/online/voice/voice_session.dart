@@ -60,6 +60,8 @@ class VoiceSession extends ChangeNotifier {
       RtcEngineContext(
         appId: appId,
         channelProfile: ChannelProfileType.channelProfileCommunication,
+        // Évite de charger les .so vidéo exclus du packaging Android.
+        autoRegisterAgoraExtensions: false,
       ),
     );
     engine.registerEventHandler(

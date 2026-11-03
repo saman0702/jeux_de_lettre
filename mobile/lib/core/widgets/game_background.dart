@@ -30,6 +30,13 @@ class BackgroundPalette {
     Color(0xFFB45A06),
     Color(0xFF5C2600),
   ]);
+
+  /// Chrono / Mot & Sens : dégradé sable « historique ».
+  static const history = BackgroundPalette([
+    Color(0xFFD4A86A),
+    Color(0xFFA67C4F),
+    Color(0xFF5A3418),
+  ]);
   static const rounds = [
     BackgroundPalette([
       Color(0xFF4F7BEA),

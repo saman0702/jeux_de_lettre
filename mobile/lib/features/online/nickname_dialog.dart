@@ -67,6 +67,12 @@ class _NicknameDialogState extends State<_NicknameDialog> {
               l10n.nicknameTitle,
               style: fredoka(size: 22, weight: FontWeight.w700),
             ),
+            const SizedBox(height: 6),
+            Text(
+              l10n.nicknameHelp,
+              textAlign: TextAlign.center,
+              style: fredoka(size: 13, color: AppColors.inkSoft),
+            ),
             const SizedBox(height: 16),
             TextField(
               key: const Key('nickname_field'),

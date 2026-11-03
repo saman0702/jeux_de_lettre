@@ -18,6 +18,8 @@ import random
 from dataclasses import dataclass, field
 
 from app.data.iq_bank import ANALOGIES, LOGIC, ODD_ONE_OUT
+from app.data.iq_count_bank import COUNT_FIGURES
+from app.data.iq_flow_bank import FLOW_PUZZLES, valid_flow
 
 POINTS_CORRECT = 10
 SPEED_BONUS_MAX = 10
@@ -25,21 +27,33 @@ WRONG_PENALTY = 5
 
 # Jokers payants (en pièces), une fois par énigme chacun :
 # - fifty : retire 2 mauvais choix (énigmes à choix) ;
-# - hint : donne un intervalle qui contient la réponse (énigmes à nombre) ;
-# - time : 15 secondes de plus ;
-# - skip : une autre énigme du même niveau.
-JOKER_PRICES = {"fifty": 3, "hint": 3, "time": 3, "skip": 5}
+# - hint : donne un intervalle / le départ (nombre, tracé) ;
+# - time : 15 secondes de plus (chrono seulement) ;
+# - skip : une autre énigme du même niveau (chrono seulement) ;
+# - reveal : voit la solution et passe (temps illimité seulement).
+JOKER_PRICES = {"fifty": 3, "hint": 3, "time": 3, "skip": 5, "reveal": 5}
 EXTRA_TIME = 15
+
+
+def joker_prices(duration: int | None = None) -> dict[str, int]:
+    """Prix des jokers selon le chrono.
+
+    Temps illimité : pas de +15 s ni de « passer » (nouvelle énigme) ; à la place
+    « solution » pour voir la bonne réponse puis enchaîner.
+    """
+    if duration is not None and duration <= 0:
+        return {k: v for k, v in JOKER_PRICES.items() if k not in ("time", "skip")}
+    return {k: v for k, v in JOKER_PRICES.items() if k != "reveal"}
 
 
 @dataclass(frozen=True)
 class Puzzle:
     id: str
-    kind: str  # sequence, grid, problem, analogy, odd, logic, letters, calendar, matrix, rotation, figure_odd, trace
+    kind: str  # sequence, grid, problem, analogy, odd, logic, letters, calendar, matrix, rotation, figure_odd, trace, count, dots, flow
     level: int  # 1 facile, 2 moyen, 3 difficile
-    input: str  # number | choice | trace
+    input: str  # number | choice | trace | flow
     prompt: dict[str, str]
-    answer: str  # nombre, ou indice du bon choix
+    answer: str  # nombre, indice du bon choix, chemin, ou JSON des chemins flow
     explanation: dict[str, str]
     choices: dict[str, list[str]] | None = None
     # Grille de nombres (« ? » pour la case à trouver).
@@ -50,9 +64,16 @@ class Puzzle:
     figures: dict | None = None
     # Un seul trait : {"points": [[x, y]], "edges": [[a, b]]} ; la réponse est un chemin « 0-3-1… ».
     trace: dict | None = None
+    # Compter les formes : {"segments": [[x1,y1,x2,y2],…], "highlights": [[[x,y],…],…]}.
+    diagram: dict | None = None
+    # Flow : {"size": N, "pairs": [{color, a, b}, …]} (sans solutions en public).
+    flow: dict | None = None
 
     def public(self) -> dict:
         """Ce que voient les joueurs pendant la manche (sans la réponse)."""
+        flow = None
+        if self.flow is not None:
+            flow = {"size": self.flow["size"], "pairs": self.flow["pairs"]}
         return {
             "id": self.id,
             "kind": self.kind,
@@ -64,10 +85,16 @@ class Puzzle:
             "items": self.items,
             "figures": self.figures,
             "trace": self.trace,
+            "diagram": self.diagram,
+            "flow": flow,
         }
 
     def reveal(self) -> dict:
-        return {**self.public(), "answer": self.answer, "explanation": self.explanation}
+        data = {**self.public(), "answer": self.answer, "explanation": self.explanation}
+        # Flow : la solution complète (chemins) pour l'écran de correction.
+        if self.flow is not None:
+            data["flow"] = self.flow
+        return data
 
 
 def _text(fr: str, en: str) -> dict[str, str]:
@@ -532,11 +559,20 @@ def _euler_trail(edges: list[tuple[int, int]]) -> list[int]:
 
 
 def valid_trace(trace: dict, raw: str) -> bool:
-    """Le chemin donné passe-t-il exactement une fois par chaque ligne, sans saut ?"""
+    """Le chemin donné passe-t-il exactement une fois par chaque ligne, sans saut ?
+
+    Si ``ordered`` : les points numérotés doivent être reliés dans l'ordre 0→1→2…
+    """
     try:
         path = [int(x) for x in str(raw).split("-")]
     except ValueError:
         return False
+    if trace.get("ordered"):
+        n = len(trace["points"])
+        edges = {tuple(sorted(e)) for e in trace["edges"]}
+        closed = (0, n - 1) in edges
+        expected = list(range(n)) + ([0] if closed else [])
+        return path == expected
     remaining = {tuple(sorted(e)) for e in trace["edges"]}
     if len(path) != len(remaining) + 1:
         return False
@@ -546,6 +582,116 @@ def valid_trace(trace: dict, raw: str) -> bool:
             return False
         remaining.remove(edge)
     return not remaining
+
+
+def _dots(rng: random.Random, level: int) -> Puzzle:
+    """Relier les points numérotés dans l'ordre (révèle une forme)."""
+    shapes = {
+        1: [
+            ("triangle", [(1, 0), (0, 2), (2, 2), (1, 0)], "Un triangle.", "A triangle."),
+            ("house", [(1, 0), (0, 1), (0, 2), (2, 2), (2, 1), (1, 0)], "Une maison.", "A house."),
+            ("arrow", [(0, 1), (2, 1), (2, 0), (3, 1), (2, 2), (2, 1)], "Une flèche.", "An arrow."),
+        ],
+        2: [
+            ("zigzag", [(0, 0), (1, 1), (2, 0), (3, 1), (4, 0)], "Un zigzag.", "A zigzag."),
+            ("boat", [(0, 1), (1, 2), (3, 2), (4, 1), (3, 1), (2, 0), (1, 1)],
+             "Un bateau.", "A boat."),
+            ("heart", [(2, 0), (1, 0), (0, 1), (2, 3), (4, 1), (3, 0), (2, 0)],
+             "Un cœur.", "A heart."),
+        ],
+        3: [
+            ("bird", [(0, 1), (1, 0), (2, 1), (3, 0), (4, 1), (5, 1), (4, 2), (3, 2), (2, 3), (1, 2), (0, 2), (0, 1)],
+             "Un oiseau.", "A bird."),
+            ("crown", [(0, 2), (0, 1), (1, 0), (2, 1), (3, 0), (4, 1), (5, 0), (5, 2), (0, 2)],
+             "Une couronne.", "A crown."),
+            ("fish", [(0, 1), (1, 0), (3, 0), (4, 1), (3, 2), (1, 2), (0, 1)],
+             "Un poisson.", "A fish."),
+        ],
+    }
+    slug, raw_points, wfr, wen = rng.choice(shapes[level])
+    # Déduplique le point de fermeture éventuel pour la liste, garde l'arête de boucle.
+    closed = len(raw_points) > 1 and raw_points[0] == raw_points[-1]
+    points = raw_points[:-1] if closed else list(raw_points)
+    edges = [[i, i + 1] for i in range(len(points) - 1)]
+    order = list(range(len(points)))
+    if closed:
+        edges.append([len(points) - 1, 0])
+        order.append(0)
+    return Puzzle(
+        id=f"dots-{level}-{slug}",
+        kind="dots",
+        level=level,
+        input="trace",
+        prompt=_text(
+            "Relie les points dans l'ordre des numéros.",
+            "Connect the dots in number order.",
+        ),
+        answer="-".join(map(str, order)),
+        explanation=_text(wfr, wen),
+        trace={
+            "points": [list(p) for p in points],
+            "edges": edges,
+            "numbered": True,
+            "ordered": True,
+        },
+    )
+
+
+def _count_choices(rng: random.Random, correct: int) -> tuple[list[str], str]:
+    """4 nombres proches, le bon mélangé ; renvoie (choix, indice_réponse)."""
+    pool = {correct}
+    delta = 1
+    while len(pool) < 4:
+        for sign in (-1, 1):
+            candidate = correct + sign * delta
+            if candidate > 0:
+                pool.add(candidate)
+            if len(pool) >= 4:
+                break
+        delta += 1
+    values = list(pool)[:4]
+    rng.shuffle(values)
+    return [str(v) for v in values], str(values.index(correct))
+
+
+def _count(rng: random.Random, level: int) -> Puzzle:
+    """Combien de triangles dans la figure ?"""
+    candidates = [f for f in COUNT_FIGURES if f[0] == level] or list(COUNT_FIGURES)
+    lvl, slug, answer, segments, highlights, wfr, wen = rng.choice(candidates)
+    choices, index = _count_choices(rng, answer)
+    return Puzzle(
+        id=f"count-{lvl}-{slug}",
+        kind="count",
+        level=lvl,
+        input="choice",
+        prompt=_text(
+            "Combien y a-t-il de triangles dans la figure ?",
+            "How many triangles are in the figure?",
+        ),
+        answer=index,
+        explanation=_text(wfr, wen),
+        choices={"fr": choices, "en": list(choices)},
+        diagram={"segments": segments, "highlights": highlights},
+    )
+
+
+def _flow(rng: random.Random, level: int) -> Puzzle:
+    """Relier les paires de même couleur sans croiser."""
+    candidates = [f for f in FLOW_PUZZLES if f[0] == level] or list(FLOW_PUZZLES)
+    lvl, slug, size, pairs, solutions, wfr, wen = rng.choice(candidates)
+    return Puzzle(
+        id=f"flow-{lvl}-{slug}",
+        kind="flow",
+        level=lvl,
+        input="flow",
+        prompt=_text(
+            "Relie chaque paire de même couleur, sans croiser les chemins.",
+            "Connect each same-color pair without crossing paths.",
+        ),
+        answer=json.dumps(solutions),
+        explanation=_text(wfr, wen),
+        flow={"size": size, "pairs": pairs, "solutions": solutions},
+    )
 
 
 def _trace(rng: random.Random, level: int) -> Puzzle:
@@ -626,6 +772,10 @@ _GENERATORS = [
     ("rotation", 2, _rotation),
     ("figure_odd", 2, _figure_odd),
     ("trace", 2, _trace),
+    ("count", 2, _count),
+    ("dots", 2, _dots),
+    # Un peu plus fréquent : type tactile souvent manqué à cause du scroll.
+    ("flow", 3, _flow),
 ]
 
 
@@ -637,14 +787,32 @@ def level_for(round_number: int, rounds: int, difficulty: str) -> int:
     return max(1, min(3, base + shift))
 
 
-def draw(level: int, exclude: set[str] | None = None, rng: random.Random | None = None) -> Puzzle:
-    """Une énigme du niveau voulu, jamais deux fois la même dans la partie."""
+def draw(
+    level: int,
+    exclude: set[str] | None = None,
+    rng: random.Random | None = None,
+    avoid_kinds: set[str] | None = None,
+) -> Puzzle:
+    """Une énigme du niveau voulu, jamais deux fois le même id (partie + récents).
+
+    [avoid_kinds] baisse le tirage des types déjà vus récemment (suite, tracé…),
+    pour que les figures / logiques / énoncés se mélangent mieux d'une manche à l'autre.
+    """
     rng = rng or random.Random()
     exclude = exclude or set()
-    weights = [w for _, w, _ in _GENERATORS]
+    avoid_kinds = avoid_kinds or set()
+    weights = [
+        max(1, w // 4) if kind in avoid_kinds else w for kind, w, _ in _GENERATORS
+    ]
     puzzle = None
-    for _ in range(40):
+    for _ in range(80):
         _, _, make = rng.choices(_GENERATORS, weights=weights)[0]
+        puzzle = make(rng, level)
+        if puzzle.id not in exclude:
+            return puzzle
+    # Dernier recours : on ignore l'exclusion de type, pas celle des ids.
+    for _ in range(40):
+        _, _, make = rng.choices(_GENERATORS, weights=[w for _, w, _ in _GENERATORS])[0]
         puzzle = make(rng, level)
         if puzzle.id not in exclude:
             return puzzle
@@ -653,6 +821,8 @@ def draw(level: int, exclude: set[str] | None = None, rng: random.Random | None 
 
 def check(puzzle: Puzzle, raw: object) -> bool:
     """Réponse juste ? Nombres : « 1 024 », « 1024 » et « 1024,0 » se valent."""
+    if puzzle.input == "flow":
+        return puzzle.flow is not None and valid_flow(puzzle.flow, raw)
     text = str(raw if raw is not None else "").strip().replace(" ", "").replace(",", ".")
     if not text:
         return False
@@ -666,12 +836,41 @@ def check(puzzle: Puzzle, raw: object) -> bool:
         return False
 
 
-def points(correct: bool, answered: bool, elapsed: float, duration: float, speed_bonus: bool, penalty: bool) -> int:
-    """10 points si c'est juste (+ jusqu'à 10 selon la rapidité) ; −5 si c'est faux avec malus."""
+# Temps de référence (secondes) pour une bonne réponse « dans les temps », par niveau.
+EXPECTED_SECONDS = {1: 25.0, 2: 40.0, 3: 55.0}
+
+
+def speed_of(elapsed: float, level: int) -> str:
+    """Jugement de rapidité absolu (indépendant du chrono choisi : 30 s ou illimité)."""
+    expected = EXPECTED_SECONDS.get(level, 40.0)
+    if elapsed <= expected * 0.55:
+        return "fast"
+    if elapsed <= expected * 1.25:
+        return "medium"
+    return "slow"
+
+
+def speed_factor(correct: bool, speed: str | None) -> float:
+    """Poids d'une manche pour le QI : une bonne réponse lente compte moins."""
+    if not correct:
+        return 0.0
+    return {"fast": 1.05, "medium": 1.0, "slow": 0.65}.get(speed or "medium", 1.0)
+
+
+def points(correct: bool, answered: bool, elapsed: float, duration: float, speed_bonus: bool, penalty: bool, level: int = 2) -> int:
+    """10 points si c'est juste (+ bonus rapidité) ; −5 si c'est faux avec malus.
+
+    Chrono court : bonus selon le temps restant. Chrono long / illimité : bonus
+    selon la rapidité absolue (rapide / moyen / lent).
+    """
     if correct:
         bonus = 0
-        if speed_bonus and duration > 0:
-            bonus = round(SPEED_BONUS_MAX * max(0.0, 1 - elapsed / duration))
+        if speed_bonus:
+            if duration > 0 and duration < 300:
+                bonus = round(SPEED_BONUS_MAX * max(0.0, 1 - elapsed / duration))
+            else:
+                # ≥ 5 min ou illimité : on juge le temps réel, pas le plafond.
+                bonus = {"fast": 8, "medium": 4, "slow": 0}[speed_of(elapsed, level)]
         return POINTS_CORRECT + bonus
     return -WRONG_PENALTY if penalty and answered else 0
 
@@ -683,17 +882,19 @@ def wrong_answer(puzzle: Puzzle, rng: random.Random) -> str:
     if puzzle.input == "trace":
         # Tracé arrêté avant la fin : il manque une ligne.
         return "-".join(puzzle.answer.split("-")[:-1])
+    if puzzle.input == "flow":
+        return "[]"
     value = int(float(puzzle.answer))
     return str(value + rng.choice([-3, -2, -1, 1, 2, 3, 10]))
 
 
 def joker_allowed(puzzle: Puzzle, kind: str) -> bool:
-    """50/50 pour les choix, indice pour les nombres ; +15 s et passer pour toutes."""
+    """50/50 pour les choix, indice pour nombres/tracés ; time/skip/reveal pour toutes."""
     if kind == "fifty":
         return puzzle.input == "choice"
     if kind == "hint":
         return puzzle.input in ("number", "trace")
-    return kind in ("time", "skip")
+    return kind in ("time", "skip", "reveal")
 
 
 def fifty(puzzle: Puzzle, rng: random.Random) -> list[int]:
@@ -733,25 +934,39 @@ def puzzle_from(data: dict) -> Puzzle:
         items=data.get("items") or [],
         figures=data.get("figures"),
         trace=data.get("trace"),
+        diagram=data.get("diagram"),
+        flow=data.get("flow"),
     )
 
 
-# Réussite (pondérée) d'un joueur moyen : elle donne 100.
-AVERAGE_SUCCESS = 0.6
+# Réussite (pondérée + rapidité) d'un joueur moyen : elle donne 100.
+AVERAGE_SUCCESS = 0.65
+IQ_MIN = 70
+IQ_MAX = 128
 
 
-def iq_estimate(results: list[tuple[int, bool]]) -> int:
-    """QI estimé (pour s'amuser) à partir de (niveau, juste) : 70 à 145.
+def iq_estimate(results: list) -> int:
+    """QI estimé (pour s'amuser) : 70 à 128, pas trop gonflé.
 
-    Les énigmes difficiles comptent davantage (facile 1, moyen 1,5, difficile 2). 100 correspond à
-    la réussite d'un joueur moyen (60 %) : en dessous, on descend vers 70 (rien de juste) ; au-dessus,
-    on monte vers 145 (tout juste)."""
+    Entrées : (niveau, juste) ou (niveau, juste, rapidité). Les énigmes difficiles
+    pèsent plus ; une bonne réponse lente compte moins qu'une rapide. 100 = joueur
+    moyen (~65 % de réussite « utile »).
+    """
     if not results:
         return 100
     weight = {1: 1.0, 2: 1.5, 3: 2.0}
-    total = sum(weight[level] for level, _ in results)
-    got = sum(weight[level] for level, ok in results if ok)
-    success = got / total
+    total = 0.0
+    got = 0.0
+    for row in results:
+        level = int(row[0])
+        ok = bool(row[1])
+        speed = row[2] if len(row) > 2 else None
+        w = weight.get(level, 1.0)
+        total += w
+        got += w * speed_factor(ok, speed)
+    if total <= 0:
+        return 100
+    success = min(1.0, got / total)
     if success <= AVERAGE_SUCCESS:
-        return round(70 + 30 * success / AVERAGE_SUCCESS)
-    return round(100 + 45 * (success - AVERAGE_SUCCESS) / (1 - AVERAGE_SUCCESS))
+        return round(IQ_MIN + (100 - IQ_MIN) * success / AVERAGE_SUCCESS)
+    return round(100 + (IQ_MAX - 100) * (success - AVERAGE_SUCCESS) / (1 - AVERAGE_SUCCESS))

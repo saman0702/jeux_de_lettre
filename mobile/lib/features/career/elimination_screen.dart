@@ -14,6 +14,7 @@ import '../../core/widgets/game_toggle.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/data/challenge.dart';
 import '../game/data/models.dart';
+import '../game/widgets/duration_picker.dart';
 import '../game/widgets/option_section.dart';
 import '../game/widgets/pill_selector.dart';
 import '../../animations/transitions/pop_route.dart';
@@ -45,33 +46,46 @@ class EliminationScreen extends StatefulWidget {
 }
 
 class _EliminationScreenState extends State<EliminationScreen> {
-  Difficulty _difficulty = Difficulty.normal;
-  int _rounds = EliminationChallenge.defaultRounds;
-  int _duration = EliminationChallenge.defaultDuration;
+  late Difficulty _difficulty = Difficulty.normal;
+  late int _rounds = EliminationChallenge.defaultRounds;
+  late int _duration;
   bool _strictSpelling = false;
   int _maxPlayers = 8;
 
-  /// Éliminatoires de Géographie & Nature ou de QI.
+  /// Éliminatoires : lettres, QI, Chrono ou Mot & Sens.
   late final RoomGame _game = widget.game;
   bool _iqSpeedBonus = true;
   bool _iqPenalty = false;
 
-  bool get _iq => _game == RoomGame.iq;
+  /// Pipeline QCM / énigmes (pas de catégories lettre).
+  bool get _iq =>
+      _game == RoomGame.iq ||
+      _game == RoomGame.chrono ||
+      _game == RoomGame.mots;
 
   /// 0 = pas de dotation ; sinon pièces placées par le créateur.
   int _prize = 0;
   late final TextEditingController _prizeField;
 
-  List<int> get _durationOptions => _iq
-      ? IqSetupScreen.durationOptions
-      : [
-        for (final d in SoloGameSettings.durationOptions)
-          if (!_strictSpelling || d >= Category.strictSpellingMinDuration) d,
-      ];
+  List<int> get _durationOptions {
+    if (_game == RoomGame.iq) return IqSetupScreen.durationOptions;
+    if (_game == RoomGame.chrono || _game == RoomGame.mots) {
+      return const [10, 15, 20, 30, 45];
+    }
+    return [
+      for (final d in SoloGameSettings.durationOptions)
+        if (!_strictSpelling || d >= Category.strictSpellingMinDuration) d,
+    ];
+  }
 
   @override
   void initState() {
     super.initState();
+    _duration = switch (widget.game) {
+      RoomGame.chrono || RoomGame.mots => 15,
+      RoomGame.iq => IqSetupScreen.durationOptions.first,
+      RoomGame.letters => EliminationChallenge.defaultDuration,
+    };
     _prizeField = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -104,10 +118,23 @@ class _EliminationScreenState extends State<EliminationScreen> {
     super.dispose();
   }
 
+  void _setDuration(int value) {
+    setState(() {
+      if (value == 0) {
+        _duration = SoloGameSettings.unlimitedDuration;
+        return;
+      }
+      final min = _strictSpelling ? Category.strictSpellingMinDuration : 0;
+      _duration = value < min ? min : value;
+    });
+  }
+
   void _setStrictSpelling(bool value) {
     setState(() {
       _strictSpelling = value;
-      if (value && _duration < Category.strictSpellingMinDuration) {
+      if (value &&
+          _duration > 0 &&
+          _duration < Category.strictSpellingMinDuration) {
         _duration = Category.strictSpellingMinDuration;
       }
     });
@@ -223,13 +250,24 @@ class _EliminationScreenState extends State<EliminationScreen> {
 
     return Scaffold(
       body: GameBackground(
-        theme: _iq ? BackgroundTheme.iq : BackgroundTheme.letters,
+        theme: _iq && _game == RoomGame.iq
+            ? BackgroundTheme.iq
+            : BackgroundTheme.letters,
+        palette: (_game == RoomGame.chrono || _game == RoomGame.mots)
+            ? BackgroundPalette.history
+            : BackgroundPalette.menu,
         child: SafeArea(
           child: FloatingBarsLayout(
             header: OnlineHeader(
-              title: _iq
-                  ? '${l10n.modeElimination} · ${l10n.gameIqTitle}'
-                  : l10n.modeElimination,
+              title: switch (_game) {
+                RoomGame.iq =>
+                  '${l10n.modeElimination} · ${l10n.gameIqTitle}',
+                RoomGame.chrono =>
+                  '${l10n.modeElimination} · ${l10n.gameChronoTitle}',
+                RoomGame.mots =>
+                  '${l10n.modeElimination} · ${l10n.gameMotsTitle}',
+                RoomGame.letters => l10n.modeElimination,
+              },
               onBack: () => Navigator.of(context).pop(),
               helpTitle: l10n.eliminationRulesTitle,
               helpLabel: l10n.rulesButton,
@@ -267,11 +305,10 @@ class _EliminationScreenState extends State<EliminationScreen> {
                 title: l10n.roundDuration,
                 icon: GameIconKind.timer,
                 color: AppColors.orange,
-                child: PillSelector<int>(
+                child: DurationPicker(
+                  value: _duration,
                   options: _durationOptions,
-                  isSelected: (d) => d == _duration,
-                  label: (d) => durationLabel(l10n, d),
-                  onTap: (d) => setState(() => _duration = d),
+                  onChanged: _setDuration,
                 ),
               ),
               OptionSection(

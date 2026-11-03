@@ -35,9 +35,11 @@ extension CategoryLabel on Category {
   };
 }
 
-/// Affiche « 45 s » ou « 2 min » selon la durée.
+/// Affiche « Illimité », « 45 s » ou « 2 min » selon la durée.
 String durationLabel(AppLocalizations l10n, int seconds) =>
-    seconds >= 60 && seconds % 60 == 0
+    seconds <= 0
+    ? l10n.durationUnlimited
+    : seconds >= 60 && seconds % 60 == 0
     ? l10n.minutesShort(seconds ~/ 60)
     : l10n.secondsShort(seconds);
 
@@ -100,7 +102,6 @@ const _accents = 'ÀÁÂÃÄÅàáâãäåÇçÈÉÊËèéêëÌÍÎÏìíîïÑ
 const _plain = 'AAAAAAaaaaaaCcEEEEeeeeIIIIiiiiNnOOOOOoooooUUUUuuuuYyy';
 
 /// Première lettre d'une réponse sans son accent, ex. « Éléphant » -> « E ».
-/// Simple indication visuelle : la vraie validation est faite par le serveur.
 String firstLetterOf(String text) {
   final trimmed = text.trimLeft();
   if (trimmed.isEmpty) return '';

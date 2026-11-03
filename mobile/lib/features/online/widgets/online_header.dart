@@ -26,6 +26,8 @@ class OnlineHeader extends StatelessWidget {
 
   final String title;
   final VoidCallback onBack;
+
+  /// Actions à droite (ex. pause solo).
   final Widget? trailing;
 
   /// Notice d'aide : libellé visible (ex. « Règle ») à côté du titre.
@@ -92,7 +94,10 @@ class OnlineHeader extends StatelessWidget {
               ],
             ),
           ),
-          ?trailing,
+          if (trailing != null) ...[
+            const SizedBox(width: 8),
+            trailing!,
+          ],
         ],
       ),
     );

@@ -268,8 +268,12 @@ Un seul produit à créer, **avec cet identifiant exact**, dans les deux stores 
 - [ ] *Utilisateurs et accès > Testeurs Sandbox* : créer un compte de test.
 
 **Serveur** (fichiers dans `secrets/`, jamais dans git)
+
+Sur Dokploy : *Advanced → Mounts → Add Mount → File Mount*, chemin `secrets/google-service-account.json`,
+contenu = le fichier JSON du compte de service (même chose pour `secrets/apple-iap.p8`).
+`backend/docker-compose.yml` monte ce dossier dans `/code/secrets`.
 ```
-GOOGLE_SERVICE_ACCOUNT_FILE=secrets/google-service-account.json
+GOOGLE_SERVICE_ACCOUNT_FILE=/code/secrets/google-service-account.json
 APPLE_ISSUER_ID=…
 APPLE_KEY_ID=…
 APPLE_PRIVATE_KEY_FILE=secrets/apple-iap.p8

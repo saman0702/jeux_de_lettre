@@ -24,66 +24,88 @@ import 'features/wallet/coin_counter.dart';
 import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final settings = await AppSettings.load();
-  ApiClient.clientToken = settings.clientToken;
-  final feedback = GameFeedback(
-    audio: await AudioplayersGameAudio.create(),
-    settings: settings,
-    vibrator: await DeviceVibrator.create(),
-    announcer: DeviceAnnouncer(),
-  );
-  final online = OnlineController(
-    RealtimeClient(
+  // ensureInitialized + runApp doivent être dans la même zone.
+  await runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      debugPrint('FlutterError: ${details.exceptionAsString()}');
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      debugPrint('Uncaught: $error\n$stack');
+      return true;
+    };
+
+    final settings = await AppSettings.load();
+    ApiClient.clientToken = settings.clientToken;
+
+    // Audio lourd (pools) après le 1er frame : évite OOM / délai au splash.
+    final feedback = GameFeedback(
+      audio: SilentGameAudio(),
+      settings: settings,
+      vibrator: await DeviceVibrator.create(),
+      announcer: DeviceAnnouncer(),
+    );
+
+    final online = OnlineController(
+      RealtimeClient(
+        clientId: settings.clientId,
+        token: settings.clientToken,
+        nickname: settings.nickname ?? 'Joueur',
+        language: appLanguage(settings),
+        country: settings.country,
+      ),
+    );
+    // Chacun répond dans la langue de son appli : le serveur doit la connaître,
+    // ainsi que le pays d'origine (drapeau vu par les autres).
+    settings.addListener(
+      () => online.client.updateIdentity(
+        language: appLanguage(settings),
+        country: settings.country,
+      ),
+    );
+    // Une seule connexion pour toute l'appli : compteur en ligne, salons et
+    // parties.
+    online.client.connect();
+    online.onLook = (look) {
+      // applyLook appelle déjà onLook : on ne mémorise que tuiles / confettis.
+      settings.setStyles(tiles: look.tiles, victory: look.victory);
+    };
+    AvatarSync(settings: settings, online: online, api: ApiClient());
+    // Écoute le store dès le démarrage : un achat interrompu est repris.
+    final shop = ShopController(
+      store: DeviceCoinStore(),
+      api: ApiClient(),
       clientId: settings.clientId,
-      token: settings.clientToken,
-      nickname: settings.nickname ?? 'Joueur',
-      language: appLanguage(settings),
-      country: settings.country,
-    ),
-  );
-  // Chacun répond dans la langue de son appli : le serveur doit la connaître,
-  // ainsi que le pays d'origine (drapeau vu par les autres).
-  settings.addListener(
-    () => online.client.updateIdentity(
-      language: appLanguage(settings),
-      country: settings.country,
-    ),
-  );
-  // Une seule connexion pour toute l'appli : compteur en ligne, salons et
-  // parties.
-  online.client.connect();
-  online.onLook = (look) {
-    // applyLook appelle déjà onLook : on ne mémorise que tuiles / confettis.
-    settings.setStyles(tiles: look.tiles, victory: look.victory);
-  };
-  AvatarSync(settings: settings, online: online, api: ApiClient());
-  // Écoute le store dès le démarrage : un achat interrompu est repris.
-  final shop = ShopController(
-    store: DeviceCoinStore(),
-    api: ApiClient(),
-    clientId: settings.clientId,
-    onWallet: online.applyWallet,
-  )..start();
-  // Pubs, « Sans pub » et Pass : seulement les options activées dans le .env
-  // du serveur.
-  final perks = PerksController(
-    api: ApiClient(),
-    online: online,
-    ads: AdMobAdsService(),
-    storage: await PrefsPerksStorage.load(),
-  );
-  unawaited(perks.load());
-  // Prêt pour les parties solo hors ligne, sans retarder le démarrage.
-  OfflineDictionary.load();
-  runApp(
-    LetterBattleApp(
-      feedback: feedback,
+      onWallet: online.applyWallet,
+    )..start();
+    // Pubs, « Sans pub » et Pass : seulement les options activées dans le .env
+    // du serveur.
+    final perks = PerksController(
+      api: ApiClient(),
       online: online,
-      shop: shop,
-      perks: perks,
-    ),
-  );
+      ads: AdMobAdsService(),
+      storage: await PrefsPerksStorage.load(),
+    );
+    unawaited(perks.load());
+    // Prêt pour les parties solo hors ligne, sans retarder le démarrage.
+    OfflineDictionary.load();
+    runApp(
+      LetterBattleApp(
+        feedback: feedback,
+        online: online,
+        shop: shop,
+        perks: perks,
+      ),
+    );
+    // Remplace le silence par le vrai moteur audio une fois l'UI affichée.
+    unawaited(() async {
+      final audio = await AudioplayersGameAudio.create();
+      feedback.replaceAudio(audio);
+    }());
+  }, (error, stack) {
+    debugPrint('Zone error: $error\n$stack');
+  });
 }
 
 /// Langue réellement affichée : celle choisie, sinon celle du téléphone si

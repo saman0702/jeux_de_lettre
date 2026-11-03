@@ -18,16 +18,15 @@ CLIENT_ID = r"^[A-Za-z0-9-]{8,64}$"
 async def solo_puzzles(
     count: int = Query(default=10, ge=1, le=30),
     difficulty: str = Query(default="normal", pattern="^(easy|normal|hard)$"),
+    avoid: str | None = Query(
+        default=None,
+        max_length=4000,
+        description="Ids déjà vus, séparés par des virgules (rejouer sans trop de doublons).",
+    ),
 ):
     """Énigmes avec leurs réponses, pour un solo joué sur le téléphone (sans pièces)."""
-    rng = random.Random()
-    used: set[str] = set()
-    puzzles = []
-    for number in range(1, count + 1):
-        puzzle = iq_service.draw(iq_service.level_for(number, count, difficulty), exclude=used, rng=rng)
-        used.add(puzzle.id)
-        puzzles.append(puzzle.reveal())
-    return puzzles
+    seen = {x for x in (avoid or "").split(",") if x.strip()}
+    return iq_play_service._draw(count, difficulty, random.Random(), avoid=seen)
 
 
 class SoloIn(BaseModel):
@@ -37,6 +36,8 @@ class SoloIn(BaseModel):
     difficulty: str = Field(default="normal", pattern="^(easy|normal|hard)$")
     speed_bonus: bool = True
     penalty: bool = False
+    # Ids déjà joués sur l'appareil : on évite de les retirer tout de suite.
+    avoid: list[str] = Field(default_factory=list, max_length=120)
 
 
 class PlayerIn(BaseModel):
@@ -44,11 +45,13 @@ class PlayerIn(BaseModel):
 
 
 class AnswerIn(PlayerIn):
-    answer: str | None = Field(default=None, max_length=16)
+    # Tracés « 0-1-2-… » et Flow (JSON des chemins, jusqu'à ~150 car.) ;
+    # 64 tronquait toutes les réponses Flow et provoquait un 422.
+    answer: str | None = Field(default=None, max_length=512)
 
 
 class JokerIn(PlayerIn):
-    kind: str = Field(pattern="^(fifty|hint|time|skip)$")
+    kind: str = Field(pattern="^(fifty|hint|time|skip|reveal)$")
 
 
 async def _run(session: AsyncSession, call):
@@ -70,7 +73,14 @@ async def start_solo(
     return await _run(
         session,
         iq_play_service.start_solo(
-            session, data.client_id, data.rounds, data.duration, data.difficulty, data.speed_bonus, data.penalty
+            session,
+            data.client_id,
+            data.rounds,
+            data.duration,
+            data.difficulty,
+            data.speed_bonus,
+            data.penalty,
+            avoid={x[:80] for x in data.avoid if x},
         ),
     )
 
@@ -95,6 +105,17 @@ async def daily_leaderboard(
     return result
 
 
+@router.get("/sessions/active")
+async def active_session(
+    client_id: str = Query(pattern=CLIENT_ID),
+    session: AsyncSession = Depends(get_session),
+    x_client_token: str | None = Header(default=None),
+):
+    """Solo inachevé (pause) pour ce joueur, ou null."""
+    await client_auth.check(session, client_id, x_client_token)
+    return await iq_play_service.active_solo(session, client_id)
+
+
 @router.post("/sessions/{game_id}/answer")
 async def answer(
     game_id: str,
@@ -115,6 +136,30 @@ async def next_puzzle(
 ):
     await client_auth.check(session, data.client_id, x_client_token)
     return await _run(session, iq_play_service.next_puzzle(session, game_id, data.client_id))
+
+
+@router.post("/sessions/{game_id}/pause")
+async def pause_session(
+    game_id: str,
+    data: PlayerIn,
+    session: AsyncSession = Depends(get_session),
+    x_client_token: str | None = Header(default=None),
+):
+    """Pause après une manche : on peut quitter et reprendre plus tard."""
+    await client_auth.check(session, data.client_id, x_client_token)
+    return await _run(session, iq_play_service.pause(session, game_id, data.client_id))
+
+
+@router.post("/sessions/{game_id}/resume")
+async def resume_session(
+    game_id: str,
+    data: PlayerIn,
+    session: AsyncSession = Depends(get_session),
+    x_client_token: str | None = Header(default=None),
+):
+    """Reprend un solo en pause (chrono relancé)."""
+    await client_auth.check(session, data.client_id, x_client_token)
+    return await _run(session, iq_play_service.resume(session, game_id, data.client_id))
 
 
 @router.post("/sessions/{game_id}/joker")

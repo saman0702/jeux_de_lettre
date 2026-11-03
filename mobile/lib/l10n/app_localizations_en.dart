@@ -58,6 +58,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roundDuration => 'Round duration';
 
   @override
+  String get durationUnlimited => 'Unlimited';
+
+  @override
+  String get customDurationHint => 'Or type seconds';
+
+  @override
   String secondsShort(int seconds) {
     return '${seconds}s';
   }
@@ -184,7 +190,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameOver => 'GAME OVER';
 
   @override
-  String get playAgain => 'PLAY AGAIN';
+  String get playAgain => 'KEEP PLAYING';
 
   @override
   String get backHome => 'Home';
@@ -387,7 +393,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rematchHelp =>
-      'Vote to play again. When a majority of human players vote, a new game starts with the same settings.';
+      'Vote to keep playing. When a majority of human players vote, a new game starts with the same settings.';
 
   @override
   String get bonusRound => 'BONUS ROUND';
@@ -455,7 +461,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nicknameHint => 'Your nickname';
 
   @override
+  String get nicknameHelp =>
+      'This is your player name (rooms show as “…’s room”).';
+
+  @override
+  String get nicknameRequired => 'Enter your nickname to continue.';
+
+  @override
   String get nicknameConfirm => 'LET\'S GO!';
+
+  @override
+  String get settingsNickname => 'Nickname';
 
   @override
   String get roomsTitle => 'Rooms';
@@ -990,7 +1006,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shopLegal =>
-      'Payment secured by Google Play or the App Store. Coins have no monetary value: they cannot be refunded, exchanged or converted into money.';
+      'The Premium subscription is paid and managed by Google Play or the App Store (cancel anytime). Coins have no monetary value: they cannot be refunded, exchanged or turned into money.';
 
   @override
   String get avatarPhotoNeedsConnection =>
@@ -1071,7 +1087,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nextLevel => 'NEXT LEVEL';
 
   @override
-  String get replayLevel => 'REPLAY LEVEL';
+  String get replayLevel => 'KEEP PLAYING';
 
   @override
   String get levelsMap => 'LEVEL MAP';
@@ -1511,10 +1527,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get perksNoAd => 'No video available right now.';
 
   @override
-  String get perksPassTitle => 'Mind Race Pass';
+  String get perksPassTitle => 'Premium';
 
   @override
-  String get perksPassNoAds => 'No ads between games';
+  String get perksPassNoAds => 'No ads for 1 month';
 
   @override
   String perksPassDaily(int coins) {
@@ -1545,7 +1561,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get perksDailyTaken => 'DAILY BONUS CLAIMED';
 
   @override
-  String get perksPassDone => 'Welcome to the Pass!';
+  String get perksPassDone => 'Premium on: no ads this month!';
 
   @override
   String get perksRemoveAdsTitle => 'No ads';
@@ -1562,6 +1578,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shopUnavailableShort => 'Unavailable';
+
+  @override
+  String get perksPassNeedPlay => 'Via Google Play (not USB debug)';
+
+  @override
+  String get perksPassBenefitHint =>
+      'Subscription perk — you are not Premium yet';
 
   @override
   String roomHistoryTitle(String code) {
@@ -1693,6 +1716,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get iqValidate => 'SUBMIT';
 
   @override
+  String get iqScrollMore => 'Swipe for more';
+
+  @override
   String get iqGoodAnswer => 'Right answer';
 
   @override
@@ -1777,6 +1803,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get iqNext => 'NEXT PUZZLE';
 
   @override
+  String get iqPause => 'PAUSE';
+
+  @override
+  String iqContinue(int done, int total) {
+    return 'CONTINUE ($done/$total)';
+  }
+
+  @override
+  String get iqNewGame => 'NEW GAME';
+
+  @override
+  String get iqNewGameTitle => 'Start a new game?';
+
+  @override
+  String get iqNewGameMessage => 'Your paused game will be discarded.';
+
+  @override
+  String get iqQuitMidRound =>
+      'You\'re in the middle of a puzzle — progress won\'t be saved. Pause after answering to continue later.';
+
+  @override
+  String get geoQuitMidRound =>
+      'You\'re in the middle of a round — progress won\'t be saved. Pause after the round to continue later.';
+
+  @override
+  String get iqResumeNeedsOnline => 'Go online to resume this game.';
+
+  @override
   String get iqSeeResult => 'SEE MY IQ';
 
   @override
@@ -1809,6 +1863,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get iqJokerSkip => 'Skip';
+
+  @override
+  String get iqJokerReveal => 'Solution';
+
+  @override
+  String get iqSpeedFast => 'Fast';
+
+  @override
+  String get iqSpeedMedium => 'On time';
+
+  @override
+  String get iqSpeedSlow => 'Slow';
+
+  @override
+  String iqTimeJudged(String time, String speed) {
+    return '$time · $speed';
+  }
 
   @override
   String iqHintRange(int low, int high) {
@@ -1860,6 +1931,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get iqKindTrace => 'One stroke';
 
   @override
+  String get iqKindCount => 'Count';
+
+  @override
+  String get iqKindDots => 'Connect the dots';
+
+  @override
+  String get iqKindFlow => 'Color paths';
+
+  @override
+  String get gameChronoTitle => 'Timeline';
+
+  @override
+  String get gameChronoTag => 'History & dates';
+
+  @override
+  String get gameMotsTitle => 'Word Sense';
+
+  @override
+  String get gameMotsTag => 'Vocabulary';
+
+  @override
+  String get quizSeeScore => 'SEE SCORE';
+
+  @override
+  String get chronoSoloTitle => 'Timeline solo';
+
+  @override
+  String get motsSoloTitle => 'Word Sense';
+
+  @override
+  String get quizQuestions => 'Number of questions';
+
+  @override
+  String get quizTimePerQuestion => 'Time per question';
+
+  @override
+  String get quizCreateRoom => 'CREATE A ROOM';
+
+  @override
+  String get quizOpenRooms => 'Open rooms';
+
+  @override
+  String get quizNoRooms => 'No public rooms yet — create yours!';
+
+  @override
   String get iqTraceRestart => 'START OVER';
 
   @override
@@ -1897,4 +2013,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameIqTag => 'Logic & puzzles';
+
+  @override
+  String get deleteAccountButton => 'Delete my account';
+
+  @override
+  String get deleteAccountTitle => 'Delete your account?';
+
+  @override
+  String get deleteAccountMessage =>
+      'Your nickname, coins, avatar, rooms, messages and progress will be erased for good. A Premium subscription is cancelled separately, in Google Play or the App Store.';
+
+  @override
+  String get deleteAccountConfirm => 'DELETE';
+
+  @override
+  String get deleteAccountDone =>
+      'Account deleted. The app will now close: next time, you start from scratch.';
 }

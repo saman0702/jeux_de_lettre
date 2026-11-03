@@ -6,7 +6,7 @@ enum RoomPhase { waiting, countdown, round, results, lightning, finished }
 /// Toutes les manches (meilleur total), éliminatoires, ou relais (catégories
 /// réparties).
 /// Jeu proposé dans un salon.
-enum RoomGame { letters, iq }
+enum RoomGame { letters, iq, chrono, mots }
 
 enum RoomFormat { rounds, elimination, relay }
 
@@ -60,7 +60,7 @@ class RoomSettings {
     this.difficulty = Difficulty.normal,
     this.categories = Category.classic,
     this.rounds = 5,
-    this.roundDuration = 30,
+    this.roundDuration = 0,
     this.strictSpelling = false,
     this.maxPlayers = 8,
     this.public = false,
@@ -115,9 +115,12 @@ class RoomSettings {
 
   final RoomFormat format;
 
-  /// Jeu du salon : Géographie & Nature (lettres) ou QI.
+  /// Jeu du salon : lettres, QI, Chrono ou Mot & Sens.
   final RoomGame game;
-  bool get iq => game == RoomGame.iq;
+
+  /// Pipeline énigmes / QCM (même UI de manche que le QI).
+  bool get iq =>
+      game == RoomGame.iq || game == RoomGame.chrono || game == RoomGame.mots;
 
   /// QI : bonus de rapidité et malus si c'est faux.
   final bool iqSpeedBonus;
@@ -277,29 +280,33 @@ class PlayerRoundResult {
     required this.answers,
     required this.roundScore,
     this.elapsed,
+    this.speed,
     this.iqAnswer,
     this.iqCorrect = false,
     this.iqPuzzle,
   });
 
-  factory PlayerRoundResult.fromJson(Map<String, dynamic> json) =>
-      PlayerRoundResult(
-        iqAnswer: json['answer'] as String?,
-        iqCorrect: json['correct'] as bool? ?? false,
-        iqPuzzle: json['puzzle'] == null
-            ? null
-            : IqPuzzle.fromJson(json['puzzle'] as Map<String, dynamic>),
-        clientId: json['client_id'] as String,
-        nickname: json['nickname'] as String,
-        answers: [
-          for (final a in json['answers'] as List)
-            AnswerResult.fromJson(a as Map<String, dynamic>),
-        ],
-        roundScore: json['round_score'] as int,
-        elapsed: json['elapsed_ms'] == null
-            ? null
-            : Duration(milliseconds: json['elapsed_ms'] as int),
-      );
+  factory PlayerRoundResult.fromJson(Map<String, dynamic> json) {
+    final speedRaw = json['speed'] as String?;
+    return PlayerRoundResult(
+      iqAnswer: json['answer'] as String?,
+      iqCorrect: json['correct'] as bool? ?? false,
+      iqPuzzle: json['puzzle'] == null
+          ? null
+          : IqPuzzle.fromJson(json['puzzle'] as Map<String, dynamic>),
+      clientId: json['client_id'] as String,
+      nickname: json['nickname'] as String,
+      answers: [
+        for (final a in json['answers'] as List)
+          AnswerResult.fromJson(a as Map<String, dynamic>),
+      ],
+      roundScore: json['round_score'] as int,
+      elapsed: json['elapsed_ms'] == null
+          ? null
+          : Duration(milliseconds: json['elapsed_ms'] as int),
+      speed: speedRaw == null ? null : IqSpeed.values.byName(speedRaw),
+    );
+  }
 
   /// QI : réponse donnée (nombre ou indice du choix) et si elle est juste.
   final String? iqAnswer;
@@ -313,6 +320,9 @@ class PlayerRoundResult {
   final List<AnswerResult> answers;
   final int roundScore;
   final Duration? elapsed;
+
+  /// QI : jugement de rapidité (rapide / dans les temps / lent).
+  final IqSpeed? speed;
 }
 
 class RoomRoundResults {
@@ -647,7 +657,7 @@ class RoomState {
       freezePrice: prices['freeze'] as int? ?? 15,
       chatUnlockPrice: prices['chat_unlock'] as int? ?? 25,
       iqJokerPrices: {
-        for (final kind in const ['fifty', 'hint', 'time', 'skip'])
+        for (final kind in const ['fifty', 'hint', 'time', 'skip', 'reveal'])
           if (prices['iq_$kind'] case final int price) kind: price,
       },
       creatorId: json['creator_id'] as String?,

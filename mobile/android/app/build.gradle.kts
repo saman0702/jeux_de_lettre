@@ -39,13 +39,20 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        // Identifiant d'application AdMob. Par défaut celui de test de Google ;
-        // le vrai se donne à la compilation : -PADMOB_APP_ID=ca-app-pub-…~…
-        // (ou la variable d'environnement ADMOB_APP_ID, utilisée par Codemagic).
-        manifestPlaceholders["admobAppId"] =
-            (project.findProperty("ADMOB_APP_ID") as String?)
-                ?: System.getenv("ADMOB_APP_ID")
-                ?: "ca-app-pub-3940256099942544~3347511713"
+        // Identifiant d'application AdMob (forme ca-app-pub-…~… avec un tilde).
+        // Pas l'ID d'un bloc (…/…). Vide / absent → ID de test Google.
+        val admobAppId = sequenceOf(
+            project.findProperty("ADMOB_APP_ID") as String?,
+            System.getenv("ADMOB_APP_ID"),
+        ).mapNotNull { it?.trim()?.takeIf(String::isNotEmpty) }
+            .firstOrNull()
+            ?: "ca-app-pub-3940256099942544~3347511713"
+        require(admobAppId.contains('~')) {
+            "ADMOB_APP_ID invalide « $admobAppId ». " +
+                "Il faut l'ID d'application AdMob (ca-app-pub-…~…), " +
+                "pas l'ID d'un bloc Rewarded/Interstitiel (…/…)."
+        }
+        manifestPlaceholders["admobAppId"] = admobAppId
     }
 
     signingConfigs {
@@ -64,6 +71,8 @@ android {
     // moins à télécharger. On garde la réduction de bruit et l'annulation d'écho.
     packaging {
         jniLibs {
+            // Évite UnsatisfiedLinkError sur certains téléphones via AAB Play Store.
+            useLegacyPackaging = true
             excludes += listOf(
                 "lib/*/libagora_lip_sync_extension.so",
                 "lib/*/libagora_clear_vision_extension.so",
@@ -88,6 +97,11 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            // Même sans minifyEnabled, R8 peut shrinker les libs : garder WorkManager.
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
@@ -100,4 +114,10 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // google_mobile_ads tire un vieux WorkManager qui plante au démarrage
+    // en release (InitializationProvider / WorkDatabase) sur Android récents.
+    implementation("androidx.work:work-runtime:2.11.2")
 }

@@ -22,6 +22,7 @@ def _summary(request: Request, room: SavedRoom, members: int, mine: bool) -> dic
         "language": room.language,
         "format": room.settings.get("format", "rounds"),
         "kind": room.settings.get("kind", "classic"),
+        "game": room.settings.get("game", "letters"),
         "members": members,
         "mine": mine,
         # Ouvert en ce moment (joueurs dedans) ou fermé, en attente d'être rouvert.

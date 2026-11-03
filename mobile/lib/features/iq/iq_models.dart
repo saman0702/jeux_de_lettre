@@ -1,4 +1,6 @@
+import 'iq_count.dart';
 import 'iq_figures.dart';
+import 'iq_flow.dart';
 import 'iq_trace.dart';
 
 /// Une énigme de QI, telle que le serveur l'envoie (sans la réponse pendant la
@@ -17,6 +19,8 @@ class IqPuzzle {
     this.explanation = const {},
     this.figures,
     this.trace,
+    this.diagram,
+    this.flow,
   });
 
   factory IqPuzzle.fromJson(Map<String, dynamic> json) => IqPuzzle(
@@ -46,6 +50,12 @@ class IqPuzzle {
     trace: json['trace'] == null
         ? null
         : IqTrace.fromJson(json['trace'] as Map<String, dynamic>),
+    diagram: json['diagram'] == null
+        ? null
+        : IqDiagram.fromJson(json['diagram'] as Map<String, dynamic>),
+    flow: json['flow'] == null
+        ? null
+        : IqFlow.fromJson(json['flow'] as Map<String, dynamic>),
   );
 
   static Map<String, String> _texts(Object? raw) => {
@@ -56,13 +66,13 @@ class IqPuzzle {
   final String id;
 
   /// sequence, grid, problem, letters, calendar, analogy, odd, logic,
-  /// matrix, rotation, figure_odd (schémas).
+  /// matrix, rotation, figure_odd, trace, count, dots, flow.
   final String kind;
 
   /// 1 facile, 2 moyen, 3 difficile.
   final int level;
 
-  /// « number » : réponse à taper ; « choice » : 4 choix.
+  /// « number » | « choice » | « trace » | « flow ».
   final String input;
   final Map<String, String> prompt;
   final Map<String, List<String>>? choices;
@@ -81,9 +91,17 @@ class IqPuzzle {
   /// Un seul trait : la figure à tracer ; la réponse est un chemin « 0-3-1… ».
   final IqTrace? trace;
 
+  /// Compter les triangles : segments + surbrillances d'explication.
+  final IqDiagram? diagram;
+
+  /// Relier les couleurs (Flow).
+  final IqFlow? flow;
+
   bool get traced => input == 'trace';
 
   bool get typed => input == 'number';
+
+  bool get flowing => input == 'flow';
 
   String promptIn(String language) => prompt[language] ?? prompt['fr'] ?? '';
   String explanationIn(String language) =>
@@ -94,7 +112,7 @@ class IqPuzzle {
   /// La bonne réponse, lisible (le choix lui-même pour un QCM).
   String answerText(String language) {
     final a = answer;
-    if (a == null || traced) return '';
+    if (a == null || traced || flowing) return '';
     if (typed) return a;
     final list = choicesIn(language);
     final i = int.tryParse(a) ?? -1;
@@ -104,7 +122,7 @@ class IqPuzzle {
   /// Une réponse donnée, lisible (le texte du choix pour un QCM).
   String shown(String? raw, String language) {
     if (raw == null || raw.isEmpty) return '—';
-    if (traced) return '';
+    if (traced || flowing) return '';
     if (typed) return raw;
     final list = choicesIn(language);
     final i = int.tryParse(raw) ?? -1;
@@ -115,6 +133,7 @@ class IqPuzzle {
   bool isCorrect(String? raw) {
     final a = answer;
     if (a == null || raw == null) return false;
+    if (flowing) return flow?.isValid(raw) ?? false;
     final text = raw.trim().replaceAll(' ', '').replaceAll(',', '.');
     if (text.isEmpty) return false;
     if (traced) return trace?.isValid(text) ?? false;
@@ -122,6 +141,38 @@ class IqPuzzle {
     final value = double.tryParse(text);
     return value != null && value == double.tryParse(a);
   }
+}
+
+/// Rapidité d'une réponse (temps absolu, pas le plafond du chrono).
+enum IqSpeed { fast, medium, slow }
+
+/// Temps de référence (secondes) par niveau — aligné sur le serveur.
+const iqExpectedSeconds = {1: 25.0, 2: 40.0, 3: 55.0};
+
+IqSpeed iqSpeedOf(Duration elapsed, int level) {
+  final expected = iqExpectedSeconds[level] ?? 40.0;
+  final seconds = elapsed.inMilliseconds / 1000.0;
+  if (seconds <= expected * 0.55) return IqSpeed.fast;
+  if (seconds <= expected * 1.25) return IqSpeed.medium;
+  return IqSpeed.slow;
+}
+
+double iqSpeedFactor(bool correct, IqSpeed? speed) {
+  if (!correct) return 0;
+  return switch (speed) {
+    IqSpeed.fast => 1.05,
+    IqSpeed.slow => 0.65,
+    _ => 1.0,
+  };
+}
+
+/// Affiche « 12 s » ou « 1:05 ».
+String iqFormatElapsed(Duration elapsed) {
+  final total = elapsed.inSeconds.clamp(0, 99 * 60);
+  if (total < 60) return '${total}s';
+  final m = total ~/ 60;
+  final s = (total % 60).toString().padLeft(2, '0');
+  return '$m:$s';
 }
 
 /// Réglages des points du QI (choisis par l'hôte, ou en solo).
@@ -140,12 +191,23 @@ class IqScoring {
     required bool answered,
     required Duration elapsed,
     required Duration duration,
+    int level = 2,
   }) {
     if (correct) {
       var bonus = 0;
-      if (speedBonus && duration.inMilliseconds > 0) {
-        final left = 1 - elapsed.inMilliseconds / duration.inMilliseconds;
-        bonus = (speedMax * left.clamp(0.0, 1.0)).round();
+      if (speedBonus) {
+        final secs = duration.inSeconds;
+        if (secs > 0 && secs < 300) {
+          final left = 1 - elapsed.inMilliseconds / duration.inMilliseconds;
+          bonus = (speedMax * left.clamp(0.0, 1.0)).round();
+        } else {
+          // ≥ 5 min ou illimité : jugement absolu.
+          bonus = switch (iqSpeedOf(elapsed, level)) {
+            IqSpeed.fast => 8,
+            IqSpeed.medium => 4,
+            IqSpeed.slow => 0,
+          };
+        }
       }
       return IqScoring.correct + bonus;
     }
@@ -153,16 +215,21 @@ class IqScoring {
   }
 }
 
-/// QI estimé, pour s'amuser : 70 à 145 selon les bonnes réponses, les plus
-/// difficiles comptant davantage. 100 = la réussite d'un joueur moyen (60 %).
-/// Même calcul que le serveur.
-int iqEstimate(List<(int level, bool correct)> results) {
+/// QI estimé : 70–128, rapidité comprise. Même calcul que le serveur.
+int iqEstimate(List<(int level, bool correct, IqSpeed? speed)> results) {
   if (results.isEmpty) return 100;
   const weight = {1: 1.0, 2: 1.5, 3: 2.0};
-  const average = 0.6;
+  const average = 0.65;
+  const iqMin = 70;
+  const iqMax = 128;
   final total = results.fold(0.0, (s, r) => s + weight[r.$1]!);
-  final got = results.fold(0.0, (s, r) => r.$2 ? s + weight[r.$1]! : s);
-  final success = got / total;
-  if (success <= average) return (70 + 30 * success / average).round();
-  return (100 + 45 * (success - average) / (1 - average)).round();
+  final got = results.fold(
+    0.0,
+    (s, r) => s + weight[r.$1]! * iqSpeedFactor(r.$2, r.$3),
+  );
+  final success = (got / total).clamp(0.0, 1.0);
+  if (success <= average) {
+    return (iqMin + (100 - iqMin) * success / average).round();
+  }
+  return (100 + (iqMax - 100) * (success - average) / (1 - average)).round();
 }

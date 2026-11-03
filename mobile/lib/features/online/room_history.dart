@@ -549,6 +549,7 @@ class SavedRoomsSection extends StatefulWidget {
     required this.onOpen,
     this.apiClient,
     this.liveCodes = const {},
+    this.game = RoomGame.letters,
   });
 
   final ValueChanged<String> onOpen;
@@ -557,21 +558,47 @@ class SavedRoomsSection extends StatefulWidget {
   /// Salons publics déjà listés en direct (on ne les répète pas).
   final Set<String> liveCodes;
 
+  /// Lettres ou QI : on ne mélange pas les listes.
+  final RoomGame game;
+
   @override
   State<SavedRoomsSection> createState() => SavedRoomsSectionState();
 }
 
-class SavedRoomsSectionState extends State<SavedRoomsSection> {
+class SavedRoomsSectionState extends State<SavedRoomsSection>
+    with WidgetsBindingObserver {
   List<SavedRoomSummary> _mine = const [];
   List<SavedRoomSummary> _public = const [];
+  bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) refresh();
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_mine.isEmpty && _public.isEmpty) refresh();
+    if (!_started) {
+      _started = true;
+      refresh();
+    }
   }
 
   Future<void> refresh() async {
+    if (!mounted) return;
     final api = SavedRoomsApi(
       widget.apiClient ?? ApiClient(),
       OnlineScope.of(context).clientId,
@@ -580,10 +607,13 @@ class SavedRoomsSectionState extends State<SavedRoomsSection> {
       final results = await Future.wait([api.mine(), api.public()]);
       if (!mounted) return;
       setState(() {
-        _mine = results[0];
+        _mine = [
+          for (final r in results[0])
+            if (r.game == widget.game) r,
+        ];
         _public = [
           for (final r in results[1])
-            if (!r.mine) r,
+            if (!r.mine && r.game == widget.game) r,
         ];
       });
     } on ApiException {

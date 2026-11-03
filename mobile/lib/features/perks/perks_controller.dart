@@ -220,13 +220,23 @@ class PerksController extends ChangeNotifier {
   /// À appeler à la fin de chaque partie : une pub toutes les N parties, sauf
   /// pour les joueurs « Sans pub » ou abonnés.
   Future<void> onGameFinished() async {
-    if (!_features.interstitialAds || adsFree) return;
+    if (!_features.interstitialAds) {
+      debugPrint('Interstitial: flag off (FEATURE_INTERSTITIAL_ADS)');
+      return;
+    }
+    if (adsFree) {
+      debugPrint('Interstitial: skipped (Premium / Sans pub)');
+      return;
+    }
     final games = storage.readGamesSinceAd() + 1;
-    if (games < _features.interstitialEveryGames) {
+    final every = _features.interstitialEveryGames;
+    if (games < every) {
       storage.writeGamesSinceAd(games);
+      debugPrint('Interstitial: $games/$every parties — pas encore');
       return;
     }
     storage.writeGamesSinceAd(0);
+    debugPrint('Interstitial: déclenché après $every partie(s)');
     await ads.showInterstitial();
   }
 }

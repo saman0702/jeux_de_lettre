@@ -314,7 +314,7 @@ void main() {
     expect(find.text('PODIUM'), findsOneWidget);
     expect(find.text('42 pts'), findsOneWidget);
 
-    await tester.tap(find.text('PLAY AGAIN'));
+    await tester.tap(find.text('KEEP PLAYING'));
     await tester.pump();
     expect(h.socket.sent.last, {'type': 'set_ready', 'ready': true});
     await tester.pump(const Duration(seconds: 1));

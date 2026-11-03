@@ -22,7 +22,7 @@ def test_every_puzzle_kind_is_consistent():
             assert "answer" not in p.public()
     assert kinds == {
         "sequence", "grid", "problem", "letters", "calendar", "analogy", "odd", "logic",
-        "matrix", "rotation", "figure_odd", "trace",
+        "matrix", "rotation", "figure_odd", "trace", "count", "dots", "flow",
     }
 
 
@@ -51,11 +51,21 @@ def test_difficulty_rises_with_the_rounds():
 
 def test_iq_estimate_for_fun():
     assert iq_service.iq_estimate([(1, False)] * 5) == 70
-    assert iq_service.iq_estimate([(3, True)] * 5) == 145
-    assert 95 < iq_service.iq_estimate([(1, True), (2, True), (3, False)]) < 120
-    # 2 justes sur 5 (une facile, une difficile) : sous la moyenne, pas 100.
-    assert iq_service.iq_estimate([(1, True), (1, False), (2, False), (3, True), (3, False)]) == 90
-    assert iq_service.iq_estimate([(1, True), (1, True), (2, True), (3, False), (3, True)]) == 115
+    # Tout juste et rapide : plafonné (plus gonflé vers 145).
+    assert iq_service.iq_estimate([(3, True, "fast")] * 5) == 128
+    assert 90 < iq_service.iq_estimate([(1, True), (2, True), (3, False)]) < 115
+    # 2 justes sur 5 : sous la moyenne.
+    assert iq_service.iq_estimate([(1, True), (1, False), (2, False), (3, True), (3, False)]) < 100
+    # Bonne réussite mais lente : moins que la même en rapide.
+    slow = iq_service.iq_estimate([(1, True, "slow"), (2, True, "slow"), (3, True, "slow")])
+    fast = iq_service.iq_estimate([(1, True, "fast"), (2, True, "fast"), (3, True, "fast")])
+    assert slow < fast <= 128
+
+
+def test_speed_of_absolute_time():
+    assert iq_service.speed_of(8, 1) == "fast"
+    assert iq_service.speed_of(25, 1) == "medium"
+    assert iq_service.speed_of(90, 1) == "slow"
 
 
 async def test_solo_puzzles_route(client):
@@ -117,6 +127,52 @@ def test_a_trace_cannot_jump_or_repeat_a_line():
     assert not iq_service.valid_trace(trace, "x")
 
 
+def test_count_puzzles_have_a_diagram_and_four_number_choices():
+    rng = random.Random(42)
+    seen = set()
+    for level in (1, 2, 3):
+        for _ in range(40):
+            p = iq_service._count(rng, level)
+            assert p.kind == "count"
+            assert p.input == "choice"
+            assert p.diagram and p.diagram["segments"]
+            assert len(p.choices["fr"]) == 4
+            assert iq_service.check(p, p.answer)
+            assert not iq_service.check(p, iq_service.wrong_answer(p, rng))
+            assert "answer" not in p.public()
+            seen.add(p.id)
+    assert len(seen) >= 6
+
+
+def test_dots_puzzles_must_follow_number_order():
+    rng = random.Random(11)
+    for level in (1, 2, 3):
+        for _ in range(30):
+            p = iq_service._dots(rng, level)
+            assert p.kind == "dots"
+            assert p.trace["numbered"] and p.trace["ordered"]
+            assert iq_service.check(p, p.answer)
+            assert not iq_service.check(p, "0")
+            # À l'envers : refusé (ordre imposé).
+            rev = "-".join(reversed(p.answer.split("-")))
+            if rev != p.answer:
+                assert not iq_service.check(p, rev)
+
+
+def test_flow_puzzles_accept_only_non_crossing_paths():
+    rng = random.Random(5)
+    for level in (1, 2, 3):
+        for _ in range(20):
+            p = iq_service._flow(rng, level)
+            assert p.kind == "flow" and p.flow
+            assert "solutions" not in p.public()["flow"]
+            assert iq_service.check(p, p.answer)
+            assert not iq_service.check(p, "[]")
+            assert not iq_service.check(p, iq_service.wrong_answer(p, rng))
+            # Les JSON de chemins dépassent 64 car. : l'API doit les accepter.
+            assert len(p.answer) > 64
+
+
 # ------------------------------------------------------------- parties vérifiées par le serveur
 
 from datetime import date, timedelta  # noqa: E402
@@ -153,9 +209,28 @@ async def test_online_solo_checks_answers_on_the_server_and_pays_coins(client, s
         if number < 5:
             nxt = (await client.post(f"/api/v1/iq/sessions/{game['id']}/next", json={"client_id": PLAYER})).json()
             assert nxt["number"] == number + 1
-    assert result["finished"] is True and result["iq"] == 145
+    assert result["finished"] is True and result["iq"] == 128
     profile = (await client.get(f"/api/v1/profiles/{PLAYER}")).json()
     assert profile["total_points"] == total_points and profile["coins"] == total_points // 20
+
+
+async def test_solo_pause_after_round_and_resume(client, session):
+    game = (await client.post("/api/v1/iq/solo", json={"client_id": PLAYER, "rounds": 5, "duration": 30})).json()
+    mid = await client.post(f"/api/v1/iq/sessions/{game['id']}/pause", json={"client_id": PLAYER})
+    assert mid.status_code == 409 and mid.json()["detail"] == "pause_not_allowed"
+    stored = await session.get(IqSession, game["id"])
+    right = stored.puzzles[0]["answer"]
+    await client.post(f"/api/v1/iq/sessions/{game['id']}/answer", json={"client_id": PLAYER, "answer": right})
+    paused = (await client.post(f"/api/v1/iq/sessions/{game['id']}/pause", json={"client_id": PLAYER})).json()
+    assert paused["paused"] is True and paused["number"] == 2 and paused["finished"] is False
+    await session.refresh(stored)
+    assert stored.served_at is None and stored.answered is False and stored.number == 2
+    active = (await client.get("/api/v1/iq/sessions/active", params={"client_id": PLAYER})).json()
+    assert active["id"] == game["id"] and active["paused"] is True
+    resumed = (await client.post(f"/api/v1/iq/sessions/{game['id']}/resume", json={"client_id": PLAYER})).json()
+    assert resumed["number"] == 2 and "puzzle" in resumed
+    await session.refresh(stored)
+    assert stored.served_at is not None
 
 
 async def test_a_late_answer_counts_as_no_answer(client, session):

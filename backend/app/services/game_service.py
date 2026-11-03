@@ -11,6 +11,7 @@ from app.core.game_rules import (
     SUBMIT_GRACE_SECONDS,
     Category,
     Difficulty,
+    is_unlimited_duration,
 )
 from app.models import Game, GameRound, HintRequest, Player, PlayerAnswer, Submission
 from app.models.base import utcnow
@@ -60,8 +61,17 @@ async def create_solo_game(session: AsyncSession, data: SoloGameCreate) -> Game:
     return game
 
 
-def _is_expired(game_round: GameRound) -> bool:
+def _is_expired(game: Game, game_round: GameRound) -> bool:
+    if is_unlimited_duration(game.round_duration):
+        return False
     return utcnow() > game_round.ends_at + timedelta(seconds=SUBMIT_GRACE_SECONDS)
+
+
+def _round_ends_at(started_at, round_duration: int):
+    # Illimité : deadline lointaine (le client n'auto-soumet pas ; elapsed réel à l'envoi).
+    if is_unlimited_duration(round_duration):
+        return started_at + timedelta(days=365)
+    return started_at + timedelta(seconds=round_duration)
 
 
 def _banned_keys(game: Game) -> dict[str, set[str]]:
@@ -111,7 +121,7 @@ async def _close_expired_round(session: AsyncSession, game: Game, game_round: Ga
 async def start_next_round(session: AsyncSession, game: Game) -> GameRound:
     current = game.current_round
     if current is not None and not current.finished:
-        if not _is_expired(current):
+        if not _is_expired(game, current):
             raise GameError("round_in_progress")
         await _close_expired_round(session, game, current)
 
@@ -134,7 +144,7 @@ async def start_next_round(session: AsyncSession, game: Game) -> GameRound:
         number=len(game.rounds) + 1,
         letter=letter,
         started_at=started_at,
-        ends_at=started_at + timedelta(seconds=game.round_duration),
+        ends_at=_round_ends_at(started_at, game.round_duration),
         submissions=[],
     )
     game.rounds.append(game_round)
@@ -153,7 +163,7 @@ def _playable_round(game: Game, round_number: int) -> GameRound:
     game_round = game.current_round
     if game_round is None or game_round.number != round_number:
         raise GameError("round_not_current")
-    if game_round.finished or _is_expired(game_round):
+    if game_round.finished or _is_expired(game, game_round):
         raise GameError("round_over")
     return game_round
 
@@ -313,7 +323,7 @@ async def submit_answers(
 
     player = game.players[0]
     submitted_at = utcnow()
-    late = _is_expired(game_round)
+    late = _is_expired(game, game_round)
 
     picked = {
         h.category: h
@@ -358,9 +368,15 @@ async def submit_answers(
     # Une bonne réponse à montrer pour chaque catégorie ratée.
     missed = [c for c, r in results.items() if not r.is_valid]
     examples = await suggestion_service.example_answers(session, game.language, missed, game_round.letter)
+    # Illimité : garder l'heure réelle pour elapsed_ms ; sinon plafonner à ends_at.
+    recorded_at = (
+        submitted_at
+        if is_unlimited_duration(game.round_duration)
+        else min(submitted_at, game_round.ends_at)
+    )
     submission = Submission(
         player_id=player.id,
-        submitted_at=min(submitted_at, game_round.ends_at),
+        submitted_at=recorded_at,
         score=sum(points.values()),
         answers=[
             PlayerAnswer(

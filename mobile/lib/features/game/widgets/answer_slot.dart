@@ -13,6 +13,8 @@ import '../../../core/widgets/letter_tile.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models.dart';
 import '../hints/hint_controller.dart';
+import '../offline/normalization.dart';
+import '../offline/offline_dictionary.dart';
 import '../../shop/cosmetics.dart';
 import '../../shop/look_styles.dart';
 import 'country_flag.dart';
@@ -21,12 +23,32 @@ import 'labels.dart';
 /// Réponse la plus longue acceptée, utilisée aussi par le clavier de jeu.
 const answerMaxLength = 24;
 
+/// Vrai si [raw] est une réponse connue pour [category] / [letter] / [language].
+/// Indication live uniquement : la validation finale reste solo/serveur.
+bool isKnownAnswer({
+  required OfflineDictionary dictionary,
+  required Category category,
+  required String language,
+  required String letter,
+  required String raw,
+}) {
+  final keys = dictionary.normalizer.lookupKeys(raw, category);
+  for (final key in keys) {
+    if (dictionary.find(category, language, key) == null) continue;
+    if (Normalizer.startsWithLetter(key, letter)) return true;
+  }
+  return false;
+}
+
 /// Saisie des réponses façon jeu : les lettres tapées deviennent des tuiles qui
 /// apparaissent avec un « toc », la catégorie s'affiche en badge coloré et le
 /// champ actif brille.
 ///
 /// Un vrai TextField (invisible) gère toujours le clavier, la saisie et
 /// l'accessibilité ; seul son affichage est remplacé.
+///
+/// L'icône verte n'apparaît que si le mot est **connu** (dictionnaire) et
+/// commence par la lettre — pas seulement parce qu'il commence par la lettre.
 class AnswerSlot extends StatefulWidget {
   const AnswerSlot({
     super.key,
@@ -37,6 +59,7 @@ class AnswerSlot extends StatefulWidget {
     required this.autofocus,
     required this.isLast,
     required this.onDone,
+    this.language,
     this.hints,
     this.focusNode,
     this.systemKeyboard = true,
@@ -49,6 +72,9 @@ class AnswerSlot extends StatefulWidget {
   final bool autofocus;
   final bool isLast;
   final VoidCallback onDone;
+
+  /// Langue de la partie (`fr` / `en`). Sinon : locale de l'UI.
+  final String? language;
   final HintController? hints;
 
   /// Fourni quand l'écran de manche pilote le focus (clavier de jeu).
@@ -72,6 +98,7 @@ class _AnswerSlotState extends State<AnswerSlot>
   );
   String _previous = '';
   bool _matched = false;
+  OfflineDictionary? _dictionary;
 
   @override
   void initState() {
@@ -79,7 +106,15 @@ class _AnswerSlotState extends State<AnswerSlot>
     _previous = widget.controller.text;
     widget.controller.addListener(_onText);
     _focus.addListener(_onFocus);
-    _matched = _matches;
+    final ready = OfflineDictionary.current;
+    if (ready != null) {
+      _dictionary = ready;
+    } else {
+      OfflineDictionary.load().then((dict) {
+        if (!mounted) return;
+        setState(() => _dictionary = dict);
+      });
+    }
   }
 
   @override
@@ -89,6 +124,11 @@ class _AnswerSlotState extends State<AnswerSlot>
       oldWidget.controller.removeListener(_onText);
       widget.controller.addListener(_onText);
       _previous = widget.controller.text;
+    }
+    if (oldWidget.letter != widget.letter ||
+        oldWidget.language != widget.language ||
+        oldWidget.category != widget.category) {
+      _matched = _isKnown;
     }
   }
 
@@ -103,8 +143,23 @@ class _AnswerSlotState extends State<AnswerSlot>
   }
 
   bool get _locked => widget.hints?.field(widget.category)?.locked ?? false;
-  bool get _matches =>
-      !_locked && firstLetterOf(widget.controller.text) == widget.letter;
+
+  String get _language =>
+      widget.language ?? Localizations.localeOf(context).languageCode;
+
+  /// Mot réellement connu (dico) + bonne lettre — sinon pas d'icône verte.
+  bool get _isKnown {
+    if (_locked) return false;
+    final dict = _dictionary;
+    if (dict == null) return false;
+    return isKnownAnswer(
+      dictionary: dict,
+      category: widget.category,
+      language: _language,
+      letter: widget.letter,
+      raw: widget.controller.text,
+    );
+  }
 
   void _onFocus() {
     if (_focus.hasFocus) {
@@ -121,17 +176,19 @@ class _AnswerSlotState extends State<AnswerSlot>
 
   void _onText() {
     final text = widget.controller.text;
-    if (_focus.hasFocus && text != _previous) {
+    final known = _isKnown;
+    if (text != _previous) {
       final feedback = GameFeedbackScope.of(context);
+      // Sons même avec le clavier de jeu (le champ peut ne plus avoir le focus).
       if (text.length > _previous.length) {
         feedback.play(Sfx.key);
         feedback.haptic(Haptic.light);
       } else if (text.length < _previous.length) {
         feedback.play(Sfx.erase);
       }
-      if (_matches && !_matched) feedback.play(Sfx.match);
+      if (known && !_matched) feedback.play(Sfx.match);
     }
-    _matched = _matches;
+    _matched = known;
     _previous = text;
     // Garde la dernière tuile visible.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -156,7 +213,7 @@ class _AnswerSlotState extends State<AnswerSlot>
       builder: (context, _) {
         final hint = hints?.field(category);
         final locked = _locked;
-        final matches = _matches;
+        final matches = _isKnown;
         final focused = _focus.hasFocus;
         final accent = locked
             ? (hint!.correct! ? AppColors.green : AppColors.red)

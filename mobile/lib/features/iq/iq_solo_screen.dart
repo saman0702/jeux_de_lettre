@@ -11,6 +11,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_card.dart';
+import '../../core/widgets/game_dialog.dart';
 import '../../core/widgets/game_icon.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/data/models.dart';
@@ -18,15 +19,19 @@ import '../game/widgets/labels.dart';
 import '../game/widgets/round_view.dart';
 import '../online/online_controller.dart';
 import '../online/widgets/online_header.dart';
+import '../perks/perks_controller.dart';
 import 'iq_daily_screen.dart';
 import 'iq_models.dart';
+import 'iq_recent.dart';
 import 'iq_run.dart';
+import 'iq_solo_draft.dart';
 import 'iq_solo_source.dart';
 import 'iq_widgets.dart';
 
 /// Partie de QI en solo (ou défi du jour). En ligne, elle se joue contre le
 /// serveur : réponses vérifiées, points convertis en pièces, jokers payants.
 /// Hors ligne, elle se joue sur le téléphone, sans pièces ni jokers.
+/// Pause possible après une manche : on peut quitter et reprendre plus tard.
 class IqSoloScreen extends StatefulWidget {
   const IqSoloScreen({
     super.key,
@@ -37,6 +42,7 @@ class IqSoloScreen extends StatefulWidget {
     this.apiClient,
     this.puzzles,
     this.daily = false,
+    this.draft,
     this.now = DateTime.now,
   });
 
@@ -53,6 +59,9 @@ class IqSoloScreen extends StatefulWidget {
 
   /// Défi du jour (en ligne seulement).
   final bool daily;
+
+  /// Partie en pause à reprendre (pas le défi du jour).
+  final IqSoloDraft? draft;
   final DateTime Function() now;
 
   @override
@@ -90,8 +99,14 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
   }
 
   Future<void> _load() async {
+    final draft = widget.draft;
+    if (draft != null && !widget.daily) {
+      await _resumeDraft(draft);
+      return;
+    }
     final given = widget.puzzles;
     if (given != null) {
+      await IqSoloDraftStore.clear();
       _begin(
         LocalIqRun(given, scoring: widget.scoring, duration: widget.duration),
       );
@@ -104,6 +119,8 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
     final reachable = online != null && !online.client.unreachable;
     if (reachable) {
       try {
+        await IqSoloDraftStore.clear();
+        final avoid = await IqRecentStore.load();
         final run = widget.daily
             ? await ServerIqRun.dailyChallenge(api, online.clientId)
             : await ServerIqRun.solo(
@@ -113,6 +130,7 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
                 duration: widget.duration,
                 difficulty: widget.difficulty.name,
                 scoring: widget.scoring,
+                avoid: avoid,
               );
         if (mounted) _begin(run);
         return;
@@ -137,15 +155,172 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
       return;
     }
     // Pas de serveur : partie sur le téléphone, sans pièces.
+    await IqSoloDraftStore.clear();
+    final avoid = await IqRecentStore.load();
     final puzzles = await loadSoloPuzzles(
       count: widget.rounds,
       difficulty: widget.difficulty,
+      avoid: avoid,
     );
     if (!mounted) return;
     messenger.showSnackBar(SnackBar(content: Text(l10n.iqOfflineNoCoins)));
     _begin(
       LocalIqRun(puzzles, scoring: widget.scoring, duration: widget.duration),
     );
+  }
+
+  Future<void> _resumeDraft(IqSoloDraft draft) async {
+    _turns
+      ..clear()
+      ..addAll(draft.turns);
+    _coinsWon = draft.coinsWon;
+    _iq = draft.iq;
+    if (draft.finished) {
+      setState(() {
+        _done = true;
+        _run = draft.online
+            ? null
+            : LocalIqRun(
+                draft.puzzles,
+                scoring: draft.scoring,
+                duration: draft.duration,
+                startIndex: draft.puzzles.isEmpty
+                    ? 0
+                    : draft.puzzles.length - 1,
+              );
+      });
+      return;
+    }
+    if (draft.online) {
+      final online = _online;
+      final sessionId = draft.sessionId;
+      final api = widget.apiClient ?? ApiClient();
+      if (online == null || sessionId == null || online.client.unreachable) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context).iqResumeNeedsOnline)),
+          );
+          Navigator.of(context).pop();
+        }
+        return;
+      }
+      try {
+        final resumed = await ServerIqRun.resume(
+          api,
+          online.clientId,
+          sessionId,
+        );
+        if (!mounted) return;
+        if (resumed.finished) {
+          setState(() {
+            _iq = resumed.iq ?? _iq;
+            _done = true;
+          });
+          await IqSoloDraftStore.clear();
+          return;
+        }
+        _begin(resumed.run!);
+      } on ApiException catch (e) {
+        await IqSoloDraftStore.clear();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage(AppLocalizations.of(context), e.code))),
+        );
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+    if (draft.nextIndex >= draft.puzzles.length) {
+      setState(() => _done = true);
+      return;
+    }
+    _begin(
+      LocalIqRun(
+        draft.puzzles,
+        scoring: draft.scoring,
+        duration: draft.duration,
+        startIndex: draft.nextIndex,
+      ),
+    );
+  }
+
+  bool get _canPause =>
+      !widget.daily && _turn != null && !_done && _run != null && !_busy;
+
+  Future<void> _pauseAndLeave() async {
+    if (!_canPause) return;
+    setState(() => _busy = true);
+    try {
+      final run = _run!;
+      var finished = run.number >= run.total;
+      // Hors ligne : nextIndex = énigme suivante (number est 1-based de l'actuelle).
+      var nextIndex = finished ? run.total : run.number;
+      String? sessionId;
+      if (run is ServerIqRun) {
+        final paused = await run.pause();
+        finished = paused['finished'] == true;
+        sessionId = run.sessionId;
+        if (paused['iq'] != null) _iq = paused['iq'] as int;
+        nextIndex = finished
+            ? run.total
+            : ((paused['number'] as int? ?? run.number) - 1);
+      }
+      await IqSoloDraftStore.save(
+        IqSoloDraft(
+          online: run.online,
+          sessionId: sessionId,
+          rounds: widget.rounds,
+          duration: widget.duration,
+          difficulty: widget.difficulty,
+          scoring: widget.scoring,
+          nextIndex: nextIndex,
+          finished: finished,
+          puzzles: run is LocalIqRun ? run.puzzles : const [],
+          turns: List.of(_turns),
+          coinsWon: _coinsWon,
+          iq: _iq,
+        ),
+      );
+      if (!mounted) return;
+      final nav = Navigator.of(context);
+      if (nav.canPop()) {
+        nav.pop();
+      } else {
+        setState(() {
+          _done = finished;
+          _turn = null;
+          _busy = false;
+        });
+      }
+    } on ApiException catch (e) {
+      _error(e.code);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _onBack() async {
+    if (_done || widget.daily) {
+      if (_done) await IqSoloDraftStore.clear();
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+    if (_canPause) {
+      await _pauseAndLeave();
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final leave = await showGameConfirm(
+      context,
+      icon: GameIconKind.door,
+      title: l10n.quitGameTitle,
+      message: l10n.iqQuitMidRound,
+      confirmLabel: l10n.quit.toUpperCase(),
+      cancelLabel: l10n.dialogStay,
+    );
+    if (!leave || !mounted) return;
+    await IqSoloDraftStore.clear();
+    if (mounted) Navigator.of(context).pop();
   }
 
   void _begin(IqRun run) {
@@ -155,6 +330,12 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
       _removed = {};
       _range = null;
     });
+    // Mémorise les ids pour les prochaines parties (rejouer ≠ mêmes énigmes).
+    if (run is LocalIqRun) {
+      unawaited(IqRecentStore.remember(run.puzzles.map((p) => p.id)));
+    } else {
+      unawaited(IqRecentStore.remember([run.puzzle.id]));
+    }
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(milliseconds: 250), (_) => _tick());
   }
@@ -162,6 +343,11 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
   void _tick() {
     final run = _run;
     if (!mounted || run == null || _turn != null || _done || _busy) return;
+    // Illimité (duration 0) : pas d'auto-envoi ; le temps réel compte au submit.
+    if (run.allowed.inMilliseconds <= 0) {
+      setState(() {});
+      return;
+    }
     if (widget.now().difference(_startedAt) >= run.allowed) {
       _answer(null);
     } else {
@@ -191,6 +377,7 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
         _turns.add(turn);
         _iq = turn.iq ?? _iq;
       });
+      unawaited(IqRecentStore.remember([turn.puzzle.id]));
     } on ApiException catch (e) {
       _error(e.code);
     } finally {
@@ -202,6 +389,7 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
     final run = _run!;
     if (run.number >= run.total) {
       _ticker?.cancel();
+      unawaited(IqSoloDraftStore.clear());
       GameFeedbackScope.of(context).play(Sfx.victory);
       setState(() {
         _turn = null;
@@ -220,6 +408,7 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
         _range = null;
         _traceStart = null;
       });
+      unawaited(IqRecentStore.remember([run.puzzle.id]));
     } on ApiException catch (e) {
       _error(e.code);
     } finally {
@@ -237,7 +426,19 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
       GameFeedbackScope.of(context).play(Sfx.reveal);
       final wallet = effect.wallet;
       if (wallet != null) _online?.applyWallet(wallet);
+      final turn = effect.turn;
       setState(() {
+        if (turn != null) {
+          // Solution achetée : on montre la bonne réponse, puis « suivante ».
+          _turn = turn;
+          _turns.add(turn);
+          _iq = turn.iq ?? _iq;
+          _removed = {};
+          _range = null;
+          _traceStart = null;
+          unawaited(IqRecentStore.remember([turn.puzzle.id]));
+          return;
+        }
         _removed = {..._removed, ...effect.removed};
         if (effect.low != null) _range = (effect.low!, effect.high!);
         if (effect.start != null) _traceStart = effect.start;
@@ -246,6 +447,7 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
           _removed = {};
           _range = null;
           _traceStart = null;
+          unawaited(IqRecentStore.remember([run.puzzle.id]));
         }
       });
     } on ApiException catch (e) {
@@ -264,6 +466,7 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
 
   void _restart() {
     _ticker?.cancel();
+    unawaited(IqSoloDraftStore.clear());
     setState(() {
       _run = null;
       _turn = null;
@@ -275,9 +478,18 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
     _load();
   }
 
+  PerksController? _perks;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _perks ??= PerksScope.maybeOf(context);
+  }
+
   @override
   void dispose() {
     _ticker?.cancel();
+    if (_done) unawaited(_perks?.onGameFinished() ?? Future.value());
     super.dispose();
   }
 
@@ -293,7 +505,18 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
               OnlineHeader(
                 title: widget.daily ? l10n.iqDailyTitle : l10n.iqSoloTitle,
                 quitStyle: !_done,
-                onBack: () => Navigator.of(context).pop(),
+                onBack: _onBack,
+                trailing: _canPause
+                    ? RoundIconButton(
+                        key: const Key('iq_pause'),
+                        icon: Icons.pause_rounded,
+                        tooltip: l10n.iqPause,
+                        color: AppColors.white,
+                        iconColor: AppColors.purple,
+                        size: 40,
+                        onPressed: _busy ? () {} : _pauseAndLeave,
+                      )
+                    : null,
               ),
               Expanded(child: _body(l10n)),
             ],
@@ -304,84 +527,59 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
   }
 
   Widget _body(AppLocalizations l10n) {
+    if (_done) return _result(l10n);
     final run = _run;
     if (run == null) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.white),
       );
     }
-    if (_done || run.total == 0) return _result(l10n);
+    if (run.total == 0) return _result(l10n);
     final language = Localizations.localeOf(context).languageCode;
     final turn = _turn;
     final puzzle = turn?.puzzle ?? run.puzzle;
     final remaining = run.allowed - widget.now().difference(_startedAt);
-    // Numéro et chrono fixes en haut ; seule l'énigme défile.
+    // Chrono en haut, réponse en bas ; l'énigme se compacte et n'affiche un
+    // indice de scroll que si le contenu dépasse vraiment.
+    final compact = iqCompactScreen(context);
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          padding: EdgeInsets.fromLTRB(16, compact ? 4 : 8, 16, 0),
           child: IqHeader(
             number: run.number,
             total: run.total,
-            trailing: turn == null
-                ? TimerBadge(
+            // Après réponse : plus de chrono (le temps est déjà jugé en bas).
+            // Illimité : ∞ pendant l'énigme seulement.
+            trailing: turn != null
+                ? null
+                : TimerBadge(
                     remaining: remaining.isNegative ? Duration.zero : remaining,
                     total: run.allowed,
-                  )
-                : null,
+                    size: compact ? 48 : 56,
+                  ),
           ),
         ),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          child: IqScrollArea(
+            padding: EdgeInsets.fromLTRB(16, compact ? 6 : 8, 16, 10),
             children: [
               IqPuzzleCard(
                 key: ValueKey(puzzle.id),
                 puzzle: puzzle,
                 language: language,
               ),
-              const SizedBox(height: 10),
-              if (turn == null) ...[
-                if (run.jokerPrices.isNotEmpty) ...[
-                  IqJokerBar(
-                    puzzle: run.puzzle,
-                    prices: run.jokerPrices,
-                    used: run.usedJokers,
-                    busy: _busy,
-                    onUse: _joker,
-                  ),
-                  const SizedBox(height: 10),
-                ],
-                if (_traceStart != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Text(
-                      l10n.iqTraceStartHint,
-                      key: const Key('iq_trace_hint'),
-                      textAlign: TextAlign.center,
-                      style: gameFont(size: 17, color: AppColors.yellow),
-                    ),
-                  ),
-                if (_range != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Text(
-                      l10n.iqHintRange(_range!.$1, _range!.$2),
-                      key: const Key('iq_hint_range'),
-                      textAlign: TextAlign.center,
-                      style: gameFont(size: 17, color: AppColors.yellow),
-                    ),
-                  ),
-              ] else ...[
+              if (turn != null) ...[
                 if (turn.late)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       l10n.iqLate,
                       textAlign: TextAlign.center,
-                      style: gameFont(size: 18, color: AppColors.white),
+                      style: gameFont(size: 16, color: AppColors.white),
                     ),
                   ),
+                const SizedBox(height: 8),
                 IqRevealCard(
                   puzzle: puzzle,
                   language: language,
@@ -392,6 +590,8 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
                       correct: turn.correct,
                       points: turn.points,
                       isMe: true,
+                      elapsed: turn.elapsed,
+                      speed: turn.speed,
                     ),
                   ],
                 ),
@@ -399,10 +599,43 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
             ],
           ),
         ),
-        // Réponse (clavier ou choix) et « Suivante » toujours visibles en bas :
-        // seule l'énigme défile au-dessus.
+        // Aides décollées du cadre d'énoncé, au-dessus des choix.
+        if (turn == null) ...[
+          if (run.jokerPrices.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: IqJokerBar(
+                puzzle: run.puzzle,
+                prices: run.jokerPrices,
+                used: run.usedJokers,
+                busy: _busy,
+                unlimitedTime: widget.duration <= 0,
+                onUse: _joker,
+              ),
+            ),
+          if (_traceStart != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Text(
+                l10n.iqTraceStartHint,
+                key: const Key('iq_trace_hint'),
+                textAlign: TextAlign.center,
+                style: gameFont(size: 15, color: AppColors.yellow),
+              ),
+            ),
+          if (_range != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Text(
+                l10n.iqHintRange(_range!.$1, _range!.$2),
+                key: const Key('iq_hint_range'),
+                textAlign: TextAlign.center,
+                style: gameFont(size: 15, color: AppColors.yellow),
+              ),
+            ),
+        ],
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+          padding: EdgeInsets.fromLTRB(16, 10, 16, compact ? 8 : 12),
           child: turn == null
               ? IqAnswerPad(
                   key: ValueKey('pad_${puzzle.id}'),
@@ -434,7 +667,9 @@ class _IqSoloScreenState extends State<IqSoloScreen> {
     final points = _turns.fold(0, (s, t) => s + t.points);
     final iq =
         _iq ??
-        iqEstimate([for (final t in _turns) (t.puzzle.level, t.correct)]);
+        iqEstimate([
+          for (final t in _turns) (t.puzzle.level, t.correct, t.speed),
+        ]);
     final daily = _run?.daily ?? false;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),

@@ -10,6 +10,8 @@ class IqTurn {
     required this.correct,
     required this.points,
     this.late = false,
+    this.elapsed = Duration.zero,
+    this.speed,
     this.wallet,
     this.iq,
   });
@@ -20,6 +22,10 @@ class IqTurn {
   final bool correct;
   final int points;
   final bool late;
+
+  /// Temps mis pour répondre (affiché + jugé rapide / moyen / lent).
+  final Duration elapsed;
+  final IqSpeed? speed;
   final WalletSnapshot? wallet;
 
   /// QI estimé, donné par le serveur à la dernière énigme.
@@ -35,6 +41,7 @@ class IqJokerEffect {
     this.start,
     this.wallet,
     this.replaced = false,
+    this.turn,
   });
 
   /// 50/50 : choix retirés.
@@ -50,6 +57,9 @@ class IqJokerEffect {
 
   /// Passer : une nouvelle énigme, chrono relancé.
   final bool replaced;
+
+  /// Solution (temps illimité) : l'énigme est terminée, réponse montrée.
+  final IqTurn? turn;
 }
 
 /// Une partie de QI en cours : contre le serveur (réponses vérifiées, pièces,
@@ -77,13 +87,18 @@ abstract class IqRun {
 
 /// Hors ligne : énigmes embarquées, vérifiées sur le téléphone.
 class LocalIqRun implements IqRun {
-  LocalIqRun(this.puzzles, {required this.scoring, required int duration})
-    : _duration = Duration(seconds: duration);
+  LocalIqRun(
+    this.puzzles, {
+    required this.scoring,
+    required int duration,
+    int startIndex = 0,
+  }) : _duration = Duration(seconds: duration),
+       _index = startIndex.clamp(0, puzzles.isEmpty ? 0 : puzzles.length - 1);
 
   final List<IqPuzzle> puzzles;
   final IqScoring scoring;
   final Duration _duration;
-  int _index = 0;
+  int _index;
 
   @override
   int get number => _index + 1;
@@ -106,15 +121,19 @@ class LocalIqRun implements IqRun {
   Future<IqTurn> answer(String? raw, Duration elapsed) async {
     final answered = raw != null && raw.trim().isNotEmpty;
     final correct = puzzle.isCorrect(raw);
+    final speed = answered ? iqSpeedOf(elapsed, puzzle.level) : null;
     return IqTurn(
       puzzle: puzzle,
       answer: answered ? raw.trim() : null,
       correct: correct,
+      elapsed: elapsed,
+      speed: speed,
       points: scoring.points(
         correct: correct,
         answered: answered,
         elapsed: elapsed,
         duration: _duration,
+        level: puzzle.level,
       ),
     );
   }
@@ -152,6 +171,7 @@ class ServerIqRun implements IqRun {
     required int duration,
     required String difficulty,
     required IqScoring scoring,
+    Iterable<String> avoid = const [],
   }) async => ServerIqRun._(
     api,
     clientId,
@@ -162,6 +182,7 @@ class ServerIqRun implements IqRun {
       'difficulty': difficulty,
       'speed_bonus': scoring.speedBonus,
       'penalty': scoring.penalty,
+      'avoid': [for (final id in avoid) if (id.isNotEmpty) id],
     }),
   );
 
@@ -173,6 +194,30 @@ class ServerIqRun implements IqRun {
     clientId,
     await api.postJson('/api/v1/iq/daily', {'client_id': clientId}),
   );
+
+  /// Reprend un solo en pause (chrono relancé côté serveur).
+  static Future<({ServerIqRun? run, int? iq, bool finished})> resume(
+    ApiClient api,
+    String clientId,
+    String sessionId,
+  ) async {
+    final result = await api.postJson('/api/v1/iq/sessions/$sessionId/resume', {
+      'client_id': clientId,
+    });
+    if (result['finished'] == true) {
+      return (run: null, iq: result['iq'] as int?, finished: true);
+    }
+    return (
+      run: ServerIqRun._(api, clientId, result),
+      iq: null,
+      finished: false,
+    );
+  }
+
+  String get sessionId => _id;
+
+  Future<Map<String, dynamic>> pause() =>
+      _api.postJson('/api/v1/iq/sessions/$_id/pause', {'client_id': _clientId});
 
   void _apply(Map<String, dynamic> game) {
     _id = game['id'] as String;
@@ -215,12 +260,17 @@ class ServerIqRun implements IqRun {
       'client_id': _clientId,
       'answer': raw,
     });
+    final speedRaw = result['speed'] as String?;
     return IqTurn(
       puzzle: IqPuzzle.fromJson(result['puzzle'] as Map<String, dynamic>),
       answer: result['answer'] as String?,
       correct: result['correct'] as bool,
       points: result['points'] as int,
       late: result['late'] as bool? ?? false,
+      elapsed: Duration(milliseconds: result['elapsed_ms'] as int? ?? 0),
+      speed: speedRaw == null
+          ? null
+          : IqSpeed.values.byName(speedRaw),
       wallet: _wallet(result['wallet']),
       iq: result['iq'] as int?,
     );
@@ -240,6 +290,17 @@ class ServerIqRun implements IqRun {
       'kind': kind,
     });
     _apply(effect['game'] as Map<String, dynamic>);
+    IqTurn? turn;
+    if (effect['revealed'] == true && effect['puzzle'] != null) {
+      turn = IqTurn(
+        puzzle: IqPuzzle.fromJson(effect['puzzle'] as Map<String, dynamic>),
+        answer: effect['answer'] as String?,
+        correct: effect['correct'] as bool? ?? false,
+        points: effect['points'] as int? ?? 0,
+        wallet: _wallet(effect['wallet']),
+        iq: effect['iq'] as int?,
+      );
+    }
     return IqJokerEffect(
       removed: {
         for (final i in (effect['removed'] as List?) ?? const []) i as int,
@@ -249,6 +310,7 @@ class ServerIqRun implements IqRun {
       start: effect['start'] as int?,
       wallet: _wallet(effect['wallet']),
       replaced: kind == 'skip',
+      turn: turn,
     );
   }
 }

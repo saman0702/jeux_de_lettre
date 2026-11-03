@@ -96,13 +96,18 @@ class _RoomsScreenState extends State<RoomsScreen> {
     // CreateRoomScreen pousse lui-même le lobby ; au retour on est encore ici.
     await Navigator.of(context)
         .push(PopRoute(builder: (_) => const CreateRoomScreen()));
-    if (mounted) _online.watchRooms(_language);
+    if (mounted) {
+      _online.watchRooms(_language);
+      // Salon privé (ou public) gardé : il doit apparaître dans « Mes salons »
+      // même après fermeture, sans quitter l'écran.
+      _saved.currentState?.refresh();
+    }
   }
 
-  /// Les salons QI ont leur propre liste (espace QI).
+  /// Les salons QI / Chrono / Mot ont leur propre hub.
   List<RoomSummary> get _letterRooms => [
     for (final r in _online.rooms)
-      if (r.game != RoomGame.iq) r,
+      if (r.game == RoomGame.letters) r,
   ];
 
   @override
@@ -133,6 +138,8 @@ class _RoomsScreenState extends State<RoomsScreen> {
                         CandyButton(
                           label: l10n.createRoom,
                           icon: Icons.add_rounded,
+                          height: 48,
+                          fontSize: 17,
                           onPressed: _online.isOnline ? _create : null,
                         ),
                         const SizedBox(height: 12),
@@ -140,6 +147,8 @@ class _RoomsScreenState extends State<RoomsScreen> {
                           label: l10n.joinWithCode,
                           icon: Icons.vpn_key_rounded,
                           color: AppColors.white,
+                          height: 48,
+                          fontSize: 17,
                           onPressed: _online.isOnline ? _askCode : null,
                         ),
                         const SizedBox(height: 6),

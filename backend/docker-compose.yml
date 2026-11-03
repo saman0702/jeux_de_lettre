@@ -6,6 +6,9 @@
 #   REDIS_URL=redis://redis:6379/0
 #
 # Le service redis est inclus ; pointer REDIS_URL vers le hostname "redis".
+#
+# Abonnement Premium : GOOGLE_SERVICE_ACCOUNT_FILE=/code/secrets/google-service-account.json
+# (fichier ajouté dans Dokploy → Advanced → Mounts, voir docs/PLAYBOOK_DEPLOIEMENT.md § 5.2).
 
 services:
   redis:
@@ -49,6 +52,9 @@ services:
       - "8000:8000"
     volumes:
       - media_data:/code/media
+      # Clés de la boutique (compte de service Google, clé Apple .p8) : créées dans Dokploy
+      # (Advanced → Mounts → File Mount, chemin « secrets/… »), jamais dans git.
+      - ../files/secrets:/code/secrets:ro
 
 volumes:
   redis_data:

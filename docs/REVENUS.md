@@ -10,8 +10,8 @@ n'affiche que ce qui est actif : **pas besoin de nouvelle version de l'appli** p
 |---|---|
 | `FEATURE_REWARDED_ADS` | Boutique : « Pièces gratuites », une vidéo = `REWARDED_AD_COINS` pièces, `REWARDED_ADS_PER_DAY` fois par jour |
 | `FEATURE_INTERSTITIAL_ADS` | Une pub plein écran toutes les `INTERSTITIAL_EVERY_GAMES` parties, en quittant l'écran de fin (jamais pendant une manche) |
-| `FEATURE_REMOVE_ADS` | Boutique : achat unique « Sans pub » (produit `remove_ads`) — supprime les pubs entre les parties |
-| `FEATURE_SUBSCRIPTION` | Boutique : « Pass » mensuel (produit `pass_monthly`) : sans pub, `PASS_DAILY_COINS` pièces par jour, `PASS_BONUS_HINTS` jokers en plus par partie |
+| `FEATURE_REMOVE_ADS` | Boutique : achat unique « Sans pub » (produit `remove_ads`) — supprime les pubs entre les parties. **Non utilisé** : c'est l'abonnement qui retire les pubs (décision 94) |
+| `FEATURE_SUBSCRIPTION` | Boutique : **Premium** mensuel (produit `pass_monthly`) : sans pub 1 mois ; `PASS_DAILY_COINS` / `PASS_BONUS_HINTS` optionnels (0 = anti-pub seul) |
 
 Les vidéos récompensées restent proposées aux joueurs « Sans pub » et Pass (c'est eux qui
 choisissent de les regarder).
@@ -48,7 +48,7 @@ choisissent de les regarder).
 | Identifiant | Type | Prix conseillé |
 |---|---|---|
 | `remove_ads` | Produit intégré **non consommable** | 2,99 € |
-| `pass_monthly` | **Abonnement** mensuel | 2,99 €/mois |
+| `pass_monthly` | **Abonnement** mensuel **Premium** (sans pub 1 mois) | 2,99 €/mois |
 
 Le serveur vérifie chaque achat auprès du store (mêmes clés que la boutique de pièces, voir
 `docs/BOUTIQUE.md`) : « Sans pub » est restauré si le joueur réinstalle l'appli, et la fin du Pass

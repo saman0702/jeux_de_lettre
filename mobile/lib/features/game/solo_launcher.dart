@@ -10,6 +10,7 @@ import 'data/solo_backend.dart';
 import 'data/solo_game_api.dart';
 import 'offline/offline_dictionary.dart';
 import 'offline/offline_engine.dart';
+import 'solo_draft.dart';
 import 'solo_game_screen.dart';
 import 'widgets/labels.dart';
 
@@ -52,6 +53,9 @@ Future<bool> launchSoloGame(
     messenger.showSnackBar(SnackBar(content: Text(l10n.offlineModeNotice)));
   }
 
+  // Nouvelle partie : abandonne un éventuel brouillon en pause.
+  await SoloDraftStore.clear();
+
   final ready = game;
   final route = PopRoute(
     builder: (_) => SoloGameScreen(
@@ -59,6 +63,79 @@ Future<bool> launchSoloGame(
       game: ready,
       apiClient: apiClient,
       challenge: challenge,
+      settings: settings,
+    ),
+  );
+  if (replace) {
+    navigator.pushReplacement(route);
+  } else {
+    navigator.push(route);
+  }
+  return true;
+}
+
+/// Reprend une partie solo Geo mise en pause après une manche.
+Future<bool> resumeSoloGame(
+  BuildContext context, {
+  required ApiClient apiClient,
+  required SoloDraft draft,
+  bool replace = true,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final navigator = Navigator.of(context);
+  final online = OnlineScope.of(context);
+  final api = SoloGameApi(apiClient, onWallet: online.applyWallet);
+
+  SoloBackend backend;
+  SoloGame game;
+  List<RoundResult> results;
+
+  if (draft.offline) {
+    final offline = OfflineSoloBackend(await OfflineDictionary.load());
+    game = await offline.restorePaused(
+      id: draft.game.id,
+      settings: draft.settings,
+      letters: draft.letters,
+      usedKeys: draft.usedKeys,
+      hintsUsed: draft.hintsUsed,
+      totalScore: draft.game.totalScore,
+      roundsPlayed: draft.game.roundsPlayed,
+    );
+    results = draft.results;
+    backend = offline;
+  } else {
+    if (online.client.unreachable) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.iqResumeNeedsOnline)));
+      return false;
+    }
+    try {
+      final fetched = await api.getGame(draft.game.id);
+      game = fetched.$1;
+      results = fetched.$2.isEmpty ? draft.results : fetched.$2;
+      backend = api;
+    } on ApiException catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(errorMessage(l10n, e.code))),
+      );
+      await SoloDraftStore.clear();
+      return false;
+    }
+  }
+
+  if (game.isFinished) {
+    await SoloDraftStore.clear();
+    messenger.showSnackBar(SnackBar(content: Text(l10n.iqNewGameMessage)));
+    return false;
+  }
+
+  final route = PopRoute(
+    builder: (_) => SoloGameScreen(
+      api: backend,
+      game: game,
+      apiClient: apiClient,
+      priorResults: results,
+      settings: draft.settings,
     ),
   );
   if (replace) {

@@ -29,6 +29,19 @@ class SoloGameApi implements SoloBackend {
         ),
       );
 
+  /// Reprend une partie solo déjà créée (après pause).
+  Future<(SoloGame, List<RoundResult>)> getGame(String gameId) async {
+    final body = await _api.getJson('/api/v1/solo/games/$gameId');
+    final rounds = body['rounds'] as List? ?? const [];
+    return (
+      SoloGame.fromJson(body),
+      [
+        for (final r in rounds)
+          RoundResult.fromJson(Map<String, dynamic>.from(r as Map)),
+      ],
+    );
+  }
+
   @override
   Future<GameRound> startRound(String gameId) async => GameRound.fromJson(
     await _api.postJson('/api/v1/solo/games/$gameId/rounds'),

@@ -33,6 +33,7 @@ class RoundResultView extends StatefulWidget {
     this.continueLabel,
     this.onBuyInfo,
     this.onQuit,
+    this.onPause,
   });
 
   /// Bandeau de défi sous l'en-tête (minimum atteint, éliminé…).
@@ -50,6 +51,9 @@ class RoundResultView extends StatefulWidget {
 
   /// Si fourni : Quitter, manche et score sur la même ligne en haut.
   final VoidCallback? onQuit;
+
+  /// Pause après une manche (solo libre) : icône à droite.
+  final VoidCallback? onPause;
 
   @override
   State<RoundResultView> createState() => _RoundResultViewState();
@@ -188,14 +192,16 @@ class _RoundResultViewState extends State<RoundResultView>
         final shownScore = (result.roundScore * scoreProgress).round();
         final shownTotal = widget.totalScore - result.roundScore + shownScore;
 
-        final topBar = widget.onQuit == null
+        final topBar = widget.onQuit == null && widget.onPause == null
             ? null
             : Padding(
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 4),
                 child: Row(
                   children: [
-                    QuitButton(onQuit: widget.onQuit!),
-                    const SizedBox(width: 10),
+                    if (widget.onQuit != null) ...[
+                      QuitButton(onQuit: widget.onQuit!),
+                      const SizedBox(width: 10),
+                    ],
                     Expanded(
                       child: OutlinedText(
                         l10n.roundProgress(result.number, widget.totalRounds),
@@ -216,6 +222,18 @@ class _RoundResultViewState extends State<RoundResultView>
                         color: AppColors.white,
                       ),
                     ),
+                    if (widget.onPause != null) ...[
+                      const SizedBox(width: 10),
+                      RoundIconButton(
+                        key: const Key('geo_pause'),
+                        icon: Icons.pause_rounded,
+                        tooltip: l10n.iqPause,
+                        color: AppColors.white,
+                        iconColor: AppColors.purple,
+                        size: 40,
+                        onPressed: widget.onPause!,
+                      ),
+                    ],
                   ],
                 ),
               );

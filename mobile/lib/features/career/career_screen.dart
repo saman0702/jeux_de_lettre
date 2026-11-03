@@ -13,7 +13,9 @@ import '../../core/widgets/outlined_text.dart';
 import '../../core/widgets/scroll_under_bars.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/data/challenge.dart';
+import '../game/data/models.dart';
 import '../game/solo_launcher.dart';
+import '../game/widgets/duration_picker.dart';
 import '../game/widgets/labels.dart';
 import '../game/widgets/option_section.dart';
 import '../online/online_controller.dart';
@@ -70,12 +72,13 @@ class _CareerScreenState extends State<CareerScreen> {
         (GameFeedbackScope.of(context).settings.careerStars[level.number] ??
             0) >
         0;
-    final play = await showModalBottomSheet<bool>(
+    final duration = await showModalBottomSheet<int>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (_) => _LevelSheet(level: level, replay: played),
     );
-    if (play != true || !context.mounted) return;
+    if (duration == null || !context.mounted) return;
     final l10n = AppLocalizations.of(context);
     final settings = GameFeedbackScope.of(context).settings;
     setState(() => _launching = true);
@@ -88,6 +91,7 @@ class _CareerScreenState extends State<CareerScreen> {
         OnlineScope.of(context).clientId,
         avoidLetters: settings.careerLettersOf(level.number),
         bannedAnswers: settings.careerBannedAnswers(level.world),
+        roundDurationOverride: duration,
       ),
       challenge: level,
       // La carte reste dessous : on y revient après la partie.
@@ -511,8 +515,9 @@ class _RuleBlock extends StatelessWidget {
   }
 }
 
-/// Détails d'un niveau avant de le lancer.
-class _LevelSheet extends StatelessWidget {
+/// Détails d'un niveau avant de le lancer. Renvoie la durée choisie (0 =
+/// illimité) ou null si annulé.
+class _LevelSheet extends StatefulWidget {
   const _LevelSheet({required this.level, required this.replay});
 
   final CareerLevel level;
@@ -521,8 +526,16 @@ class _LevelSheet extends StatelessWidget {
   final bool replay;
 
   @override
+  State<_LevelSheet> createState() => _LevelSheetState();
+}
+
+class _LevelSheetState extends State<_LevelSheet> {
+  int _duration = SoloGameSettings.unlimitedDuration;
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final level = widget.level;
     final color = worldColors[level.world];
     Widget chip(String text) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -534,78 +547,103 @@ class _LevelSheet extends StatelessWidget {
     );
 
     return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.all(12),
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: color, width: 4),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.depthOf(color),
-              offset: const Offset(0, 6),
-            ),
-          ],
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.levelTitle(level.number).toUpperCase(),
-              textAlign: TextAlign.center,
-              style: gameFont(size: 26, color: AppColors.ink),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              alignment: WrapAlignment.center,
+        child: Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: color, width: 4),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.depthOf(color),
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                chip(level.difficulty.label(l10n)),
-                chip(l10n.roundsCount(level.rounds)),
-                chip(l10n.secondsShort(level.roundDuration)),
-                for (final c in level.categories)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.cloud,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: GameIcon(c.icon, size: 20, color: c.color),
+                Text(
+                  l10n.levelTitle(level.number).toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: gameFont(size: 26, color: AppColors.ink),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    chip(level.difficulty.label(l10n)),
+                    chip(l10n.roundsCount(level.rounds)),
+                    chip(durationLabel(l10n, _duration)),
+                    for (final c in level.categories)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.cloud,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: GameIcon(c.icon, size: 20, color: c.color),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  l10n.levelGoal(level.target),
+                  textAlign: TextAlign.center,
+                  style: gameFont(size: 20, color: AppColors.purple),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.careerStarsInfo(
+                    level.target,
+                    level.twoStars,
+                    level.threeStars,
                   ),
+                  textAlign: TextAlign.center,
+                  style: fredoka(size: 14, color: AppColors.inkSoft),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.roundDuration,
+                  textAlign: TextAlign.center,
+                  style: fredoka(
+                    size: 15,
+                    weight: FontWeight.w600,
+                    color: AppColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                DurationPicker(
+                  value: _duration,
+                  options: SoloGameSettings.durationOptions,
+                  onChanged: (d) => setState(() => _duration = d),
+                ),
+                const SizedBox(height: 16),
+                CandyButton(
+                  key: const Key('play_level'),
+                  label: widget.replay ? l10n.playAgain : l10n.play,
+                  icon: widget.replay
+                      ? Icons.replay_rounded
+                      : Icons.play_arrow_rounded,
+                  color: AppColors.green,
+                  textColor: AppColors.white,
+                  onPressed: () => Navigator.of(context).pop(_duration),
+                ),
               ],
             ),
-            const SizedBox(height: 14),
-            Text(
-              l10n.levelGoal(level.target),
-              textAlign: TextAlign.center,
-              style: gameFont(size: 20, color: AppColors.purple),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.careerStarsInfo(
-                level.target,
-                level.twoStars,
-                level.threeStars,
-              ),
-              textAlign: TextAlign.center,
-              style: fredoka(size: 14, color: AppColors.inkSoft),
-            ),
-            const SizedBox(height: 16),
-            CandyButton(
-              key: const Key('play_level'),
-              label: replay ? l10n.playAgain : l10n.play,
-              icon: replay ? Icons.replay_rounded : Icons.play_arrow_rounded,
-              color: AppColors.green,
-              textColor: AppColors.white,
-              onPressed: () => Navigator.of(context).pop(true),
-            ),
-          ],
+          ),
         ),
       ),
     );

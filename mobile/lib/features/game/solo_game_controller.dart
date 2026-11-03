@@ -18,7 +18,9 @@ class SoloGameController extends ChangeNotifier {
     this.countdownStep = const Duration(seconds: 1),
     this.tick = const Duration(milliseconds: 100),
     this.now = DateTime.now,
+    List<RoundResult> priorResults = const [],
   }) : _game = game,
+       _results = List.of(priorResults),
        fields = {for (final c in game.categories) c: TextEditingController()};
 
   static const countdownFrom = 3;
@@ -35,7 +37,7 @@ class SoloGameController extends ChangeNotifier {
   SoloGame _game;
   GameRound? _round;
   HintController? _hints;
-  final List<RoundResult> _results = [];
+  final List<RoundResult> _results;
   SoloPhase _phase = SoloPhase.countdown;
   int _countdown = countdownFrom;
   Duration _remaining = Duration.zero;
@@ -114,9 +116,16 @@ class SoloGameController extends ChangeNotifier {
       hintsLeft: _game.hintsLeft,
       letter: _round!.letter,
     );
-    _remaining = _round!.remaining(now());
+    _remaining = _round!.duration <= 0
+        ? Duration.zero
+        : _round!.remaining(now());
     _setPhase(SoloPhase.playing);
     _timer = Timer.periodic(tick, (_) {
+      if (_round!.duration <= 0) {
+        // Illimité : pas d'auto-submit ; le temps réel est mesuré à l'envoi.
+        _notify();
+        return;
+      }
       _remaining = _round!.remaining(now());
       if (_remaining == Duration.zero) {
         submit();
