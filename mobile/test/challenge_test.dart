@@ -233,8 +233,8 @@ void main() {
 
     await tester.tap(find.byKey(const Key('career_level_1')));
     await tester.pumpAndSettle();
-    expect(find.text('PLAY AGAIN'), findsOneWidget);
-    Navigator.of(tester.element(find.text('PLAY AGAIN'))).pop();
+    expect(find.text('KEEP PLAYING'), findsOneWidget);
+    Navigator.of(tester.element(find.text('KEEP PLAYING'))).pop();
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('career_level_2')));
@@ -259,6 +259,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('career_level_1')));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('play_level')));
     await tester.tap(find.byKey(const Key('play_level')));
     await tester.pump();
     expect(find.byKey(const Key('career_launching')), findsOneWidget);
@@ -293,7 +294,7 @@ void main() {
     final settings = create['settings'] as Map<String, dynamic>;
     expect(settings['format'], 'elimination');
     expect(settings['rounds'], 15);
-    expect(settings['round_duration'], 30);
+    expect(settings['round_duration'], 0);
     expect(settings['kind'], 'classic');
     expect(settings['stake'], 0);
     await tester.pump(const Duration(milliseconds: 400));

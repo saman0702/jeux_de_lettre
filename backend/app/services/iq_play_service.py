@@ -26,7 +26,16 @@ DAILY_PRIZES = [50, 30, 20]
 # Marge pour le trajet réseau avant de compter une réponse comme hors délai.
 GRACE_SECONDS = 2
 SOLO_ROUNDS = (5, 10, 15)
-SOLO_DURATIONS = (15, 30, 45, 60)
+# 0 = illimité ; presets UI ; sinon 10–900 s saisis à la main.
+SOLO_DURATIONS = (0, 15, 30, 45, 60)
+MIN_CUSTOM_DURATION = 10
+MAX_CUSTOM_DURATION = 900
+
+
+def _valid_duration(duration: int) -> bool:
+    if duration in SOLO_DURATIONS:
+        return True
+    return MIN_CUSTOM_DURATION <= duration <= MAX_CUSTOM_DURATION
 
 
 class IqPlayError(Exception):
@@ -44,12 +53,27 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def _draw(count: int, difficulty: str, rng: random.Random) -> list[dict]:
-    used: set[str] = set()
+def _draw(
+    count: int,
+    difficulty: str,
+    rng: random.Random,
+    avoid: set[str] | None = None,
+) -> list[dict]:
+    """Tire [count] énigmes distinctes ; [avoid] = ids déjà vus (parties précédentes)."""
+    used: set[str] = set(avoid or ())
+    recent_kinds: list[str] = []
     puzzles = []
     for number in range(1, count + 1):
-        puzzle = iq_service.draw(iq_service.level_for(number, count, difficulty), exclude=used, rng=rng)
+        # Évite de retomber 3 fois de suite sur le même type (suite, figure…).
+        soft = set(recent_kinds[-2:])
+        puzzle = iq_service.draw(
+            iq_service.level_for(number, count, difficulty),
+            exclude=used,
+            rng=rng,
+            avoid_kinds=soft,
+        )
         used.add(puzzle.id)
+        recent_kinds.append(puzzle.kind)
         puzzles.append(puzzle.reveal())
     return puzzles
 
@@ -76,9 +100,26 @@ def _public(game: IqSession) -> dict:
         "penalty": game.penalty,
         "score": game.score,
         "jokers_used": list(game.jokers),
-        "joker_prices": iq_service.JOKER_PRICES if game.mode == "solo" else {},
+        "joker_prices": (
+            iq_service.joker_prices(game.duration) if game.mode == "solo" else {}
+        ),
         "puzzle": _current(game).public(),
     }
+
+
+async def _abandon_open_solos(session: AsyncSession, client_id: str) -> None:
+    """Une nouvelle partie remplace les solos inachevés (pause abandonnée)."""
+    open_games = (
+        await session.scalars(
+            select(IqSession).where(
+                IqSession.client_id == client_id,
+                IqSession.mode == "solo",
+                IqSession.finished.is_(False),
+            )
+        )
+    ).all()
+    for game in open_games:
+        game.finished = True
 
 
 async def start_solo(
@@ -90,9 +131,11 @@ async def start_solo(
     speed_bonus: bool,
     penalty: bool,
     nickname: str | None = None,
+    avoid: set[str] | None = None,
 ) -> dict:
-    if rounds not in SOLO_ROUNDS or duration not in SOLO_DURATIONS:
+    if rounds not in SOLO_ROUNDS or not _valid_duration(duration):
         raise IqPlayError("invalid_settings", 422)
+    await _abandon_open_solos(session, client_id)
     profile = await wallet_service.get_profile(session, client_id)
     game = IqSession(
         client_id=client_id,
@@ -101,7 +144,7 @@ async def start_solo(
         duration=duration,
         speed_bonus=speed_bonus,
         penalty=penalty,
-        puzzles=_draw(rounds, difficulty, random.Random()),
+        puzzles=_draw(rounds, difficulty, random.Random(), avoid=avoid),
         jokers=[],
         results=[],
     )
@@ -153,25 +196,135 @@ async def _game(session: AsyncSession, game_id: str, client_id: str) -> IqSessio
     return game
 
 
+async def pause(session: AsyncSession, game_id: str, client_id: str) -> dict:
+    """Pause après une manche : prépare l'énigme suivante sans démarrer le chrono.
+
+    Impossible pendant une énigme en cours (il faut d'abord répondre).
+    """
+    game = await _game(session, game_id, client_id)
+    if game.mode != "solo":
+        raise IqPlayError("pause_not_allowed", 403)
+    if game.finished:
+        return {
+            "id": game.id,
+            "finished": True,
+            "score": game.score,
+            "correct_count": game.correct,
+            "iq": iq_service.iq_estimate(game.results),
+        }
+    if not game.answered:
+        raise IqPlayError("pause_not_allowed")
+    if game.number >= len(game.puzzles):
+        game.finished = True
+        return {
+            "id": game.id,
+            "finished": True,
+            "score": game.score,
+            "correct_count": game.correct,
+            "iq": iq_service.iq_estimate(game.results),
+        }
+    _serve(game, game.number + 1)
+    game.served_at = None  # gelé jusqu'à resume
+    return {
+        "id": game.id,
+        "finished": False,
+        "number": game.number,
+        "total": len(game.puzzles),
+        "paused": True,
+    }
+
+
+async def resume(session: AsyncSession, game_id: str, client_id: str) -> dict:
+    """Reprend un solo en pause : démarre (ou relance) le chrono de l'énigme en cours."""
+    game = await _game(session, game_id, client_id)
+    if game.mode != "solo":
+        raise IqPlayError("pause_not_allowed", 403)
+    if game.finished:
+        return {
+            "id": game.id,
+            "finished": True,
+            "score": game.score,
+            "correct_count": game.correct,
+            "iq": iq_service.iq_estimate(game.results),
+            "results": list(game.results),
+        }
+    if game.answered:
+        # Pause oubliée après réponse : avancer comme pause().
+        if game.number >= len(game.puzzles):
+            game.finished = True
+            return {
+                "id": game.id,
+                "finished": True,
+                "score": game.score,
+                "correct_count": game.correct,
+                "iq": iq_service.iq_estimate(game.results),
+                "results": list(game.results),
+            }
+        _serve(game, game.number + 1)
+    else:
+        # Chrono neuf (pause ou abandon mid-énigme).
+        game.served_at = _now()
+        game.extra_seconds = 0
+        game.jokers = []
+    return _public(game)
+
+
+async def active_solo(session: AsyncSession, client_id: str) -> dict | None:
+    """Solo inachevé le plus récent (pour le bouton Continuer)."""
+    game = await session.scalar(
+        select(IqSession)
+        .where(
+            IqSession.client_id == client_id,
+            IqSession.mode == "solo",
+            IqSession.finished.is_(False),
+        )
+        .order_by(IqSession.created_at.desc())
+        .limit(1)
+    )
+    if game is None:
+        return None
+    return {
+        "id": game.id,
+        "number": game.number,
+        "total": len(game.puzzles),
+        "answered": game.answered,
+        "paused": game.served_at is None,
+        "duration": game.duration,
+        "speed_bonus": game.speed_bonus,
+        "penalty": game.penalty,
+    }
+
+
 async def answer(session: AsyncSession, game_id: str, client_id: str, raw: str | None) -> dict:
     game = await _game(session, game_id, client_id)
-    if game.finished or game.answered or game.served_at is None:
+    if game.finished or game.answered:
         raise IqPlayError("already_answered")
+    if game.served_at is None:
+        game.served_at = _now()
     puzzle = _current(game)
+    unlimited = game.duration <= 0
     allowed = game.duration + game.extra_seconds
     elapsed = (_now() - game.served_at).total_seconds()
-    # Réponse arrivée trop tard (au-delà du temps et d'une petite marge) : comme pas de réponse.
-    late = elapsed > allowed + GRACE_SECONDS
-    given = None if late or raw is None or not str(raw).strip() else str(raw)[:16]
+    # Illimité : jamais hors délai. Sinon trop tard = comme pas de réponse.
+    late = (not unlimited) and elapsed > allowed + GRACE_SECONDS
+    given = None if late or raw is None or not str(raw).strip() else str(raw).strip()[:512]
     correct = given is not None and iq_service.check(puzzle, given)
+    scored_elapsed = elapsed if unlimited else min(elapsed, allowed)
+    speed = iq_service.speed_of(scored_elapsed, puzzle.level) if given is not None else None
     points = iq_service.points(
-        correct, given is not None, min(elapsed, allowed), game.duration, game.speed_bonus, game.penalty
+        correct,
+        given is not None,
+        scored_elapsed,
+        game.duration,
+        game.speed_bonus,
+        game.penalty,
+        level=puzzle.level,
     )
     game.answered = True
     game.score += points
     game.correct += int(correct)
-    game.results = [*game.results, [puzzle.level, correct]]
-    game.elapsed_ms += int(min(elapsed, allowed) * 1000)
+    game.results = [*game.results, [puzzle.level, correct, speed]]
+    game.elapsed_ms += int(scored_elapsed * 1000)
     game.finished = game.number >= len(game.puzzles)
     wallet = None
     if points > 0:
@@ -183,6 +336,8 @@ async def answer(session: AsyncSession, game_id: str, client_id: str, raw: str |
         "correct": correct,
         "late": late,
         "points": points,
+        "elapsed_ms": int(scored_elapsed * 1000),
+        "speed": speed,
         "score": game.score,
         "puzzle": puzzle.reveal(),
         "finished": game.finished,
@@ -190,7 +345,7 @@ async def answer(session: AsyncSession, game_id: str, client_id: str, raw: str |
     }
     if game.finished:
         result["correct_count"] = game.correct
-        result["iq"] = iq_service.iq_estimate([(lvl, ok) for lvl, ok in game.results])
+        result["iq"] = iq_service.iq_estimate(game.results)
     return result
 
 
@@ -207,12 +362,17 @@ async def use_joker(session: AsyncSession, game_id: str, client_id: str, kind: s
     game = await _game(session, game_id, client_id)
     if game.mode != "solo":
         raise IqPlayError("jokers_not_allowed", 403)
+    if game.served_at is None:
+        raise IqPlayError("joker_unavailable")
     if game.finished or game.answered or kind in game.jokers:
         raise IqPlayError("joker_unavailable")
     puzzle = _current(game)
-    if kind not in iq_service.JOKER_PRICES or not iq_service.joker_allowed(puzzle, kind):
+    prices = iq_service.joker_prices(game.duration)
+    if kind not in prices or not iq_service.joker_allowed(puzzle, kind):
         raise IqPlayError("joker_unavailable")
-    price = iq_service.JOKER_PRICES[kind]
+    if kind == "time" and game.duration <= 0:
+        raise IqPlayError("joker_unavailable")
+    price = prices[kind]
     try:
         profile = await wallet_service.debit(session, client_id, price, f"iq_joker_{kind}", reference=game.id)
     except wallet_service.WalletError as error:
@@ -226,6 +386,23 @@ async def use_joker(session: AsyncSession, game_id: str, client_id: str, kind: s
     elif kind == "time":
         game.extra_seconds += iq_service.EXTRA_TIME
         effect["extra_seconds"] = game.extra_seconds
+    elif kind == "reveal":
+        # Temps illimité : voit la solution, 0 point, puis énigme suivante.
+        if game.served_at is not None:
+            game.elapsed_ms += int((_now() - game.served_at).total_seconds() * 1000)
+        game.answered = True
+        game.results = [*game.results, [puzzle.level, False, None]]
+        game.finished = game.number >= len(game.puzzles)
+        effect["revealed"] = True
+        effect["correct"] = False
+        effect["points"] = 0
+        effect["answer"] = None
+        effect["elapsed_ms"] = 0
+        effect["speed"] = None
+        effect["puzzle"] = puzzle.reveal()
+        if game.finished:
+            effect["iq"] = iq_service.iq_estimate(game.results)
+            effect["correct_count"] = game.correct
     else:  # skip : une autre énigme du même niveau, chrono relancé
         used = {p["id"] for p in game.puzzles}
         replacement = iq_service.draw(puzzle.level, exclude=used, rng=rng)

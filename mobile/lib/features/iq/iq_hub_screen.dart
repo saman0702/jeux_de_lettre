@@ -12,6 +12,7 @@ import '../../core/widgets/game_icon.dart';
 import '../../l10n/app_localizations.dart';
 import '../online/data/room_models.dart';
 import '../online/online_controller.dart';
+import '../online/room_history.dart';
 import '../online/room_screen.dart';
 import '../online/rooms_screen.dart';
 import '../online/widgets/online_header.dart';
@@ -31,6 +32,7 @@ class IqHubScreen extends StatefulWidget {
 
 class _IqHubScreenState extends State<IqHubScreen> {
   OnlineController? _online;
+  final _saved = GlobalKey<SavedRoomsSectionState>();
 
   @override
   void didChangeDependencies() {
@@ -51,6 +53,7 @@ class _IqHubScreenState extends State<IqHubScreen> {
   void _rewatch() {
     if (mounted) {
       _online?.watchRooms(Localizations.localeOf(context).languageCode);
+      _saved.currentState?.refresh();
     }
   }
 
@@ -108,6 +111,8 @@ class _IqHubScreenState extends State<IqHubScreen> {
                     icon: Icons.add_rounded,
                     color: AppColors.purpleLight,
                     textColor: AppColors.white,
+                    height: 48,
+                    fontSize: 17,
                     onPressed: () => _setup(IqSetupMode.room),
                   ),
                   const SizedBox(height: 12),
@@ -209,6 +214,14 @@ class _IqHubScreenState extends State<IqHubScreen> {
                           ),
                         ),
                       ),
+                  // Salons QI privés (et publics) déjà fréquentés, même fermés.
+                  SavedRoomsSection(
+                    key: _saved,
+                    apiClient: widget.apiClient,
+                    game: RoomGame.iq,
+                    onOpen: (code) => _join(code),
+                    liveCodes: {for (final r in rooms) r.code},
+                  ),
                 ],
               );
             },

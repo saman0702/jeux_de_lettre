@@ -152,29 +152,19 @@ Future<(Harness, FakeStore, FakeShopServer)> openShop(
 }
 
 void main() {
-  testWidgets('packs show the store price, sorted, with their bonus', (
+  testWidgets('the shop sells no coin packs: coins come from videos', (
     tester,
   ) async {
     await openShop(tester);
-    expect(find.text('650 FCFA'), findsOneWidget);
-    expect(find.text('3 300 FCFA'), findsOneWidget);
-    expect(find.text('+10%'), findsOneWidget);
-    expect(find.text('+20%'), findsOneWidget);
-    // Pas vendu dans le store (pas encore créé) : pas affiché.
-    expect(find.byKey(const Key('pack_coins_2500')), findsNothing);
-    final first = tester.getTopLeft(find.byKey(const Key('pack_coins_100')));
-    final last = tester.getTopLeft(find.byKey(const Key('pack_coins_1200')));
-    expect(first.dy <= last.dy, isTrue);
+    expect(find.byKey(const Key('pack_coins_100')), findsNothing);
+    expect(find.text('650 FCFA'), findsNothing);
   });
 
-  testWidgets('a purchase is verified by the server, credited, then closed', (
+  testWidgets('an unfinished coin purchase is still verified and credited', (
     tester,
   ) async {
+    // Achat fait avant la fin de la vente de pièces, repris au lancement.
     final (h, store, server) = await openShop(tester);
-    await tester.tap(find.byKey(const Key('buy_coins_550')));
-    await tester.pump();
-    expect(store.bought, ['coins_550']);
-
     store.emit('coins_550', StorePurchaseStatus.purchased, 'tok-1');
     await pumpFor(tester, const Duration(seconds: 1));
     expect(server.redeemed.single, {
@@ -210,9 +200,11 @@ void main() {
     expect(find.text('This purchase could not be validated.'), findsOneWidget);
   });
 
-  testWidgets('without a store the shop says so', (tester) async {
+  testWidgets('without a store the shop stays calm (nothing to sell)', (
+    tester,
+  ) async {
     await openShop(tester, available: false);
-    expect(find.byKey(const Key('shop_unavailable')), findsOneWidget);
+    expect(find.byKey(const Key('shop_unavailable')), findsNothing);
   });
 
   testWidgets('a look is bought with coins', (tester) async {

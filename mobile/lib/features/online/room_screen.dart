@@ -24,6 +24,7 @@ import 'widgets/room_results_view.dart';
 import 'widgets/salon_social.dart';
 import '../perks/perks_controller.dart';
 import '../../animations/transitions/pop_route.dart';
+import '../iq/iq_models.dart';
 import '../iq/iq_widgets.dart';
 import 'data/saved_rooms.dart';
 import 'room_history.dart';
@@ -75,6 +76,9 @@ class _RoomScreenState extends State<RoomScreen> {
   (int, int)? _iqRange;
   int? _iqStart;
   int _iqExtra = 0;
+
+  /// Solution achetée (temps illimité) : énigme révélée en attendant les autres.
+  IqPuzzle? _iqRevealPuzzle;
 
   /// Le podium final reste à l'écran jusqu'au choix du joueur, même si
   /// quelqu'un a déjà relancé la salle.
@@ -193,6 +197,7 @@ class _RoomScreenState extends State<RoomScreen> {
     final round = room.round;
     if (room.phase == RoomPhase.round &&
         round != null &&
+        round.duration > 0 &&
         _canAnswer(room) &&
         round.remaining(widget.now()) == Duration.zero) {
       _submit();
@@ -215,75 +220,91 @@ class _RoomScreenState extends State<RoomScreen> {
     final canPlay = me != null && me.playing && !me.eliminated;
     final jokers = _iqJokerRound == round.number;
     final extra = Duration(seconds: jokers ? _iqExtra : 0);
+    final compact = iqCompactScreen(context);
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          padding: EdgeInsets.fromLTRB(20, compact ? 4 : 8, 20, 0),
           child: IqHeader(
             number: round.number,
             total: room.settings.rounds,
             trailing: TimerBadge(
               remaining: round.remaining(widget.now()) + extra,
               total: Duration(seconds: round.duration) + extra,
+              size: compact ? 48 : 56,
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: compact ? 4 : 8),
         PlayersStrip(
           room: room,
           myId: _online.clientId,
           forceFinishedIds: {if (answered) _online.clientId},
         ),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: IqScrollArea(
+            padding: EdgeInsets.fromLTRB(16, compact ? 6 : 8, 16, 10),
             children: [
               if (puzzle != null)
                 IqPuzzleCard(puzzle: puzzle, language: language),
-              const SizedBox(height: 14),
               if (!canPlay)
-                Text(
-                  (me?.eliminated ?? false)
-                      ? l10n.youAreEliminated
-                      : l10n.spectating,
-                  textAlign: TextAlign.center,
-                  style: fredoka(size: 16, color: AppColors.white),
-                )
-              else if (answered || puzzle == null)
-                Text(
-                  l10n.iqAnswerSent,
-                  key: const Key('iq_sent'),
-                  textAlign: TextAlign.center,
-                  style: gameFont(size: 18, color: AppColors.white),
-                )
-              else ...[
-                if (room.iqJokerPrices.isNotEmpty && !(me.bot)) ...[
-                  IqJokerBar(
-                    puzzle: puzzle,
-                    prices: room.iqJokerPrices,
-                    used: jokers ? _iqJokersUsed : const {},
-                    onUse: (kind) => _online.sendIqJoker(round.number, kind),
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    (me?.eliminated ?? false)
+                        ? l10n.youAreEliminated
+                        : l10n.spectating,
+                    textAlign: TextAlign.center,
+                    style: fredoka(size: 15, color: AppColors.white),
                   ),
-                  const SizedBox(height: 10),
+                )
+              else if (answered || puzzle == null) ...[
+                if (_iqRevealPuzzle != null) ...[
+                  const SizedBox(height: 8),
+                  IqRevealCard(
+                    puzzle: _iqRevealPuzzle!,
+                    language: language,
+                    players: const [],
+                  ),
+                  const SizedBox(height: 8),
                 ],
-                if (jokers && _iqRange != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Text(
-                      l10n.iqHintRange(_iqRange!.$1, _iqRange!.$2),
-                      key: const Key('iq_hint_range'),
-                      textAlign: TextAlign.center,
-                      style: gameFont(size: 17, color: AppColors.yellow),
-                    ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    l10n.iqAnswerSent,
+                    key: const Key('iq_sent'),
+                    textAlign: TextAlign.center,
+                    style: gameFont(size: 16, color: AppColors.white),
                   ),
+                ),
               ],
             ],
           ),
         ),
-        // Réponse toujours visible en bas : seule l'énigme défile.
-        if (canPlay && !answered && puzzle != null)
+        if (canPlay && !answered && puzzle != null) ...[
+          if (room.iqJokerPrices.isNotEmpty && !(me.bot))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: IqJokerBar(
+                puzzle: puzzle,
+                prices: room.iqJokerPrices,
+                used: jokers ? _iqJokersUsed : const {},
+                unlimitedTime: room.settings.roundDuration <= 0,
+                onUse: (kind) => _online.sendIqJoker(round.number, kind),
+              ),
+            ),
+          if (jokers && _iqRange != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Text(
+                l10n.iqHintRange(_iqRange!.$1, _iqRange!.$2),
+                key: const Key('iq_hint_range'),
+                textAlign: TextAlign.center,
+                style: gameFont(size: 15, color: AppColors.yellow),
+              ),
+            ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+            padding: EdgeInsets.fromLTRB(16, 10, 16, compact ? 8 : 12),
             child: IqAnswerPad(
               key: ValueKey(puzzle.id),
               puzzle: puzzle,
@@ -291,11 +312,15 @@ class _RoomScreenState extends State<RoomScreen> {
               removed: jokers ? _iqRemoved : const {},
               traceStart: jokers ? _iqStart : null,
               onAnswer: (answer) {
-                setState(() => _submittedRound = round.number);
+                setState(() {
+                  _submittedRound = round.number;
+                  _iqRevealPuzzle = null;
+                });
                 _online.sendIqAnswer(round.number, answer);
               },
             ),
           ),
+        ],
       ],
     );
   }
@@ -313,6 +338,7 @@ class _RoomScreenState extends State<RoomScreen> {
         _iqRange = null;
         _iqStart = null;
         _iqExtra = 0;
+        _iqRevealPuzzle = null;
       }
       _iqJokersUsed = {..._iqJokersUsed, event['kind'] as String};
       _iqRemoved = {
@@ -329,6 +355,13 @@ class _RoomScreenState extends State<RoomScreen> {
         _iqRemoved = {};
         _iqRange = null;
         _iqStart = null;
+      }
+      // Solution : voit la réponse et compte comme ayant répondu.
+      if (event['kind'] == 'reveal' && event['puzzle'] != null) {
+        _iqRevealPuzzle = IqPuzzle.fromJson(
+          event['puzzle'] as Map<String, dynamic>,
+        );
+        _submittedRound = round;
       }
     });
   }
@@ -348,11 +381,12 @@ class _RoomScreenState extends State<RoomScreen> {
         results?.puzzle ??
         results?.players.firstOrNull?.iqPuzzle;
     if (results == null || puzzle == null) return const SizedBox.shrink();
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+    return IqScrollArea(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
       children: [
-        IqPuzzleCard(puzzle: puzzle, language: language),
-        const SizedBox(height: 10),
+        // Résultats : énoncé court, la correction prend la place.
+        IqPuzzleCard(puzzle: puzzle, language: language, summary: true),
+        const SizedBox(height: 8),
         IqRevealCard(
           puzzle: puzzle,
           language: language,
@@ -365,6 +399,8 @@ class _RoomScreenState extends State<RoomScreen> {
                 points: p.roundScore,
                 isMe: p.clientId == _online.clientId,
                 shownAnswer: p.iqPuzzle?.shown(p.iqAnswer, language),
+                elapsed: p.elapsed,
+                speed: p.speed,
               ),
           ],
         ),
@@ -756,6 +792,7 @@ class _RoomScreenState extends State<RoomScreen> {
             totalRounds: room.round?.bonus == true ? 1 : room.settings.rounds,
             remaining: round.remaining(widget.now()),
             fields: _fields,
+            language: room.settings.language,
             onFinish: me?.frozen == true ? () {} : _submit,
             hints: _hints,
             // « Manche 1/5 » est déjà dans le titre : une seule ligne en haut.

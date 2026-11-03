@@ -20,7 +20,7 @@ void main() {
     expect(Category.classic, hasLength(4));
   });
 
-  testWidgets('five categories or more need rounds longer than 30 s', (
+  testWidgets('five categories keep unlimited by default; timed needs 45 s+', (
     tester,
   ) async {
     final server = FakeServer();
@@ -30,19 +30,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Par défaut : les 4 catégories classiques, 30 s.
+    // Par défaut : 4 catégories classiques, temps illimité.
     expect(find.text("Girl's name"), findsOneWidget);
+    expect(find.text('Unlimited'), findsWidgets);
     expect(find.byKey(const Key('many_categories_hint')), findsNothing);
 
     await tapText(tester, "Girl's name");
     expect(find.byKey(const Key('many_categories_hint')), findsOneWidget);
+    // Presets trop courts masqués si un chrono est choisi plus tard.
     expect(find.text('15 s'), findsNothing);
     expect(find.text('30 s'), findsNothing);
 
     await tapText(tester, "Boy's name");
-    await tester.tap(find.text('PLAY'));
+    await tester.tap(find.text('PLAY').last);
     await tester.pump(const Duration(seconds: 1));
-    expect(server.createdWith!['round_duration'], 45);
+    expect(server.createdWith!['round_duration'], 0);
     expect(server.createdWith!['categories'], [
       'city',
       'country',

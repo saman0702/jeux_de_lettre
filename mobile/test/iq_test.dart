@@ -13,10 +13,13 @@ import 'package:letter_battle/features/iq/iq_daily_screen.dart';
 import 'package:letter_battle/features/iq/iq_hub_screen.dart';
 import 'package:letter_battle/features/home/home_screen.dart';
 import 'package:letter_battle/features/online/data/room_models.dart';
+import 'package:letter_battle/features/iq/iq_flow.dart';
 import 'package:letter_battle/features/iq/iq_models.dart';
 import 'package:letter_battle/features/iq/iq_setup_screen.dart';
+import 'package:letter_battle/features/iq/iq_solo_draft.dart';
 import 'package:letter_battle/features/iq/iq_solo_screen.dart';
 import 'package:letter_battle/features/iq/iq_solo_source.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:letter_battle/features/career/elimination_screen.dart';
 import 'package:letter_battle/features/game/solo_setup_screen.dart';
 import 'package:letter_battle/features/online/room_screen.dart';
@@ -85,6 +88,9 @@ Future<void> tapKey(WidgetTester tester, String key) async {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues({});
+
   group('IQ rules', () {
     test('answers are compared like on the server', () {
       final seq = IqPuzzle.fromJson(sequenceJson());
@@ -159,17 +165,29 @@ void main() {
       );
     });
 
-    test('estimated IQ goes from 70 to 145, hard puzzles weigh more', () {
-      // 2 justes sur 5 (une facile, une difficile) : 90, sous la moyenne.
+    test('estimated IQ goes from 70 to 128, hard and speed weigh more', () {
       expect(
-        iqEstimate([(1, true), (1, false), (2, false), (3, true), (3, false)]),
-        90,
+        iqEstimate([
+          (1, true, null),
+          (1, false, null),
+          (2, false, null),
+          (3, true, null),
+          (3, false, null),
+        ]),
+        lessThan(100),
       );
-      expect(iqEstimate([(1, false), (3, false)]), 70);
-      expect(iqEstimate([(1, true), (3, true)]), 145);
+      expect(iqEstimate([(1, false, null), (3, false, null)]), 70);
       expect(
-        iqEstimate([(3, true), (1, false)]),
-        greaterThan(iqEstimate([(1, true), (3, false)])),
+        iqEstimate([(1, true, IqSpeed.fast), (3, true, IqSpeed.fast)]),
+        128,
+      );
+      expect(
+        iqEstimate([(3, true, IqSpeed.fast), (1, false, null)]),
+        greaterThan(iqEstimate([(1, true, IqSpeed.fast), (3, false, null)])),
+      );
+      expect(
+        iqEstimate([(2, true, IqSpeed.slow)]),
+        lessThan(iqEstimate([(2, true, IqSpeed.fast)])),
       );
     });
 
@@ -271,6 +289,60 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
     expect(find.byKey(const Key('iq_answer')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('solo IQ: pause after a round, then continue later', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    tallPhone(tester);
+    final h = Harness();
+    final puzzles = [
+      IqPuzzle.fromJson(sequenceJson()),
+      IqPuzzle.fromJson(oddJson()),
+    ];
+    await h.start(
+      tester,
+      IqSoloScreen(
+        rounds: 2,
+        duration: 0,
+        difficulty: Difficulty.normal,
+        scoring: const IqScoring(),
+        puzzles: puzzles,
+      ),
+    );
+    await tester.pump();
+    await tapKey(tester, 'iq_key_8');
+    await tapKey(tester, 'iq_submit');
+    expect(find.byKey(const Key('iq_pause')), findsOneWidget);
+    await tapKey(tester, 'iq_pause');
+    await pumpFor(tester, const Duration(milliseconds: 400));
+    final draft = await IqSoloDraftStore.load();
+    expect(draft, isNotNull);
+    expect(draft!.answeredCount, 1);
+    expect(draft.nextIndex, 1);
+    expect(draft.finished, isFalse);
+
+    // Nouvelle partie hydratée depuis le brouillon (comme « Continuer »).
+    await tester.pumpWidget(const SizedBox());
+    await h.start(
+      tester,
+      IqSoloScreen(
+        rounds: draft.rounds,
+        duration: draft.duration,
+        difficulty: draft.difficulty,
+        scoring: draft.scoring,
+        draft: draft,
+      ),
+    );
+    await pumpFor(tester, const Duration(milliseconds: 400));
+    expect(find.text('Which is the odd one out?'), findsOneWidget);
+    await tapKey(tester, 'iq_choice_2');
+    await tapKey(tester, 'iq_next');
+    await pumpFor(tester, const Duration(milliseconds: 600));
+    expect(find.byKey(const Key('iq_estimate')), findsOneWidget);
+    expect(await IqSoloDraftStore.load(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -400,7 +472,9 @@ void main() {
               'finished': true,
               'wallet': wallet(8, 1),
               'correct_count': 1,
-              'iq': 145,
+              'elapsed_ms': 8000,
+              'speed': 'fast',
+              'iq': 128,
             },
             _ => <String, dynamic>{},
           };
@@ -433,9 +507,10 @@ void main() {
       await pumpFor(tester, const Duration(milliseconds: 300));
       expect(calls, contains('POST /api/v1/iq/sessions/g1/answer'));
       expect(find.byKey(const Key('iq_answer')), findsOneWidget);
+      expect(find.byKey(const Key('iq_time_judged')), findsOneWidget);
       await tapKey(tester, 'iq_next');
       await pumpFor(tester, const Duration(milliseconds: 600));
-      expect(find.text('145'), findsOneWidget);
+      expect(find.text('128'), findsOneWidget);
       expect(find.byKey(const Key('iq_coins_won')), findsOneWidget);
       expect(h.online.wallet?.coins, 8);
       await tester.pumpWidget(const SizedBox());
@@ -967,6 +1042,232 @@ void main() {
     await tester.pump();
     expect(find.byKey(const Key('iq_answer')), findsOneWidget);
     expect(find.text('Even everywhere.'), findsOneWidget);
+    await tapKey(tester, 'iq_next');
+    await pumpFor(tester, const Duration(milliseconds: 600));
+    expect(find.text('1 right answers out of 1 · 10 points'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('dots puzzles: connect numbered points in order', (tester) async {
+    tallPhone(tester);
+    final puzzle = IqPuzzle.fromJson({
+      'id': 'dots-test',
+      'kind': 'dots',
+      'level': 1,
+      'input': 'trace',
+      'prompt': {
+        'fr': 'Relie les points dans l\'ordre des numéros.',
+        'en': 'Connect the dots in number order.',
+      },
+      'trace': {
+        'points': [
+          [1, 0],
+          [0, 2],
+          [2, 2],
+        ],
+        'edges': [
+          [0, 1],
+          [1, 2],
+          [2, 0],
+        ],
+        'numbered': true,
+        'ordered': true,
+      },
+      'answer': '0-1-2-0',
+      'explanation': {'fr': 'Un triangle.', 'en': 'A triangle.'},
+    });
+    expect(puzzle.isCorrect('0-1-2-0'), isTrue);
+    expect(puzzle.isCorrect('0-2-1-0'), isFalse);
+    final h = Harness();
+    await h.start(
+      tester,
+      IqSoloScreen(
+        rounds: 1,
+        duration: 0,
+        difficulty: Difficulty.normal,
+        scoring: const IqScoring(speedBonus: false),
+        puzzles: [puzzle],
+      ),
+    );
+    await tester.pump();
+    expect(find.text('CONNECT THE DOTS'), findsOneWidget);
+    final board = find.byKey(const Key('iq_trace_board'));
+    Future<void> tapDot(int n) async {
+      await tester.tapAt(
+        tester.getTopLeft(board) +
+            puzzle.trace!.offsetOf(n, tester.getSize(board)),
+      );
+      await tester.pump();
+    }
+
+    for (final n in [0, 1, 2, 0]) {
+      await tapDot(n);
+    }
+    await tester.pump();
+    expect(find.byKey(const Key('iq_answer')), findsOneWidget);
+    expect(find.text('A triangle.'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('flow puzzles: connect same colors without crossing', (
+    tester,
+  ) async {
+    tallPhone(tester);
+    final puzzle = IqPuzzle.fromJson({
+      'id': 'flow-test',
+      'kind': 'flow',
+      'level': 1,
+      'input': 'flow',
+      'prompt': {
+        'fr': 'Relie chaque paire de même couleur.',
+        'en': 'Connect each same-color pair.',
+      },
+      'flow': {
+        'size': 4,
+        'pairs': [
+          {
+            'color': 0,
+            'a': [0, 0],
+            'b': [0, 3],
+          },
+          {
+            'color': 1,
+            'a': [3, 0],
+            'b': [3, 3],
+          },
+          {
+            'color': 2,
+            'a': [1, 1],
+            'b': [2, 1],
+          },
+        ],
+        'solutions': [
+          [
+            [0, 0],
+            [0, 1],
+            [0, 2],
+            [0, 3],
+          ],
+          [
+            [3, 0],
+            [3, 1],
+            [3, 2],
+            [3, 3],
+          ],
+          [
+            [1, 1],
+            [2, 1],
+          ],
+        ],
+      },
+      'answer':
+          '[[[0,0],[0,1],[0,2],[0,3]],[[3,0],[3,1],[3,2],[3,3]],[[1,1],[2,1]]]',
+      'explanation': {
+        'fr': 'Deux lignes et un lien.',
+        'en': 'Two lines and a link.',
+      },
+    });
+    expect(puzzle.isCorrect(puzzle.answer), isTrue);
+    expect(puzzle.isCorrect('[]'), isFalse);
+    final h = Harness();
+    await h.start(
+      tester,
+      IqSoloScreen(
+        rounds: 1,
+        duration: 0,
+        difficulty: Difficulty.normal,
+        scoring: const IqScoring(speedBonus: false),
+        puzzles: [puzzle],
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(const Key('iq_flow_board')), findsOneWidget);
+    expect(find.text('COLOR PATHS'), findsOneWidget);
+    // Dessine les 3 chemins (glissé horizontal : ne doit plus être volé
+    // par le scroll parent).
+    final boardBox = tester.getRect(find.byKey(const Key('iq_flow_board')));
+    final cell = boardBox.width / 4;
+    Offset cellCenter(int r, int c) => Offset(
+      boardBox.left + (c + 0.5) * cell,
+      boardBox.top + (r + 0.5) * cell,
+    );
+    Future<void> drawPath(List<(int, int)> cells) async {
+      final start = cellCenter(cells.first.$1, cells.first.$2);
+      final gesture = await tester.startGesture(start);
+      await tester.pump(const Duration(milliseconds: 20));
+      for (final (r, c) in cells.skip(1)) {
+        await gesture.moveTo(cellCenter(r, c));
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      await gesture.up();
+      await tester.pump();
+    }
+
+    await drawPath(const [(0, 0), (0, 1), (0, 2), (0, 3)]);
+    await drawPath(const [(3, 0), (3, 1), (3, 2), (3, 3)]);
+    await drawPath(const [(1, 1), (2, 1)]);
+    await tester.pump();
+    expect(find.byKey(const Key('iq_answer')), findsOneWidget);
+    expect(find.text('Two lines and a link.'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('count puzzles show a diagram and accept a number choice', (
+    tester,
+  ) async {
+    tallPhone(tester);
+    final puzzle = IqPuzzle.fromJson({
+      'id': 'count-test',
+      'kind': 'count',
+      'level': 1,
+      'input': 'choice',
+      'prompt': {
+        'fr': 'Combien y a-t-il de triangles dans la figure ?',
+        'en': 'How many triangles are in the figure?',
+      },
+      'choices': {
+        'fr': ['1', '2', '3', '4'],
+        'en': ['1', '2', '3', '4'],
+      },
+      'diagram': {
+        'segments': [
+          [0.5, 0.1, 0.1, 0.9],
+          [0.1, 0.9, 0.9, 0.9],
+          [0.9, 0.9, 0.5, 0.1],
+        ],
+        'highlights': [
+          [
+            [0.5, 0.1],
+            [0.1, 0.9],
+            [0.9, 0.9],
+          ],
+        ],
+      },
+      'answer': '0',
+      'explanation': {
+        'fr': 'Un seul triangle.',
+        'en': 'Just one triangle.',
+      },
+    });
+    expect(puzzle.isCorrect('0'), isTrue);
+    expect(puzzle.isCorrect('1'), isFalse);
+    final h = Harness();
+    await h.start(
+      tester,
+      IqSoloScreen(
+        rounds: 1,
+        duration: 0,
+        difficulty: Difficulty.normal,
+        scoring: const IqScoring(speedBonus: false),
+        puzzles: [puzzle],
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(const Key('iq_diagram')), findsOneWidget);
+    expect(find.text('COUNT'), findsOneWidget);
+    await tapKey(tester, 'iq_choice_0');
+    expect(find.byKey(const Key('iq_answer')), findsOneWidget);
+    expect(find.text('Just one triangle.'), findsOneWidget);
     await tapKey(tester, 'iq_next');
     await pumpFor(tester, const Duration(milliseconds: 600));
     expect(find.text('1 right answers out of 1 · 10 points'), findsOneWidget);

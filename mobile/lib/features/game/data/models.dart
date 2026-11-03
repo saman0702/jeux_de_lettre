@@ -17,11 +17,12 @@ enum Category {
   /// Catégories cochées par défaut : le Petit Bac classique.
   static const classic = [city, country, animal, fruit];
 
-  /// À partir de ce nombre de catégories, une manche dure plus de 30 s.
+  /// À partir de ce nombre de catégories, une manche dure plus de 30 s
+  /// (sauf temps illimité).
   static const many = 5;
   static const manyMinDuration = 45;
 
-  /// Orthographe stricte : manches d'au moins 2 minutes.
+  /// Orthographe stricte : manches d'au moins 2 minutes (sauf illimité).
   static const strictSpellingMinDuration = 120;
 }
 
@@ -47,13 +48,23 @@ AnswerStatus _parseStatus(String value) => switch (value) {
   _ => AnswerStatus.late,
 };
 
+String _statusWire(AnswerStatus status) => switch (status) {
+  AnswerStatus.valid => 'valid',
+  AnswerStatus.empty => 'empty',
+  AnswerStatus.wrongLetter => 'wrong_letter',
+  AnswerStatus.notFound => 'not_found',
+  AnswerStatus.hintWrong => 'hint_wrong',
+  AnswerStatus.alreadyUsed => 'already_used',
+  AnswerStatus.late => 'late',
+};
+
 class SoloGameSettings {
   const SoloGameSettings({
     required this.language,
     this.difficulty = Difficulty.normal,
     this.categories = Category.classic,
     this.rounds = 5,
-    this.roundDuration = 30,
+    this.roundDuration = unlimitedDuration,
     this.strictSpelling = false,
     this.nickname = 'Player',
     this.clientId,
@@ -62,14 +73,21 @@ class SoloGameSettings {
   });
 
   static const roundOptions = [5, 10, 15];
-  /// Jusqu'à 5 minutes par manche.
+  /// 0 = temps illimité (défaut).
+  static const unlimitedDuration = 0;
+  static const minCustomDuration = 10;
+  static const maxCustomDuration = 900;
+  /// Presets (secondes) ; une saisie manuelle hors liste est aussi acceptée.
   static const durationOptions = [15, 30, 45, 60, 120, 180, 240, 300];
 
   final String language;
   final Difficulty difficulty;
   final List<Category> categories;
   final int rounds;
+  /// Secondes par manche, ou [unlimitedDuration] pour illimité.
   final int roundDuration;
+
+  bool get isUnlimited => roundDuration <= 0;
 
   /// Casse, accents et espaces doivent coller à la fiche.
   final bool strictSpelling;
@@ -100,6 +118,33 @@ class SoloGameSettings {
           if (e.value.isNotEmpty) e.key.wire: e.value,
       },
   };
+
+  factory SoloGameSettings.fromJson(Map<String, dynamic> json) {
+    final banned = json['banned_answers'] as Map<String, dynamic>? ?? const {};
+    return SoloGameSettings(
+      language: json['language'] as String? ?? 'fr',
+      difficulty: Difficulty.values.firstWhere(
+        (d) => d.name == (json['difficulty'] as String? ?? 'normal'),
+        orElse: () => Difficulty.normal,
+      ),
+      categories: [
+        for (final c in (json['categories'] as List?) ?? const [])
+          Category.fromWire(c as String),
+      ],
+      rounds: json['rounds'] as int? ?? 5,
+      roundDuration: json['round_duration'] as int? ?? unlimitedDuration,
+      strictSpelling: json['strict_spelling'] as bool? ?? false,
+      nickname: json['nickname'] as String? ?? 'Player',
+      clientId: json['client_id'] as String?,
+      avoidLetters: json['avoid_letters'] as String? ?? '',
+      bannedAnswers: {
+        for (final e in banned.entries)
+          Category.fromWire(e.key): [
+            for (final w in e.value as List) w as String,
+          ],
+      },
+    );
+  }
 }
 
 class SoloGame {
@@ -111,12 +156,14 @@ class SoloGame {
     required this.status,
     required this.totalScore,
     required this.roundsPlayed,
+    this.language = 'fr',
     this.strictSpelling = false,
     this.hintsLeft = 0,
   });
 
   factory SoloGame.fromJson(Map<String, dynamic> json) => SoloGame(
     id: json['id'] as String,
+    language: json['language'] as String? ?? 'fr',
     categories: [
       for (final c in json['categories'] as List)
         Category.fromWire(c as String),
@@ -131,6 +178,7 @@ class SoloGame {
   );
 
   final String id;
+  final String language;
   final List<Category> categories;
   final int totalRounds;
   final int roundDuration;
@@ -258,6 +306,20 @@ class AnswerResult {
 
   /// Lignes déjà connues (si débloqué).
   final List<String>? infoLines;
+
+  Map<String, dynamic> toJson() => {
+    'category': category.wire,
+    'value': value,
+    'status': _statusWire(status),
+    'points': points,
+    'matched_value': matchedValue,
+    'hinted': hinted,
+    'suggestion': suggestion,
+    'info_available': infoAvailable,
+    'info_price': infoPrice,
+    'info_unlocked': infoUnlocked,
+    if (infoLines != null) 'info_lines': infoLines,
+  };
 }
 
 /// Infos pédagogiques débloquées avec des pièces.
@@ -363,4 +425,12 @@ class RoundResult {
   final List<AnswerResult> answers;
   final int roundScore;
   final Duration elapsed;
+
+  Map<String, dynamic> toJson() => {
+    'number': number,
+    'letter': letter,
+    'answers': [for (final a in answers) a.toJson()],
+    'round_score': roundScore,
+    'elapsed_ms': elapsed.inMilliseconds,
+  };
 }

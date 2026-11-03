@@ -15,6 +15,8 @@ import '../../l10n/app_localizations.dart';
 import 'data/challenge.dart';
 import 'data/models.dart';
 import 'data/solo_backend.dart';
+import 'offline/offline_engine.dart';
+import 'solo_draft.dart';
 import 'solo_game_controller.dart';
 import '../career/career_levels.dart';
 import '../online/online_controller.dart';
@@ -37,6 +39,8 @@ class SoloGameScreen extends StatefulWidget {
     required this.apiClient,
     this.controller,
     this.challenge,
+    this.priorResults = const [],
+    this.settings,
   });
 
   /// Carrière ou éliminatoires ; null pour une partie libre.
@@ -49,6 +53,12 @@ class SoloGameScreen extends StatefulWidget {
   /// Injecté dans les tests pour maîtriser les délais.
   final SoloGameController? controller;
 
+  /// Manches déjà jouées (reprise après pause).
+  final List<RoundResult> priorResults;
+
+  /// Réglages d'origine (nécessaires pour sauvegarder une pause hors ligne).
+  final SoloGameSettings? settings;
+
   @override
   State<SoloGameScreen> createState() => _SoloGameScreenState();
 }
@@ -60,6 +70,7 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
         api: widget.api,
         game: widget.game,
         challenge: widget.challenge,
+        priorResults: widget.priorResults,
       );
   GameFeedback? _feedback;
 
@@ -81,6 +92,8 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
     final settings = _feedback?.settings;
     if (settings == null) return;
     _recorded = true;
+    // Partie terminée : plus de brouillon à reprendre.
+    SoloDraftStore.clear();
     switch (widget.challenge) {
       case final CareerLevel level:
         settings.recordCareer(
@@ -141,6 +154,12 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
     super.dispose();
   }
 
+  bool get _canPause =>
+      widget.challenge == null &&
+      widget.settings != null &&
+      _controller.phase == SoloPhase.roundResult &&
+      !_controller.isOver;
+
   Future<void> _quit() async {
     final navigator = Navigator.of(context);
     if (await _confirmQuit()) navigator.pop();
@@ -148,14 +167,49 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
 
   Future<bool> _confirmQuit() {
     final l10n = AppLocalizations.of(context);
+    final midRound = _controller.phase == SoloPhase.playing ||
+        _controller.phase == SoloPhase.submitting ||
+        _controller.phase == SoloPhase.countdown;
     return showGameConfirm(
       context,
       icon: GameIconKind.door,
       title: l10n.quitGameTitle,
-      message: l10n.quitGameMessage,
+      message: midRound && widget.challenge == null
+          ? l10n.geoQuitMidRound
+          : l10n.quitGameMessage,
       confirmLabel: l10n.quit.toUpperCase(),
       cancelLabel: l10n.dialogStay,
     );
+  }
+
+  Future<void> _pauseAndLeave() async {
+    if (!_canPause) return;
+    final settings = widget.settings;
+    if (settings == null) return;
+    final offline = widget.api.offline;
+    List<String> letters = const [];
+    Map<Category, Set<String>> usedKeys = const {};
+    var hintsUsed = 0;
+    if (widget.api case final OfflineSoloBackend engine) {
+      final snap = engine.exportPauseState(_controller.game.id);
+      if (snap == null) return;
+      letters = snap.letters;
+      usedKeys = snap.usedKeys;
+      hintsUsed = snap.hintsUsed;
+    }
+    await SoloDraftStore.save(
+      SoloDraft(
+        offline: offline,
+        game: _controller.game,
+        settings: settings,
+        results: _controller.results,
+        letters: letters,
+        usedKeys: usedKeys,
+        hintsUsed: hintsUsed,
+      ),
+    );
+    if (!mounted) return;
+    Navigator.of(context).pop();
   }
 
   void _playAgain() {
@@ -384,6 +438,7 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
           totalRounds: c.game.totalRounds,
           remaining: c.remaining,
           fields: c.fields,
+          language: c.game.language,
           submitting: c.phase == SoloPhase.submitting,
           onFinish: c.submit,
           hints: c.hints,
@@ -398,6 +453,7 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
           isLastRound: c.isOver,
           onContinue: c.nextRound,
           onQuit: _quit,
+          onPause: _canPause ? _pauseAndLeave : null,
           goal: _resultGoal(l10n),
           onBuyInfo: widget.api.offline
               ? null

@@ -26,7 +26,8 @@ workflows:
 
     environment:
       flutter: stable
-      xcode: latest
+      # Pas « latest » : Xcode 26 casse pod install (SDK simulateur manquant).
+      xcode: 16.4
       cocoapods: default
       groups:
         - ios_signing
@@ -34,13 +35,13 @@ workflows:
         APP_STORE_APPLE_ID: "6828438803"
         BUNDLE_ID: com.letterbattle.letterBattle
         API_BASE_URL: https://gamelr-api.optisoftw.com
-        
+
     cache:
       cache_paths:
         - $HOME/.pub-cache
         - $HOME/Library/Caches/CocoaPods
         - $CM_BUILD_DIR/mobile/.dart_tool
-        - $CM_BUILD_DIR/mobile/ios/Pods
+        # Pas de cache Pods : un Xcode différent (ex. 26 → 16.4) le corrompt.
 
     triggering:
       events:
@@ -81,7 +82,8 @@ workflows:
       - name: Install CocoaPods
         script: |
           cd "$CM_BUILD_DIR/mobile/ios"
-          pod install
+          rm -rf Pods Podfile.lock
+          pod install --repo-update
 
       - name: Fetch iOS signing files (certificat + profil App Store)
         script: |

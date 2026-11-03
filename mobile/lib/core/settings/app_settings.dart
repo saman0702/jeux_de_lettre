@@ -152,6 +152,18 @@ class AppSettings extends ChangeNotifier {
     ).join();
   }
 
+  /// Compte supprimé : on efface tout ce qui concerne le joueur sur le
+  /// téléphone (identité, pseudo, avatar, progression…), en gardant les
+  /// réglages de l'appareil (son, musique, langue…). Au prochain lancement,
+  /// une nouvelle identité est créée.
+  Future<void> eraseAccountData() async {
+    final prefs = _prefs;
+    if (prefs == null) return;
+    for (final key in prefs.getKeys().toList()) {
+      if (!key.startsWith('settings.')) await prefs.remove(key);
+    }
+  }
+
   static const _soundKey = 'settings.sound';
   static const _musicKey = 'settings.music';
   static const _musicVolumeKey = 'settings.music_volume';

@@ -81,6 +81,7 @@ class OfflineSoloBackend implements SoloBackend {
 
   SoloGame _snapshot(_Game game) => SoloGame(
     id: game.id,
+    language: game.settings.language,
     categories: game.settings.categories,
     totalRounds: game.settings.rounds,
     roundDuration: game.settings.roundDuration,
@@ -93,6 +94,43 @@ class OfflineSoloBackend implements SoloBackend {
 
   _Game _game(String id) =>
       _games[id] ?? (throw StateError('unknown offline game $id'));
+
+  /// État hors ligne pour une pause (entre deux manches).
+  ({List<String> letters, Map<Category, Set<String>> usedKeys, int hintsUsed})?
+  exportPauseState(String gameId) {
+    final game = _games[gameId];
+    if (game == null || game.roundOpen) return null;
+    return (
+      letters: List.of(game.letters),
+      usedKeys: {
+        for (final e in game.usedKeys.entries) e.key: Set.of(e.value),
+      },
+      hintsUsed: game.hintsUsed,
+    );
+  }
+
+  /// Reprend une partie hors ligne sauvegardée après une pause.
+  Future<SoloGame> restorePaused({
+    required String id,
+    required SoloGameSettings settings,
+    required List<String> letters,
+    required Map<Category, Set<String>> usedKeys,
+    required int hintsUsed,
+    required int totalScore,
+    required int roundsPlayed,
+  }) async {
+    final game = _Game(id, settings)
+      ..letters.addAll(letters)
+      ..hintsUsed = hintsUsed
+      ..totalScore = totalScore
+      ..roundsPlayed = roundsPlayed
+      ..roundOpen = false;
+    for (final e in usedKeys.entries) {
+      game.usedKeys[e.key] = Set.of(e.value);
+    }
+    _games[id] = game;
+    return _snapshot(game);
+  }
 
   // ------------------------------------------------------------------- lettres
 
@@ -127,11 +165,14 @@ class OfflineSoloBackend implements SoloBackend {
     game.roundOpen = true;
     final now = _now();
     game.startedAt = now;
-    game.endsAt = now.add(Duration(seconds: game.settings.roundDuration));
+    final duration = game.settings.roundDuration;
+    game.endsAt = duration <= 0
+        ? now.add(const Duration(days: 365))
+        : now.add(Duration(seconds: duration));
     return GameRound(
       number: game.letters.length,
       letter: letter,
-      duration: game.settings.roundDuration,
+      duration: duration,
       endsAt: game.endsAt!,
       clockOffset: Duration.zero,
     );
@@ -189,7 +230,9 @@ class OfflineSoloBackend implements SoloBackend {
   ) async {
     final game = _game(gameId);
     final now = _now();
-    final late = now.isAfter(game.endsAt!.add(OfflineRules.submitGrace));
+    final unlimited = game.settings.roundDuration <= 0;
+    final late = !unlimited &&
+        now.isAfter(game.endsAt!.add(OfflineRules.submitGrace));
     final letter = game.letters.last;
     final settings = game.settings;
 
@@ -238,7 +281,9 @@ class OfflineSoloBackend implements SoloBackend {
     game.totalScore += score;
     game.roundsPlayed++;
     game.roundOpen = false;
-    final submittedAt = now.isAfter(game.endsAt!) ? game.endsAt! : now;
+    final submittedAt = unlimited || !now.isAfter(game.endsAt!)
+        ? now
+        : game.endsAt!;
     return (
       RoundResult(
         number: roundNumber,

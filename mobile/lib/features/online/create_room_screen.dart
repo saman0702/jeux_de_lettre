@@ -10,6 +10,7 @@ import '../../core/widgets/game_icon.dart';
 import '../../core/widgets/game_toggle.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/data/models.dart';
+import '../game/widgets/duration_picker.dart';
 import '../game/widgets/labels.dart';
 import '../game/widgets/pill_selector.dart';
 import '../game/widgets/option_section.dart';
@@ -37,7 +38,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   int _maxPlayers = 8;
   bool _public = true;
   int _rounds = 5;
-  int _duration = 30;
+  int _duration = SoloGameSettings.unlimitedDuration;
   bool _strictSpelling = false;
   Difficulty _difficulty = Difficulty.normal;
   final Set<Category> _categories = {...Category.classic};
@@ -56,10 +57,20 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
       if (d >= _minDuration) d,
   ];
 
+  void _setDuration(int value) {
+    setState(() {
+      _duration = value == 0
+          ? SoloGameSettings.unlimitedDuration
+          : (value < _minDuration ? _minDuration : value);
+    });
+  }
+
   void _setStrictSpelling(bool value) {
     setState(() {
       _strictSpelling = value;
-      if (_duration < _minDuration) _duration = _minDuration;
+      if (_duration > 0 && _duration < _minDuration) {
+        _duration = _minDuration;
+      }
     });
   }
 
@@ -67,7 +78,9 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     setState(() {
       if (!_categories.contains(category)) {
         _categories.add(category);
-        if (_duration < _minDuration) _duration = _minDuration;
+        if (_duration > 0 && _duration < _minDuration) {
+          _duration = _minDuration;
+        }
       } else if (_categories.length > 1) {
         _categories.remove(category);
       }
@@ -285,24 +298,13 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                 icon: GameIconKind.timer,
                 color: AppColors.cyan,
                 help: l10n.durationHelp,
-                child: Column(
-                  children: [
-                    PillSelector<int>(
-                      options: _durationOptions,
-                      isSelected: (d) => d == _duration,
-                      label: (d) => durationLabel(l10n, d),
-                      onTap: (d) => setState(() => _duration = d),
-                    ),
-                    if (_manyCategories) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.manyCategoriesHint(Category.many),
-                        key: const Key('many_categories_hint'),
-                        textAlign: TextAlign.center,
-                        style: fredoka(size: 13, color: AppColors.inkSoft),
-                      ),
-                    ],
-                  ],
+                child: DurationPicker(
+                  value: _duration,
+                  options: _durationOptions,
+                  onChanged: _setDuration,
+                  hint: _manyCategories
+                      ? l10n.manyCategoriesHint(Category.many)
+                      : null,
                 ),
               ),
               OptionSection(

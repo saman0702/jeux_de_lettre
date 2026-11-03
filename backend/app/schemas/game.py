@@ -7,12 +7,16 @@ from app.core.game_rules import (
     DURATION_OPTIONS,
     MANY_CATEGORIES,
     MANY_CATEGORIES_MIN_DURATION,
+    MAX_CUSTOM_DURATION,
+    MIN_CUSTOM_DURATION,
     ROOM_THEMES,
     ROUND_OPTIONS,
     STRICT_SPELLING_MIN_DURATION,
+    UNLIMITED_DURATION,
     Category,
     Difficulty,
     Language,
+    is_unlimited_duration,
 )
 
 
@@ -23,7 +27,8 @@ class GameSettings(BaseModel):
     difficulty: Difficulty = Difficulty.NORMAL
     categories: list[Category] = Field(default_factory=lambda: list(CLASSIC_CATEGORIES), min_length=1)
     rounds: int = 5
-    round_duration: int = 30
+    # 0 = illimité ; sinon durée en secondes (presets ou saisie manuelle).
+    round_duration: int = UNLIMITED_DURATION
     # True : la réponse doit coller à la fiche (casse, accents, espaces).
     strict_spelling: bool = False
 
@@ -42,13 +47,22 @@ class GameSettings(BaseModel):
     @field_validator("round_duration")
     @classmethod
     def allowed_duration(cls, value: int) -> int:
-        if value not in DURATION_OPTIONS:
-            raise ValueError(f"round_duration must be one of {DURATION_OPTIONS}")
-        return value
+        if value == UNLIMITED_DURATION:
+            return value
+        if value in DURATION_OPTIONS:
+            return value
+        if MIN_CUSTOM_DURATION <= value <= MAX_CUSTOM_DURATION:
+            return value
+        raise ValueError(
+            f"round_duration must be 0 (unlimited), one of {DURATION_OPTIONS}, "
+            f"or {MIN_CUSTOM_DURATION}–{MAX_CUSTOM_DURATION}"
+        )
 
     @model_validator(mode="after")
     def long_enough_for_rules(self) -> "GameSettings":
         """Beaucoup de catégories ou orthographe stricte demandent plus de temps."""
+        if is_unlimited_duration(self.round_duration):
+            return self
         if len(self.categories) >= MANY_CATEGORIES and self.round_duration < MANY_CATEGORIES_MIN_DURATION:
             raise ValueError(
                 f"{MANY_CATEGORIES} categories or more need rounds of at least {MANY_CATEGORIES_MIN_DURATION} s"

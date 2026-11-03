@@ -13,6 +13,7 @@ class SavedRoomSummary {
     required this.open,
     required this.playersNow,
     required this.format,
+    this.game = RoomGame.letters,
     required this.lastActivity,
   });
 
@@ -27,6 +28,7 @@ class SavedRoomSummary {
         open: json['open'] as bool? ?? false,
         playersNow: json['players_now'] as int? ?? 0,
         format: RoomFormat.values.byName(json['format'] as String? ?? 'rounds'),
+        game: RoomGame.values.byName(json['game'] as String? ?? 'letters'),
         lastActivity: DateTime.parse(json['last_activity_at'] as String),
       );
 
@@ -47,6 +49,7 @@ class SavedRoomSummary {
   final bool open;
   final int playersNow;
   final RoomFormat format;
+  final RoomGame game;
   final DateTime lastActivity;
 }
 

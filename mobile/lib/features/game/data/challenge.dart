@@ -60,12 +60,13 @@ class CareerLevel extends SoloChallenge {
     String? id, {
     String avoidLetters = '',
     Map<Category, List<String>> bannedAnswers = const {},
+    int? roundDurationOverride,
   }) => SoloGameSettings(
     language: language,
     difficulty: difficulty,
     categories: categories,
     rounds: rounds,
-    roundDuration: roundDuration,
+    roundDuration: roundDurationOverride ?? roundDuration,
     nickname: nickname,
     clientId: id,
     avoidLetters: avoidLetters,
@@ -82,7 +83,7 @@ class EliminationChallenge extends SoloChallenge {
   });
 
   static const defaultRounds = 15;
-  static const defaultDuration = 30;
+  static const defaultDuration = SoloGameSettings.unlimitedDuration;
 
   final int rounds;
   final int roundDuration;

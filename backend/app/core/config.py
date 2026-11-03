@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     # Boutique : vérification des achats auprès des stores. Sans ces réglages, la boutique répond
     # « store_not_configured ».
-    google_play_package: str = "com.letterbattle.letter_battle"
+    google_play_package: str = "com.letterbattle.letterBattle"
     # Fichier JSON du compte de service ayant accès à l'API Google Play Developer.
     google_service_account_file: str | None = None
     apple_bundle_id: str = "com.letterbattle.letterBattle"

@@ -13,9 +13,10 @@ import '../../core/widgets/game_toggle.dart';
 import '../../core/widgets/brand_mark.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/widgets/pill_selector.dart';
+import '../online/online_controller.dart';
 import 'home_screen.dart';
 
-/// Premier lancement : langue, genre, sons / musique.
+/// Premier lancement : pseudo, langue, genre, sons / musique.
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -24,17 +25,42 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
+  late final TextEditingController _nickname;
+
   @override
   void initState() {
     super.initState();
+    _nickname = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) GameFeedbackScope.of(context).setMusic(MusicMood.menu);
+      if (!mounted) return;
+      GameFeedbackScope.of(context).setMusic(MusicMood.menu);
+      final existing = GameFeedbackScope.of(context).settings.nickname;
+      if (existing != null && _nickname.text.isEmpty) {
+        _nickname.text = existing;
+      }
     });
   }
 
-  void _finish() {
+  @override
+  void dispose() {
+    _nickname.dispose();
+    super.dispose();
+  }
+
+  Future<void> _finish() async {
+    final l10n = AppLocalizations.of(context);
+    final name = _nickname.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.nicknameRequired)),
+      );
+      return;
+    }
     final settings = GameFeedbackScope.of(context).settings;
+    settings.nickname = name;
     settings.languageCode ??= 'fr';
+    await OnlineScope.of(context).client.updateNickname(name);
+    if (!mounted) return;
     settings.completeOnboarding();
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
@@ -88,6 +114,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: SingleChildScrollView(
                         child: Column(
                           children: [
+                            _Card(
+                              child: _NicknameBlock(controller: _nickname),
+                            ),
+                            const SizedBox(height: 12),
                             _Card(
                               child: _LanguageBlock(
                                 value: settings.languageCode,
@@ -195,6 +225,45 @@ class _Card extends StatelessWidget {
         border: Border.all(color: AppColors.yellow, width: 3),
       ),
       child: child,
+    );
+  }
+}
+
+class _NicknameBlock extends StatelessWidget {
+  const _NicknameBlock({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.settingsNickname,
+          style: fredoka(size: 16, weight: FontWeight.w700),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          l10n.nicknameHelp,
+          style: fredoka(size: 13, color: AppColors.inkSoft),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          key: const Key('onboarding_nickname'),
+          controller: controller,
+          maxLength: 20,
+          textCapitalization: TextCapitalization.words,
+          textAlign: TextAlign.center,
+          style: fredoka(size: 20, weight: FontWeight.w600),
+          decoration: InputDecoration(
+            hintText: l10n.nicknameHint,
+            fillColor: AppColors.white,
+            counterText: '',
+          ),
+        ),
+      ],
     );
   }
 }

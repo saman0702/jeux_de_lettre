@@ -38,8 +38,20 @@ class Difficulty(StrEnum):
 ANY_LANGUAGE = "*"
 
 ROUND_OPTIONS = (5, 10, 15)
-# Jusqu'à 5 minutes par manche.
+# 0 = temps illimité (défaut). Presets UI ; toute valeur 10–900 s est aussi acceptée.
+UNLIMITED_DURATION = 0
+MIN_CUSTOM_DURATION = 10
+MAX_CUSTOM_DURATION = 900
 DURATION_OPTIONS = (15, 30, 45, 60, 120, 180, 240, 300)
+
+
+def is_unlimited_duration(seconds: int) -> bool:
+    return seconds <= 0
+
+
+def clamp_round_duration(seconds: int) -> int:
+    """Durée utilisée pour le pacing bots quand la manche est illimitée."""
+    return 60 if is_unlimited_duration(seconds) else seconds
 
 HARD_LETTERS = frozenset("KQWXYZ")
 ALL_LETTERS = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZ")

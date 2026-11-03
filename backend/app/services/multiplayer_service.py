@@ -5,17 +5,18 @@ de données, en réutilisant les modèles des parties solo.
 """
 
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.game_rules import Category, Difficulty
+from app.core.game_rules import Category, Difficulty, is_unlimited_duration
 from app.models import Game, GameRound, Player, PlayerAnswer, Submission
 from app.models.base import utcnow
 from app.schemas.game import GameSettings
 from app.services import letter_service, suggestion_service
 from app.services.concept_service import concept_key
+from app.services.game_service import _round_ends_at
 from app.services.scoring_service import score_round
 from app.services.validation_service import Status, ValidationResult, validate_answer
 
@@ -101,7 +102,7 @@ async def start_round(session: AsyncSession, game_id: str, languages: set[str] |
         number=len(game.rounds) + 1,
         letter=letter,
         started_at=started_at,
-        ends_at=started_at + timedelta(seconds=game.round_duration),
+        ends_at=_round_ends_at(started_at, game.round_duration),
         submissions=[],
     )
     game.rounds.append(game_round)
@@ -182,17 +183,22 @@ async def close_round(
             for category, result in validated[player_id].items()
         ]
         score = sum(points[player_id].values())
+        recorded_at = (
+            submitted_at
+            if is_unlimited_duration(game.round_duration)
+            else min(submitted_at, game_round.ends_at)
+        )
         game_round.submissions.append(
             Submission(
                 player_id=player_id,
-                submitted_at=min(submitted_at, game_round.ends_at),
+                submitted_at=recorded_at,
                 score=score,
                 answers=answer_rows,
             )
         )
         players[player_id].total_score += score
         elapsed = (
-            int((min(submitted_at, game_round.ends_at) - game_round.started_at).total_seconds() * 1000)
+            int((recorded_at - game_round.started_at).total_seconds() * 1000)
             if player_id in submissions
             else None
         )

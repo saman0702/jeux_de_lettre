@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<!-- Image de présentation Google Play (1024 × 500). Rendu : voir tool/export_feature_graphic.sh -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+  @font-face { font-family: Fredoka; src: url(../assets/fonts/Fredoka.ttf); }
+  @font-face { font-family: Lilita; src: url(../assets/fonts/LilitaOne.ttf); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1024px; height: 500px; overflow: hidden; }
+  body {
+    position: relative;
+    font-family: Fredoka, sans-serif;
+    color: #fff;
+    background:
+      radial-gradient(ellipse 60% 80% at 78% 40%, #ff5fa266, transparent 60%),
+      radial-gradient(ellipse 50% 70% at 10% 0%, #9466ffaa, transparent 60%),
+      radial-gradient(ellipse 40% 50% at 0% 100%, #3cc8ff44, transparent 60%),
+      linear-gradient(160deg, #4a22c9, #2d1480 55%, #1a0b4d);
+  }
+  /* Lettres et symboles en fond */
+  .bg span {
+    position: absolute;
+    font-family: Lilita;
+    color: #ffffff14;
+  }
+  .text { position: absolute; left: 56px; top: 50px; width: 540px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand img { width: 62px; height: 62px; border-radius: 16px; box-shadow: 0 6px 18px #0006; }
+  .brand b { font-family: Lilita; font-size: 34px; letter-spacing: 1px; }
+  h1 {
+    margin: 22px 0 0;
+    font-family: Lilita;
+    font-weight: 400;
+    font-size: 50px;
+    line-height: 1.05;
+    text-shadow: 0 4px 0 #0003;
+  }
+  h1 em { font-style: normal; color: #ffc93c; }
+  .benefits {
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: 12px;
+    margin-top: 28px;
+  }
+  .benefit {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 16px;
+    background: #ffffff1c;
+    border: 2px solid #ffffff30;
+    font-weight: 600;
+    font-size: 18px;
+    white-space: nowrap;
+    line-height: 1.1;
+  }
+  .benefit i {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    font-style: normal;
+    font-family: Lilita;
+    font-size: 19px;
+    color: #2a1763;
+    box-shadow: 0 3px 0 #0003;
+  }
+  .phone {
+    position: absolute;
+    width: 210px;
+    padding: 7px;
+    border-radius: 30px;
+    background: #0d0620;
+    border: 2px solid #ffffff30;
+    box-shadow: 0 24px 50px #0008;
+  }
+  .phone img { display: block; width: 100%; border-radius: 23px; }
+  .p1 { left: 612px; top: 70px; transform: rotate(-8deg); }
+  .p2 { left: 790px; top: 30px; transform: rotate(7deg); z-index: 1; }
+  .tile {
+    position: absolute;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 17px;
+    font-family: Lilita;
+    font-size: 36px;
+    color: #2a1763;
+    box-shadow: 0 6px 0 #0004;
+  }
+</style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <span style="left:470px;top:-20px;font-size:150px">A</span>
+    <span style="left:380px;top:330px;font-size:130px">Q</span>
+    <span style="left:-20px;top:300px;font-size:120px">?</span>
+    <span style="left:560px;top:380px;font-size:90px">÷</span>
+    <span style="left:960px;top:380px;font-size:110px">π</span>
+  </div>
+
+  <div class="text">
+    <div class="brand">
+      <img src="../assets/branding/mind_race_icon_play_512.png" alt="">
+      <b>MIND RACE</b>
+    </div>
+    <h1>Petit Bac &amp; QI :<br><em>le plus rapide gagne !</em></h1>
+    <div class="benefits">
+      <div class="benefit"><i style="background:#ffc93c">4</i>4 jeux en 1</div>
+      <div class="benefit"><i style="background:#3cc8ff">8</i>Jusqu'à 8 amis</div>
+      <div class="benefit"><i style="background:#4ee38a">♪</i>Vocal en partie</div>
+      <div class="benefit"><i style="background:#ff7eb6">★</i>Gratuit · sans compte</div>
+    </div>
+  </div>
+
+  <div class="phone p1"><img src="../mind-race/img/manche.webp" alt=""></div>
+  <div class="phone p2"><img src="../mind-race/img/qi_matrix.webp" alt=""></div>
+  <span class="tile" style="left:590px;top:350px;background:#ffc93c;transform:rotate(-10deg)">M</span>
+  <span class="tile" style="left:940px;top:330px;background:#3cc8ff;transform:rotate(9deg)">R</span>
+</body>
+</html>

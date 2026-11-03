@@ -15,8 +15,10 @@ import '../../core/widgets/letter_race_logo.dart';
 import '../../l10n/app_localizations.dart';
 import '../career/career_screen.dart';
 import '../career/elimination_screen.dart';
+import '../chrono/chrono_hub_screen.dart';
 import '../game/solo_setup_screen.dart';
 import '../game/widgets/labels.dart';
+import '../mots/mots_hub_screen.dart';
 import '../online/data/room_models.dart';
 import '../online/nickname_dialog.dart';
 import '../online/online_controller.dart';
@@ -84,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
   }
 
-  /// Solo libre : d'abord le choix du jeu (Géographie & Nature ou QI).
+  /// Solo libre : choix du jeu (Géo, QI, Chrono, Mot & Sens).
   void _openSolo() {
     Navigator.of(context).push(PopRoute(
       builder: (context) => GameChoiceScreen(
@@ -98,6 +100,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 IqSetupScreen(mode: IqSetupMode.solo, apiClient: _api),
           ),
         ),
+        onChrono: (context) => Navigator.of(context).push(
+          PopRoute(builder: (_) => ChronoHubScreen(apiClient: _api)),
+        ),
+        onMots: (context) => Navigator.of(context).push(
+          PopRoute(builder: (_) => MotsHubScreen(apiClient: _api)),
+        ),
       ),
     ));
   }
@@ -107,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .push(PopRoute(builder: (_) => CareerScreen(apiClient: _api)));
   }
 
-  /// Éliminatoires : d'abord le choix du jeu (Géographie & Nature ou QI).
+  /// Éliminatoires : Géo, QI, Chrono, Mot & Sens.
   void _openElimination() {
     Navigator.of(context).push(PopRoute(
       builder: (context) => GameChoiceScreen(
@@ -119,6 +127,18 @@ class _HomeScreenState extends State<HomeScreen> {
           PopRoute(
             builder: (_) =>
                 EliminationScreen(apiClient: _api, game: RoomGame.iq),
+          ),
+        ),
+        onChrono: (context) => Navigator.of(context).push(
+          PopRoute(
+            builder: (_) =>
+                EliminationScreen(apiClient: _api, game: RoomGame.chrono),
+          ),
+        ),
+        onMots: (context) => Navigator.of(context).push(
+          PopRoute(
+            builder: (_) =>
+                EliminationScreen(apiClient: _api, game: RoomGame.mots),
           ),
         ),
       ),
@@ -149,8 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(context).push(PopRoute(builder: (_) => const RoomScreen()));
   }
 
-  /// « Salons » : choix du jeu (Géographie & Nature ou QI). La connexion est
-  /// demandée seulement pour les salons ; le QI solo marche hors ligne.
+  /// « Salons » : Géo, QI, Chrono, Mot & Sens.
   void _openRooms() {
     Navigator.of(context)
         .push(PopRoute(builder: (_) => GameHubScreen(apiClient: _api)));

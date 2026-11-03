@@ -102,19 +102,30 @@ class PerksSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (!perks.passActive)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          l10n.perksPassBenefitHint,
+                          textAlign: TextAlign.center,
+                          style: fredoka(size: 13, color: AppColors.inkSoft),
+                        ),
+                      ),
                     for (final line in [
                       l10n.perksPassNoAds,
-                      l10n.perksPassDaily(features.passDailyCoins),
-                      l10n.perksPassHints(features.passBonusHints),
+                      if (features.passDailyCoins > 0)
+                        l10n.perksPassDaily(features.passDailyCoins),
+                      if (features.passBonusHints > 0)
+                        l10n.perksPassHints(features.passBonusHints),
                     ])
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Row(
                           children: [
-                            const GameIcon(
-                              GameIconKind.check,
+                            Icon(
+                              Icons.add_circle_outline_rounded,
                               size: 18,
-                              color: AppColors.green,
+                              color: AppColors.purple,
                             ),
                             const SizedBox(width: 6),
                             Expanded(
@@ -140,31 +151,33 @@ class PerksSection extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: gameFont(size: 15, color: AppColors.purple),
                       ),
-                      const SizedBox(height: 8),
-                      CandyButton(
-                        key: const Key('daily_bonus'),
-                        label: perks.dailyBonusAvailable
-                            ? l10n.perksClaimDaily(features.passDailyCoins)
-                            : l10n.perksDailyTaken,
-                        gameIcon: GameIconKind.coin,
-                        color: AppColors.yellow,
-                        height: 50,
-                        fontSize: 17,
-                        onPressed: perks.dailyBonusAvailable
-                            ? () => _claim(context)
-                            : null,
-                      ),
+                      if (features.passDailyCoins > 0) ...[
+                        const SizedBox(height: 8),
+                        CandyButton(
+                          key: const Key('daily_bonus'),
+                          label: perks.dailyBonusAvailable
+                              ? l10n.perksClaimDaily(features.passDailyCoins)
+                              : l10n.perksDailyTaken,
+                          gameIcon: GameIconKind.coin,
+                          color: AppColors.yellow,
+                          height: 50,
+                          fontSize: 17,
+                          onPressed: perks.dailyBonusAvailable
+                              ? () => _claim(context)
+                              : null,
+                        ),
+                      ],
                     ] else
                       CandyButton(
                         key: const Key('buy_pass'),
                         label: pass == null
-                            ? l10n.shopUnavailableShort
+                            ? l10n.perksPassNeedPlay
                             : l10n.perksPassPrice(pass.price),
                         gameIcon: GameIconKind.crown,
                         color: AppColors.purpleLight,
                         textColor: AppColors.white,
                         height: 52,
-                        fontSize: 18,
+                        fontSize: pass == null ? 14 : 18,
                         loading: shop.buying == PerkFeatures.passProduct,
                         onPressed: pass == null || shop.buying != null
                             ? null

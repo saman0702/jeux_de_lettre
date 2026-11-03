@@ -96,7 +96,10 @@ class ShopController extends ChangeNotifier {
           if (coins[p.id] != null)
             CoinPack(productId: p.id, coins: coins[p.id]!, price: p.price),
       ]..sort((a, b) => a.coins.compareTo(b.coins));
-      _status = _packs.isEmpty ? ShopStatus.unavailable : ShopStatus.ready;
+      // Prêt si packs pièces OU produits Premium / Sans pub (boutique allégée).
+      _status = (_packs.isEmpty && _extras.isEmpty)
+          ? ShopStatus.unavailable
+          : ShopStatus.ready;
     } catch (_) {
       _status = ShopStatus.unavailable;
     }

@@ -17,7 +17,9 @@ import '../online/nickname_dialog.dart';
 import '../online/online_controller.dart';
 import '../online/room_screen.dart';
 import 'data/models.dart';
+import 'solo_draft.dart';
 import 'solo_launcher.dart';
+import 'widgets/duration_picker.dart';
 import 'widgets/labels.dart';
 import 'widgets/pill_selector.dart';
 import 'widgets/option_section.dart';
@@ -33,13 +35,22 @@ class SoloSetupScreen extends StatefulWidget {
 
 class _SoloSetupScreenState extends State<SoloSetupScreen> {
   int _rounds = 5;
-  int _duration = 30;
+  int _duration = SoloGameSettings.unlimitedDuration;
   bool _strictSpelling = false;
   Difficulty _difficulty = Difficulty.normal;
   final Set<Category> _categories = {...Category.classic};
   int _bots = 0;
   Difficulty _botLevel = Difficulty.normal;
   bool _loading = false;
+  SoloDraft? _draft;
+
+  @override
+  void initState() {
+    super.initState();
+    SoloDraftStore.load().then((d) {
+      if (mounted) setState(() => _draft = d);
+    });
+  }
 
   List<Category> get _selectedCategories => [
     for (final c in Category.values)
@@ -76,9 +87,37 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
         .pushReplacement(PopRoute(builder: (_) => const RoomScreen()));
   }
 
+  Future<void> _continueDraft() async {
+    final draft = _draft;
+    if (draft == null || _loading) return;
+    setState(() => _loading = true);
+    final started = await resumeSoloGame(
+      context,
+      apiClient: widget.apiClient,
+      draft: draft,
+    );
+    if (!started && mounted) {
+      setState(() {
+        _loading = false;
+        _draft = null;
+      });
+    }
+  }
+
   Future<void> _start() async {
     if (_bots > 0) return _startAgainstBots();
     final l10n = AppLocalizations.of(context);
+    if (_draft != null) {
+      final ok = await showGameConfirm(
+        context,
+        icon: GameIconKind.flame,
+        title: l10n.iqNewGameTitle,
+        message: l10n.iqNewGameMessage,
+        confirmLabel: l10n.play.toUpperCase(),
+        cancelLabel: l10n.cancel,
+      );
+      if (!ok || !mounted) return;
+    }
     setState(() => _loading = true);
     final settings = SoloGameSettings(
       language: Localizations.localeOf(context).languageCode,
@@ -115,10 +154,20 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
       if (d >= _minDuration) d,
   ];
 
+  void _setDuration(int value) {
+    setState(() {
+      _duration = value == 0
+          ? SoloGameSettings.unlimitedDuration
+          : (value < _minDuration ? _minDuration : value);
+    });
+  }
+
   void _setStrictSpelling(bool value) {
     setState(() {
       _strictSpelling = value;
-      if (_duration < _minDuration) _duration = _minDuration;
+      if (_duration > 0 && _duration < _minDuration) {
+        _duration = _minDuration;
+      }
     });
   }
 
@@ -126,7 +175,9 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
     setState(() {
       if (!_categories.contains(category)) {
         _categories.add(category);
-        if (_duration < _minDuration) _duration = _minDuration;
+        if (_duration > 0 && _duration < _minDuration) {
+          _duration = _minDuration;
+        }
       } else if (_categories.length > 1) {
         _categories.remove(category);
       } else {
@@ -170,13 +221,32 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
             ),
             footer: Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-              child: CandyButton(
-                label: l10n.startGame,
-                icon: Icons.play_arrow_rounded,
-                color: AppColors.green,
-                textColor: AppColors.white,
-                loading: _loading,
-                onPressed: _start,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_draft != null) ...[
+                    CandyButton(
+                      key: const Key('geo_continue'),
+                      label: l10n.iqContinue(
+                        _draft!.answeredCount,
+                        _draft!.game.totalRounds,
+                      ),
+                      icon: Icons.play_arrow_rounded,
+                      color: AppColors.yellow,
+                      loading: _loading,
+                      onPressed: _continueDraft,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  CandyButton(
+                    label: _draft != null ? l10n.iqNewGame : l10n.startGame,
+                    icon: Icons.play_arrow_rounded,
+                    color: AppColors.green,
+                    textColor: AppColors.white,
+                    loading: _loading,
+                    onPressed: _start,
+                  ),
+                ],
               ),
             ),
             children: [
@@ -197,24 +267,13 @@ class _SoloSetupScreenState extends State<SoloSetupScreen> {
                 title: l10n.roundDuration,
                 icon: GameIconKind.timer,
                 color: AppColors.cyan,
-                child: Column(
-                  children: [
-                    PillSelector<int>(
-                      options: _durationOptions,
-                      isSelected: (d) => d == _duration,
-                      label: (d) => durationLabel(l10n, d),
-                      onTap: (d) => setState(() => _duration = d),
-                    ),
-                    if (_manyCategories) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.manyCategoriesHint(Category.many),
-                        key: const Key('many_categories_hint'),
-                        textAlign: TextAlign.center,
-                        style: fredoka(size: 13, color: AppColors.inkSoft),
-                      ),
-                    ],
-                  ],
+                child: DurationPicker(
+                  value: _duration,
+                  options: _durationOptions,
+                  onChanged: _setDuration,
+                  hint: _manyCategories
+                      ? l10n.manyCategoriesHint(Category.many)
+                      : null,
                 ),
               ),
               OptionSection(

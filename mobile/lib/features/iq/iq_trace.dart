@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/audio/game_audio.dart';
@@ -9,10 +10,24 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
 import '../../l10n/app_localizations.dart';
 
+/// Gagne l'arène face au scroll parent (dessin vertical).
+class _EagerPanGestureRecognizer extends PanGestureRecognizer {
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    super.addAllowedPointer(event);
+    resolve(GestureDisposition.accepted);
+  }
+}
+
 /// Figure à tracer d'un seul trait : des points (sur une petite grille) et
 /// des lignes entre eux.
 class IqTrace {
-  const IqTrace({required this.points, required this.edges});
+  const IqTrace({
+    required this.points,
+    required this.edges,
+    this.numbered = false,
+    this.ordered = false,
+  });
 
   factory IqTrace.fromJson(Map<String, dynamic> json) => IqTrace(
     points: [
@@ -23,10 +38,18 @@ class IqTrace {
       for (final e in json['edges'] as List)
         ((e as List)[0] as int, e[1] as int),
     ],
+    numbered: json['numbered'] as bool? ?? false,
+    ordered: json['ordered'] as bool? ?? false,
   );
 
   final List<(int, int)> points;
   final List<(int, int)> edges;
+
+  /// Afficher 1, 2, 3… sur les points.
+  final bool numbered;
+
+  /// Relier uniquement dans l'ordre des numéros.
+  final bool ordered;
 
   /// Ligne entre [a] et [b], ou -1.
   int edgeBetween(int a, int b) => edges.indexWhere(
@@ -36,7 +59,20 @@ class IqTrace {
   /// Même règle que le serveur : chaque ligne une seule fois, sans saut.
   bool isValid(String raw) {
     final path = raw.split('-').map(int.tryParse).toList();
-    if (path.contains(null) || path.length != edges.length + 1) return false;
+    if (path.contains(null)) return false;
+    if (ordered) {
+      final closed = edgeBetween(0, points.length - 1) >= 0;
+      final expected = [
+        for (var i = 0; i < points.length; i++) i,
+        if (closed) 0,
+      ];
+      if (path.length != expected.length) return false;
+      for (var i = 0; i < expected.length; i++) {
+        if (path[i] != expected[i]) return false;
+      }
+      return true;
+    }
+    if (path.length != edges.length + 1) return false;
     final used = <int>{};
     for (var i = 0; i + 1 < path.length; i++) {
       final edge = edgeBetween(path[i]!, path[i + 1]!);
@@ -100,12 +136,14 @@ class _TracePainter extends CustomPainter {
       );
     }
     final current = path.isEmpty ? null : path.last;
+    final tp = TextPainter(textDirection: TextDirection.ltr);
     for (var i = 0; i < trace.points.length; i++) {
       final c = trace.offsetOf(i, size);
       final hinted = start == i && path.isEmpty;
+      final r = i == current || hinted || trace.numbered ? 14.0 : 10.0;
       canvas.drawCircle(
         c,
-        i == current || hinted ? 13 : 10,
+        r,
         Paint()
           ..color = i == current
               ? AppColors.yellow
@@ -113,12 +151,24 @@ class _TracePainter extends CustomPainter {
       );
       canvas.drawCircle(
         c,
-        i == current || hinted ? 13 : 10,
+        r,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 3
           ..color = AppColors.purpleDeep,
       );
+      if (trace.numbered) {
+        tp.text = TextSpan(
+          text: '${i + 1}',
+          style: const TextStyle(
+            color: AppColors.purpleDeep,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        );
+        tp.layout();
+        tp.paint(canvas, c - Offset(tp.width / 2, tp.height / 2));
+      }
     }
   }
 
@@ -128,27 +178,99 @@ class _TracePainter extends CustomPainter {
 }
 
 /// La figure dessinée (correction : la solution en vert).
-class IqTraceView extends StatelessWidget {
-  const IqTraceView({super.key, required this.trace, this.path = const []});
+/// [animate] relie les points un à un pour faire comprendre le parcours.
+class IqTraceView extends StatefulWidget {
+  const IqTraceView({
+    super.key,
+    required this.trace,
+    this.path = const [],
+    this.animate = false,
+  });
 
   final IqTrace trace;
   final List<int> path;
+  final bool animate;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final width = min(constraints.maxWidth, 260.0);
-      return Center(
-        child: SizedBox(
-          width: width,
-          height: trace.heightFor(width),
-          child: CustomPaint(
-            painter: _TracePainter(trace: trace, path: path, solved: true),
+  State<IqTraceView> createState() => _IqTraceViewState();
+}
+
+class _IqTraceViewState extends State<IqTraceView>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _controller;
+
+  int get _segments =>
+      widget.path.length < 2 ? 0 : widget.path.length - 1;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.animate && _segments > 0) {
+      _controller = AnimationController(
+        vsync: this,
+        duration: Duration(milliseconds: 280 + _segments * 180),
+      )..forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant IqTraceView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.animate != oldWidget.animate ||
+        widget.path.length != oldWidget.path.length) {
+      _controller?.dispose();
+      _controller = null;
+      if (widget.animate && _segments > 0) {
+        _controller = AnimationController(
+          vsync: this,
+          duration: Duration(milliseconds: 280 + _segments * 180),
+        )..forward();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  List<int> _visible(double t) {
+    if (!widget.animate || _controller == null || _segments == 0) {
+      return widget.path;
+    }
+    final shown = (t * _segments).floor().clamp(0, _segments);
+    if (shown >= _segments) return widget.path;
+    return widget.path.sublist(0, shown + 1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final anim = _controller;
+    Widget board(List<int> path) => LayoutBuilder(
+      builder: (context, constraints) {
+        final width = min(constraints.maxWidth, 260.0);
+        return Center(
+          child: SizedBox(
+            width: width,
+            height: widget.trace.heightFor(width),
+            child: CustomPaint(
+              painter: _TracePainter(
+                trace: widget.trace,
+                path: path,
+                solved: true,
+              ),
+            ),
           ),
-        ),
-      );
-    },
-  );
+        );
+      },
+    );
+    if (anim == null) return board(widget.path);
+    return AnimatedBuilder(
+      animation: anim,
+      builder: (context, _) => board(_visible(anim.value)),
+    );
+  }
 }
 
 /// Planche à tracer : on glisse le doigt de point en point (ou on les touche
@@ -177,6 +299,7 @@ class _IqTraceBoardState extends State<IqTraceBoard> {
   final List<int> _path = [];
   final Set<int> _used = {};
   Size _size = Size.zero;
+  bool _sent = false;
 
   IqTrace get _trace => widget.trace;
 
@@ -198,18 +321,26 @@ class _IqTraceBoardState extends State<IqTraceBoard> {
   }
 
   void _visit(Offset position) {
-    if (!widget.enabled) return;
+    if (!widget.enabled || _sent) return;
     final node = _nodeAt(position);
     if (node == null) return;
     if (_path.isEmpty) {
+      // Points numérotés : on commence forcément par 1.
+      if (_trace.ordered && node != 0) return;
       setState(() => _path.add(node));
       return;
     }
     if (node == _path.last) return;
+    if (_trace.ordered) {
+      final n = _trace.points.length;
+      final closed = _trace.edgeBetween(0, n - 1) >= 0;
+      final next = _path.length < n ? _path.length : (closed ? 0 : -1);
+      if (node != next) return;
+    }
     final edge = _trace.edgeBetween(_path.last, node);
     if (edge < 0 || _used.contains(edge)) {
       // Au tout début, toucher un autre point change le départ.
-      if (_used.isEmpty) setState(() => _path[0] = node);
+      if (_used.isEmpty && !_trace.ordered) setState(() => _path[0] = node);
       return;
     }
     GameFeedbackScope.of(context).play(Sfx.key);
@@ -218,6 +349,7 @@ class _IqTraceBoardState extends State<IqTraceBoard> {
       _path.add(node);
     });
     if (_used.length == _trace.edges.length) {
+      _sent = true;
       widget.onDone(_path.join('-'));
     }
   }
@@ -225,6 +357,7 @@ class _IqTraceBoardState extends State<IqTraceBoard> {
   void _reset() => setState(() {
     _path.clear();
     _used.clear();
+    _sent = false;
   });
 
   @override
@@ -235,7 +368,11 @@ class _IqTraceBoardState extends State<IqTraceBoard> {
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
-            final width = min(constraints.maxWidth, 320.0);
+            final short = MediaQuery.sizeOf(context).height < 740;
+            final width = min(
+              constraints.maxWidth,
+              short ? 260.0 : 300.0,
+            );
             _size = Size(width, _trace.heightFor(width));
             return Center(
               child: Container(
@@ -244,12 +381,25 @@ class _IqTraceBoardState extends State<IqTraceBoard> {
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: AppColors.purpleLight, width: 3),
                 ),
-                child: GestureDetector(
+                child: RawGestureDetector(
                   key: const Key('iq_trace_board'),
                   behavior: HitTestBehavior.opaque,
-                  onPanStart: (d) => _visit(d.localPosition),
-                  onPanUpdate: (d) => _visit(d.localPosition),
-                  onTapUp: (d) => _visit(d.localPosition),
+                  gestures: <Type, GestureRecognizerFactory>{
+                    _EagerPanGestureRecognizer:
+                        GestureRecognizerFactoryWithHandlers<
+                          _EagerPanGestureRecognizer
+                        >(
+                      () => _EagerPanGestureRecognizer(),
+                      (instance) {
+                        instance.onStart = (d) {
+                          _visit(d.localPosition);
+                        };
+                        instance.onUpdate = (d) {
+                          _visit(d.localPosition);
+                        };
+                      },
+                    ),
+                  },
                   child: SizedBox.fromSize(
                     size: _size,
                     child: CustomPaint(
@@ -281,8 +431,8 @@ class _IqTraceBoardState extends State<IqTraceBoard> {
           label: l10n.iqTraceRestart,
           icon: Icons.replay_rounded,
           color: _stuck ? AppColors.yellow : AppColors.white,
-          height: 42,
-          fontSize: 15,
+          height: MediaQuery.sizeOf(context).height < 740 ? 38 : 42,
+          fontSize: 14,
           onPressed: _path.isEmpty || !widget.enabled ? null : _reset,
         ),
       ],

@@ -700,6 +700,10 @@ def test_private_rooms_are_listed_only_for_members(client, http):
 
     others = client.get("/api/v1/rooms/public", params={"language": "fr"}).json()
     assert [r["code"] for r in others] == [public], "private room hidden from strangers"
+    # Après fermeture, le créateur retrouve le salon privé dans « Mes salons ».
+    mine = client.get("/api/v1/rooms/mine", params={"client_id": "alice-0001"}).json()
+    assert {r["code"] for r in mine} == {private, public}
+    assert next(r for r in mine if r["code"] == private)["public"] is False
     assert client.get(f"/api/v1/rooms/{private}/history", params={"client_id": "carol-0001"}).status_code == 404
     history = client.get(f"/api/v1/rooms/{public}/history", params={"client_id": "carol-0001"})
     assert history.status_code == 200, "anyone can read a public room"

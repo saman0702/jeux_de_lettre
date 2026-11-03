@@ -179,7 +179,7 @@ class _FigurePainter extends CustomPainter {
 
 /// Case d'une grille ou d'une suite : la figure, ou « ? » pour celle à trouver.
 class IqFigureCell extends StatelessWidget {
-  const IqFigureCell(this.figure, {super.key, this.size = 70});
+  const IqFigureCell(this.figure, {super.key, this.size = 56});
 
   final IqFigure? figure;
   final double size;
@@ -193,61 +193,74 @@ class IqFigureCell extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: hidden ? AppColors.yellow : AppColors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: hidden ? AppColors.orange : const Color(0xFFDCD3F2),
-          width: 2.5,
+          width: 2,
         ),
       ),
       child: hidden
           ? Text(
               '?',
-              style: gameFont(size: size * 0.45, color: AppColors.ink),
+              style: gameFont(size: size * 0.42, color: AppColors.ink),
             )
-          : IqFigureView(figure!, size: size - 8),
+          : IqFigureView(figure!, size: size - 6),
     );
   }
 }
 
 /// La grille 3 × 3 ou la suite de figures de l'énoncé.
 class IqFigureBoard extends StatelessWidget {
-  const IqFigureBoard(this.figures, {super.key});
+  const IqFigureBoard(this.figures, {super.key, this.compact = false});
 
   final IqFigures figures;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    if (figures.layout == 'grid') {
-      return Center(
-        child: Column(
-          key: const Key('iq_figure_grid'),
-          children: [
-            for (var r = 0; r < 3; r++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (var c = 0; c < 3; c++)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 3),
-                        child: IqFigureCell(figures.cells[r * 3 + c]),
-                      ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      );
-    }
     return LayoutBuilder(
       builder: (context, constraints) {
+        if (figures.layout == 'grid') {
+          final gap = compact ? 4.0 : 6.0;
+          final size = min(
+            compact ? 48.0 : 56.0,
+            (constraints.maxWidth - gap * 4) / 3,
+          );
+          return Center(
+            child: Column(
+              key: const Key('iq_figure_grid'),
+              children: [
+                for (var r = 0; r < 3; r++)
+                  Padding(
+                    padding: EdgeInsets.only(bottom: r < 2 ? gap : 0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var c = 0; c < 3; c++)
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: gap / 2),
+                            child: IqFigureCell(
+                              figures.cells[r * 3 + c],
+                              size: size,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }
         final n = max(1, figures.cells.length);
-        final size = min(62.0, (constraints.maxWidth - 6 * n) / n);
+        final size = min(
+          compact ? 48.0 : 56.0,
+          (constraints.maxWidth - 6 * n) / n,
+        );
         return Wrap(
           key: const Key('iq_figure_row'),
           alignment: WrapAlignment.center,
-          spacing: 6,
+          spacing: 5,
+          runSpacing: 5,
           children: [
             for (final f in figures.cells) IqFigureCell(f, size: size),
           ],

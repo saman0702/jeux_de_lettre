@@ -16,6 +16,8 @@
   "soloSetupTitle": "Partie solo",
   "rounds": "Manches",
   "roundDuration": "Durée d'une manche",
+  "durationUnlimited": "Illimité",
+  "customDurationHint": "Ou saisis les secondes",
   "secondsShort": "{seconds} s",
   "@secondsShort": {
     "placeholders": {
@@ -111,7 +113,7 @@
   "nextRound": "MANCHE SUIVANTE",
   "seeResults": "VOIR LE RÉSULTAT",
   "gameOver": "PARTIE TERMINÉE",
-  "playAgain": "REJOUER",
+  "playAgain": "CONTINUER À JOUER",
   "backHome": "Accueil",
   "errorNetwork": "Connexion au serveur impossible.",
   "errorGeneric": "Une erreur est survenue.",
@@ -233,7 +235,7 @@
       }
     }
   },
-  "rematchHelp": "Vote pour rejouer. Quand la majorité des joueurs humains a voté, une nouvelle partie démarre avec les mêmes réglages.",
+  "rematchHelp": "Vote pour continuer à jouer. Quand la majorité des joueurs humains a voté, une nouvelle partie démarre avec les mêmes réglages.",
   "bonusRound": "MANCHE BONUS",
   "bonusRoundHelp": "Une mini-manche surprise après le podium, sans mise. Pour ceux qui veulent encore une manche avant de partir.",
   "errorFrozen": "Tu es gelé pour le moment !",
@@ -261,7 +263,10 @@
   "offlineShort": "Hors ligne",
   "nicknameTitle": "Choisis ton pseudo",
   "nicknameHint": "Ton pseudo",
+  "nicknameHelp": "C’est ton nom de joueur (les salons s’affichent « Salle de … »).",
+  "nicknameRequired": "Entre ton pseudo pour continuer.",
   "nicknameConfirm": "C'EST PARTI !",
+  "settingsNickname": "Pseudo",
   "roomsTitle": "Salons",
   "createRoom": "CRÉER UNE SALLE",
   "joinWithCode": "Rejoindre avec un code",
@@ -692,7 +697,7 @@
   "shopStoreError": "L'achat n'a pas abouti.",
   "shopRetryLater": "Achat reçu : tes pièces seront ajoutées dès que le serveur sera joignable.",
   "shopUnavailable": "La boutique n'est pas disponible sur cet appareil pour le moment.",
-  "shopLegal": "Paiement sécurisé par Google Play ou l'App Store. Les pièces n'ont aucune valeur monétaire : elles ne sont ni remboursables, ni échangeables, ni convertibles en argent.",
+  "shopLegal": "L'abonnement Premium est payé et géré par Google Play ou l'App Store (résiliable à tout moment). Les pièces n'ont aucune valeur monétaire : elles ne sont ni remboursables, ni échangeables, ni convertibles en argent.",
   "avatarPhotoNeedsConnection": "Connecte-toi pour utiliser une photo : elle est transformée en dessin sur le serveur.",
   "avatarPickFailed": "Impossible d'ouvrir l'appareil photo ou la galerie. Vérifie les autorisations de l'appli.",
   "avatarSavedOffline": "Avatar choisi ! Il sera partagé dès que tu seras en ligne.",
@@ -812,7 +817,7 @@
     }
   },
   "nextLevel": "NIVEAU SUIVANT",
-  "replayLevel": "REJOUER LE NIVEAU",
+  "replayLevel": "CONTINUER À JOUER",
   "levelsMap": "CARTE DES NIVEAUX",
   "eliminationChampion": "Champion !",
   "eliminationOut": "Éliminé !",
@@ -1043,8 +1048,8 @@
   "perksAdLimit": "Plus de vidéo pour aujourd'hui : reviens demain !",
   "perksAdPending": "Vidéo vue ! Tes pièces arrivent dans un instant.",
   "perksNoAd": "Pas de vidéo disponible pour le moment.",
-  "perksPassTitle": "Pass Mind Race",
-  "perksPassNoAds": "Aucune pub entre les parties",
+  "perksPassTitle": "Premium",
+  "perksPassNoAds": "Aucune pub pendant 1 mois",
   "perksPassDaily": "{coins} pièces offertes chaque jour",
   "@perksPassDaily": {
     "placeholders": {
@@ -1086,12 +1091,14 @@
     }
   },
   "perksDailyTaken": "BONUS DU JOUR PRIS",
-  "perksPassDone": "Bienvenue dans le Pass !",
+  "perksPassDone": "Premium activé : plus de pub ce mois-ci !",
   "perksRemoveAdsTitle": "Sans pub",
   "perksRemoveAdsInfo": "Plus aucune pub entre les parties, pour toujours. Les vidéos pour gagner des pièces restent possibles.",
   "perksRemoveAdsOwned": "Sans pub : activé",
   "perksRemoveAdsDone": "C'est fini les pubs, merci !",
   "shopUnavailableShort": "Indisponible",
+  "perksPassNeedPlay": "Via Google Play (pas en debug USB)",
+  "perksPassBenefitHint": "Avantage de l'abonnement — tu n'es pas encore Premium",
   "roomHistoryTitle": "Salon {code}",
   "@roomHistoryTitle": {
     "placeholders": {
@@ -1182,6 +1189,7 @@
   "iqKindLogic": "Logique",
   "iqTypeAnswer": "Tape ta réponse",
   "iqValidate": "VALIDER",
+  "iqScrollMore": "Glisse pour voir la suite",
   "iqGoodAnswer": "Bonne réponse",
   "iqQuestion": "Énigme {number} / {total}",
   "@iqQuestion": {
@@ -1231,6 +1239,20 @@
   },
   "iqResultNote": "Pour s'amuser : ce n'est pas un vrai test de QI.",
   "iqNext": "ÉNIGME SUIVANTE",
+  "iqPause": "PAUSE",
+  "iqContinue": "CONTINUER ({done}/{total})",
+  "@iqContinue": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "iqNewGame": "NOUVELLE PARTIE",
+  "iqNewGameTitle": "Nouvelle partie ?",
+  "iqNewGameMessage": "La partie en pause sera abandonnée.",
+  "iqQuitMidRound": "Tu es au milieu d'une énigme : la progression ne sera pas sauvegardée. Mets pause après avoir répondu pour reprendre plus tard.",
+  "geoQuitMidRound": "Tu es au milieu d'une manche : la progression ne sera pas sauvegardée. Mets pause après la manche pour reprendre plus tard.",
+  "iqResumeNeedsOnline": "Reconnecte-toi pour reprendre cette partie.",
   "iqSeeResult": "VOIR MON QI",
   "iqBadge": "QI",
   "iqYou": "Toi",
@@ -1242,6 +1264,17 @@
   "iqJokerHint": "Indice",
   "iqJokerTime": "+15 s",
   "iqJokerSkip": "Passer",
+  "iqJokerReveal": "Solution",
+  "iqSpeedFast": "Rapide",
+  "iqSpeedMedium": "Dans les temps",
+  "iqSpeedSlow": "Lent",
+  "iqTimeJudged": "{time} · {speed}",
+  "@iqTimeJudged": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "speed": { "type": "String" }
+    }
+  },
   "iqHintRange": "Indice : entre {low} et {high}",
   "@iqHintRange": {
     "placeholders": {
@@ -1280,6 +1313,21 @@
   "iqDailyNeedsOnline": "Le défi du jour se joue en ligne.",
   "iqLate": "Trop tard !",
   "iqKindTrace": "Un seul trait",
+  "iqKindCount": "Compter",
+  "iqKindDots": "Points à relier",
+  "iqKindFlow": "Couleurs",
+  "gameChronoTitle": "Chrono",
+  "gameChronoTag": "Histoire & dates",
+  "gameMotsTitle": "Mot & Sens",
+  "gameMotsTag": "Vocabulaire",
+  "quizSeeScore": "VOIR LE SCORE",
+  "chronoSoloTitle": "Chrono en solo",
+  "motsSoloTitle": "Mot & Sens",
+  "quizQuestions": "Nombre de questions",
+  "quizTimePerQuestion": "Temps par question",
+  "quizCreateRoom": "CRÉER UN SALON",
+  "quizOpenRooms": "Salons ouverts",
+  "quizNoRooms": "Aucun salon public pour le moment : crée le tien !",
   "iqTraceRestart": "RECOMMENCER",
   "iqTraceStuck": "Bloqué : il reste des lignes, recommence !",
   "iqTraceStartHint": "Indice : pars du point orange.",
@@ -1298,5 +1346,10 @@
     }
   },
   "gameLettersTag": "Lettres & catégories",
-  "gameIqTag": "Logique & énigmes"
+  "gameIqTag": "Logique & énigmes",
+  "deleteAccountButton": "Supprimer mon compte",
+  "deleteAccountTitle": "Supprimer ton compte ?",
+  "deleteAccountMessage": "Ton pseudo, tes pièces, ton avatar, tes salons, tes messages et ta progression seront effacés pour toujours. Un abonnement Premium se résilie à part, dans Google Play ou l'App Store.",
+  "deleteAccountConfirm": "SUPPRIMER",
+  "deleteAccountDone": "Compte supprimé. L'appli va se fermer : au prochain lancement, tu repars de zéro."
 }

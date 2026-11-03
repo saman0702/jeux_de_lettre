@@ -2,15 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../animations/bounce_in.dart';
 import '../../core/audio/game_audio.dart';
 import '../../core/feedback/game_feedback.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/candy_button.dart';
 import '../../core/widgets/floating_bars_layout.dart';
 import '../../core/widgets/game_background.dart';
-import '../../core/widgets/game_card.dart';
 import '../../core/widgets/game_icon.dart';
 import '../../l10n/app_localizations.dart';
 import '../online/online_controller.dart';
@@ -20,7 +17,8 @@ import '../perks/perks_section.dart';
 import 'shop_controller.dart';
 import 'looks_section.dart';
 
-/// Boutique : packs de pièces payés par le store du téléphone.
+/// Boutique : des vidéos pour gagner des pièces, l'abonnement Premium pour
+/// ne plus voir de pubs, et les apparences achetées avec ses pièces.
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
 
@@ -110,55 +108,8 @@ class _ShopScreenState extends State<ShopScreen> {
                 ),
                 const SizedBox(height: 14),
                 const PerksSection(),
-                switch (shop.status) {
-                  ShopStatus.loading => const Padding(
-                    padding: EdgeInsets.all(40),
-                    child: Center(
-                      child: CircularProgressIndicator(color: AppColors.yellow),
-                    ),
-                  ),
-                  ShopStatus.unavailable => GameCard(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        const GameIcon(
-                          GameIconKind.offline,
-                          size: 40,
-                          color: AppColors.purple,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          l10n.shopUnavailable,
-                          key: const Key('shop_unavailable'),
-                          textAlign: TextAlign.center,
-                          style: fredoka(size: 16, weight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ShopStatus.ready => GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 0.78,
-                    children: [
-                      for (final (i, pack) in shop.packs.indexed)
-                        BounceIn(
-                          delay: Duration(milliseconds: 80 * i),
-                          from: 0.7,
-                          child: _PackCard(
-                            pack: pack,
-                            busy: shop.buying == pack.productId,
-                            onBuy: shop.buying == null
-                                ? () => shop.buy(pack)
-                                : null,
-                          ),
-                        ),
-                    ],
-                  ),
-                },
+                // Plus de packs de pièces à vendre : on gagne des pièces en
+                // regardant des vidéos, et l'abonnement retire les pubs.
                 const SizedBox(height: 18),
                 LooksSection(api: shop.api, clientId: shop.clientId),
                 const SizedBox(height: 14),
@@ -176,96 +127,6 @@ class _ShopScreenState extends State<ShopScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _PackCard extends StatelessWidget {
-  const _PackCard({required this.pack, required this.busy, this.onBuy});
-
-  final CoinPack pack;
-  final bool busy;
-  final VoidCallback? onBuy;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    // Plus le pack est gros, plus la pile de pièces est haute.
-    final stack = switch (pack.coins) {
-      < 500 => 1,
-      < 1000 => 3,
-      < 2000 => 5,
-      _ => 7,
-    };
-    return GameCard(
-      key: Key('pack_${pack.productId}'),
-      padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
-      child: Column(
-        children: [
-          if (pack.bonusPercent > 0)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.pink,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                l10n.shopBonus(pack.bonusPercent),
-                style: fredoka(
-                  size: 12,
-                  weight: FontWeight.w700,
-                  color: AppColors.white,
-                ),
-              ),
-            )
-          else
-            const SizedBox(height: 20),
-          Expanded(
-            child: Center(
-              child: SizedBox(
-                width: 70,
-                height: 70,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    for (var i = 0; i < stack; i++)
-                      Positioned(
-                        bottom: 4.0 + i * 6,
-                        left: 14.0 + (i.isEven ? 0 : 6) - (stack > 4 ? 6 : 0),
-                        child: const GameIcon(
-                          GameIconKind.coin,
-                          size: 40,
-                          motion: IconMotion.none,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Text(
-            '${pack.coins}',
-            style: fredoka(
-              size: 26,
-              weight: FontWeight.w700,
-              color: AppColors.purple,
-            ),
-          ),
-          Text(
-            l10n.shopCoinsLabel,
-            style: fredoka(size: 13, color: AppColors.inkSoft),
-          ),
-          const SizedBox(height: 8),
-          CandyButton(
-            key: Key('buy_${pack.productId}'),
-            label: pack.price,
-            color: AppColors.green,
-            textColor: AppColors.white,
-            loading: busy,
-            onPressed: onBuy,
-          ),
-        ],
       ),
     );
   }

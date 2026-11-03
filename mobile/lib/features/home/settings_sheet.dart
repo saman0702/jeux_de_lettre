@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import 'country_picker.dart';
+import 'onboarding_screen.dart';
 
 import '../../animations/bounce_in.dart';
 import '../../core/feedback/game_feedback.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
+import '../../core/widgets/game_dialog.dart';
 import '../../core/widgets/game_icon.dart';
 import '../../core/widgets/game_toggle.dart';
+import '../game/widgets/labels.dart';
 import '../game/widgets/pill_selector.dart';
 import '../../l10n/app_localizations.dart';
+import '../online/online_controller.dart';
 
 /// Panneau de réglages façon menu de jeu qui monte depuis le bas.
 Future<void> showSettingsSheet(BuildContext context) {
@@ -25,8 +32,41 @@ Future<void> showSettingsSheet(BuildContext context) {
   );
 }
 
-class _SettingsSheet extends StatelessWidget {
+class _SettingsSheet extends StatefulWidget {
   const _SettingsSheet();
+
+  @override
+  State<_SettingsSheet> createState() => _SettingsSheetState();
+}
+
+class _SettingsSheetState extends State<_SettingsSheet> {
+  late final TextEditingController _nickname;
+
+  @override
+  void initState() {
+    super.initState();
+    _nickname = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final name = GameFeedbackScope.of(context).settings.nickname ?? '';
+      if (_nickname.text != name) _nickname.text = name;
+    });
+  }
+
+  @override
+  void dispose() {
+    _nickname.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveNickname(String raw) async {
+    final name = raw.trim();
+    if (name.isEmpty) return;
+    final settings = GameFeedbackScope.of(context).settings;
+    if (settings.nickname == name) return;
+    settings.nickname = name;
+    await OnlineScope.of(context).client.updateNickname(name);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +136,15 @@ class _SettingsSheet extends StatelessWidget {
                     BounceIn(
                       from: 0.85,
                       slideY: 0.3,
+                      child: _NicknameRow(
+                        controller: _nickname,
+                        onSubmitted: _saveNickname,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    BounceIn(
+                      from: 0.85,
+                      slideY: 0.3,
                       child: _LanguageRow(
                         value: settings.languageCode,
                         onChanged: (code) => settings.languageCode = code,
@@ -149,6 +198,24 @@ class _SettingsSheet extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
+                    // Suppression du compte (exigée par les stores).
+                    TextButton.icon(
+                      key: const Key('delete_account'),
+                      onPressed: () => deleteMyAccount(context),
+                      icon: const Icon(
+                        Icons.delete_forever_rounded,
+                        color: AppColors.red,
+                        size: 18,
+                      ),
+                      label: Text(
+                        l10n.deleteAccountButton,
+                        style: fredoka(
+                          size: 13,
+                          weight: FontWeight.w600,
+                          color: AppColors.red,
+                        ),
+                      ),
+                    ),
                     // Lien discret : la licence CC BY des musiques demande de
                     // citer l'auteur quelque part dans l'appli.
                     TextButton(
@@ -296,6 +363,76 @@ class _SettingRow extends StatelessWidget {
             GameToggle(value: value, onChanged: onChanged),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _NicknameRow extends StatelessWidget {
+  const _NicknameRow({required this.controller, required this.onSubmitted});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      key: const Key('setting_nickname'),
+      padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.yellow, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.depthOf(AppColors.yellow),
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const GameIconBadge(
+                GameIconKind.smile,
+                color: AppColors.yellow,
+                size: 36,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  l10n.settingsNickname,
+                  style: fredoka(size: 15, weight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.nicknameHelp,
+            style: fredoka(size: 12, color: AppColors.inkSoft),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            key: const Key('settings_nickname_field'),
+            controller: controller,
+            maxLength: 20,
+            textCapitalization: TextCapitalization.words,
+            style: fredoka(size: 18, weight: FontWeight.w600),
+            textAlign: TextAlign.center,
+            onEditingComplete: () => onSubmitted(controller.text),
+            onSubmitted: onSubmitted,
+            decoration: InputDecoration(
+              hintText: l10n.nicknameHint,
+              fillColor: AppColors.cloud,
+              counterText: '',
+              isDense: true,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -533,3 +670,55 @@ class _MusicVolumeRow extends StatelessWidget {
     );
   }
 }
+
+/// Réglages > Supprimer mon compte : après confirmation, le serveur efface le
+/// profil et tout ce qui lui appartient, puis l'appli efface ses données de
+/// joueur et se ferme (au prochain lancement : nouveau joueur).
+Future<void> deleteMyAccount(BuildContext context, {ApiClient? api}) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final online = OnlineScope.of(context);
+  final settings = GameFeedbackScope.of(context).settings;
+  final ok = await showGameConfirm(
+    context,
+    icon: GameIconKind.door,
+    title: l10n.deleteAccountTitle,
+    message: l10n.deleteAccountMessage,
+    confirmLabel: l10n.deleteAccountConfirm,
+    cancelLabel: l10n.cancel,
+  );
+  if (!ok || !context.mounted) return;
+  try {
+    await (api ?? ApiClient()).deleteJson('/api/v1/profiles/${online.clientId}');
+  } on ApiException catch (e) {
+    messenger.showSnackBar(SnackBar(content: Text(errorMessage(l10n, e.code))));
+    return;
+  }
+  await settings.eraseAccountData();
+  if (!context.mounted) return;
+  final ios = defaultTargetPlatform == TargetPlatform.iOS;
+  await showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => AlertDialog(
+      content: Text(l10n.deleteAccountDone, style: fredoka(size: 15)),
+      actions: [
+        TextButton(
+          key: const Key('delete_account_close'),
+          // Android : l'appli se ferme. iPhone ne permet pas à une appli de se
+          // fermer : retour à l'écran de bienvenue, comme un nouveau joueur.
+          onPressed: ios
+              ? () => Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const OnboardingScreen(),
+                  ),
+                  (_) => false,
+                )
+              : () => SystemNavigator.pop(),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+}
+

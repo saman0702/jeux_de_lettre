@@ -194,6 +194,18 @@ abstract class AppLocalizations {
   /// **'Durée d\'une manche'**
   String get roundDuration;
 
+  /// No description provided for @durationUnlimited.
+  ///
+  /// In fr, this message translates to:
+  /// **'Illimité'**
+  String get durationUnlimited;
+
+  /// No description provided for @customDurationHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ou saisis les secondes'**
+  String get customDurationHint;
+
   /// No description provided for @secondsShort.
   ///
   /// In fr, this message translates to:
@@ -413,7 +425,7 @@ abstract class AppLocalizations {
   /// No description provided for @playAgain.
   ///
   /// In fr, this message translates to:
-  /// **'REJOUER'**
+  /// **'CONTINUER À JOUER'**
   String get playAgain;
 
   /// No description provided for @backHome.
@@ -755,7 +767,7 @@ abstract class AppLocalizations {
   /// No description provided for @rematchHelp.
   ///
   /// In fr, this message translates to:
-  /// **'Vote pour rejouer. Quand la majorité des joueurs humains a voté, une nouvelle partie démarre avec les mêmes réglages.'**
+  /// **'Vote pour continuer à jouer. Quand la majorité des joueurs humains a voté, une nouvelle partie démarre avec les mêmes réglages.'**
   String get rematchHelp;
 
   /// No description provided for @bonusRound.
@@ -878,11 +890,29 @@ abstract class AppLocalizations {
   /// **'Ton pseudo'**
   String get nicknameHint;
 
+  /// No description provided for @nicknameHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'C’est ton nom de joueur (les salons s’affichent « Salle de … »).'**
+  String get nicknameHelp;
+
+  /// No description provided for @nicknameRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entre ton pseudo pour continuer.'**
+  String get nicknameRequired;
+
   /// No description provided for @nicknameConfirm.
   ///
   /// In fr, this message translates to:
   /// **'C\'EST PARTI !'**
   String get nicknameConfirm;
+
+  /// No description provided for @settingsNickname.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pseudo'**
+  String get settingsNickname;
 
   /// No description provided for @roomsTitle.
   ///
@@ -1757,7 +1787,7 @@ abstract class AppLocalizations {
   /// No description provided for @shopLegal.
   ///
   /// In fr, this message translates to:
-  /// **'Paiement sécurisé par Google Play ou l\'App Store. Les pièces n\'ont aucune valeur monétaire : elles ne sont ni remboursables, ni échangeables, ni convertibles en argent.'**
+  /// **'L\'abonnement Premium est payé et géré par Google Play ou l\'App Store (résiliable à tout moment). Les pièces n\'ont aucune valeur monétaire : elles ne sont ni remboursables, ni échangeables, ni convertibles en argent.'**
   String get shopLegal;
 
   /// No description provided for @avatarPhotoNeedsConnection.
@@ -1865,7 +1895,7 @@ abstract class AppLocalizations {
   /// No description provided for @replayLevel.
   ///
   /// In fr, this message translates to:
-  /// **'REJOUER LE NIVEAU'**
+  /// **'CONTINUER À JOUER'**
   String get replayLevel;
 
   /// No description provided for @levelsMap.
@@ -2651,13 +2681,13 @@ abstract class AppLocalizations {
   /// No description provided for @perksPassTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Pass Mind Race'**
+  /// **'Premium'**
   String get perksPassTitle;
 
   /// No description provided for @perksPassNoAds.
   ///
   /// In fr, this message translates to:
-  /// **'Aucune pub entre les parties'**
+  /// **'Aucune pub pendant 1 mois'**
   String get perksPassNoAds;
 
   /// No description provided for @perksPassDaily.
@@ -2699,7 +2729,7 @@ abstract class AppLocalizations {
   /// No description provided for @perksPassDone.
   ///
   /// In fr, this message translates to:
-  /// **'Bienvenue dans le Pass !'**
+  /// **'Premium activé : plus de pub ce mois-ci !'**
   String get perksPassDone;
 
   /// No description provided for @perksRemoveAdsTitle.
@@ -2731,6 +2761,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Indisponible'**
   String get shopUnavailableShort;
+
+  /// No description provided for @perksPassNeedPlay.
+  ///
+  /// In fr, this message translates to:
+  /// **'Via Google Play (pas en debug USB)'**
+  String get perksPassNeedPlay;
+
+  /// No description provided for @perksPassBenefitHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avantage de l\'abonnement — tu n\'es pas encore Premium'**
+  String get perksPassBenefitHint;
 
   /// No description provided for @roomHistoryTitle.
   ///
@@ -2960,6 +3002,12 @@ abstract class AppLocalizations {
   /// **'VALIDER'**
   String get iqValidate;
 
+  /// No description provided for @iqScrollMore.
+  ///
+  /// In fr, this message translates to:
+  /// **'Glisse pour voir la suite'**
+  String get iqScrollMore;
+
   /// No description provided for @iqGoodAnswer.
   ///
   /// In fr, this message translates to:
@@ -3116,6 +3164,54 @@ abstract class AppLocalizations {
   /// **'ÉNIGME SUIVANTE'**
   String get iqNext;
 
+  /// No description provided for @iqPause.
+  ///
+  /// In fr, this message translates to:
+  /// **'PAUSE'**
+  String get iqPause;
+
+  /// No description provided for @iqContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'CONTINUER ({done}/{total})'**
+  String iqContinue(int done, int total);
+
+  /// No description provided for @iqNewGame.
+  ///
+  /// In fr, this message translates to:
+  /// **'NOUVELLE PARTIE'**
+  String get iqNewGame;
+
+  /// No description provided for @iqNewGameTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle partie ?'**
+  String get iqNewGameTitle;
+
+  /// No description provided for @iqNewGameMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'La partie en pause sera abandonnée.'**
+  String get iqNewGameMessage;
+
+  /// No description provided for @iqQuitMidRound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu es au milieu d\'une énigme : la progression ne sera pas sauvegardée. Mets pause après avoir répondu pour reprendre plus tard.'**
+  String get iqQuitMidRound;
+
+  /// No description provided for @geoQuitMidRound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu es au milieu d\'une manche : la progression ne sera pas sauvegardée. Mets pause après la manche pour reprendre plus tard.'**
+  String get geoQuitMidRound;
+
+  /// No description provided for @iqResumeNeedsOnline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reconnecte-toi pour reprendre cette partie.'**
+  String get iqResumeNeedsOnline;
+
   /// No description provided for @iqSeeResult.
   ///
   /// In fr, this message translates to:
@@ -3181,6 +3277,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Passer'**
   String get iqJokerSkip;
+
+  /// No description provided for @iqJokerReveal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Solution'**
+  String get iqJokerReveal;
+
+  /// No description provided for @iqSpeedFast.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rapide'**
+  String get iqSpeedFast;
+
+  /// No description provided for @iqSpeedMedium.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dans les temps'**
+  String get iqSpeedMedium;
+
+  /// No description provided for @iqSpeedSlow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lent'**
+  String get iqSpeedSlow;
+
+  /// No description provided for @iqTimeJudged.
+  ///
+  /// In fr, this message translates to:
+  /// **'{time} · {speed}'**
+  String iqTimeJudged(String time, String speed);
 
   /// No description provided for @iqHintRange.
   ///
@@ -3266,6 +3392,96 @@ abstract class AppLocalizations {
   /// **'Un seul trait'**
   String get iqKindTrace;
 
+  /// No description provided for @iqKindCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compter'**
+  String get iqKindCount;
+
+  /// No description provided for @iqKindDots.
+  ///
+  /// In fr, this message translates to:
+  /// **'Points à relier'**
+  String get iqKindDots;
+
+  /// No description provided for @iqKindFlow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleurs'**
+  String get iqKindFlow;
+
+  /// No description provided for @gameChronoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chrono'**
+  String get gameChronoTitle;
+
+  /// No description provided for @gameChronoTag.
+  ///
+  /// In fr, this message translates to:
+  /// **'Histoire & dates'**
+  String get gameChronoTag;
+
+  /// No description provided for @gameMotsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mot & Sens'**
+  String get gameMotsTitle;
+
+  /// No description provided for @gameMotsTag.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vocabulaire'**
+  String get gameMotsTag;
+
+  /// No description provided for @quizSeeScore.
+  ///
+  /// In fr, this message translates to:
+  /// **'VOIR LE SCORE'**
+  String get quizSeeScore;
+
+  /// No description provided for @chronoSoloTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chrono en solo'**
+  String get chronoSoloTitle;
+
+  /// No description provided for @motsSoloTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mot & Sens'**
+  String get motsSoloTitle;
+
+  /// No description provided for @quizQuestions.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nombre de questions'**
+  String get quizQuestions;
+
+  /// No description provided for @quizTimePerQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Temps par question'**
+  String get quizTimePerQuestion;
+
+  /// No description provided for @quizCreateRoom.
+  ///
+  /// In fr, this message translates to:
+  /// **'CRÉER UN SALON'**
+  String get quizCreateRoom;
+
+  /// No description provided for @quizOpenRooms.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salons ouverts'**
+  String get quizOpenRooms;
+
+  /// No description provided for @quizNoRooms.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun salon public pour le moment : crée le tien !'**
+  String get quizNoRooms;
+
   /// No description provided for @iqTraceRestart.
   ///
   /// In fr, this message translates to:
@@ -3337,6 +3553,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Logique & énigmes'**
   String get gameIqTag;
+
+  /// No description provided for @deleteAccountButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer mon compte'**
+  String get deleteAccountButton;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer ton compte ?'**
+  String get deleteAccountTitle;
+
+  /// No description provided for @deleteAccountMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton pseudo, tes pièces, ton avatar, tes salons, tes messages et ta progression seront effacés pour toujours. Un abonnement Premium se résilie à part, dans Google Play ou l\'App Store.'**
+  String get deleteAccountMessage;
+
+  /// No description provided for @deleteAccountConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'SUPPRIMER'**
+  String get deleteAccountConfirm;
+
+  /// No description provided for @deleteAccountDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte supprimé. L\'appli va se fermer : au prochain lancement, tu repars de zéro.'**
+  String get deleteAccountDone;
 }
 
 class _AppLocalizationsDelegate

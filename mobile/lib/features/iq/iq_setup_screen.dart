@@ -7,10 +7,12 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/candy_button.dart';
 import '../../core/widgets/floating_bars_layout.dart';
 import '../../core/widgets/game_background.dart';
+import '../../core/widgets/game_dialog.dart';
 import '../../core/widgets/game_icon.dart';
 import '../../core/widgets/game_toggle.dart';
 import '../../l10n/app_localizations.dart';
 import '../game/data/models.dart';
+import '../game/widgets/duration_picker.dart';
 import '../game/widgets/labels.dart';
 import '../game/widgets/option_section.dart';
 import '../game/widgets/pill_selector.dart';
@@ -20,6 +22,7 @@ import '../online/room_screen.dart';
 import '../online/widgets/online_counter.dart';
 import '../online/widgets/online_header.dart';
 import 'iq_models.dart';
+import 'iq_solo_draft.dart';
 import 'iq_solo_screen.dart';
 
 enum IqSetupMode { room, bots, solo }
@@ -41,7 +44,7 @@ class IqSetupScreen extends StatefulWidget {
 
 class _IqSetupScreenState extends State<IqSetupScreen> {
   int _rounds = 10;
-  int _duration = 30;
+  int _duration = SoloGameSettings.unlimitedDuration;
   Difficulty _difficulty = Difficulty.normal;
   bool _speedBonus = true;
   bool _penalty = false;
@@ -54,11 +57,52 @@ class _IqSetupScreenState extends State<IqSetupScreen> {
   /// Salon à mise : chacun mise la même somme, le meilleur QI rafle le pot.
   RoomKind _kind = RoomKind.classic;
   int _stake = RoomKind.stakeOptions.first;
+  IqSoloDraft? _draft;
 
-  void _start() {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.mode == IqSetupMode.solo) {
+      IqSoloDraftStore.load().then((d) {
+        if (mounted) setState(() => _draft = d);
+      });
+    }
+  }
+
+  void _continueDraft() {
+    final draft = _draft;
+    if (draft == null) return;
+    Navigator.of(context).pushReplacement(
+      PopRoute(
+        builder: (_) => IqSoloScreen(
+          rounds: draft.rounds,
+          duration: draft.duration,
+          difficulty: draft.difficulty,
+          scoring: draft.scoring,
+          apiClient: widget.apiClient,
+          draft: draft,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _start() async {
     final navigator = Navigator.of(context);
     final scoring = IqScoring(speedBonus: _speedBonus, penalty: _penalty);
     if (widget.mode == IqSetupMode.solo) {
+      if (_draft != null) {
+        final l10n = AppLocalizations.of(context);
+        final ok = await showGameConfirm(
+          context,
+          icon: GameIconKind.flame,
+          title: l10n.iqNewGameTitle,
+          message: l10n.iqNewGameMessage,
+          confirmLabel: l10n.play.toUpperCase(),
+          cancelLabel: l10n.cancel,
+        );
+        if (!ok || !mounted) return;
+        await IqSoloDraftStore.clear();
+      }
       navigator.pushReplacement(
         PopRoute(
           builder: (_) => IqSoloScreen(
@@ -131,15 +175,33 @@ class _IqSetupScreenState extends State<IqSetupScreen> {
             ),
             footer: Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-              child: CandyButton(
-                key: const Key('iq_start'),
-                label: widget.mode == IqSetupMode.room
-                    ? l10n.create
-                    : l10n.play,
-                icon: Icons.check_rounded,
-                color: AppColors.green,
-                textColor: AppColors.white,
-                onPressed: _start,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (widget.mode == IqSetupMode.solo && _draft != null) ...[
+                    CandyButton(
+                      key: const Key('iq_continue'),
+                      label: l10n.iqContinue(
+                        _draft!.answeredCount,
+                        _draft!.rounds,
+                      ),
+                      icon: Icons.play_arrow_rounded,
+                      color: AppColors.yellow,
+                      onPressed: _continueDraft,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  CandyButton(
+                    key: const Key('iq_start'),
+                    label: widget.mode == IqSetupMode.room
+                        ? l10n.create
+                        : (_draft != null ? l10n.iqNewGame : l10n.play),
+                    icon: Icons.check_rounded,
+                    color: AppColors.green,
+                    textColor: AppColors.white,
+                    onPressed: _start,
+                  ),
+                ],
               ),
             ),
             children: [
@@ -283,11 +345,10 @@ class _IqSetupScreenState extends State<IqSetupScreen> {
                 title: l10n.iqTimePerQuestion,
                 icon: GameIconKind.timer,
                 color: AppColors.cyan,
-                child: PillSelector<int>(
+                child: DurationPicker(
+                  value: _duration,
                   options: IqSetupScreen.durationOptions,
-                  isSelected: (d) => d == _duration,
-                  label: (d) => durationLabel(l10n, d),
-                  onTap: (d) => setState(() => _duration = d),
+                  onChanged: (d) => setState(() => _duration = d),
                 ),
               ),
               OptionSection(

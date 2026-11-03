@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Palette de Mind Race : couleurs vives « bonbon » sur fond violet.
+/// Palette de Mind Race : couleurs vives « bonbon » sur fond violet,
+/// plus une gamme sable / rétro pour Chrono, Mot & Sens et la grille Solo.
 abstract final class AppColors {
   static const purple = Color(0xFF6C3CE1);
   static const purpleDeep = Color(0xFF4421A8);
@@ -17,6 +18,19 @@ abstract final class AppColors {
   static const green = Color(0xFF2ECC71);
   static const red = Color(0xFFFF5A5F);
   static const grey = Color(0xFFB9B1D6);
+
+  /// Gamme sable / rétro (QCM, tuiles Solo libre).
+  static const sand = Color(0xFFE8D4B0);
+  static const sandDeep = Color(0xFFC4A06A);
+  static const ochre = Color(0xFFD9A441);
+  static const clay = Color(0xFFC97B5A);
+  static const sage = Color(0xFF8FA37A);
+  static const dustyRose = Color(0xFFC9897B);
+  static const parchment = Color(0xFFF3E6CF);
+  static const inkRetro = Color(0xFF3F2E1E);
+
+  /// Quatre teintes pour les choix QCM (grille 2×2).
+  static const List<Color> sandChoices = [ochre, clay, sage, dustyRose];
 
   /// Teinte plus sombre servant de relief 3D sous les boutons bonbon et les
   /// tuiles.

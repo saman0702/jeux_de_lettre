@@ -27,10 +27,16 @@ class GameFeedback {
     ambientMotion: false,
   );
 
-  final GameAudio audio;
+  GameAudio audio;
   final AppSettings settings;
   final Vibrator vibrator;
   final Announcer announcer;
+
+  /// Remplace le moteur audio (ex. silence au démarrage → vrai moteur après).
+  void replaceAudio(GameAudio next) {
+    audio = next;
+    _syncMusic();
+  }
 
   /// Animations décoratives sans fin (fond animé...). Désactivées dans les
   /// tests pour que `pumpAndSettle` puisse se stabiliser.

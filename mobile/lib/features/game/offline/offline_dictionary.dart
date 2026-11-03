@@ -18,6 +18,10 @@ class OfflineDictionary {
 
   static const _anyLanguage = '*';
   static Future<OfflineDictionary>? _loading;
+  static OfflineDictionary? _instance;
+
+  /// Dictionnaire déjà chargé (null tant que [load] n'a pas fini).
+  static OfflineDictionary? get current => _instance;
 
   final Normalizer normalizer;
 
@@ -38,7 +42,7 @@ class OfflineDictionary {
     final parsed = await compute(_parse, compressed.buffer.asUint8List());
     final map = (jsonDecode(charMap) as Map<String, dynamic>)
         .cast<String, String>();
-    return OfflineDictionary._(Normalizer(map), parsed.$1, parsed.$2);
+    return _instance = OfflineDictionary._(Normalizer(map), parsed.$1, parsed.$2);
   }
 
   static (Map<String, Map<String, String>>, Map<String, List<Entry>>) _parse(

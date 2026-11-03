@@ -24,6 +24,7 @@ class RoundView extends StatefulWidget {
     required this.remaining,
     required this.fields,
     required this.onFinish,
+    this.language,
     this.submitting = false,
     this.hints,
     this.onQuit,
@@ -32,6 +33,9 @@ class RoundView extends StatefulWidget {
     this.footer,
     this.compactHeader = false,
   });
+
+  /// Langue de validation des mots (`fr` / `en`). Sinon : locale de l'UI.
+  final String? language;
 
   /// Objectif affiché en haut (carrière, éliminatoires).
   final String? goal;
@@ -309,6 +313,7 @@ class _RoundViewState extends State<RoundView> {
                       category: category,
                       controller: widget.fields[category]!,
                       letter: round.letter,
+                      language: widget.language,
                       enabled: !widget.submitting,
                       autofocus: index == 0,
                       isLast: index == categories.length - 1,
@@ -404,12 +409,28 @@ class _TimerBadgeState extends State<TimerBadge>
 
   @override
   Widget build(BuildContext context) {
-    final fraction = widget.total.inMilliseconds == 0
-        ? 0.0
-        : (widget.remaining.inMilliseconds / widget.total.inMilliseconds).clamp(
-            0.0,
-            1.0,
-          );
+    // Durée 0 = illimité : pas de compte à rebours, juste ∞.
+    if (widget.total.inMilliseconds <= 0) {
+      return SizedBox.square(
+        dimension: widget.size,
+        child: CustomPaint(
+          painter: _RingPainter(1, AppColors.cyan),
+          child: Center(
+            child: Text(
+              '∞',
+              key: const Key('timer'),
+              style: fredoka(
+                size: widget.size * 0.42,
+                weight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    final fraction = (widget.remaining.inMilliseconds / widget.total.inMilliseconds)
+        .clamp(0.0, 1.0);
     final urgent = _seconds <= _urgentSeconds;
     final color = urgent
         ? AppColors.red

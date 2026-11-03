@@ -58,6 +58,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get roundDuration => 'Durée d\'une manche';
 
   @override
+  String get durationUnlimited => 'Illimité';
+
+  @override
+  String get customDurationHint => 'Ou saisis les secondes';
+
+  @override
   String secondsShort(int seconds) {
     return '$seconds s';
   }
@@ -184,7 +190,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get gameOver => 'PARTIE TERMINÉE';
 
   @override
-  String get playAgain => 'REJOUER';
+  String get playAgain => 'CONTINUER À JOUER';
 
   @override
   String get backHome => 'Accueil';
@@ -387,7 +393,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get rematchHelp =>
-      'Vote pour rejouer. Quand la majorité des joueurs humains a voté, une nouvelle partie démarre avec les mêmes réglages.';
+      'Vote pour continuer à jouer. Quand la majorité des joueurs humains a voté, une nouvelle partie démarre avec les mêmes réglages.';
 
   @override
   String get bonusRound => 'MANCHE BONUS';
@@ -455,7 +461,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nicknameHint => 'Ton pseudo';
 
   @override
+  String get nicknameHelp =>
+      'C’est ton nom de joueur (les salons s’affichent « Salle de … »).';
+
+  @override
+  String get nicknameRequired => 'Entre ton pseudo pour continuer.';
+
+  @override
   String get nicknameConfirm => 'C\'EST PARTI !';
+
+  @override
+  String get settingsNickname => 'Pseudo';
 
   @override
   String get roomsTitle => 'Salons';
@@ -992,7 +1008,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get shopLegal =>
-      'Paiement sécurisé par Google Play ou l\'App Store. Les pièces n\'ont aucune valeur monétaire : elles ne sont ni remboursables, ni échangeables, ni convertibles en argent.';
+      'L\'abonnement Premium est payé et géré par Google Play ou l\'App Store (résiliable à tout moment). Les pièces n\'ont aucune valeur monétaire : elles ne sont ni remboursables, ni échangeables, ni convertibles en argent.';
 
   @override
   String get avatarPhotoNeedsConnection =>
@@ -1073,7 +1089,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nextLevel => 'NIVEAU SUIVANT';
 
   @override
-  String get replayLevel => 'REJOUER LE NIVEAU';
+  String get replayLevel => 'CONTINUER À JOUER';
 
   @override
   String get levelsMap => 'CARTE DES NIVEAUX';
@@ -1519,10 +1535,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get perksNoAd => 'Pas de vidéo disponible pour le moment.';
 
   @override
-  String get perksPassTitle => 'Pass Mind Race';
+  String get perksPassTitle => 'Premium';
 
   @override
-  String get perksPassNoAds => 'Aucune pub entre les parties';
+  String get perksPassNoAds => 'Aucune pub pendant 1 mois';
 
   @override
   String perksPassDaily(int coins) {
@@ -1553,7 +1569,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get perksDailyTaken => 'BONUS DU JOUR PRIS';
 
   @override
-  String get perksPassDone => 'Bienvenue dans le Pass !';
+  String get perksPassDone => 'Premium activé : plus de pub ce mois-ci !';
 
   @override
   String get perksRemoveAdsTitle => 'Sans pub';
@@ -1570,6 +1586,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get shopUnavailableShort => 'Indisponible';
+
+  @override
+  String get perksPassNeedPlay => 'Via Google Play (pas en debug USB)';
+
+  @override
+  String get perksPassBenefitHint =>
+      'Avantage de l\'abonnement — tu n\'es pas encore Premium';
 
   @override
   String roomHistoryTitle(String code) {
@@ -1702,6 +1725,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get iqValidate => 'VALIDER';
 
   @override
+  String get iqScrollMore => 'Glisse pour voir la suite';
+
+  @override
   String get iqGoodAnswer => 'Bonne réponse';
 
   @override
@@ -1788,6 +1814,35 @@ class AppLocalizationsFr extends AppLocalizations {
   String get iqNext => 'ÉNIGME SUIVANTE';
 
   @override
+  String get iqPause => 'PAUSE';
+
+  @override
+  String iqContinue(int done, int total) {
+    return 'CONTINUER ($done/$total)';
+  }
+
+  @override
+  String get iqNewGame => 'NOUVELLE PARTIE';
+
+  @override
+  String get iqNewGameTitle => 'Nouvelle partie ?';
+
+  @override
+  String get iqNewGameMessage => 'La partie en pause sera abandonnée.';
+
+  @override
+  String get iqQuitMidRound =>
+      'Tu es au milieu d\'une énigme : la progression ne sera pas sauvegardée. Mets pause après avoir répondu pour reprendre plus tard.';
+
+  @override
+  String get geoQuitMidRound =>
+      'Tu es au milieu d\'une manche : la progression ne sera pas sauvegardée. Mets pause après la manche pour reprendre plus tard.';
+
+  @override
+  String get iqResumeNeedsOnline =>
+      'Reconnecte-toi pour reprendre cette partie.';
+
+  @override
   String get iqSeeResult => 'VOIR MON QI';
 
   @override
@@ -1820,6 +1875,23 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get iqJokerSkip => 'Passer';
+
+  @override
+  String get iqJokerReveal => 'Solution';
+
+  @override
+  String get iqSpeedFast => 'Rapide';
+
+  @override
+  String get iqSpeedMedium => 'Dans les temps';
+
+  @override
+  String get iqSpeedSlow => 'Lent';
+
+  @override
+  String iqTimeJudged(String time, String speed) {
+    return '$time · $speed';
+  }
 
   @override
   String iqHintRange(int low, int high) {
@@ -1872,6 +1944,52 @@ class AppLocalizationsFr extends AppLocalizations {
   String get iqKindTrace => 'Un seul trait';
 
   @override
+  String get iqKindCount => 'Compter';
+
+  @override
+  String get iqKindDots => 'Points à relier';
+
+  @override
+  String get iqKindFlow => 'Couleurs';
+
+  @override
+  String get gameChronoTitle => 'Chrono';
+
+  @override
+  String get gameChronoTag => 'Histoire & dates';
+
+  @override
+  String get gameMotsTitle => 'Mot & Sens';
+
+  @override
+  String get gameMotsTag => 'Vocabulaire';
+
+  @override
+  String get quizSeeScore => 'VOIR LE SCORE';
+
+  @override
+  String get chronoSoloTitle => 'Chrono en solo';
+
+  @override
+  String get motsSoloTitle => 'Mot & Sens';
+
+  @override
+  String get quizQuestions => 'Nombre de questions';
+
+  @override
+  String get quizTimePerQuestion => 'Temps par question';
+
+  @override
+  String get quizCreateRoom => 'CRÉER UN SALON';
+
+  @override
+  String get quizOpenRooms => 'Salons ouverts';
+
+  @override
+  String get quizNoRooms =>
+      'Aucun salon public pour le moment : crée le tien !';
+
+  @override
   String get iqTraceRestart => 'RECOMMENCER';
 
   @override
@@ -1910,4 +2028,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get gameIqTag => 'Logique & énigmes';
+
+  @override
+  String get deleteAccountButton => 'Supprimer mon compte';
+
+  @override
+  String get deleteAccountTitle => 'Supprimer ton compte ?';
+
+  @override
+  String get deleteAccountMessage =>
+      'Ton pseudo, tes pièces, ton avatar, tes salons, tes messages et ta progression seront effacés pour toujours. Un abonnement Premium se résilie à part, dans Google Play ou l\'App Store.';
+
+  @override
+  String get deleteAccountConfirm => 'SUPPRIMER';
+
+  @override
+  String get deleteAccountDone =>
+      'Compte supprimé. L\'appli va se fermer : au prochain lancement, tu repars de zéro.';
 }
