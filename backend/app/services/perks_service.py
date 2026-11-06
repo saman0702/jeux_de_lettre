@@ -5,6 +5,7 @@ via /api/v1/config et n'affiche que ce qui est actif.
 """
 
 import base64
+import logging
 import time
 from datetime import UTC, datetime
 from urllib.parse import parse_qs
@@ -22,6 +23,8 @@ from app.services import wallet_service
 
 REMOVE_ADS_PRODUCT = "remove_ads"
 PASS_PRODUCT = "pass_monthly"
+logger = logging.getLogger(__name__)
+
 ADMOB_KEYS_URL = "https://www.gstatic.com/admob/reward/verifier-keys.json"
 
 
@@ -154,17 +157,25 @@ class AdMobVerifier:
         """Renvoie les paramètres du rappel s'il est authentique, sinon lève PerkError."""
         marker = "&signature="
         if marker not in query:
+            logger.warning("AdMob callback: no signature in query (%d chars)", len(query))
             raise PerkError("invalid_signature", 403)
         message = query[: query.index(marker)].encode()
         params = {k: v[0] for k, v in parse_qs(query, keep_blank_values=True).items()}
         signature = params.get("signature", "")
-        key = (await self._public_keys()).get(params.get("key_id", ""))
+        keys = await self._public_keys()
+        key = keys.get(params.get("key_id", ""))
         if key is None:
+            logger.warning("AdMob callback: unknown key_id %r (known: %s)", params.get("key_id"), list(keys))
             raise PerkError("invalid_signature", 403)
         try:
             raw = base64.urlsafe_b64decode(signature + "=" * (-len(signature) % 4))
             key.verify(raw, message, ec.ECDSA(hashes.SHA256()))
-        except (InvalidSignature, ValueError):
+        except (InvalidSignature, ValueError) as error:
+            logger.warning(
+                "AdMob callback: bad signature (%s) for %r",
+                type(error).__name__,
+                message.decode(errors="replace")[:300],
+            )
             raise PerkError("invalid_signature", 403) from None
         return params
 

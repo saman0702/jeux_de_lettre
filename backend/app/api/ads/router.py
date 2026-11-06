@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +10,8 @@ from app.core.database import get_session
 from app.schemas.game import WalletOut
 from app.services import perks_service, wallet_service
 from app.services.perks_service import AdMobVerifier
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/ads", tags=["ads"])
 
@@ -32,6 +36,7 @@ async def admob_reward_callback(
             return {"ok": True, "credited": False}
         await perks_service.grant_ad_reward(session, user_id, params.get("transaction_id", ""))
     except perks_service.PerkError as error:
+        logger.warning("AdMob callback refused: %s", error.code)
         raise HTTPException(status_code=error.status_code, detail=error.code) from None
     await session.commit()
     return {"ok": True}
