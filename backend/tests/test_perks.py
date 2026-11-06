@@ -124,6 +124,11 @@ async def test_admob_server_callback_is_verified(client, flags):
         forged = admob_query(key, 7, params).replace("tx-42", "tx-43")
         response = await client.get(f"/api/v1/ads/reward-callback?{forged}")
         assert (response.status_code, response.json()["detail"]) == (403, "invalid_signature")
+
+        # « Valider l'URL » dans AdMob : rappel signé sans joueur, accepté sans rien créditer.
+        check = {"ad_unit": "123", "reward_amount": "1", "transaction_id": "tx-check"}
+        response = await client.get(f"/api/v1/ads/reward-callback?{admob_query(key, 7, check)}")
+        assert response.status_code == 200 and response.json() == {"ok": True, "credited": False}
     finally:
         app.dependency_overrides.pop(get_admob_verifier, None)
 

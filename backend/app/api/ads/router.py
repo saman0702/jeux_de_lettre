@@ -6,7 +6,7 @@ from app.core import client_auth
 from app.core.config import settings
 from app.core.database import get_session
 from app.schemas.game import WalletOut
-from app.services import perks_service
+from app.services import perks_service, wallet_service
 from app.services.perks_service import AdMobVerifier
 
 router = APIRouter(prefix="/api/v1/ads", tags=["ads"])
@@ -26,7 +26,11 @@ async def admob_reward_callback(
     bloc d'annonces). L'appli transmet l'identifiant du joueur dans `user_id`."""
     try:
         params = await verifier.verify(request.url.query)
-        await perks_service.grant_ad_reward(session, params.get("user_id", ""), params.get("transaction_id", ""))
+        user_id = params.get("user_id", "")
+        # « Valider l'URL » dans AdMob : rappel signé sans joueur, il doit répondre 200.
+        if not wallet_service.is_client_id(user_id):
+            return {"ok": True, "credited": False}
+        await perks_service.grant_ad_reward(session, user_id, params.get("transaction_id", ""))
     except perks_service.PerkError as error:
         raise HTTPException(status_code=error.status_code, detail=error.code) from None
     await session.commit()
