@@ -8,7 +8,7 @@ import base64
 import logging
 import time
 from datetime import UTC, datetime
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, unquote
 
 import httpx
 from cryptography.exceptions import InvalidSignature
@@ -169,15 +169,18 @@ class AdMobVerifier:
             raise PerkError("invalid_signature", 403)
         try:
             raw = base64.urlsafe_b64decode(signature + "=" * (-len(signature) % 4))
-            key.verify(raw, message, ec.ECDSA(hashes.SHA256()))
-        except (InvalidSignature, ValueError) as error:
-            logger.warning(
-                "AdMob callback: bad signature (%s) for %r",
-                type(error).__name__,
-                message.decode(errors="replace")[:300],
-            )
+        except ValueError as error:
+            logger.warning("AdMob callback: unreadable signature (%s)", type(error).__name__)
             raise PerkError("invalid_signature", 403) from None
-        return params
+        # Google signe les paramètres décodés (« reward_item=Pièces », pas « Pi%C3%A8ces »).
+        for content in (unquote(message.decode()).encode(), message):
+            try:
+                key.verify(raw, content, ec.ECDSA(hashes.SHA256()))
+                return params
+            except InvalidSignature:
+                continue
+        logger.warning("AdMob callback: bad signature for %r", message.decode(errors="replace")[:300])
+        raise PerkError("invalid_signature", 403)
 
 
 admob_verifier = AdMobVerifier()

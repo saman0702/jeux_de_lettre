@@ -11,7 +11,7 @@ from app.api.ads.router import get_admob_verifier
 from app.api.shop.router import get_store_verifier
 from app.core.config import settings
 from app.main import app
-from app.services.perks_service import AdMobVerifier
+from app.services.perks_service import AdMobVerifier, PerkError
 from app.services.store_service import StoreError, VerifiedPurchase
 
 CLIENT = "flore-0001"
@@ -131,6 +131,30 @@ async def test_admob_server_callback_is_verified(client, flags):
         assert response.status_code == 200 and response.json() == {"ok": True, "credited": False}
     finally:
         app.dependency_overrides.pop(get_admob_verifier, None)
+
+
+# Vrai rappel envoyé par AdMob (« Valider l'URL », 6 novembre 2026) et sa clé publique Google.
+GOOGLE_PEM = """-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE+nzvoGqvDeB9+SzE6igTl7TyK4JB
+bglwir9oTcQta8NuG26ZpZFxt+F2NDk7asTE6/2Yc8i1ATcGIqtuS5hv0Q==
+-----END PUBLIC KEY-----"""
+REAL_CALLBACK = (
+    "ad_network=5450213213286189855&ad_unit=1234567890&reward_amount=5&reward_item=Pi%C3%A8ces"
+    "&timestamp=1793973539432&transaction_id=123456789"
+    "&signature=MEUCIQDp59pDxx2yMo_42wR_5ynd3Jdw8-mPaDwZacp_A0HDlwIgYpP11V1HdpHWpbevirPbYnhGOqDbJWTFcWr3R6_kc_U"
+    "&key_id=3335741209"
+)
+
+
+async def test_real_admob_callback_is_signed_on_decoded_parameters():
+    """Google signe « reward_item=Pièces » décodé : la version encodée (%C3%A8) ne vérifie pas."""
+    keys = httpx.MockTransport(
+        lambda request: httpx.Response(200, json={"keys": [{"keyId": 3335741209, "pem": GOOGLE_PEM}]})
+    )
+    params = await AdMobVerifier("https://keys.test", keys).verify(REAL_CALLBACK)
+    assert params["reward_item"] == "Pièces" and params["transaction_id"] == "123456789"
+    with pytest.raises(PerkError):
+        await AdMobVerifier("https://keys.test", keys).verify(REAL_CALLBACK.replace("123456789", "123456780"))
 
 
 # ------------------------------------------------------------------ « Sans pub » et Pass
